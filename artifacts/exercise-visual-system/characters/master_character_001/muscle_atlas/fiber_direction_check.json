@@ -1,0 +1,41 @@
+{
+  "method": "Blender -b --factory-startup --python pipeline/check_fiber_directions.py",
+  "measured_from": "fiber_dir.npz (surface-baked)",
+  "pass_median_deg": 20.0,
+  "pass_p90_deg": 35.0,
+  "groups": {
+    "pectoralis_major": {
+      "triangles": 720,
+      "median_deg": 7.6,
+      "p90_deg": 19.4,
+      "mean_deg": 9.5,
+      "upper_clavicular": {
+        "median_deg": 6.3,
+        "p90_deg": 17.9
+      },
+      "middle_sternal": {
+        "median_deg": 15.3,
+        "p90_deg": 22.5
+      },
+      "lower_abdominal": {
+        "median_deg": 10.1,
+        "p90_deg": 15.2
+      },
+      "pass": true
+    },
+    "deltoid_anterior": {
+      "triangles": 148,
+      "median_deg": 1.8,
+      "p90_deg": 8.0,
+      "mean_deg": 3.3,
+      "pass": true
+    },
+    "triceps_brachii": {
+      "triangles": 243,
+      "median_deg": 2.1,
+      "p90_deg": 9.9,
+      "mean_deg": 3.7,
+      "pass": true
+    }
+  }
+}

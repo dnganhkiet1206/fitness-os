@@ -45,7 +45,7 @@ def blender_to_realitykit(v: Vector) -> list[float]:
     return [round(float(v.x), 4), round(float(v.z), 4), round(float(-v.y), 4)]
 
 
-def painted_textures(exercise: dict) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def painted_textures(exercise: dict, roles: list[str] | None = None) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """``fiber_style: "painted"`` (Kiệt 13/11): solid role colours plus a
     fibre shade and a normal map from line integral convolution
     (evs/fiber_lic.py), instead of the striped highlight map. All three are
@@ -54,7 +54,7 @@ def painted_textures(exercise: dict) -> tuple[np.ndarray, np.ndarray, np.ndarray
     masks = dict(np.load(atlas / "masks.npz"))
     masks.pop("_side_left", None)
     phase = dict(np.load(atlas / "fiber_phase.npz"))
-    roles = exercise.get("highlight_roles", ["primary", "secondary", "stabilizing"])
+    roles = roles or exercise.get("highlight_roles", ["primary", "secondary", "stabilizing"])
     primary = exercise["primary_muscles"] if "primary" in roles else []
     secondary = exercise["secondary_muscles"] if "secondary" in roles else []
     stabilizing = exercise.get("stabilizing_muscles", []) if "stabilizing" in roles else []
@@ -63,7 +63,11 @@ def painted_textures(exercise: dict) -> tuple[np.ndarray, np.ndarray, np.ndarray
     crisp = {k: (fiber_lic.crisp_mask(v) * 255.0 + 0.5).astype(np.uint8) for k, v in masks.items()}
     solid = muscle_eval.compose_highlight(crisp, primary, secondary, stabilizing)
     groups = list(dict.fromkeys(primary + secondary + stabilizing))
-    shade, normal, rim = fiber_lic.painted_maps(masks, phase, groups)
+    dir_path = atlas / "fiber_dir.npz"
+    angles = dict(np.load(dir_path)) if dir_path.exists() else None
+    if angles is None:
+        print("[evs] usdz: no fiber_dir.npz, fibre directions from the phase atlas")
+    shade, normal, rim = fiber_lic.painted_maps(masks, phase, groups, angles=angles)
     return (np.flipud(solid), np.flipud(shade), (np.flipud(normal) * 255.0 + 0.5).astype(np.uint8), np.flipud(rim))
 
 
@@ -267,7 +271,23 @@ def main(exercise_name: str | None = None) -> None:
         obj.data.materials.clear()
         obj.data.materials.append(export_material(f"EVS_{key}_USDZ", rough,
                                                   bpy.data.images.load(str(ap)), bpy.data.images.load(str(ep)),
-                                                  normal_image))
+                                                  normal_image if key == "Body" else None))
+
+    if painted:
+        # "Focus" body textures with the primary muscles only (Kiệt 13/11: a
+        # switch in the viewer hides the secondary groups). Same UVs as the
+        # USDZ body, so the app swaps them onto the body material at runtime.
+        f_small, f_shade, f_normal, f_rim = painted_textures(exercise, roles=["primary"])
+        f_albedo = apply_shade(muscle_eval.albedo_from_highlight(
+            f_small, colors["character_body_viewer"], colors["muscle_primary"], colors["muscle_secondary"],
+            colors["muscle_stabilizer"], 1.0), f_shade)
+        f_emission = painted_emission(muscle_eval.emission_from_highlight(
+            f_small, colors["muscle_primary"], colors["muscle_secondary"], colors["muscle_stabilizer"], 1.0), f_shade, f_rim)
+        pngio.write_png(out_dir / f"{prefix}_focus_albedo.png", f_albedo)
+        pngio.write_png(out_dir / f"{prefix}_focus_emission.png", f_emission)
+        # Without it the hidden groups would keep their fibre relief on bare skin.
+        pngio.write_png(out_dir / f"{prefix}_focus_normal.png", f_normal)
+        print(f"[evs] usdz: focus textures {prefix}_focus_albedo/emission/normal.png")
 
     equipment_objects = [o for o in scene.objects if o.type == "MESH" and o.get("evs_equipment")]
     select([rig, body, shorts, *equipment_objects])

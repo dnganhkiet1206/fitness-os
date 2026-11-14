@@ -3,7 +3,7 @@
   "exercise_id": "barbell_bench_press",
   "master_character_id": "master_character_001",
   "usdz": "bench_press_animation.usdz",
-  "size_bytes": 3543391,
+  "size_bytes": 3516326,
   "zip_members": [
     "bench_press_animation.usdc",
     "textures/_usdz_body_emission.png",
