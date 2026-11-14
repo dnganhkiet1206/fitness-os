@@ -62,7 +62,7 @@
       "limit": 0.004,
       "where": {
         "implement": "SOCKET_hand_r",
-        "frame": 63
+        "frame": 64
       },
       "detail": "m wrist to grip socket"
     },
@@ -167,7 +167,7 @@
       "stage": "C",
       "title": "Skin stretch stays within limits",
       "status": "PASS",
-      "measured": 2.312,
+      "measured": 2.313,
       "limit": 2.6,
       "where": {
         "frame": 59
@@ -185,7 +185,7 @@
         60
       ],
       "where": null,
-      "detail": "provisional bound"
+      "detail": "ROM envelope only: AAOS reference values (elbow flexion 140-150 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound requires >=120 deg flexion, inside the envelope; no curl kinematics study read."
     },
     {
       "id": "movement_elbow_max_deg",
@@ -198,7 +198,7 @@
         null
       ],
       "where": null,
-      "detail": "provisional bound"
+      "detail": "ROM envelope only: AAOS reference values (elbow extension 0 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound sits inside the envelope; no curl kinematics study read."
     },
     {
       "id": "movement_arm_elev_max_deg",

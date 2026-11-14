@@ -82,7 +82,7 @@
       },
       "where": {
         "foot": "foot_l",
-        "frame": 63
+        "frame": 64
       },
       "detail": ""
     },
@@ -94,8 +94,8 @@
       "measured": 0.0,
       "limit": 0.003,
       "where": {
-        "joint": "ankle",
-        "frame": 87
+        "joint": "wrist",
+        "frame": 16
       },
       "detail": "m"
     },
@@ -130,11 +130,11 @@
       "stage": "C",
       "title": "Elbow flexion inside the soft-tissue limit",
       "status": "PASS",
-      "measured": 133.226,
+      "measured": 133.225,
       "limit": 145.0,
       "where": {
         "side": "r",
-        "frame": 89
+        "frame": 82
       },
       "detail": "deg"
     },
@@ -186,7 +186,7 @@
         100
       ],
       "where": null,
-      "detail": "provisional bound"
+      "detail": "Schoenfeld 2010 JSCR 24(12):3497-3506: half squats 70-100 deg knee flexion, deep squats >100 deg; Escamilla et al. 2001 MSSE 33(6):984-998 (PMID 11404665): competition squats analysed at 90 deg knee flexion and maximum knee flexion. Bound requires >=80 deg flexion (interior <=100 deg), inside the half-squat band."
     },
     {
       "id": "movement_hip_drop_m",
