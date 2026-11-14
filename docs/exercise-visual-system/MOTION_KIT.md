@@ -38,7 +38,10 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
                   ± dung sai theo khai báo ở movement.reference_checks; bài chưa có tham chiếu báo
                   NOT_TESTED, không tính pass cũng không tính fail
                 - tờ soi xoay vòng: 6 góc quanh người + 2 góc cao × đứng / giữa / đáy
-                  (factory.py sheet). BẮT BUỘC soi tay, lưng, đầu, chân, dụng cụ ở mọi góc,
+                  (factory.py sheet), mỗi ảnh có chú thích góc khớp đo được
+                  (pipeline/sheet_data.py) + viền đỏ ở khung bị cổng flag, viền vàng ở
+                  khung gần khung bị flag; flagged_frames.json liệt kê khung bị flag để
+                  soi kỹ. BẮT BUỘC soi tay, lưng, đầu, chân, dụng cụ ở mọi góc,
                   đối chiếu nguồn kỹ thuật, trước khi báo xong (MOTION_KIT_LESSONS.md luật 1)
 6. Xuất         pipeline/export_usdz.py (sợi cơ vẽ, bản chỉ cơ chính) → app
 ```
@@ -53,6 +56,7 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
 | Bản đồ 21 nhóm cơ, hướng sợi tính trên mặt 3D, sợi vẽ LIC | `evs/fiber_lic.py`, `pipeline/bake_fiber_directions.py` | xong |
 | Cổng giải phẫu theo họ động tác (13 họ) | `evs/movement_gate.py`, `config/movement_patterns.json` | xong; 4 họ cited (`press_horizontal`, `squat`, `lunge`, `push_up` — chỉ metric có nguồn đã đọc; metric còn lại vẫn "tạm" theo danh sách từng metric), 9 họ còn lại "tạm" + `research_notes` ghi đã tra gì, thiếu gì (14/11) |
 | Số đo vàng (golden measurements) | `evs/reference_check.py`, `movement.reference_checks` | xong; bench có file tham chiếu nhưng chưa khai báo check nào (clip tay cầm rộng ≠ animation tay cầm vừa, ghi lý do ở `reference_note`); squat/curl chưa có tham chiếu (NOT_TESTED) |
+| Tờ soi xoay vòng bán tự động | `pipeline/factory.py sheet`, `pipeline/sheet_data.py` | xong; chú thích góc đo được + đánh dấu khung bị flag + `flagged_frames.json`; Blender qua `$EVS_BLENDER` (mặc định đường dẫn Mac) |
 | Công cụ đo video (MediaPipe, Apache 2.0) | `pipeline/measure_video.py` | xong; bench press: 7 lần đẩy từ clip Pexels |
 | Bộ giải họ đẩy ngang (bench press) | `bench-press/animate_bench_press.py` | chạy; cần tách thành bộ giải chung |
 | Trình xem 3D (zoom, mẹo, ẩn cơ phụ) | `apps/ios/.../ExerciseDemo3DView.swift` | xong; đọc USDZ, góc máy, chú thích theo từng bài |

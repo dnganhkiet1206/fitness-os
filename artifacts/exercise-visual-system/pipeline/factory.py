@@ -19,6 +19,11 @@ template (movement.template) keep their own animate script and validator.
 An exercise with an approval_date is approved: it is never rebuilt unless
 --force is given, so regeneration cannot silently replace approved assets.
 Each build appends to <exercise>/factory_log.json (version, timings, QA).
+
+sheet renders the review sheet with measured-angle overlays and
+flagged-frame marks, and writes <exercise>/flagged_frames.json listing
+every frame the gates flagged. Blender is $EVS_BLENDER, defaulting to the
+Mac app path.
 """
 
 from __future__ import annotations
@@ -26,13 +31,14 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import os
 import subprocess
 import sys
 import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-BLENDER = "/Applications/Blender.app/Contents/MacOS/Blender"
+BLENDER = os.environ.get("EVS_BLENDER", "/Applications/Blender.app/Contents/MacOS/Blender")
 # Whole-body review (Kiệt 14/11): orbit the character every 60 degrees at
 # the start, middle and end of the first repetition, plus two high views, so
 # arms, back, head, legs and the implement are checked from every side.
@@ -91,21 +97,206 @@ def status(_args) -> None:
               f"{len(spec.get('motion_provenance', [])):<4d} {qa_summary(ex)}")
 
 
+# A sheet still within this many frames of a flagged frame is marked NEAR
+# (amber): same pose region, not the flagged frame itself.
+FLAG_WINDOW_FRAMES = 12
+
+
+def flagged_frames_from_report(report: dict) -> tuple[dict[int, list[dict]], list[dict]]:
+    """Frames flagged by FAIL / REQUIRES_MANUAL_REVIEW checks, from a
+    qa_report.json of either validator. Returns (frames -> checks, failing
+    checks with no frame). The template validator records where.frame; the
+    bench validator's report carries no structured per-frame data, so its
+    failing checks land in the second list. PASS / NOT_TESTED / UNVERIFIED
+    checks never flag a frame, and approval-category sign-offs (expert
+    approval, mapping review) are lifecycle states, not gate measurements,
+    so they are excluded too."""
+    frames: dict[int, list[dict]] = {}
+    without: list[dict] = []
+    for c in report.get("checks", []):
+        if c.get("status") not in ("FAIL", "REQUIRES_MANUAL_REVIEW"):
+            continue
+        if c.get("category") == "approval":
+            continue
+        where = c.get("where") or {}
+        f = where.get("frame") if isinstance(where, dict) else None
+        if isinstance(f, float) and f.is_integer():
+            f = int(f)
+        if isinstance(f, int) and not isinstance(f, bool):
+            frames.setdefault(f, []).append({"id": c["id"], "status": c["status"]})
+        else:
+            without.append({"id": c["id"], "status": c["status"]})
+    return frames, without
+
+
+def frame_mark(frame: int, flagged: dict, window: int = FLAG_WINDOW_FRAMES) -> tuple[str, int] | None:
+    """('flag', frame) if the frame itself was flagged, ('near', nearest
+    flagged frame) if within the window, else None."""
+    if frame in flagged:
+        return ("flag", frame)
+    near = [f for f in flagged if abs(f - frame) <= window]
+    if near:
+        return ("near", min(near, key=lambda f: abs(f - frame)))
+    return None
+
+
+def _ri(x: float) -> int:
+    return int(x + 0.5)
+
+
+def caption_lines(frame: int, label: str, metrics: dict | None) -> tuple[str, str, str]:
+    """Three overlay caption lines for one sheet still: frame + row label,
+    elbow/knee interior angles, trunk lean / hip flexion / arm elevation."""
+    head = f"f{frame} · {label}"
+    if not metrics:
+        return head, "angles unavailable", ""
+
+    def one(lo: float, hi: float) -> str:
+        a, b = _ri(lo), _ri(hi)
+        return f"{a}°" if a == b else f"{a}-{b}°"
+
+    line2 = f"elbow {one(metrics['elbow_min_deg'], metrics['elbow_max_deg'])} · knee {one(metrics['knee_min_deg'], metrics['knee_max_deg'])}"
+    line3 = (f"trunk {_ri(metrics['torso_lean_max_deg'])}° · hip {_ri(metrics['hip_flex_max_deg'])}° · "
+             f"arm {_ri(metrics['arm_elev_max_deg'])}°")
+    return head, line2, line3
+
+
+def footer_text(flagged: dict, without: list[dict]) -> str:
+    if flagged:
+        parts = []
+        for f in sorted(flagged):
+            ids = ", ".join(f"{c['id']} {c['status']}" for c in flagged[f])
+            parts.append(f"f{f} ({ids})")
+        return "Flagged frames: " + "; ".join(parts) + ". See flagged_frames.json — review these closely + a random sample."
+    if without:
+        ids = ", ".join(f"{c['id']} {c['status']}" for c in without)
+        return f"No frame-level flags in this QA report. Failing checks needing review: {ids}."
+    return "No flagged frames: no FAIL / REQUIRES_MANUAL_REVIEW check with a frame. Review a random sample."
+
+
+_FONT_CACHE: dict = {}
+
+
+def _load_font(size: int, bold: bool = False):
+    from PIL import ImageFont
+    key = (size, bold)
+    if key in _FONT_CACHE:
+        return _FONT_CACHE[key]
+    names = ["DejaVuSans-Bold.ttf", "DejaVuSans.ttf"] if bold else ["DejaVuSans.ttf"]
+    bases = ["/usr/share/fonts/truetype/dejavu", "/usr/local/share/fonts",
+             "/System/Library/Fonts/Supplemental", str(Path.home() / "Library" / "Fonts")]
+    for base in bases:
+        for name in names:
+            p = Path(base) / name
+            if p.exists():
+                try:
+                    font = ImageFont.truetype(str(p), size)
+                    _FONT_CACHE[key] = font
+                    return font
+                except OSError:
+                    pass
+    font = ImageFont.load_default()
+    _FONT_CACHE[key] = font
+    return font
+
+
+def _overlay_still(path: Path, lines: tuple[str, str, str], mark) -> None:
+    """Caption bar under the still (the render itself is never covered) plus
+    a red FLAGGED / amber NEAR border and tag when the frame is marked."""
+    from PIL import Image, ImageDraw
+    im = Image.open(path).convert("RGB")
+    w, h = im.size
+    bar_h = 56
+    out = Image.new("RGB", (w, h + bar_h), "black")
+    out.paste(im, (0, 0))
+    d = ImageDraw.Draw(out)
+    d.text((8, h + 4), lines[0], fill="white", font=_load_font(14, bold=True))
+    d.text((8, h + 21), lines[1], fill="white", font=_load_font(13))
+    if lines[2]:
+        d.text((8, h + 37), lines[2], fill="white", font=_load_font(13))
+    if mark:
+        kind, ref = mark
+        color = (220, 30, 30) if kind == "flag" else (240, 170, 0)
+        for i in range(5):
+            d.rectangle([i, i, w - 1 - i, h - 1 - i], outline=color)
+        tag = "FLAGGED" if kind == "flag" else f"NEAR f{ref}"
+        tf = _load_font(13, bold=True)
+        tw = d.textlength(tag, font=tf)
+        d.rectangle([0, 0, tw + 16, 22], fill=color)
+        d.text((8, 3), tag, fill="white", font=tf)
+    out.save(path)
+
+
+def _add_footer(sheet_path: Path, text: str) -> None:
+    from PIL import Image, ImageDraw
+    im = Image.open(sheet_path).convert("RGB")
+    footer_h = 30
+    out = Image.new("RGB", (im.width, im.height + footer_h), "black")
+    out.paste(im, (0, 0))
+    d = ImageDraw.Draw(out)
+    d.text((10, im.height + 7), text[:320], fill="white", font=_load_font(14))
+    out.save(sheet_path)
+
+
 def sheet(ex: Path, spec: dict) -> tuple[bool, float]:
     """Whole-body review sheet: rows = start / middle / end of the first
-    repetition, columns = 6 orbit angles + 2 high views."""
+    repetition, columns = 6 orbit angles + 2 high views. Each still gets a
+    caption with the measured joint angles at its frame (pipeline/
+    sheet_data.py), a red border when the frame itself was flagged by the
+    gates, and an amber border when it is near a flagged frame; the sheet
+    footer names the flagged frames, and <exercise>/flagged_frames.json
+    lists them all for targeted review."""
     phases = {p["id"]: p for p in spec.get("exercise_phases", [])}
     fps = int(spec["frame_rate"])
     mid = next((p for k, p in phases.items() if k in ("concentric", "eccentric")), None)
     a = 0
     b = int(round(mid["start_s"] * fps + 0.5 * (mid["end_s"] - mid["start_s"]) * fps)) if mid else 30
     c = int(round(mid["end_s"] * fps)) if mid else 60
+    frames = {"a": a, "b": b, "c": c}
+    labels = {"a": "start", "b": f"mid {mid['id']}" if mid else "mid", "c": f"end {mid['id']}" if mid else "end"}
     out_dir = ex / "_sheet"
     keys = [f"az{d}" for d in ORBIT] + list(HIGH)
     shots = " ".join(f"{k}:{a}:a,{b}:b,{c}:c" for k in keys)
     ok, _o, t = blender("pipeline/render_stills.py", "--exercise", ex.name, "--out-dir", str(out_dir),
                         "--shots", shots, "--width", "300", "--height", "460")
+    angles: dict[int, dict] = {}
     if ok:
+        aok, _o2, _t2 = blender("pipeline/sheet_data.py", "--exercise", ex.name, "--frames", f"{a},{b},{c}",
+                                "--out", str(out_dir / "angles.json"))
+        angles_path = out_dir / "angles.json"
+        if aok and angles_path.exists():
+            angles = {f["frame"]: f["metrics"] for f in json.loads(angles_path.read_text(encoding="utf-8"))["frames"]}
+        else:
+            print(f"[factory] sheet: angle sampling failed for {ex.name}, captions will show frames only")
+    flagged, without = {}, []
+    report_path = ex / "qa_report.json"
+    if report_path.exists():
+        flagged, without = flagged_frames_from_report(json.loads(report_path.read_text(encoding="utf-8")))
+    note = ("Frames flagged by FAIL / REQUIRES_MANUAL_REVIEW checks in qa_report.json. The template validator records "
+            "where.frame; the bench validator's report carries no structured per-frame data, so its failing checks are "
+            "listed without frames. Review flagged frames closely plus a random sample. A sheet still whose own frame "
+            f"is flagged gets a red border; a still within {FLAG_WINDOW_FRAMES} frames of a flagged frame gets an amber NEAR border.")
+    if not report_path.exists():
+        note = "No qa_report.json found; run validation first. " + note
+    flagged_doc = {"exercise": ex.name, "source": "qa_report.json", "sheet_frames": frames,
+                   "flagged_frames": [{"frame": f, "checks": flagged[f]} for f in sorted(flagged)],
+                   "failing_checks_without_frames": without, "mark_window_frames": FLAG_WINDOW_FRAMES, "note": note}
+    (ex / "flagged_frames.json").write_text(json.dumps(flagged_doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    if ok:
+        try:
+            import PIL  # noqa: F401  (the overlay needs Pillow; the sheet itself does not)
+        except ImportError:
+            print("[factory] sheet: Pillow (PIL) not installed, overlay skipped (pip install pillow)")
+            have_pil = False
+        else:
+            have_pil = True
+            for label, frame in frames.items():
+                mark = frame_mark(frame, flagged)
+                lines = caption_lines(frame, labels[label], angles.get(frame))
+                for k in keys:
+                    still = out_dir / f"still_{k}_{label}.png"
+                    if still.exists():
+                        _overlay_still(still, lines, mark)
         rows = []
         for label in ("a", "b", "c"):
             files = [out_dir / f"still_{k}_{label}.png" for k in keys]
@@ -122,6 +313,8 @@ def sheet(ex: Path, spec: dict) -> tuple[bool, float]:
             cmd += ["-i", str(r)]
         cmd += ["-filter_complex", "vstack=inputs=3", str(ex / "review_sheet.png")]
         ok = ok and subprocess.run(cmd).returncode == 0
+        if ok and have_pil:
+            _add_footer(ex / "review_sheet.png", footer_text(flagged, without))
     return ok, t
 
 
