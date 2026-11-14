@@ -573,6 +573,9 @@ public struct WorkoutView: View {
       HStack(spacing: DS.Spacing.sm) {
         restMenu(row)
         rpeMenu(row)
+        // Kiệt 13/11: thẻ đang tập cũng phải đánh dấu được set khởi động
+        // như dạng danh sách (trước đây chỉ `setEditor` có nút này).
+        warmupToggle(row, editable: editable)
         Spacer(minLength: 0)
         if let id = row.adHoc {
           addSetButton(id, count: group.rows.count)
@@ -719,13 +722,41 @@ public struct WorkoutView: View {
   /// Bài đang mở thẳng trình xem 3D (một chạm, chỉ bản Debug).
   @State private var demoTarget: GuideTarget?
 
-  /// Poster 3D cho ảnh của bài (chỉ bản Debug, khi bài có minh hoạ 3D).
-  private func demoPoster(_ name: String) -> URL? {
+  /// Bài có minh hoạ 3D trong app (chỉ bản Debug).
+  private func has3DDemo(_ name: String) -> Bool {
     #if DEBUG
-      return ExerciseDemo3D.posterURL(for: name)
+      return ExerciseDemo3D.posterURL(for: name) != nil
     #else
-      return nil
+      return false
     #endif
+  }
+
+  /// Lối vào hướng dẫn 3D (Kiệt 13/11 chọn mẫu A): dải kính mảnh dưới tên
+  /// bài, một chạm là trình xem 3D chạy. Ảnh / tên bài vẫn mở trang hướng dẫn.
+  private func demoEntry(_ open: @escaping () -> Void) -> some View {
+    Button(action: open) {
+      HStack(spacing: DS.Spacing.sm) {
+        Image(systemName: "cube.transparent")
+          .font(.system(size: 15, weight: .medium))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+        Text("eg.demo3d.entry")
+          .font(DS.TextStyle.body.weight(.medium))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+        Spacer(minLength: 0)
+        Image(systemName: "chevron.right")
+          .font(.system(size: 13, weight: .semibold))
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+      .padding(.horizontal, DS.Spacing.md)
+      .frame(minHeight: 44)
+      .background(DS.Color.foreground.swiftUI.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+      .overlay(
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+          .strokeBorder(DS.Color.foreground.swiftUI.opacity(0.10), lineWidth: 0.5))
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(TodayPressStyle())
+    .accessibilityIdentifier("workout.demo3d")
   }
 
   // MARK: - Dạng bảng (phương án A, chủ dự án chọn 14/10)
@@ -980,39 +1011,35 @@ public struct WorkoutView: View {
       adHocHeader(id, name: group.name)
     } else if let guides = flow?.guides, let first, first.adHoc == nil {
       let thumb = guides.thumbnail(exerciseId: first.exerciseId, name: group.name, lang: lang)
-      Button {
-        let target = GuideTarget(key: group.key, exerciseId: first.exerciseId, name: group.name)
-        #if DEBUG
-          // Kiệt 13/11: một chạm là bài hướng dẫn chạy luôn — bài có bản 3D
-          // mở thẳng trình xem 3D (tự chạy, lặp), không qua trang hướng dẫn.
-          if demoPoster(group.name) != nil {
-            demoTarget = target
-            return
-          }
-        #endif
-        guideTarget = target
-      } label: {
-        HStack(spacing: DS.Spacing.sm) {
-          ExerciseThumb(name: group.name, thumbnail: thumb, linked: true, demoPoster: demoPoster(group.name))
-          VStack(alignment: .leading, spacing: 2) {
-            Text(group.name)
-              .font(DS.TextStyle.title2)
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-              .multilineTextAlignment(.leading)
-            if let meta = thumb?.meta {
-              Text(verbatim: meta)
-                .font(DS.TextStyle.caption)
-                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-                .lineLimit(1)
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        Button {
+          guideTarget = GuideTarget(key: group.key, exerciseId: first.exerciseId, name: group.name)
+        } label: {
+          HStack(spacing: DS.Spacing.sm) {
+            ExerciseThumb(name: group.name, thumbnail: thumb, linked: true)
+            VStack(alignment: .leading, spacing: 2) {
+              Text(group.name)
+                .font(DS.TextStyle.title2)
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+                .multilineTextAlignment(.leading)
+              if let meta = thumb?.meta {
+                Text(verbatim: meta)
+                  .font(DS.TextStyle.caption)
+                  .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                  .lineLimit(1)
+              }
             }
           }
+          .frame(minHeight: 44)
+          .contentShape(Rectangle())
         }
-        .frame(minHeight: 44)
-        .contentShape(Rectangle())
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(String(localized: "eg.open.a11y \(group.name)")))
+        .accessibilityAddTraits(.isHeader)
+        if has3DDemo(group.name) {
+          demoEntry { demoTarget = GuideTarget(key: group.key, exerciseId: first.exerciseId, name: group.name) }
+        }
       }
-      .buttonStyle(.plain)
-      .accessibilityLabel(Text(String(localized: "eg.open.a11y \(group.name)")))
-      .accessibilityAddTraits(.isHeader)
       .task(id: group.key) { await guides.peek(exerciseId: first.exerciseId, name: group.name, lang: lang) }
       .sheet(item: Binding(
         get: { guideTarget?.key == group.key ? guideTarget : nil },
