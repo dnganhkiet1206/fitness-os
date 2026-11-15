@@ -1,12 +1,12 @@
 {
   "tool": "pipeline/validate_motion.py",
-  "date": "2026-11-14",
+  "date": "2026-11-15",
   "exercise_id": "side_lateral_raise",
   "frames": 218,
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 17
+      "PASS": 18
     },
     "technically_validated": true,
     "states": {
@@ -32,11 +32,11 @@
       "stage": "B",
       "title": "No joint moves faster than a human joint plausibly does",
       "status": "PASS",
-      "measured": 1.04,
+      "measured": 1.714,
       "limit": 2.5,
       "where": {
-        "joint": "knuckle_r",
-        "frame": 132
+        "joint": "knuckle_l",
+        "frame": 31
       },
       "detail": "m/s"
     },
@@ -45,11 +45,11 @@
       "stage": "B",
       "title": "No sudden bone rotation between frames",
       "status": "PASS",
-      "measured": 4.174,
+      "measured": 6.363,
       "limit": 12.0,
       "where": {
-        "bone": "upperarm_l",
-        "frame": 32
+        "bone": "upperarm_r",
+        "frame": 30
       },
       "detail": "deg per frame"
     },
@@ -61,8 +61,8 @@
       "measured": 0.0,
       "limit": 0.004,
       "where": {
-        "implement": "SOCKET_hand_l",
-        "frame": 68
+        "implement": "SOCKET_hand_r",
+        "frame": 84
       },
       "detail": "m wrist to grip socket"
     },
@@ -93,8 +93,8 @@
       "measured": 0.0,
       "limit": 0.003,
       "where": {
-        "joint": "elbow",
-        "frame": 186
+        "joint": "wrist",
+        "frame": 64
       },
       "detail": "m"
     },
@@ -116,11 +116,11 @@
       "stage": "C",
       "title": "Wrists stay near straight (forearm to hand)",
       "status": "PASS",
-      "measured": 6.0,
+      "measured": 6.328,
       "limit": 25.0,
       "where": {
         "side": "r",
-        "frame": 120
+        "frame": 19
       },
       "detail": "deg"
     },
@@ -129,11 +129,11 @@
       "stage": "C",
       "title": "Elbow flexion inside the soft-tissue limit",
       "status": "PASS",
-      "measured": 15.001,
+      "measured": 20.001,
       "limit": 145.0,
       "where": {
         "side": "r",
-        "frame": 16
+        "frame": 17
       },
       "detail": "deg"
     },
@@ -142,11 +142,11 @@
       "stage": "C",
       "title": "Elbows do not fold in behind the shoulder line",
       "status": "PASS",
-      "measured": 0.0,
-      "limit": 0.02,
+      "measured": 0.029,
+      "limit": 0.05,
       "where": {
-        "side": null,
-        "frame": null
+        "side": "l",
+        "frame": 0
       },
       "detail": "m"
     },
@@ -155,7 +155,7 @@
       "stage": "C",
       "title": "Head stays near neutral (not dropped to the chest)",
       "status": "PASS",
-      "measured": 5.62,
+      "measured": 0.57,
       "limit": 30.0,
       "where": {
         "frame": 0
@@ -169,7 +169,7 @@
       "status": "PASS",
       "measured": {
         "shift_frames": 0,
-        "correlation": 0.9999
+        "correlation": 0.9979
       },
       "limit": {
         "max_shift_frames": 1,
@@ -181,14 +181,27 @@
       "detail": "best alignment of the farthest-travelling joint with the progress rebuilt from tempo.json"
     },
     {
+      "id": "implement_clash",
+      "stage": "C",
+      "title": "Implements do not pass through each other",
+      "status": "PASS",
+      "measured": 0,
+      "limit": 0,
+      "where": {
+        "pair": null,
+        "frame": null
+      },
+      "detail": "overlapping triangle pairs"
+    },
+    {
       "id": "skin_stretch",
       "stage": "C",
       "title": "Skin stretch stays within limits",
       "status": "PASS",
-      "measured": 2.313,
+      "measured": 2.373,
       "limit": 2.6,
       "where": {
-        "frame": 54
+        "frame": 109
       },
       "detail": "p99.9 edge stretch"
     },
@@ -197,7 +210,7 @@
       "stage": "D",
       "title": "raise_lateral: arm_elev_max_deg inside the family bounds",
       "status": "PASS",
-      "measured": 84.321,
+      "measured": 88.366,
       "limit": [
         75,
         110
@@ -210,7 +223,7 @@
       "stage": "D",
       "title": "raise_lateral: arm_lateral_frac inside the family bounds",
       "status": "PASS",
-      "measured": 0.711,
+      "measured": 0.992,
       "limit": [
         0.65,
         null
@@ -223,7 +236,7 @@
       "stage": "D",
       "title": "raise_lateral: elbow_min_deg inside the family bounds",
       "status": "PASS",
-      "measured": 164.999,
+      "measured": 159.999,
       "limit": [
         140,
         null
@@ -236,7 +249,7 @@
       "stage": "D",
       "title": "raise_lateral: torso_lean_max_deg inside the family bounds",
       "status": "PASS",
-      "measured": 0.855,
+      "measured": 10.855,
       "limit": [
         null,
         15
