@@ -3,7 +3,7 @@
   "exercise_id": "barbell_back_squat",
   "master_character_id": "master_character_003",
   "usdz": "back_squat_animation.usdz",
-  "size_bytes": 5301943,
+  "size_bytes": 5261877,
   "zip_members": [
     "back_squat_animation.usdc",
     "textures/_usdz_body_emission.png",

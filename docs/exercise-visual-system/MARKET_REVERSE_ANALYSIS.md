@@ -98,6 +98,7 @@ Mỗi bài toán ghi kèm: lý do (bằng chứng ở mục 1–2), tiêu chí �
 ## 4b. Tiến độ
 
 - **P1 (14/11, bắt đầu):** sổ sản xuất `config/catalogue.json` đếm 43 bài trong chương trình tập của app (gym / tạ đơn ở nhà / không tạ) theo số set mỗi tuần; `pipeline/catalogue.py coverage` báo độ phủ và tốc độ; `new` dựng khung spec. Thêm 2 họ (`raise_lateral`, `hinge`) và 3 bài (hammer curl, side lateral raise, stiff-legged dumbbell deadlift); 6/43 bài; 19 % số set của chương trình (64/336) có bản 3D, 30 % thuộc họ đã có bộ giải. Thời gian máy ~0,6 phút/bài; phút người chưa ghi đủ để tính.
+- **P1 lô 2 (14/11):** thêm họ `row`, `press_vertical`, nhịp vai–cánh tay và ghế tựa; 2 bài: Dumbbell Shoulder Press (bài nhiều set nhất, 19) và Bent Over Two-Dumbbell Row. 8/43 bài, 27 % số set (92/336); 53 % số set thuộc họ đã có bộ giải có bản 3D.
 - **P5 (14/11, xong phía kit):** `tempo.json` cạnh USDZ, cổng `tempo_sync` (≤ 1 khung). App chưa dùng: rung nhịp / đếm rep theo hình cần mock cho Kiệt.
 
 ## 5. Thứ tự đề xuất

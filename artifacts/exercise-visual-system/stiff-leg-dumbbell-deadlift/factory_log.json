@@ -111,5 +111,30 @@
     },
     "total_seconds": 36.4,
     "qa": "{\"PASS\": 16, \"FAIL\": 1}"
+  },
+  {
+    "version": 6,
+    "when": "2026-11-14T23:24:41",
+    "template": "hinge",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.9
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 7.1
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.9
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 25.7
+      }
+    },
+    "total_seconds": 39.5,
+    "qa": "{\"PASS\": 16, \"FAIL\": 1}"
   }
 ]

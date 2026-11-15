@@ -191,7 +191,32 @@
     "qa": "{\"PASS\": 16, \"FAIL\": 1}"
   },
   {
-    "version": 7,
+    "version": 8,
+    "when": "2026-11-14T23:22:51",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.7
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 6.9
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.6
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 26.5
+      }
+    },
+    "total_seconds": 39.6,
+    "qa": "{\"PASS\": 16, \"FAIL\": 1}"
+  },
+  {
+    "version": 9,
     "when": "2026-11-15T02:26:22",
     "template": "squat",
     "steps": {
@@ -218,7 +243,7 @@
     "note": "Factory build killed mid-sheet by a runtime restart after scene/generate/validate had completed (18/24 stills rendered). Resumed with the same render script for the 6 missing high-view stills, the factory ffmpeg compose, and export_usdz.py; step timings for the killed run were lost with it."
   },
   {
-    "version": 9,
+    "version": 10,
     "when": "2026-11-15T05:58:48",
     "template": "squat",
     "steps": {
@@ -249,5 +274,38 @@
     },
     "total_seconds": 2876.2,
     "qa": "{\"PASS\": 16, \"FAIL\": 1}"
+  },
+  {
+    "version": 11,
+    "when": "2026-11-15T13:55:28",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 52.2
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 42.2
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 11.5
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 2528.1
+      },
+      "export": {
+        "ok": true,
+        "seconds": 45.6
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 139.0
+      }
+    },
+    "total_seconds": 2821.6,
+    "qa": "{\"PASS\": 16, \"FAIL\": 2}"
   }
 ]

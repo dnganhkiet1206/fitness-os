@@ -7,7 +7,7 @@
   "summary": {
     "counts": {
       "PASS": 16,
-      "FAIL": 1
+      "FAIL": 2
     },
     "technically_validated": false,
     "states": {
@@ -180,6 +180,19 @@
         "joint": "head"
       },
       "detail": "best alignment of the farthest-travelling joint with the progress rebuilt from tempo.json"
+    },
+    {
+      "id": "implement_clash",
+      "stage": "C",
+      "title": "Implements do not pass through each other",
+      "status": "FAIL",
+      "measured": 432,
+      "limit": 0,
+      "where": {
+        "pair": "Barbell|Barbell_Plate_L1",
+        "frame": 0
+      },
+      "detail": "overlapping triangle pairs"
     },
     {
       "id": "skin_stretch",
