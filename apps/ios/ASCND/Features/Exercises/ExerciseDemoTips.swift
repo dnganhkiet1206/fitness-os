@@ -59,7 +59,7 @@
 
     static func tips(for exerciseKey: String) -> [ExerciseTip] {
       if ["bench press", "barbell bench press", "barbell bench press - medium grip"].contains(exerciseKey) { return benchPress }
-      if exerciseKey == "dumbbell shoulder press" { return shoulderPress }
+      if ["dumbbell shoulder press", "seated dumbbell shoulder press", "seated dumbbell press"].contains(exerciseKey) { return shoulderPress }
       return []
     }
   }
