@@ -17,8 +17,11 @@ Technique facts used (sources in the exercise spec's motion_provenance):
   never bent by a fixed number;
 * head: neutral-to-slightly-up gaze (Donnelly et al. 2006, JSCR 20(1):
   upward gaze gives less trunk flexion than downward gaze): the neck and
-  head extend by a share of the trunk lean so the face does not drop to the
-  floor.
+  head extend by the FULL trunk lean, so the gaze stays exactly as at
+  standing through the whole repetition. A 0.35 share left the face
+  pointing 21 deg below horizontal at the bottom (vision review 14/11):
+  the head must counter-rotate everything the trunk leans, not a third
+  of it.
 
 Progress 1 = standing, 0 = bottom (the repetition starts standing).
 """
@@ -49,7 +52,10 @@ class SquatTemplate:
         "bar_into_soft_tissue_m": 0.003,
         "grip_width_between_hand_centres_m": 0.8,
         "pelvis_share_of_lean": 0.8,
-        "head_extension_share_of_lean": 0.35,
+        # 1.0 = full gaze compensation: head_extension_deg equals the trunk
+        # lean at every frame, so the gaze never drops below its standing
+        # angle. 0.35 left the gaze 21 deg below horizontal at the bottom.
+        "head_extension_share_of_lean": 1.0,
         "elbow_pole_from_hand_m": [0.22, 0.16, -0.55],
         "wrist_from_palm_centre_m": 0.075,
         "palm_tilt_deg": 0.0,

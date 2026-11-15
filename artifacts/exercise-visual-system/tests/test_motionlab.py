@@ -151,6 +151,23 @@ class SquatArmTests(unittest.TestCase):
         self.assertAlmostEqual(tpl.bar_rest[1], 0.065 + r, places=6)
 
 
+class SquatHeadTests(unittest.TestCase):
+    SK = SquatArmTests.SK
+
+    def test_gaze_preserved_to_the_bottom(self):
+        # Vision review 14/11: with a 0.35 share the face pointed 21 deg
+        # below horizontal at the bottom. The head must counter-rotate the
+        # full lean change, so (lean - extension) is the same at the bottom
+        # as at standing: the gaze never drops through the repetition.
+        tpl = FAMILIES["squat"]({}, self.SK)
+        top = tpl.frame(1.0)["body"]
+        bottom = tpl.frame(0.0)["body"]
+        self.assertGreater(bottom["trunk_lean_deg"], top["trunk_lean_deg"])
+        drop = ((bottom["trunk_lean_deg"] - bottom["head_extension_deg"])
+                - (top["trunk_lean_deg"] - top["head_extension_deg"]))
+        self.assertLess(abs(drop), 1.0)
+
+
 class MuscleSculptTests(unittest.TestCase):
     def test_rectus_abdominis_rows_and_midline(self):
         groups = ["rectus_abdominis"]
