@@ -121,6 +121,17 @@
       cameraPosition: [1.6231, 1.798, 1.7876], cameraTarget: [-0.0182, 0.9532, 0.1462],
       focusTexturePrefix: "stiff_leg_dumbbell_deadlift_focus")
 
+    /// Danh sách các bài đã có bản 3D, mỗi bài một dòng (màn Lab "3D", Kiệt
+    /// 14/11): tên hiện + tên tra trong `demos` + họ động tác của Motion Lab.
+    static let catalog: [(title: String, key: String, family: String)] = [
+      ("Barbell Bench Press", "bench press", "press_horizontal (script riêng)"),
+      ("Barbell Back Squat", "back squat", "squat"),
+      ("Dumbbell Biceps Curl", "dumbbell curl", "curl"),
+      ("Hammer Curl", "hammer curl", "curl"),
+      ("Side Lateral Raise", "side lateral raise", "raise_lateral"),
+      ("Stiff-Legged Dumbbell Deadlift", "stiff-legged dumbbell deadlift", "hinge"),
+    ]
+
     /// Tên bài (đã gập như `PersonalRecords.exerciseKey`) → bản minh hoạ.
     static let demos: [String: Demo] = [
       "bench press": benchPress,
