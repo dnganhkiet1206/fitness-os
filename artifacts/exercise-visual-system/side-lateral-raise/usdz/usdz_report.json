@@ -3,14 +3,14 @@
   "exercise_id": "side_lateral_raise",
   "master_character_id": "master_character_003",
   "usdz": "side_lateral_raise_animation.usdz",
-  "size_bytes": 3981513,
+  "size_bytes": 3975049,
   "zip_members": [
     "side_lateral_raise_animation.usdc",
+    "textures/_usdz_apparel_emission.png",
+    "textures/_usdz_apparel_albedo.png",
     "textures/_usdz_body_emission.png",
     "textures/_usdz_body_normal.png",
-    "textures/_usdz_body_albedo.png",
-    "textures/_usdz_apparel_emission.png",
-    "textures/_usdz_apparel_albedo.png"
+    "textures/_usdz_body_albedo.png"
   ],
   "default_camera": {
     "preset_id": "three_quarter",

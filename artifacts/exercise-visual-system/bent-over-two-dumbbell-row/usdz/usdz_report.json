@@ -3,7 +3,7 @@
   "exercise_id": "bent_over_two_dumbbell_row",
   "master_character_id": "master_character_003",
   "usdz": "bent_over_two_dumbbell_row_animation.usdz",
-  "size_bytes": 4325212,
+  "size_bytes": 4319805,
   "zip_members": [
     "bent_over_two_dumbbell_row_animation.usdc",
     "textures/_usdz_body_emission.png",
@@ -15,16 +15,16 @@
   "default_camera": {
     "preset_id": "three_quarter",
     "position_m": [
-      1.0343,
-      1.294,
-      -1.4504
+      1.0387,
+      1.2962,
+      -1.4546
     ],
     "target_m": [
-      -0.0586,
+      -0.0576,
       0.6005,
-      0.1104
+      0.1111
     ],
-    "distance_m": 2.0277,
+    "distance_m": 2.0341,
     "vertical_fov_deg": 41.26,
     "aspect": 0.5625
   },

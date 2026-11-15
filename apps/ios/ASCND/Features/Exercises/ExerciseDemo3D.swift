@@ -133,7 +133,7 @@
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
       ],
       // Góc mặc định từ phía sau (14/11): cơ lưng xô ở mặt sau thân.
-      cameraPosition: [1.0343, 1.294, -1.4504], cameraTarget: [-0.0586, 0.6005, 0.1104],
+      cameraPosition: [1.0387, 1.2962, -1.4546], cameraTarget: [-0.0576, 0.6005, 0.1111],
       focusTexturePrefix: "bent_over_two_dumbbell_row_focus")
 
     /// Motion Lab (14/11, P1 lô 2): họ "press_vertical", ngồi ghế tựa, bả vai theo tay.
@@ -146,7 +146,7 @@
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.tricepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
       ],
-      cameraPosition: [1.7982, 1.6958, 1.9101], cameraTarget: [0.015, 0.7779, 0.1269],
+      cameraPosition: [1.7982, 1.6958, 1.9101], cameraTarget: [0.0105, 0.7756, 0.1224],
       focusTexturePrefix: "dumbbell_shoulder_press_focus")
 
     /// Kết quả agent tự kiểm một bài (Kiệt 14/11: bài đã kiểm đầy đủ có dấu

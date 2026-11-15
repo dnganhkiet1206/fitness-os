@@ -1,12 +1,12 @@
 {
   "tool": "pipeline/validate_motion.py",
-  "date": "2026-11-14",
+  "date": "2026-11-15",
   "exercise_id": "stiff_leg_dumbbell_deadlift",
   "frames": 234,
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 16,
+      "PASS": 17,
       "FAIL": 1
     },
     "technically_validated": false,
@@ -133,7 +133,7 @@
       "measured": 8.006,
       "limit": 145.0,
       "where": {
-        "side": "r",
+        "side": "l",
         "frame": 95
       },
       "detail": "deg"
@@ -180,6 +180,19 @@
         "joint": "head_top"
       },
       "detail": "best alignment of the farthest-travelling joint with the progress rebuilt from tempo.json"
+    },
+    {
+      "id": "implement_clash",
+      "stage": "C",
+      "title": "Implements do not pass through each other",
+      "status": "PASS",
+      "measured": 0,
+      "limit": 0,
+      "where": {
+        "pair": null,
+        "frame": null
+      },
+      "detail": "overlapping triangle pairs"
     },
     {
       "id": "skin_stretch",

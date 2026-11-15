@@ -1,6 +1,6 @@
 {
   "master_character_id": "master_character_003",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "One faceless athletic male figure reused by every exercise and every camera. Built from the MakeHuman base mesh through MPFB (generated characters are CC0), then made faceless and given shorts by this pipeline.",
   "generator": {
     "tool": "MPFB (MakeHuman Plugin For Blender)",
@@ -38,7 +38,14 @@
       "r-upperleg-muscle-incr": 0.3,
       "r-lowerleg-muscle-incr": 0.25
     },
-    "muscle_targets_comment": "14/11 option A: local MakeHuman muscle targets at moderate weights; muscle separation comes from the layered muscle sculpt, not from more volume."
+    "muscle_targets_comment": "14/11 option A: local MakeHuman muscle targets at moderate weights; muscle separation comes from the layered muscle sculpt, not from more volume.",
+    "trapezius_volume": {
+      "level": "E",
+      "mask_amplitude_m": 0.03,
+      "tall_amplitude_m": 0.032,
+      "neck_reach": 0.5,
+      "chosen": "Kiệt chose level E on 15/11/2026 (docs/exercise-visual-system/trapezius_options.jpg, round 2): tall, prominent upper traps as on trained American and European lifters, neck still slim. Same character id: only the trapezius volume changed; every exercise is rebuilt on it (version 3.1.0)."
+    }
   },
   "faceless": {
     "comment": "The frontal face (eyes, nose, mouth and their inner pockets) is cut out between the forehead and the chin and replaced by an evenly meshed surface. That surface is the front of the original head seen as a height field, with hollows narrower than fill_radius filled, bumps narrower than remove_radius removed, and a blur; it fades back into the original surface over rim_blend. Metres.",
