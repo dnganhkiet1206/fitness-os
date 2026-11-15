@@ -54,23 +54,18 @@ struct ExerciseGuideView: View {
   private var shown: Bool { g != nil }
   private var media: MediaState {
     let server = g?.media ?? .none
-    #if DEBUG
-      // Minh hoạ 3D thử nghiệm (artifacts/exercise-visual-system, USDZ xoay
-      // 360°): chỉ bản Debug, chỉ khi server chưa có media cho bài này. Chưa
-      // được duyệt chuyên môn.
-      if !server.hasMedia, let demo = ExerciseDemo3D.media(for: displayName, alt: String(localized: "eg.demo3d.alt")) {
-        return demo
-      }
-    #endif
+    // Minh hoạ 3D (artifacts/exercise-visual-system, USDZ xoay 360°): chỉ
+    // khi server chưa có media cho bài này. Bài nào có demo thì
+    // `ExerciseDemo3D.media` quyết theo từng bài: bản Release chỉ bài đã
+    // chốt, bản Debug tất cả; bài chưa chốt mang nhãn "chưa duyệt".
+    if !server.hasMedia, let demo = ExerciseDemo3D.media(for: displayName, alt: String(localized: "eg.demo3d.alt")) {
+      return demo
+    }
     return server
   }
 
   private var isDemo3D: Bool {
-    #if DEBUG
-      return !(g?.media ?? .none).hasMedia && ExerciseDemo3D.media(for: displayName, alt: nil) != nil
-    #else
-      return false
-    #endif
+    !(g?.media ?? .none).hasMedia && ExerciseDemo3D.media(for: displayName, alt: nil) != nil
   }
   private static var accent: Color { WorkoutsHomeView.accent }
 
@@ -149,7 +144,7 @@ struct ExerciseGuideView: View {
     .frame(height: 260)
     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
     .overlay(alignment: .topLeading) {
-      if isDemo3D {
+      if isDemo3D, let demo = ExerciseDemo3D.demo(for: displayName), !demo.approved {
         Text("eg.demo3d.unverified")
           .font(DS.TextStyle.caption.weight(.semibold))
           .padding(.horizontal, DS.Spacing.sm)
@@ -173,15 +168,11 @@ struct ExerciseGuideView: View {
   /// Một lần chạm vào nút ▶ ở đầu trang mở thẳng trình xem: bản 3D tự chạy
   /// và lặp, không thêm thao tác; media của server vẫn dùng trình xem cũ.
   @ViewBuilder private func viewerView(for target: ViewerTarget) -> some View {
-    #if DEBUG
-      if isDemo3D {
-        ExerciseDemo3DView(name: displayName)
-      } else {
-        GuideMediaViewer(media: media, name: displayName, start: target.index)
-      }
-    #else
+    if isDemo3D {
+      ExerciseDemo3DView(name: displayName)
+    } else {
       GuideMediaViewer(media: media, name: displayName, start: target.index)
-    #endif
+    }
   }
 
   /// `mediaLabel` thắng `alt`, thắng câu dựng sẵn.
