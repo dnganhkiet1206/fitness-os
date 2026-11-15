@@ -376,9 +376,10 @@
     "Uneven grip or one side of the bar leading",
     "Feet moving or lifting during the repetition"
   ],
-  "status": "DRAFT",
-  "reviewer": null,
-  "approval_date": null,
+  "status": "APPROVED",
+  "reviewer": "C (Muse) — reference-comparison approval per owner decision 14/11/2026 + delegated grip decision (a) (no expert review; no budget)",
+  "approval_date": "2026-11-14",
+  "approval_basis": "Reference-clip evaluation 2026-11-14 (PR #893, docs/exercise-visual-system/REFERENCE_EVAL_2026-11-14.md): grip 0.78 m matches licensed reference clips (0.74 m Commons/FitnessScape, 0.79 m YMove); bottom elbow flexion 105.8 deg, forearms vertical (5.0 deg from vertical), bar touches the chest, controlled 2 s / 2 s tempo — the motion matches real lifting and standard coaching. Grip/kinematics tension against Mausehund's relative scale resolved by delegated decision (a) 14/11/2026 (Kiet delegated the call to C; see grip_note): the wide-relative grip + deep bottom + tucked elbows is accepted as the standard barbell bench press guide. The clip lifters' grip/shoulder ratio could not be measured reliably and is not claimed. Basis is comparison against real movement per the owner decisions of 14/11/2026, NOT expert review (no budget). Known limitation accepted by the owner 14/11/2026: elbows below the pad at the bottom (character-003 geometry; BOTTOM_POSE_FINDINGS.md section 7, PR #891). Caveats: bench clip elbow angles from MediaPipe were unreliable (occlusion) — the elbow comparison rests on published data + bone measurement; motion smoothness was judged from stills only; the USDZ shipped in the app is the evaluated character-003 export (63 bones, 105.79 deg — verified by reimport), replacing the old 53-bone / 136 deg file.",
   "brand_profile_id": "placeholder",
   "highlight_roles": [
     "primary",
