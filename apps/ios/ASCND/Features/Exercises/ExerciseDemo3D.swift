@@ -118,7 +118,8 @@
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.secondary"),
       ],
-      cameraPosition: [1.6231, 1.798, 1.7876], cameraTarget: [-0.0182, 0.9532, 0.1462],
+      // Góc mặc định từ phía sau (14/11): cơ chính ở mặt sau thân.
+      cameraPosition: [1.3624, 1.7978, -1.8002], cameraTarget: [-0.0119, 0.9257, 0.1624],
       focusTexturePrefix: "stiff_leg_dumbbell_deadlift_focus")
 
     /// Motion Lab (14/11, P1 lô 2): họ "row" (`motionlab/families/row.py`).
@@ -131,7 +132,8 @@
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidPosterior", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
       ],
-      cameraPosition: [1.4831, 1.3596, 1.5948], cameraTarget: [0.0211, 0.6071, 0.1328],
+      // Góc mặc định từ phía sau (14/11): cơ lưng xô ở mặt sau thân.
+      cameraPosition: [1.0283, 1.2948, -1.4406], cameraTarget: [-0.0607, 0.6038, 0.1146],
       focusTexturePrefix: "bent_over_two_dumbbell_row_focus")
 
     /// Motion Lab (14/11, P1 lô 2): họ "press_vertical", ngồi ghế tựa, bả vai theo tay.
@@ -147,17 +149,89 @@
       cameraPosition: [1.8265, 1.7499, 1.9738], cameraTarget: [-0.0029, 0.8082, 0.1443],
       focusTexturePrefix: "dumbbell_shoulder_press_focus")
 
+    /// Kết quả agent tự kiểm một bài (Kiệt 14/11: bài đã kiểm đầy đủ có dấu
+    /// tích xanh kèm ghi chú đã kiểm những gì). KHÔNG phải duyệt chuyên môn:
+    /// chuyển động vẫn "chưa duyệt" cho tới khi có người có chuyên môn xem.
+    /// Nguồn: `agent_review` trong `<bài>/exercise.json` của Motion Lab.
+    struct Review {
+      let date: String
+      /// Những gì đã kiểm và đạt.
+      let checked: [String]
+      /// Lỗi còn lại đã biết (rỗng = không còn lỗi máy bắt được).
+      let remaining: [String]
+    }
+
+    struct CatalogEntry {
+      let title: String
+      let key: String
+      let family: String
+      /// nil = chưa kiểm lại đầy đủ.
+      let review: Review?
+      var note: String?
+    }
+
+    private static func fullCheck(qa: String, technique: String, extra: [String] = []) -> [String] {
+      [
+        "QA tự động \(qa): xương, tay bám dụng cụ, chân không trượt, dụng cụ không xuyên da, dáng toàn thân, khớp nhịp tempo.json",
+        "Tờ soi xoay vòng 8 góc × 3 khung (đầu, giữa, cuối pha)",
+        "Tờ soi tầm mắt người đứng nhìn (1,6 m) 5 góc: \(technique)",
+        "Mở trong trình xem 3D của app (simulator iPhone 17), chú thích cơ đúng",
+      ] + extra
+    }
+
+    private static let groinStretch = "Giãn da vùng háng trước khi gập hông sâu (giới hạn lưới nhân vật 003, chung cho mọi bài gập hông ≥ 90°)"
+
     /// Danh sách các bài đã có bản 3D, mỗi bài một dòng (màn Lab "3D", Kiệt
-    /// 14/11): tên hiện + tên tra trong `demos` + họ động tác của Motion Lab.
-    static let catalog: [(title: String, key: String, family: String)] = [
-      ("Barbell Bench Press", "bench press", "press_horizontal (script riêng)"),
-      ("Barbell Back Squat", "back squat", "squat"),
-      ("Dumbbell Biceps Curl", "dumbbell curl", "curl"),
-      ("Hammer Curl", "hammer curl", "curl"),
-      ("Side Lateral Raise", "side lateral raise", "raise_lateral"),
-      ("Stiff-Legged Dumbbell Deadlift", "stiff-legged dumbbell deadlift", "hinge"),
-      ("Bent Over Two-Dumbbell Row", "bent over two-dumbbell row", "row"),
-      ("Dumbbell Shoulder Press", "dumbbell shoulder press", "press_vertical (ngồi)"),
+    /// 14/11): tên hiện + tên tra trong `demos` + họ động tác của Motion Lab
+    /// + kết quả tự kiểm.
+    static let catalog: [CatalogEntry] = [
+      CatalogEntry(
+        title: "Barbell Bench Press", key: "bench press", family: "press_horizontal (script riêng)", review: nil,
+        note: "Chưa kiểm lại: bản trong app là bản cũ; dựng lại trên nhân vật 003 đang chờ chọn phương án đáy A/B"),
+      CatalogEntry(
+        title: "Barbell Back Squat", key: "back squat", family: "squat",
+        review: Review(
+          date: "14/11",
+          checked: fullCheck(qa: "16/17", technique: "đáy ngang song song, thân đổ ~40°, thanh trên giữa bàn chân, gối theo mũi chân, gót chạm sàn"),
+          remaining: [groinStretch + ": 3,28 / ngưỡng 2,6"])),
+      CatalogEntry(
+        title: "Dumbbell Biceps Curl", key: "dumbbell curl", family: "curl",
+        review: Review(
+          date: "14/11",
+          checked: fullCheck(qa: "18/18", technique: "cánh tay trên sát thân, khuỷu gập ~138°, lòng bàn tay ngửa, thân đứng yên"),
+          remaining: [])),
+      CatalogEntry(
+        title: "Hammer Curl", key: "hammer curl", family: "curl",
+        review: Review(
+          date: "14/11",
+          checked: fullCheck(qa: "18/18", technique: "tay cầm trung tính (ngón cái hướng lên) suốt đường đi, khuỷu sát thân"),
+          remaining: [])),
+      CatalogEntry(
+        title: "Side Lateral Raise", key: "side lateral raise", family: "raise_lateral",
+        review: Review(
+          date: "14/11",
+          checked: fullCheck(qa: "17/17", technique: "tay nâng tới ngang vai trong mặt phẳng xương bả vai, khuỷu hơi gập, lòng bàn tay úp ở đỉnh, không nhún vai"),
+          remaining: [])),
+      CatalogEntry(
+        title: "Stiff-Legged Dumbbell Deadlift", key: "stiff-legged dumbbell deadlift", family: "hinge",
+        review: Review(
+          date: "14/11",
+          checked: fullCheck(qa: "16/17", technique: "gập hông, lưng thẳng, gối mềm, hông lùi ra sau, tạ sát chân xuống giữa cẳng chân, trọng tâm trên bàn chân"),
+          remaining: [groinStretch + ": 2,80 / ngưỡng 2,6"])),
+      CatalogEntry(
+        title: "Bent Over Two-Dumbbell Row", key: "bent over two-dumbbell row", family: "row",
+        review: Review(
+          date: "14/11",
+          checked: fullCheck(qa: "15/16", technique: "thân gần song song sàn và đứng yên, cẳng tay thẳng đứng, khuỷu kéo sát thân lên ngang lưng"),
+          remaining: [groinStretch + ": 2,83 / ngưỡng 2,6", "Chưa có co rút bả vai ở đỉnh"])),
+      CatalogEntry(
+        title: "Dumbbell Shoulder Press", key: "dumbbell shoulder press", family: "press_vertical (ngồi)",
+        review: Review(
+          date: "14/11",
+          checked: fullCheck(
+            qa: "17/18", technique: "ngồi tựa lưng, tạ từ ngang vai đẩy thẳng lên tới gần duỗi, tạ chụm trên đầu, cẳng tay thẳng đứng",
+            extra: ["Bả vai xoay lên theo tay (nhịp vai–cánh tay)"]),
+          remaining: [groinStretch + ": 3,08 / ngưỡng 2,6"])),
     ]
 
     /// Tên bài (đã gập như `PersonalRecords.exerciseKey`) → bản minh hoạ.

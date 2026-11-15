@@ -56,5 +56,30 @@
     },
     "total_seconds": 61.1,
     "qa": "{\"PASS\": 17, \"FAIL\": 1}"
+  },
+  {
+    "version": 3,
+    "when": "2026-11-14T23:26:01",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.8
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 8.6
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.6
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 25.9
+      }
+    },
+    "total_seconds": 40.7,
+    "qa": "{\"PASS\": 17, \"FAIL\": 1}"
   }
 ]

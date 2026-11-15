@@ -36,5 +36,30 @@
     },
     "total_seconds": 31.2,
     "qa": "{\"PASS\": 17}"
+  },
+  {
+    "version": 3,
+    "when": "2026-11-14T23:24:02",
+    "template": "raise_lateral",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.8
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 3.4
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.6
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 26.1
+      }
+    },
+    "total_seconds": 35.6,
+    "qa": "{\"PASS\": 17}"
   }
 ]

@@ -17,6 +17,7 @@ stills show exactly what the app's default view frames.
 from __future__ import annotations
 
 import argparse
+import math
 import os
 import sys
 from pathlib import Path
@@ -55,6 +56,22 @@ def fit_camera(scene, exercise, preset_key, aspect):
     """A temp camera on the preset's azimuth/elevation/lens, refitted so the
     whole repetition stays in a frame of the given aspect."""
     presets = config.camera_presets()
+    if preset_key.startswith("eye"):
+        # A person standing and watching: camera at eye height (1.6 m), at
+        # the given azimuth, 50 mm lens, far enough for the whole repetition.
+        # The elevation follows from the fitted distance (two passes).
+        az = float(preset_key[3:] or 45)
+        presets_ = config.camera_presets()
+        from evs.studio import fit_frames
+        points = sample_subject_points(scene, fit_frames(exercise))
+        el = 0.0
+        for _ in range(2):
+            focus, distance = studio.fit_view(points, az, el, 50.0, presets_["sensor_width_mm"], aspect, 1.1)
+            el = math.degrees(math.asin(max(-0.9, min(0.9, (1.6 - focus.z) / max(distance, 0.5)))))
+        cam = studio.add_camera(f"EVS_Still_{preset_key}", focus, az, el, distance, 50.0)
+        cam.data.sensor_width = presets_["sensor_width_mm"]
+        cam.data.sensor_fit = "HORIZONTAL"
+        return cam, focus
     if preset_key.startswith("az"):
         # Orbit view for the whole-body review: "az135" or "az135e40"
         # (azimuth and elevation in degrees, 50 mm lens).

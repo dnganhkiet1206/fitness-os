@@ -10,6 +10,7 @@
 4. **Mỗi bộ phận phải đi theo khi thân thay đổi tư thế:** đầu và cổ bù khi thân đổ, bả vai theo cánh tay, cực khuỷu theo thân.
 5. **Dụng cụ chạm người thì đặt theo bề mặt da, không theo khớp.** Thanh tạ trên lưng, tạ đơn sát đùi, thanh chạm ngực: tính từ hồ sơ da của nhân vật (`back_profile` trong `rest_skeleton`), vì khớp nằm sâu trong cơ và mỗi thân hình dày khác nhau.
 6. **Lỗi có thể ảnh hưởng bài khác thì sửa ở tầng chung** (template, generator, QA), ghi vào sổ này và chạy lại các bài đã có. Không vá riêng cho một bài (Kiệt, 14/11).
+8. **Soi từ tầm mắt người xem trước khi báo xong** (Kiệt, 14/11): `factory.py eye <bài>` dựng `observer_sheet.png` (máy ở 1,6 m, trước / 3/4 / nghiêng / 3/4 sau / sau). Đánh giá như huấn luyện viên đứng nhìn: góc khớp, đường đi của tạ, thân, đầu, bàn chân. Ghi kết quả vào `agent_review` của bài và catalog trong app (dấu xanh).
 7. **Template phải đoán đúng nơi generator đặt xương.** Khi template tính một điểm (vai, hông) để đặt tay hay dụng cụ, nó phải dùng đúng chuỗi xương mà generator sẽ quay (đầu xương lấy từ rig trong `rest_skeleton`), không dùng xấp xỉ thân cứng. Lệch vài cm là đủ làm tay rời dụng cụ.
 
 ## Sổ lỗi
@@ -47,3 +48,4 @@
 | 14/11 | Đẩy qua đầu: vai đứng im khi tay giơ cao (trông như tay cắm vào vai đơ) | Rig có xương bả vai nhưng không có nhịp vai–cánh tay | `primitives.scapulohumeral` (Inman 1944: bả vai xoay lên 0,4 × (nâng − 30°), một phần tư ở xương đòn); generator `pose_girdle`; template đoán vai sau khi nâng xương đòn | Đo `scapula_upward_*` trong trace; soi vai ở đỉnh từ trước, sau và nghiêng |
 | 14/11 | Giãn da 2,8–3,3 ở vùng háng trước với mọi bài gập hông ≥ 90° (squat, deadlift, row, ngồi đẩy vai) | Giới hạn lưới và trọng số da ở háng của nhân vật 003 | Chưa sửa; ghi là hạn chế chung. Hướng sửa: shape key sửa dáng theo góc gập hông, hoặc vẽ lại trọng số háng | `skin_stretch`; script dò nhóm xương của cạnh giãn nhất |
 | 14/11 | Cổng "khuỷu vào trong vai" FAIL ở đỉnh bài đẩy qua đầu | Ngưỡng 2 cm viết cho squat (khuỷu kẹp sau lưng); đẩy qua đầu thì tay chụm lại là đúng kỹ thuật | Nới trong `validation_profile` của bài, có ghi lý do | Ngưỡng của họ phải ghi nguồn; nới ngưỡng luôn kèm câu giải thích |
+| 14/11 | Deadlift chân thẳng, row: góc mặc định trong app nhìn từ trước nên cơ chính (đùi sau, lưng xô) bị khuất | Góc mặc định của mọi bài cố định là 3/4 trước | `viewer_azimuth_deg` trong `exercise.json`; bài có cơ chính ở mặt sau mở từ phía sau (145°) | Tờ tầm mắt có góc sau; khi soi trong app, cơ chính phải thấy được ngay ở góc mặc định |

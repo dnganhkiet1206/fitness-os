@@ -37,8 +37,11 @@ Bài toán production rút ra từ phân tích ngược các app fitness (Apple 
                   sau vai, đầu không gục, dụng cụ không xuyên da
                 - cổng giải phẫu (evs/movement_gate.py): ngưỡng của họ động tác
                 - tờ soi xoay vòng: 6 góc quanh người + 2 góc cao × đứng / giữa / đáy
-                  (factory.py sheet). BẮT BUỘC soi tay, lưng, đầu, chân, dụng cụ ở mọi góc,
+                  (factory.py sheet) + tờ tầm mắt người đứng nhìn 1,6 m (factory.py eye).
+                  BẮT BUỘC soi tay, lưng, đầu, chân, dụng cụ ở mọi góc,
                   đối chiếu nguồn kỹ thuật, trước khi báo xong (MOTION_KIT_LESSONS.md luật 1)
+   Ghi kết quả: exercise.json → agent_review (đã kiểm gì, còn lỗi gì) và
+                  ExerciseDemo3D.catalog trong app (dấu tích xanh ở tab Lab 3D).
 6. Xuất         pipeline/export_usdz.py (sợi cơ vẽ, bản chỉ cơ chính) + tempo.json + poster → app
                 bài mới: `python3 pipeline/catalogue.py new "<tên trong catalogue>" --from <bài cùng họ>`
                 rồi `factory.py build <thư mục>`; ghi production.human_minutes khi duyệt xong

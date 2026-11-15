@@ -131,5 +131,30 @@
     },
     "total_seconds": 57.8,
     "qa": "{\"PASS\": 15, \"FAIL\": 1}"
+  },
+  {
+    "version": 6,
+    "when": "2026-11-14T23:25:20",
+    "template": "row",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.9
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 6.6
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.6
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 26.1
+      }
+    },
+    "total_seconds": 39.2,
+    "qa": "{\"PASS\": 15, \"FAIL\": 1}"
   }
 ]

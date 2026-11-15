@@ -294,5 +294,22 @@
       "checks": []
     }
   ],
-  "animation_duration": 8.2
+  "animation_duration": 8.2,
+  "viewer_azimuth_deg": 145.0,
+  "agent_review": {
+    "date": "2026-11-14",
+    "by": "agent (not an expert review)",
+    "checked": [
+      "qa_report.json (tất cả cổng tự động)",
+      "review_sheet.png (xoay vòng 8 góc × 3 khung)",
+      "observer_sheet.png (tầm mắt 1,6 m, 5 góc) đối chiếu nguồn kỹ thuật",
+      "mở trong trình xem 3D của app (simulator iPhone 17)",
+      "góc mặc định trong app từ phía sau (viewer_azimuth_deg 145)"
+    ],
+    "remaining": [
+      "giãn da háng trước (giới hạn lưới nhân vật 003) 2,83/2,6",
+      "chưa có co rút bả vai ở đỉnh"
+    ],
+    "note": "Agent self-check only; status stays DRAFT until a qualified reviewer approves."
+  }
 }
