@@ -3,28 +3,28 @@
   "exercise_id": "bent_over_two_dumbbell_row",
   "master_character_id": "master_character_003",
   "usdz": "bent_over_two_dumbbell_row_animation.usdz",
-  "size_bytes": 4411583,
+  "size_bytes": 4392874,
   "zip_members": [
     "bent_over_two_dumbbell_row_animation.usdc",
-    "textures/_usdz_apparel_emission.png",
-    "textures/_usdz_apparel_albedo.png",
     "textures/_usdz_body_emission.png",
     "textures/_usdz_body_normal.png",
-    "textures/_usdz_body_albedo.png"
+    "textures/_usdz_body_albedo.png",
+    "textures/_usdz_apparel_emission.png",
+    "textures/_usdz_apparel_albedo.png"
   ],
   "default_camera": {
     "preset_id": "three_quarter",
     "position_m": [
-      1.0397,
-      1.2966,
-      -1.4554
+      1.0558,
+      1.4568,
+      -1.514
     ],
     "target_m": [
-      -0.0595,
-      0.5992,
-      0.1143
+      -0.0757,
+      0.7388,
+      0.1019
     ],
-    "distance_m": 2.0392,
+    "distance_m": 2.0993,
     "vertical_fov_deg": 41.26,
     "aspect": 0.5625
   },
