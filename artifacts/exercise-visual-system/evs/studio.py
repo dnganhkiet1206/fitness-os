@@ -304,3 +304,20 @@ def render_still(scene: bpy.types.Scene, camera: bpy.types.Object, path: str, fo
     aim_light_rig(camera, focus)
     scene.render.filepath = path
     bpy.ops.render.render(write_still=True)
+
+
+def fit_frames(exercise: dict) -> list[int]:
+    """Frames a camera fit must keep in view: the start and every phase
+    boundary of the first repetition. Fitting on the start and a phase
+    named "bottom" only (the bench press names) left every template
+    exercise's far pose out: the raised arms of a lateral raise, the top of
+    a curl, the bottom of a squat were cropped (14/11, MOTION_KIT_LESSONS.md)."""
+    fps = int(exercise["frame_rate"])
+    frames = {0}
+    for p in exercise.get("exercise_phases", []):
+        head, _, tail = p["id"].rpartition("_")
+        if tail.isdigit() and head:
+            continue  # later repetitions repeat the first
+        frames.add(int(round(p["start_s"] * fps)))
+        frames.add(int(round(p["end_s"] * fps)))
+    return sorted(frames)

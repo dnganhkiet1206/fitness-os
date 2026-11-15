@@ -6,6 +6,8 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
 
 **Trước khi làm bài mới: đọc `MOTION_KIT_LESSONS.md` (sổ lỗi). Gặp lỗi mới thì ghi vào đó trong cùng PR sửa.**
 
+Bài toán production rút ra từ phân tích ngược các app fitness (Apple Fitness+ Gym Strength, Ladder, Fitbod, Muscle & Motion, Peloton IQ…): `MARKET_REVERSE_ANALYSIS.md` (P1–P10, thứ tự ưu tiên).
+
 ## Một bài tập = một file mô tả
 
 `artifacts/exercise-visual-system/<bài>/exercise.json`. Các trường của kit:
@@ -37,7 +39,9 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
                 - tờ soi xoay vòng: 6 góc quanh người + 2 góc cao × đứng / giữa / đáy
                   (factory.py sheet). BẮT BUỘC soi tay, lưng, đầu, chân, dụng cụ ở mọi góc,
                   đối chiếu nguồn kỹ thuật, trước khi báo xong (MOTION_KIT_LESSONS.md luật 1)
-6. Xuất         pipeline/export_usdz.py (sợi cơ vẽ, bản chỉ cơ chính) → app
+6. Xuất         pipeline/export_usdz.py (sợi cơ vẽ, bản chỉ cơ chính) + tempo.json + poster → app
+                bài mới: `python3 pipeline/catalogue.py new "<tên trong catalogue>" --from <bài cùng họ>`
+                rồi `factory.py build <thư mục>`; ghi production.human_minutes khi duyệt xong
 ```
 
 ## Thành phần đã có (14/11)
@@ -54,6 +58,9 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
 | Trình xem 3D (zoom, mẹo, ẩn cơ phụ) | `apps/ios/.../ExerciseDemo3DView.swift` | xong; đọc USDZ, góc máy, chú thích theo từng bài |
 | **Bộ tạo chung theo template** | `motionlab/` (timing min-jerk, primitives, families: `curl`, `squat`), `pipeline/generate_exercise.py` | xong cho 2 họ; dumbbell-curl QA 12/12, back-squat 10/11 |
 | **Bộ kiểm chung 4 tầng (A–D), lỗi chỉ đúng khung/khớp** | `evs/motion_qa.py`, `pipeline/validate_motion.py` | xong |
+| **Sổ sản xuất (P1, 14/11)**: 43 bài trong chương trình tập của app, xếp theo số set mỗi tuần; độ phủ tính theo set; tốc độ (phút máy, phút người); `new` dựng khung spec cho bài kế tiếp | `config/catalogue.json`, `pipeline/catalogue.py` (`refresh`, `coverage`, `new`) | xong; 6/43 bài đã dựng |
+| **Họ `raise_lateral`, `hinge` (14/11)**: lateral raise (mặt phẳng xương bả vai, khuỷu hơi gập, lòng bàn tay xoay theo tay); hip hinge (trọng tâm toàn thân giữ yên theo khối lượng đoạn Winter 2009, tay treo thẳng trước da chân) | `motionlab/families/raise_lateral.py`, `hinge.py` | xong; lateral raise 17/17, hammer curl 18/18, deadlift chân thẳng tạ đơn 16/17 (giãn da hông) |
+| **Nhịp từng rep cho app (P5, 14/11)**: `tempo.json` (`ascnd.tempo/1`): các pha ms, mốc đổi chiều / xong rep, thở ra–hít vào, lời nhắc theo pha; cổng `tempo_sync` bảo đảm hoạt cảnh lệch ≤ 1 khung so với tệp | `motionlab/tempo.py`, `evs/motion_qa.tempo_sync`, chép cạnh USDZ khi xuất | xong; app chưa đọc (cần mock rung / đếm rep cho Kiệt) |
 | **Giải theo mục tiêu** | `pipeline/solve_targets.py`, `pipeline/measure_animation.py` | xong; bench press: khuỷu 104° / dang vai 60° sau 24 lần thử |
 
 ## Đã học từ dữ liệu (bench press)
@@ -73,3 +80,4 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
 7. **Tạc khối cơ theo giải phẫu:** phồng bụng cơ, rãnh giữa các cơ, vạch gân bụng (3 cặp ở mỏm mũi kiếm, giữa, rốn), rãnh delta–ngực. Làm theo bản đồ cơ, trước khi làm hàng loạt.
 8. **Dụng cụ:** thư viện tạ đơn, cáp, máy, ghế dốc, có kích thước theo nguồn (`config/equipment.json`).
 9. **Danh sách 20 bài đầu:** chọn theo tần suất trong lịch tập của app; mỗi bài có file mô tả và trích nguồn.
+10. **Bài toán production từ phân tích thị trường (14/11, `MARKET_REVERSE_ANALYSIS.md`):** P1 xuất xưởng 350 bài (≤ 30 phút công người/bài), P2 biến thể theo dụng cụ + `alternatives.json` để đổi bài khi máy bận, P3 một lần dựng nhiều định dạng (USDZ, vòng lặp 3 góc, hình bóng cho đồng hồ), P5 `tempo.json` nhịp từng rep. Sau mock cho Kiệt: P4 bản đồ cơ 2D dùng lại, P6 chuỗi dễ → khó cho người mới. Sau đó: P7 clip lỗi sai có QA đảo chiều, P8 quỹ đạo khớp chuẩn (33 mốc MediaPipe), P9 thiết kế giao tài sản.

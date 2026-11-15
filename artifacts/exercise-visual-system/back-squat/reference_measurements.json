@@ -1,0 +1,170 @@
+{
+  "tool": "pipeline/measure_video.py",
+  "pose_model": "MediaPipe Pose Landmarker heavy (Apache 2.0)",
+  "measured": "2026-11-15",
+  "source": "YMove Barbell Back Squat (ymove.app/free-exercise-videos)",
+  "license": "YMove royalty-free commercial use, credit required: Exercise video by Your Move (ymove.app)",
+  "note": "Numbers measured from the video; no footage or per-frame skeleton is stored.",
+  "frames": 350,
+  "detected": 350,
+  "fps": 25.0,
+  "segments": [
+    {
+      "start_s": 0.0,
+      "end_s": 14.0,
+      "side": "left",
+      "visibility": 1.0,
+      "reps": [
+        {
+          "top_s": 0.32,
+          "bottom_s": 1.52,
+          "end_s": 2.72,
+          "down_s": 1.2,
+          "up_s": 1.2,
+          "angles_2d_top": {
+            "elbow": 14.9,
+            "knee": 173.0,
+            "hip": 177.0
+          },
+          "angles_2d_bottom": {
+            "elbow": 10.8,
+            "knee": 56.1,
+            "hip": 59.1
+          },
+          "angles_3d_top": {
+            "elbow": 76.5,
+            "knee": 162.2,
+            "hip": 154.3
+          },
+          "angles_3d_bottom": {
+            "elbow": 87.0,
+            "knee": 51.2,
+            "hip": 52.6
+          },
+          "path_trunk_lengths": {
+            "along_top": 1.623,
+            "along_bottom": 0.393,
+            "across_top": 0.011,
+            "across_bottom": -0.434
+          }
+        },
+        {
+          "top_s": 4.08,
+          "bottom_s": 5.2,
+          "end_s": 6.4,
+          "down_s": 1.12,
+          "up_s": 1.2,
+          "angles_2d_top": {
+            "elbow": 13.6,
+            "knee": 172.2,
+            "hip": 177.6
+          },
+          "angles_2d_bottom": {
+            "elbow": 9.7,
+            "knee": 57.5,
+            "hip": 57.0
+          },
+          "angles_3d_top": {
+            "elbow": 76.8,
+            "knee": 163.0,
+            "hip": 156.0
+          },
+          "angles_3d_bottom": {
+            "elbow": 62.8,
+            "knee": 49.6,
+            "hip": 50.0
+          },
+          "path_trunk_lengths": {
+            "along_top": 1.63,
+            "along_bottom": 0.406,
+            "across_top": 0.038,
+            "across_bottom": -0.454
+          }
+        },
+        {
+          "top_s": 7.64,
+          "bottom_s": 8.76,
+          "end_s": 10.0,
+          "down_s": 1.12,
+          "up_s": 1.24,
+          "angles_2d_top": {
+            "elbow": 14.8,
+            "knee": 173.6,
+            "hip": 177.4
+          },
+          "angles_2d_bottom": {
+            "elbow": 11.1,
+            "knee": 58.7,
+            "hip": 57.8
+          },
+          "angles_3d_top": {
+            "elbow": 74.7,
+            "knee": 163.0,
+            "hip": 155.4
+          },
+          "angles_3d_bottom": {
+            "elbow": 66.6,
+            "knee": 51.3,
+            "hip": 49.2
+          },
+          "path_trunk_lengths": {
+            "along_top": 1.652,
+            "along_bottom": 0.443,
+            "across_top": 0.015,
+            "across_bottom": -0.463
+          }
+        },
+        {
+          "top_s": 11.28,
+          "bottom_s": 12.4,
+          "end_s": 13.64,
+          "down_s": 1.12,
+          "up_s": 1.24,
+          "angles_2d_top": {
+            "elbow": 14.1,
+            "knee": 172.7,
+            "hip": 176.3
+          },
+          "angles_2d_bottom": {
+            "elbow": 10.1,
+            "knee": 57.3,
+            "hip": 55.8
+          },
+          "angles_3d_top": {
+            "elbow": 77.5,
+            "knee": 162.1,
+            "hip": 153.5
+          },
+          "angles_3d_bottom": {
+            "elbow": 47.4,
+            "knee": 48.3,
+            "hip": 50.0
+          },
+          "path_trunk_lengths": {
+            "along_top": 1.648,
+            "along_bottom": 0.417,
+            "across_top": -0.004,
+            "across_bottom": -0.483
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "reps": 4,
+    "down_s_median": 1.12,
+    "up_s_median": 1.22,
+    "elbow_top_2d_median": 14.4,
+    "elbow_top_3d_median": 76.7,
+    "elbow_bottom_2d_median": 10.4,
+    "elbow_bottom_3d_median": 64.7,
+    "knee_top_2d_median": 172.8,
+    "knee_top_3d_median": 162.6,
+    "knee_bottom_2d_median": 57.4,
+    "knee_bottom_3d_median": 50.4,
+    "hip_top_2d_median": 177.2,
+    "hip_top_3d_median": 154.9,
+    "hip_bottom_2d_median": 57.4,
+    "hip_bottom_3d_median": 50.0
+  }
+}
