@@ -20,6 +20,9 @@ template (movement.template) keep their own animate script and validator.
 An exercise with an approval_date is approved: it is never rebuilt unless
 --force is given, so regeneration cannot silently replace approved assets.
 Each build appends to <exercise>/factory_log.json (version, timings, QA).
+
+Blender is taken from $EVS_BLENDER when set, else the macOS install path,
+so the factory also runs on Linux/CI without editing this file.
 """
 
 from __future__ import annotations
@@ -27,13 +30,16 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import os
 import subprocess
 import sys
 import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-BLENDER = "/Applications/Blender.app/Contents/MacOS/Blender"
+BLENDER = os.environ.get(
+    "EVS_BLENDER", "/Applications/Blender.app/Contents/MacOS/Blender"
+)
 # Whole-body review (Kiệt 14/11): orbit the character every 60 degrees at
 # the start, middle and end of the first repetition, plus two high views, so
 # arms, back, head, legs and the implement are checked from every side.
