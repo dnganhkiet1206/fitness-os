@@ -670,11 +670,22 @@
     }
   },
   "master_character_id": "master_character_003",
-  "version": "3.0.0",
+  "version": "3.1.0",
+  "trapezius_volume": {
+    "level": "E",
+    "vertices_moved_over_1mm": 621,
+    "max_offset_m": 0.0418
+  },
+  "uv_flat_points": [
+    [
+      0.3779296875,
+      0.0185546875
+    ]
+  ],
   "muscle_sculpt": {
     "parts": 70,
-    "outline_points": 36089,
-    "vertices_moved": 1975,
+    "outline_points": 36157,
+    "vertices_moved": 1951,
     "max_displacement_m": 0.004,
     "geometry": {
       "amplitude_m": 0.004,
@@ -717,11 +728,5 @@
         }
       }
     }
-  },
-  "uv_flat_points": [
-    [
-      0.3779296875,
-      0.0185546875
-    ]
-  ]
+  }
 }

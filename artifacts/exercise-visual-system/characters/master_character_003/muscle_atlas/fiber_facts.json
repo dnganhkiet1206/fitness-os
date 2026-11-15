@@ -6,12 +6,12 @@
   "groups": {
     "adductors": {
       "texels": 2446232,
-      "coherence": 0.9816,
+      "coherence": 0.9812,
       "label": "Hip adductors"
     },
     "biceps_brachii": {
       "texels": 2446232,
-      "coherence": 0.9952,
+      "coherence": 0.9946,
       "label": "Biceps brachii"
     },
     "calves": {
@@ -21,26 +21,26 @@
     },
     "deltoid_anterior": {
       "texels": 2446232,
-      "coherence": 0.9933,
+      "coherence": 0.9932,
       "label": "Deltoid, anterior head",
       "fan_span_deg": 70.6,
       "fan_centre_distance_m": 0.0411
     },
     "deltoid_lateral": {
       "texels": 2446232,
-      "coherence": 0.9921,
+      "coherence": 0.9911,
       "label": "Deltoid, lateral head"
     },
     "deltoid_posterior": {
       "texels": 2446232,
-      "coherence": 0.9955,
+      "coherence": 0.9954,
       "label": "Deltoid, posterior head",
       "fan_span_deg": 66.9,
       "fan_centre_distance_m": 0.0553
     },
     "erector_spinae": {
       "texels": 2446232,
-      "coherence": 0.9884,
+      "coherence": 0.9885,
       "label": "Erector spinae"
     },
     "forearm_muscles": {
@@ -64,7 +64,7 @@
     },
     "hamstrings": {
       "texels": 2446232,
-      "coherence": 0.9816,
+      "coherence": 0.9812,
       "label": "Hamstrings"
     },
     "latissimus_dorsi": {
@@ -76,7 +76,7 @@
     },
     "obliques": {
       "texels": 2446232,
-      "coherence": 0.9779,
+      "coherence": 0.978,
       "label": "External obliques"
     },
     "pectoralis_major": {
@@ -88,12 +88,12 @@
     },
     "quadriceps": {
       "texels": 2446232,
-      "coherence": 0.9816,
+      "coherence": 0.9813,
       "label": "Quadriceps femoris"
     },
     "rectus_abdominis": {
       "texels": 2446232,
-      "coherence": 0.9884,
+      "coherence": 0.9885,
       "label": "Rectus abdominis"
     },
     "rotator_cuff_posterior": {
@@ -105,7 +105,7 @@
     },
     "serratus_anterior": {
       "texels": 2446232,
-      "coherence": 0.9825,
+      "coherence": 0.9822,
       "label": "Serratus anterior"
     },
     "tibialis_anterior": {
@@ -115,14 +115,14 @@
     },
     "trapezius": {
       "texels": 2446232,
-      "coherence": 0.9955,
+      "coherence": 0.9953,
       "label": "Trapezius",
       "fan_span_deg": 88.0,
       "fan_centre_distance_m": 0.0247
     },
     "triceps_brachii": {
       "texels": 2446232,
-      "coherence": 0.9951,
+      "coherence": 0.9944,
       "label": "Triceps brachii"
     }
   }

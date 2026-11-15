@@ -3,14 +3,14 @@
   "exercise_id": "stiff_leg_dumbbell_deadlift",
   "master_character_id": "master_character_003",
   "usdz": "stiff_leg_dumbbell_deadlift_animation.usdz",
-  "size_bytes": 4115571,
+  "size_bytes": 4116689,
   "zip_members": [
     "stiff_leg_dumbbell_deadlift_animation.usdc",
-    "textures/_usdz_apparel_emission.png",
-    "textures/_usdz_apparel_albedo.png",
     "textures/_usdz_body_emission.png",
     "textures/_usdz_body_normal.png",
-    "textures/_usdz_body_albedo.png"
+    "textures/_usdz_body_albedo.png",
+    "textures/_usdz_apparel_emission.png",
+    "textures/_usdz_apparel_albedo.png"
   ],
   "default_camera": {
     "preset_id": "three_quarter",
