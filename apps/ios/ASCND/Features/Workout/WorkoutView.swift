@@ -719,16 +719,12 @@ public struct WorkoutView: View {
 
   /// Bài đang mở hướng dẫn (`day-plan.tsx:1784`).
   @State private var guideTarget: GuideTarget?
-  /// Bài đang mở thẳng trình xem 3D (một chạm, chỉ bản Debug).
+  /// Bài đang mở thẳng trình xem 3D (một chạm; bản Release chỉ bài đã chốt).
   @State private var demoTarget: GuideTarget?
 
-  /// Bài có minh hoạ 3D trong app (chỉ bản Debug).
+  /// Bài có minh hoạ 3D trong app (bản Release chỉ bài đã chốt).
   private func has3DDemo(_ name: String) -> Bool {
-    #if DEBUG
-      return ExerciseDemo3D.posterURL(for: name) != nil
-    #else
-      return false
-    #endif
+    ExerciseDemo3D.posterURL(for: name) != nil
   }
 
   /// Lối vào hướng dẫn 3D (Kiệt 13/11 chọn mẫu A): dải kính mảnh dưới tên
@@ -1054,21 +1050,19 @@ public struct WorkoutView: View {
       )) { t in
         ExerciseGuideView(guides: guides, library: flow?.library, exerciseId: t.exerciseId, name: t.name)
       }
-      #if DEBUG
-        .fullScreenCover(item: Binding(
-          get: { demoTarget?.key == group.key ? demoTarget : nil },
-          set: { demoTarget = $0 }
-        )) { t in
-          // Nút sách chỉ khi trang hướng dẫn có nội dung thật.
-          let lang = MuscleGroup.Language(locale: locale)
-          let hasGuide = guides.thumbnail(exerciseId: t.exerciseId, name: t.name, lang: lang)?.hasContent == true
-          ExerciseDemo3DView(name: t.name, onFullGuide: hasGuide ? {
-            // Đóng 3D rồi mở trang hướng dẫn đầy đủ.
-            demoTarget = nil
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { guideTarget = t }
-          } : nil)
-        }
-      #endif
+      .fullScreenCover(item: Binding(
+        get: { demoTarget?.key == group.key ? demoTarget : nil },
+        set: { demoTarget = $0 }
+      )) { t in
+        // Nút sách chỉ khi trang hướng dẫn có nội dung thật.
+        let lang = MuscleGroup.Language(locale: locale)
+        let hasGuide = guides.thumbnail(exerciseId: t.exerciseId, name: t.name, lang: lang)?.hasContent == true
+        ExerciseDemo3DView(name: t.name, onFullGuide: hasGuide ? {
+          // Đóng 3D rồi mở trang hướng dẫn đầy đủ.
+          demoTarget = nil
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { guideTarget = t }
+        } : nil)
+      }
     } else {
       HStack(spacing: DS.Spacing.sm) {
         ExerciseThumb(name: group.name, thumbnail: nil, linked: false)
