@@ -178,7 +178,12 @@ def default_camera(scene, exercise, aspect):
     so the whole repetition stays in a 9:16 frame. Returned in RealityKit
     Y-up coordinates with the vertical field of view for the Swift camera."""
     presets = config.camera_presets()
-    preset = presets["presets"]["three_quarter"]
+    preset = dict(presets["presets"]["three_quarter"])
+    # Exercises whose prime movers are on the back of the body (hinge,
+    # rows) open from behind, or the highlighted muscle is hidden in the
+    # default view (14/11 review: hamstrings and lats invisible).
+    if exercise.get("viewer_azimuth_deg") is not None:
+        preset["azimuth_deg"] = float(exercise["viewer_azimuth_deg"])
     sensor_mm = presets["sensor_width_mm"]
     from evs.studio import fit_frames
     points = sample_subject_points(scene, fit_frames(exercise))

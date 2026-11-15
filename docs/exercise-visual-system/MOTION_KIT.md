@@ -37,8 +37,11 @@ Bài toán production rút ra từ phân tích ngược các app fitness (Apple 
                   sau vai, đầu không gục, dụng cụ không xuyên da
                 - cổng giải phẫu (evs/movement_gate.py): ngưỡng của họ động tác
                 - tờ soi xoay vòng: 6 góc quanh người + 2 góc cao × đứng / giữa / đáy
-                  (factory.py sheet). BẮT BUỘC soi tay, lưng, đầu, chân, dụng cụ ở mọi góc,
+                  (factory.py sheet) + tờ tầm mắt người đứng nhìn 1,6 m (factory.py eye).
+                  BẮT BUỘC soi tay, lưng, đầu, chân, dụng cụ ở mọi góc,
                   đối chiếu nguồn kỹ thuật, trước khi báo xong (MOTION_KIT_LESSONS.md luật 1)
+   Ghi kết quả: exercise.json → agent_review (đã kiểm gì, còn lỗi gì) và
+                  ExerciseDemo3D.catalog trong app (dấu tích xanh ở tab Lab 3D).
 6. Xuất         pipeline/export_usdz.py (sợi cơ vẽ, bản chỉ cơ chính) + tempo.json + poster → app
                 bài mới: `python3 pipeline/catalogue.py new "<tên trong catalogue>" --from <bài cùng họ>`
                 rồi `factory.py build <thư mục>`; ghi production.human_minutes khi duyệt xong
@@ -60,6 +63,7 @@ Bài toán production rút ra từ phân tích ngược các app fitness (Apple 
 | **Bộ kiểm chung 4 tầng (A–D), lỗi chỉ đúng khung/khớp** | `evs/motion_qa.py`, `pipeline/validate_motion.py` | xong |
 | **Sổ sản xuất (P1, 14/11)**: 43 bài trong chương trình tập của app, xếp theo số set mỗi tuần; độ phủ tính theo set; tốc độ (phút máy, phút người); `new` dựng khung spec cho bài kế tiếp | `config/catalogue.json`, `pipeline/catalogue.py` (`refresh`, `coverage`, `new`) | xong; 6/43 bài đã dựng |
 | **Họ `raise_lateral`, `hinge` (14/11)**: lateral raise (mặt phẳng xương bả vai, khuỷu hơi gập, lòng bàn tay xoay theo tay); hip hinge (trọng tâm toàn thân giữ yên theo khối lượng đoạn Winter 2009, tay treo thẳng trước da chân) | `motionlab/families/raise_lateral.py`, `hinge.py` | xong; lateral raise 17/17, hammer curl 18/18, deadlift chân thẳng tạ đơn 16/17 (giãn da hông) |
+| **Họ `row`, `press_vertical` + nhịp vai–cánh tay (14/11, lô 2)**: row cúi người (tư thế hinge, cẳng tay thẳng đứng, khuỷu dẫn); đẩy vai ngồi ghế tựa (template đặt ghế theo lưng, chân ngồi); xương đòn và bả vai xoay theo độ nâng tay (Inman 1944) | `motionlab/families/row.py`, `press_vertical.py`, `primitives.scapulohumeral`, `generate_exercise.pose_girdle`, ghế `utility_bench_upright` | row 15/16, shoulder press 17/18 (cả hai còn giãn da háng) |
 | **Nhịp từng rep cho app (P5, 14/11)**: `tempo.json` (`ascnd.tempo/1`): các pha ms, mốc đổi chiều / xong rep, thở ra–hít vào, lời nhắc theo pha; cổng `tempo_sync` bảo đảm hoạt cảnh lệch ≤ 1 khung so với tệp | `motionlab/tempo.py`, `evs/motion_qa.tempo_sync`, chép cạnh USDZ khi xuất | xong; app chưa đọc (cần mock rung / đếm rep cho Kiệt) |
 | **Giải theo mục tiêu** | `pipeline/solve_targets.py`, `pipeline/measure_animation.py` | xong; bench press: khuỷu 104° / dang vai 60° sau 24 lần thử |
 
@@ -97,7 +101,7 @@ Trạng thái: **chỉ dữ liệu**. `evs/equipment.py` hiện chỉ dựng đ�
 1. **Bộ giải theo mục tiêu (ưu tiên cao nhất):** bộ giải nhận mục tiêu đo được (ví dụ gập khuỷu 95° ở đáy, cánh tay so với mặt phẳng ngực ≥ −15°) rồi tự tìm tay cầm, điểm chạm, cong lưng, ép vai. Hết cảnh người vặn số.
 2. **Bộ giải chung theo họ:** tách `animate_bench_press.py` thành `evs/families/press_horizontal.py` cùng giao diện chung (`solve(spec, character, equipment) → keyframes`). Biến thể (ghế dốc, tay hẹp, tạ đơn, chống đẩy) chỉ là thông số.
 3. **Nhịp tự nhiên:** đường cong tốc độ của từng pha lấy từ số đo video (tăng tốc, chậm ở đáy, khoá tay), thay vì chỉ một hàm làm mượt.
-4. **Bả vai tự động:** nhịp vai–cánh tay (scapulohumeral rhythm) theo nghiên cứu, gắn bả vai theo độ nâng và đưa của cánh tay, để mọi bài có vai chuyển động như người thật.
+4. **Bả vai tự động (14/11: bản đầu xong, `scapulohumeral` + `pose_girdle`, mới dùng ở press_vertical; chưa có co rút bả vai cho row):** nhịp vai–cánh tay (scapulohumeral rhythm) theo nghiên cứu, gắn bả vai theo độ nâng và đưa của cánh tay, để mọi bài có vai chuyển động như người thật.
 5. **Tờ ảnh duyệt nhanh:** 4 góc × đỉnh/giữa/đáy, kèm bảng điểm cổng, trong một ảnh mỗi bài.
 6. **Lane dữ liệu sở hữu được:** UI-PRMD (PDDL, Vicon) cho squat/lunge làm mẫu nhịp và phối hợp khớp; Mesh2Motion (CC0) cho đi bộ, chạy, chống đẩy.
 7. **Tạc khối cơ theo giải phẫu:** phồng bụng cơ, rãnh giữa các cơ, vạch gân bụng (3 cặp ở mỏm mũi kiếm, giữa, rốn), rãnh delta–ngực. Làm theo bản đồ cơ, trước khi làm hàng loạt.

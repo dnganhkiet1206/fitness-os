@@ -12,6 +12,7 @@ struct Demo3DLabView: View {
   }
 
   @State private var target: Target?
+  @State private var expanded: Set<String> = []
 
   var body: some View {
     NavigationStack {
@@ -21,7 +22,7 @@ struct Demo3DLabView: View {
             row(item)
           }
         } footer: {
-          Text(verbatim: "\(ExerciseDemo3D.catalog.count) bài có 3D · chuyển động chưa được chuyên gia duyệt")
+          Text(verbatim: "\(ExerciseDemo3D.catalog.count) bài có 3D · \(ExerciseDemo3D.catalog.filter { $0.review != nil }.count) bài agent đã kiểm đủ (dấu xanh) · chạm \"Đã kiểm\" để xem ghi chú · chuyển động chưa được chuyên gia duyệt")
         }
       }
       // Chừa chỗ cho thanh Ghi nhanh + tab bar, dòng cuối không bị che.
@@ -34,30 +35,63 @@ struct Demo3DLabView: View {
   }
 
   @ViewBuilder
-  private func row(_ item: (title: String, key: String, family: String)) -> some View {
+  private func row(_ item: ExerciseDemo3D.CatalogEntry) -> some View {
     let demo = ExerciseDemo3D.demo(for: item.key)
     let hasUSDZ = demo.flatMap { Bundle.main.url(forResource: $0.usdzFile, withExtension: "usdz") } != nil
-    Button {
-      if hasUSDZ { target = Target(key: item.key) }
-    } label: {
-      HStack(spacing: 12) {
-        poster(demo)
-          .frame(width: 96, height: 54)
-          .clipShape(RoundedRectangle(cornerRadius: 8))
-        VStack(alignment: .leading, spacing: 2) {
-          Text(verbatim: item.title).font(.body.weight(.semibold))
-          Text(verbatim: item.family).font(.caption.monospaced()).foregroundStyle(.secondary)
-          if let demo {
-            Text(verbatim: hasUSDZ ? String(format: "%.1f s", demo.durationS) : "thiếu USDZ trong bundle")
-              .font(.caption2)
-              .foregroundStyle(hasUSDZ ? Color.secondary : Color.red)
+    VStack(alignment: .leading, spacing: 8) {
+      Button {
+        if hasUSDZ { target = Target(key: item.key) }
+      } label: {
+        HStack(spacing: 12) {
+          poster(demo)
+            .frame(width: 96, height: 54)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(alignment: .topTrailing) {
+              if item.review != nil {
+                Image(systemName: "checkmark.seal.fill")
+                  .font(.title3)
+                  .foregroundStyle(.white, .green)
+                  .offset(x: 6, y: -6)
+                  .accessibilityLabel(Text(verbatim: "Đã kiểm đầy đủ"))
+              }
+            }
+          VStack(alignment: .leading, spacing: 2) {
+            Text(verbatim: item.title).font(.body.weight(.semibold))
+            Text(verbatim: item.family).font(.caption.monospaced()).foregroundStyle(.secondary)
+            if let demo {
+              Text(verbatim: hasUSDZ ? String(format: "%.1f s", demo.durationS) : "thiếu USDZ trong bundle")
+                .font(.caption2)
+                .foregroundStyle(hasUSDZ ? Color.secondary : Color.red)
+            }
           }
+          Spacer()
+          Image(systemName: "cube.transparent").foregroundStyle(.secondary)
         }
-        Spacer()
-        Image(systemName: "cube.transparent").foregroundStyle(.secondary)
+      }
+      .buttonStyle(.plain)
+      if let r = item.review {
+        DisclosureGroup(isExpanded: Binding(get: { expanded.contains(item.key) }, set: { open in
+          if open { expanded.insert(item.key) } else { expanded.remove(item.key) }
+        })) {
+          VStack(alignment: .leading, spacing: 4) {
+            ForEach(r.checked, id: \.self) { line in
+              Label { Text(verbatim: line) } icon: { Image(systemName: "checkmark").foregroundStyle(.green) }
+            }
+            ForEach(r.remaining, id: \.self) { line in
+              Label { Text(verbatim: line) } icon: { Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange) }
+            }
+          }
+          .font(.caption)
+          .padding(.top, 4)
+        } label: {
+          Text(verbatim: r.remaining.isEmpty ? "Đã kiểm \(r.date) · không còn lỗi máy bắt được" : "Đã kiểm \(r.date) · còn \(r.remaining.count) lỗi đã biết")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(r.remaining.isEmpty ? Color.green : Color.orange)
+        }
+      } else if let note = item.note {
+        Text(verbatim: note).font(.caption).foregroundStyle(.secondary)
       }
     }
-    .buttonStyle(.plain)
   }
 
   @ViewBuilder
