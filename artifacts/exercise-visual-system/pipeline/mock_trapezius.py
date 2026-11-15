@@ -3,9 +3,12 @@ for Kiệt to choose (15/11: "charactor không có cơ trap").
 
     Blender -b --factory-startup --python pipeline/mock_trapezius.py -- <out_dir> [amp_m ...]
 
-The sheet Kiệt reviewed (15/11): docs/exercise-visual-system/trapezius_options.jpg,
-rows top to bottom = current 003, A 1.5 cm, B 2.5 cm, C 3.5 cm; columns =
-front, 3/4 front, side, 3/4 back, back.
+The sheet for Kiệt: docs/exercise-visual-system/trapezius_options.jpg.
+Round 1 (15/11) had A/B/C = 1.5/2.5/3.5 cm on the mask only; Kiệt asked for
+taller traps ("khối cơ cầu vai cao lên", as on American/European lifters).
+Round 2 rows, top to bottom: current 003, B (mask 2.5 cm), D, E, F (mask
+plus a tall band up the back of the neck: 2.2/3.2/4.2 cm, reaching 40/50/60 %
+of the neck). Columns: front, 3/4 front, side, 3/4 back, back.
 
 MakeHuman/MPFB has no trapezius target (only pectoral, dorsi and deltoid),
 and the existing sculpt (sculpt_muscles.py) only cuts 4 mm grooves, so the
@@ -101,10 +104,53 @@ def trapezius_weights(body, rig) -> np.ndarray:
     return w / max(w.max(), 1e-6)
 
 
+def tall_weights(body, rig, reach: float) -> np.ndarray:
+    """Upper trapezius as a tall slope (Kiệt 15/11: "khối cơ cầu vai cao
+    lên", as on trained American and European lifters). A band along each
+    side of the back of the neck, from ``reach`` of the way up the neck down
+    to the top of the acromion: thickest where the neck meets the shoulder
+    line, fading at both ends. The baked mask stops at the base of the neck,
+    so this band is placed from the bones, not the mask. Front of the neck
+    and the face stay untouched."""
+    mesh = body.data
+    co = np.array([v.co[:] for v in mesh.vertices])
+    nor = np.array([v.normal[:] for v in mesh.vertices])
+    bones = {b.name: (rig.matrix_world @ b.head_local) for b in rig.data.bones}
+    neck = np.array(bones["neck_01"][:])
+    head = np.array(bones["head"][:])
+    w = np.zeros(len(co))
+    for s, sign in (("l", 1.0), ("r", -1.0)):
+        acr = np.array(bones[f"upperarm_{s}"][:])
+        top = np.array([sign * 0.045, neck[1] + 0.02, neck[2] + reach * (head[2] - neck[2])])
+        end = acr + np.array([-sign * 0.01, 0.01, 0.035])
+        ab = end - top
+        t = np.clip(((co - top) @ ab) / (ab @ ab), 0.0, 1.0)
+        d = np.linalg.norm(co - (top + t[:, None] * ab), axis=1)
+        prof = np.sin(np.pi * np.clip(0.1 + 0.9 * t, 0, 1)) ** 0.6
+        side = (co[:, 0] * sign) > -0.01
+        w = np.maximum(w, np.where(side, np.exp(-(d / 0.055) ** 2) * prof, 0.0))
+    front = (nor[:, 1] < -0.25) & (co[:, 2] > neck[2] - 0.06) & (np.abs(co[:, 0]) < 0.10)
+    # Fade out below the skull (a hard cut left a seam at the back of the
+    # head, 15/11), then smooth over the mesh like the mask weights.
+    w = w * (1.0 - smoothstep(head[2] - 0.07, head[2] - 0.01, co[:, 2]))
+    w[front] = 0.0
+    edges = np.array([e.vertices[:] for e in mesh.edges])
+    deg = np.bincount(edges.ravel(), minlength=len(co)).astype(float)
+    for _ in range(12):
+        acc = np.zeros(len(co))
+        np.add.at(acc, edges[:, 0], w[edges[:, 1]])
+        np.add.at(acc, edges[:, 1], w[edges[:, 0]])
+        w = 0.5 * w + 0.5 * acc / np.maximum(deg, 1)
+    w[front] = 0.0
+    return w / max(w.max(), 1e-6)
+
+
 def main():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     out_dir = argv[0]
-    amps = [float(a) for a in argv[1:]] or [0.0, 0.015, 0.025, 0.035]
+    # (label, base amplitude on the mask, tall-band amplitude, neck reach)
+    options = [("003", 0.0, 0.0, 0.0), ("B", 0.025, 0.0, 0.0),
+               ("D", 0.025, 0.022, 0.40), ("E", 0.030, 0.032, 0.50), ("F", 0.035, 0.042, 0.60)]
     os.makedirs(out_dir, exist_ok=True)
     cfg = config.character_config()
     brand = config.brand_config()
@@ -112,6 +158,7 @@ def main():
     body = bpy.data.objects[cfg["names"]["body_object"]]
     rig = next(o for o in bpy.data.objects if o.type == "ARMATURE")
     w = trapezius_weights(body, rig)
+    tall = {reach: tall_weights(body, rig, reach) for _l, _a, _b, reach in options if reach}
     mesh = body.data
     rest = np.array([v.co[:] for v in mesh.vertices])
     nor = np.array([v.normal[:] for v in mesh.vertices])
@@ -119,6 +166,9 @@ def main():
     # Push mostly along the normal, a little upward on top-facing skin.
     dirs = nor + up * np.clip(nor[:, 2:3], 0, 1) * 0.3
     dirs /= np.linalg.norm(dirs, axis=1, keepdims=True)
+    # The tall band lifts the slope: mostly upward, a little outward.
+    lift = nor * 0.5 + up * 0.8
+    lift /= np.linalg.norm(lift, axis=1, keepdims=True)
     print("[mock] weighted vertices", int((w > 0.05).sum()))
 
     scene = bpy.context.scene
@@ -136,8 +186,10 @@ def main():
     views = (("front", 0), ("three_quarter", 35), ("side", 90), ("back_three_quarter", 145), ("back", 180))
     cams = {name: studio.add_camera(f"Mock_{name}", focus, az, 6.0, 2.0, focal_length=105.0) for name, az in views}
     rows = []
-    for k, amp in enumerate(amps):
+    for k, (label, amp, tall_amp, reach) in enumerate(options):
         new = rest + dirs * (amp * w)[:, None]
+        if reach:
+            new = new + lift * (tall_amp * tall[reach])[:, None]
         mesh.vertices.foreach_set("co", new.ravel())
         mesh.update()
         tiles = []
