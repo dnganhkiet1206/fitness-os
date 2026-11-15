@@ -81,6 +81,11 @@
       "what": "tempo shape",
       "source": "minimum-jerk model, Flash and Hogan 1985",
       "license": "facts"
+    },
+    {
+      "what": "reference measurements 2026-11-14 (elbow range, tempo; hammer-grip variant - see reference_notes.json) - evaluation only, not approval",
+      "source": "YMove Hammer Curls video, measured with MediaPipe Pose Landmarker heavy; see dumbbell-curl/reference_measurements.json",
+      "license": "YMove royalty-free commercial use, credit required (Exercise video by Your Move, ymove.app); measurements only, no footage used"
     }
   ],
   "exercise_phases": [
@@ -277,5 +282,17 @@
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Biceps brachii is the prime mover of elbow flexion with a supinated grip; brachioradialis and forearm flexors assist (ACE)."
+  "muscle_roles_note": "Biceps brachii is the prime mover of elbow flexion with a supinated grip; brachioradialis and forearm flexors assist (ACE).",
+  "agent_review": {
+    "date": "2026-11-14",
+    "by": "agent (not an expert review)",
+    "checked": [
+      "qa_report.json (tất cả cổng tự động)",
+      "review_sheet.png (xoay vòng 8 góc × 3 khung)",
+      "observer_sheet.png (tầm mắt 1,6 m, 5 góc) đối chiếu nguồn kỹ thuật",
+      "mở trong trình xem 3D của app (simulator iPhone 17)"
+    ],
+    "remaining": [],
+    "note": "Agent self-check only; status stays DRAFT until a qualified reviewer approves."
+  }
 }

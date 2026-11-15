@@ -266,6 +266,11 @@
       "what": "rep timing and bar path check",
       "source": "Pexels video 20672105, measured with MediaPipe Pose Landmarker heavy (Apache 2.0)",
       "license": "Pexels License (measurements only; no footage used)"
+    },
+    {
+      "what": "medium-grip reference measurements 2026-11-14 (grip, tempo; bottom elbow angles unreliable - see reference_notes.json) - evaluation only, not approval",
+      "source": "Wikimedia Commons Bench press exercise demonstration video (FitnessScape) + YMove Barbell Bench Press (grip cross-check), measured with MediaPipe Pose Landmarker heavy; see bench-press/reference_measurements_medium_grip.json",
+      "license": "CC BY 3.0 (FitnessScape) / YMove royalty-free, credit required; measurements only, no footage used"
     }
   ],
   "camera_presets": [

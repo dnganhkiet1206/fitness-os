@@ -4,7 +4,7 @@
     "Dumbbell Shoulder Press": {
       "family": "press_vertical",
       "equipment": "dumbbells",
-      "folder": null,
+      "folder": "dumbbell-shoulder-press",
       "program_sets": {
         "gym": 5,
         "home_dumbbell": 14,
@@ -172,7 +172,7 @@
     "Bent Over Two-Dumbbell Row": {
       "family": "row",
       "equipment": "dumbbells",
-      "folder": null,
+      "folder": "bent-over-two-dumbbell-row",
       "program_sets": {
         "gym": 0,
         "home_dumbbell": 9,

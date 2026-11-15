@@ -3,28 +3,28 @@
   "exercise_id": "stiff_leg_dumbbell_deadlift",
   "master_character_id": "master_character_003",
   "usdz": "stiff_leg_dumbbell_deadlift_animation.usdz",
-  "size_bytes": 4099315,
+  "size_bytes": 4115571,
   "zip_members": [
     "stiff_leg_dumbbell_deadlift_animation.usdc",
+    "textures/_usdz_apparel_emission.png",
+    "textures/_usdz_apparel_albedo.png",
     "textures/_usdz_body_emission.png",
     "textures/_usdz_body_normal.png",
-    "textures/_usdz_body_albedo.png",
-    "textures/_usdz_apparel_emission.png",
-    "textures/_usdz_apparel_albedo.png"
+    "textures/_usdz_body_albedo.png"
   ],
   "default_camera": {
     "preset_id": "three_quarter",
     "position_m": [
-      1.6231,
-      1.798,
-      1.7876
+      1.3624,
+      1.7978,
+      -1.8002
     ],
     "target_m": [
-      -0.0182,
-      0.9532,
-      0.1462
+      -0.0119,
+      0.9257,
+      0.1624
     ],
-    "distance_m": 2.4702,
+    "distance_m": 2.5498,
     "vertical_fov_deg": 41.26,
     "aspect": 0.5625
   },

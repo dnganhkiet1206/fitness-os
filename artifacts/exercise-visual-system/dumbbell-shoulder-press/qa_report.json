@@ -1,0 +1,275 @@
+{
+  "tool": "pipeline/validate_motion.py",
+  "date": "2026-11-15",
+  "exercise_id": "dumbbell_shoulder_press",
+  "frames": 213,
+  "fps": 24,
+  "summary": {
+    "counts": {
+      "PASS": 18,
+      "FAIL": 1
+    },
+    "technically_validated": false,
+    "states": {
+      "technically_validated": false,
+      "biomechanically_reviewed": false,
+      "human_approved": false,
+      "production_approved": false
+    }
+  },
+  "checks": [
+    {
+      "id": "frames",
+      "stage": "A",
+      "title": "Animation has frames and finite joint data",
+      "status": "PASS",
+      "measured": 213,
+      "limit": null,
+      "where": null,
+      "detail": ""
+    },
+    {
+      "id": "joint_speed",
+      "stage": "B",
+      "title": "No joint moves faster than a human joint plausibly does",
+      "status": "PASS",
+      "measured": 0.895,
+      "limit": 2.5,
+      "where": {
+        "joint": "wrist_l",
+        "frame": 130
+      },
+      "detail": "m/s"
+    },
+    {
+      "id": "rotation_step",
+      "stage": "B",
+      "title": "No sudden bone rotation between frames",
+      "status": "PASS",
+      "measured": 7.528,
+      "limit": 12.0,
+      "where": {
+        "bone": "lowerarm_l",
+        "frame": 130
+      },
+      "detail": "deg per frame"
+    },
+    {
+      "id": "hand_implement_contact",
+      "stage": "B",
+      "title": "Hands stay on the implements in every frame",
+      "status": "PASS",
+      "measured": 2e-05,
+      "limit": 0.004,
+      "where": {
+        "implement": "SOCKET_hand_l",
+        "frame": 2
+      },
+      "detail": "m wrist to grip socket"
+    },
+    {
+      "id": "feet_planted",
+      "stage": "B",
+      "title": "Planted feet neither slide nor lift",
+      "status": "PASS",
+      "measured": {
+        "slide_m": 0.0,
+        "lift_m": 0.0
+      },
+      "limit": {
+        "slide_m": 0.005,
+        "lift_m": 0.005
+      },
+      "where": {
+        "foot": "foot_r",
+        "frame": 5
+      },
+      "detail": ""
+    },
+    {
+      "id": "left_right_symmetry",
+      "stage": "B",
+      "title": "Left and right sides move as mirror images",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": 0.003,
+      "where": {
+        "joint": "elbow",
+        "frame": 159
+      },
+      "detail": "m"
+    },
+    {
+      "id": "implement_penetration",
+      "stage": "C",
+      "title": "Implements do not pass through the body",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": 0.004,
+      "where": {
+        "implement": null,
+        "frame": null
+      },
+      "detail": "m inside"
+    },
+    {
+      "id": "wrist_bend",
+      "stage": "C",
+      "title": "Wrists stay near straight (forearm to hand)",
+      "status": "PASS",
+      "measured": 11.624,
+      "limit": 25.0,
+      "where": {
+        "side": "r",
+        "frame": 48
+      },
+      "detail": "deg"
+    },
+    {
+      "id": "elbow_flexion_anatomical",
+      "stage": "C",
+      "title": "Elbow flexion inside the soft-tissue limit",
+      "status": "PASS",
+      "measured": 142.997,
+      "limit": 145.0,
+      "where": {
+        "side": "r",
+        "frame": 5
+      },
+      "detail": "deg"
+    },
+    {
+      "id": "elbow_inside_shoulder",
+      "stage": "C",
+      "title": "Elbows do not fold in behind the shoulder line",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": 0.02,
+      "where": {
+        "side": null,
+        "frame": null
+      },
+      "detail": "m"
+    },
+    {
+      "id": "head_neutral",
+      "stage": "C",
+      "title": "Head stays near neutral (not dropped to the chest)",
+      "status": "PASS",
+      "measured": 3.61,
+      "limit": 30.0,
+      "where": {
+        "frame": 2
+      },
+      "detail": "deg, + = chin towards chest"
+    },
+    {
+      "id": "tempo_sync",
+      "stage": "B",
+      "title": "Animation follows tempo.json (rep timeline shipped to the app)",
+      "status": "PASS",
+      "measured": {
+        "shift_frames": 0,
+        "correlation": 0.9987
+      },
+      "limit": {
+        "max_shift_frames": 1,
+        "min_correlation": 0.9
+      },
+      "where": {
+        "joint": "wrist_r"
+      },
+      "detail": "best alignment of the farthest-travelling joint with the progress rebuilt from tempo.json"
+    },
+    {
+      "id": "implement_clash",
+      "stage": "C",
+      "title": "Implements do not pass through each other",
+      "status": "PASS",
+      "measured": 0,
+      "limit": 0,
+      "where": {
+        "pair": null,
+        "frame": null
+      },
+      "detail": "overlapping triangle pairs"
+    },
+    {
+      "id": "skin_stretch",
+      "stage": "C",
+      "title": "Skin stretch stays within limits",
+      "status": "FAIL",
+      "measured": 2.924,
+      "limit": 2.6,
+      "where": {
+        "frame": 53
+      },
+      "detail": "p99.9 edge stretch"
+    },
+    {
+      "id": "movement_wrist_over_head_m",
+      "stage": "D",
+      "title": "press_vertical: wrist_over_head_m inside the family bounds",
+      "status": "PASS",
+      "measured": 0.361,
+      "limit": [
+        0.05,
+        null
+      ],
+      "where": null,
+      "detail": "provisional bound"
+    },
+    {
+      "id": "movement_elbow_min_deg",
+      "stage": "D",
+      "title": "press_vertical: elbow_min_deg inside the family bounds",
+      "status": "PASS",
+      "measured": 37.003,
+      "limit": [
+        null,
+        100
+      ],
+      "where": null,
+      "detail": "provisional bound"
+    },
+    {
+      "id": "movement_elbow_max_deg",
+      "stage": "D",
+      "title": "press_vertical: elbow_max_deg inside the family bounds",
+      "status": "PASS",
+      "measured": 166.637,
+      "limit": [
+        160,
+        null
+      ],
+      "where": null,
+      "detail": "provisional bound"
+    },
+    {
+      "id": "movement_torso_lean_max_deg",
+      "stage": "D",
+      "title": "press_vertical: torso_lean_max_deg inside the family bounds",
+      "status": "PASS",
+      "measured": 16.133,
+      "limit": [
+        null,
+        20
+      ],
+      "where": null,
+      "detail": "provisional bound"
+    },
+    {
+      "id": "movement_hip_drop_m",
+      "stage": "D",
+      "title": "press_vertical: hip_drop_m inside the family bounds",
+      "status": "PASS",
+      "measured": 0.0,
+      "limit": [
+        null,
+        0.05
+      ],
+      "where": null,
+      "detail": "provisional bound"
+    }
+  ]
+}
