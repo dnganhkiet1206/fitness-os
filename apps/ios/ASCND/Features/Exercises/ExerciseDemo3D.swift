@@ -202,13 +202,13 @@ enum ExerciseDemo3D {
   static let catalog: [CatalogEntry] = [
     CatalogEntry(
       title: "Barbell Bench Press", key: "bench press", family: "press_horizontal (script riêng)", review: nil,
-      note: "Chưa kiểm lại: bản trong app là bản cũ; dựng lại trên nhân vật 003 đang chờ chọn phương án đáy A/B"),
+      note: "Đã chốt 14/11: bản trong app là bản xuất 003 đã đánh giá (gập khuỷu đáy 105,8°); Kiệt chọn chấp nhận combo tay rộng + đáy sâu, khuỷu dưới đệm là giới hạn đã biết."),
     CatalogEntry(
       title: "Barbell Back Squat", key: "back squat", family: "squat",
       review: Review(
         date: "14/11",
         checked: fullCheck(qa: "16/17", technique: "đáy ngang song song, thân đổ ~40°, thanh trên giữa bàn chân, gối theo mũi chân, gót chạm sàn"),
-        remaining: [groinStretch + ": 3,28 / ngưỡng 2,6"])),
+        remaining: [groinStretch + ": 3,82 / ngưỡng 2,6"])),
     CatalogEntry(
       title: "Dumbbell Biceps Curl", key: "dumbbell curl", family: "curl",
       review: Review(
