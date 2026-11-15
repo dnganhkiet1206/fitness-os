@@ -267,9 +267,10 @@
     "Elbows drifting forward",
     "Dropping the weight on the way down"
   ],
-  "status": "DRAFT",
-  "reviewer": null,
-  "approval_date": null,
+  "status": "APPROVED",
+  "reviewer": "C (Muse) — reference-comparison approval per owner decision 14/11/2026 (no expert review; no budget)",
+  "approval_date": "2026-11-14",
+  "approval_basis": "Reference-clip evaluation 2026-11-14 (PR #893, docs/exercise-visual-system/REFERENCE_EVAL_2026-11-14.md): elbow ROM 126.0 deg vs 124.5 deg in the licensed YMove reference clip (+1.5 deg), all movement-gate bounds pass, no visible defects at either extreme. Basis is comparison against real movement per the owner decision of 14/11/2026, NOT expert review (no budget). Caveats recorded in the evaluation: the clip is a hammer-grip alternating variant (forearm rotation not compared); no peer-reviewed peak-flexion target exists for the standard standing dumbbell curl; motion smoothness was judged from stills only.",
   "brand_profile_id": "placeholder",
   "highlight_roles": [
     "primary",
