@@ -80,6 +80,11 @@
       "what": "tempo shape",
       "source": "minimum-jerk model, Flash and Hogan 1985",
       "license": "facts"
+    },
+    {
+      "what": "reference measurements 2026-11-14 (knee/hip angles, tempo) - evaluation only, not approval",
+      "source": "YMove Barbell Back Squat video, measured with MediaPipe Pose Landmarker heavy; see back-squat/reference_measurements.json",
+      "license": "YMove royalty-free commercial use, credit required (Exercise video by Your Move, ymove.app); measurements only, no footage used"
     }
   ],
   "exercise_phases": [

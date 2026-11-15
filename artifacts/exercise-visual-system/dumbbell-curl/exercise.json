@@ -81,6 +81,11 @@
       "what": "tempo shape",
       "source": "minimum-jerk model, Flash and Hogan 1985",
       "license": "facts"
+    },
+    {
+      "what": "reference measurements 2026-11-14 (elbow range, tempo; hammer-grip variant - see reference_notes.json) - evaluation only, not approval",
+      "source": "YMove Hammer Curls video, measured with MediaPipe Pose Landmarker heavy; see dumbbell-curl/reference_measurements.json",
+      "license": "YMove royalty-free commercial use, credit required (Exercise video by Your Move, ymove.app); measurements only, no footage used"
     }
   ],
   "exercise_phases": [

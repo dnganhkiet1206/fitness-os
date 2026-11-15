@@ -158,3 +158,40 @@ def summary(records: list[dict]) -> dict:
     return {"counts": counts, "technically_validated": technical == "PASS",
             "states": {"technically_validated": technical == "PASS", "biomechanically_reviewed": False,
                        "human_approved": False, "production_approved": False}}
+
+
+def tempo_sync(j: dict, expected: list, max_shift_frames: int = 1, min_corr: float = 0.9) -> dict:
+    """The animation follows tempo.json within ``max_shift_frames`` (P5).
+
+    ``expected``: family progress per frame rebuilt from tempo.json alone.
+    The joint that travels farthest is projected on its main direction and
+    normalised; the integer shift that best lines it up with the expected
+    progress (either sign: a squat's hip goes down while progress goes up)
+    must be within the limit, and the curves must agree (correlation)."""
+    e = np.asarray(expected, float)
+    best = None
+    for k, v in j.items():
+        v = np.asarray(v, float)[: len(e)]
+        c = v - v.mean(axis=0)
+        _u, _s, vt = np.linalg.svd(c, full_matrices=False)
+        x = c @ vt[0]
+        rng = float(x.max() - x.min())
+        if best is None or rng > best[0]:
+            best = (rng, k, x)
+    rng, joint, x = best
+    if rng < 1e-3 or e.max() - e.min() < 1e-6:
+        return rec("tempo_sync", "B", "Animation follows tempo.json", NOT_TESTED, detail="no motion")
+    x = (x - x.min()) / rng
+    en = (e - e.min()) / (e.max() - e.min())
+    n = len(en)
+    scores = []
+    for shift in range(-6, 7):
+        a = x[max(shift, 0): n + min(shift, 0)]
+        b = en[max(-shift, 0): n - max(shift, 0)]
+        corr = float(np.corrcoef(a, b)[0, 1]) if a.std() > 0 and b.std() > 0 else 0.0
+        scores.append((abs(corr), shift, corr))
+    score, shift, corr = max(scores)
+    ok = abs(shift) <= max_shift_frames and score >= min_corr
+    return rec("tempo_sync", "B", "Animation follows tempo.json (rep timeline shipped to the app)", PASS if ok else FAIL,
+               {"shift_frames": shift, "correlation": round(score, 4)}, {"max_shift_frames": max_shift_frames, "min_correlation": min_corr},
+               {"joint": joint}, "best alignment of the farthest-travelling joint with the progress rebuilt from tempo.json")
