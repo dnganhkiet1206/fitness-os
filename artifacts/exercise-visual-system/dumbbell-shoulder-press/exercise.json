@@ -336,7 +336,12 @@
       "giãn da háng trước (giới hạn lưới nhân vật 003) 3,08/2,6"
     ],
     "note": "Agent self-check only; status stays DRAFT until a qualified reviewer approves.",
-    "owner_feedback": "Kiệt 14/11: completely wrong (V-shaped path, dumbbells clashing). Redone against the ExRx photo: upright bench as part of the exercise, elbows under wrists, forearms vertical, straight press to lockout over the shoulders. Awaiting re-check.",
-    "status": "reopened"
+    "owner_feedback": "Kiệt 15/11: approved the motion (70 deg bench, deep bottom at chin level, elbows under wrists, shoulders down). Tips added to the 3D viewer.",
+    "status": "owner_approved_motion"
+  },
+  "owner_approval": {
+    "motion": "approved",
+    "by": "Kiệt",
+    "date": "2026-11-15"
   }
 }

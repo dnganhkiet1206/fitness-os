@@ -219,8 +219,19 @@
         title: "Bent Over Two-Dumbbell Row", key: "bent over two-dumbbell row", family: "row", review: nil,
         note: "Kiệt 14/11: sai tư thế. Đã sửa: gối gập 31° (cẳng chân thẳng đứng, hông đẩy ra sau), lưng thẳng hơi ưỡn ngực, đầu ngẩng thẳng hàng cột sống, bả vai kéo về sau ở đỉnh. Chờ Kiệt xem lại; còn giãn da háng 2,98"),
       CatalogEntry(
-        title: "Dumbbell Shoulder Press", key: "dumbbell shoulder press", family: "press_vertical (ngồi)", review: nil,
-        note: "Kiệt 14–15/11: sai hoàn toàn, rồi ghi chú thêm. Soi lại 3 video YouTube người thật + ACE + ExRx: ghế 70°, lưng và đầu tựa đệm (đệm dài 82 cm); vai hạ; khuỷu khép ~35° ra trước; hạ sâu tới tạ gần chạm vai (cánh tay trên 37° so với thân, Kiệt 15/11: thấp thêm); lòng bàn tay xoay vào ~20°; cẳng tay thẳng đứng, đẩy thẳng lên, hai tạ không chạm nhau. QA 18/19 (còn giãn da háng). Chờ Kiệt xem lại"),
+        title: "Dumbbell Shoulder Press", key: "dumbbell shoulder press", family: "press_vertical (ngồi)",
+        review: Review(
+          date: "15/11",
+          checked: fullCheck(
+            qa: "18/19",
+            technique: "ghế 70°, lưng và đầu tựa đệm, vai hạ, khuỷu dưới cổ tay ~35° ra trước, hạ tới ngang cằm, đẩy thẳng lên, hai tạ không chạm",
+            extra: [
+              "Đối chiếu 3 video YouTube người thật + ACE, Muscle & Strength, ExRx",
+              "Kiệt duyệt động tác 15/11",
+              "Mẹo: 5 ô (ghế, vai, khuỷu, độ sâu, bụng)",
+            ]),
+          remaining: ["Giãn da háng 2,92 (ngưỡng 2,6), chung cho mọi bài gập hông ≥ 90°"]),
+        note: "Kiệt duyệt động tác 15/11. Bấm nút Mẹo (bóng đèn) trong trình xem để xem 5 mẹo kỹ thuật"),
     ]
 
     /// Tên bài (đã gập như `PersonalRecords.exerciseKey`) → bản minh hoạ.
