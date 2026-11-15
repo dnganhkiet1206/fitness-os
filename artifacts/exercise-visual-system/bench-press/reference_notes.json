@@ -675,7 +675,7 @@
     }
   ],
   "how_the_animation_uses_this": {
-    "grip": "Closed pronated grip, thumbs around the bar (IPF 4.2). 0.66 m between hand centres, about 0.58 m between forefingers: inside the 81 cm limit and close to the 'medium' condition of Larsen 2021 (1.4 x biacromial, 0.56 +/- 0.04 m).",
+    "grip": "Closed pronated grip, thumbs around the bar (IPF 4.2). 0.78 m between hand centres (technique.grip_width_between_hand_centres_m): the same absolute grip as the lifters in the licensed reference clips (0.74 m Commons/FitnessScape, 0.79 m YMove). The grip/shoulder ratio of the clip lifters could not be measured reliably (see grip_note in exercise.json); on Mausehund 2022's relative scale the grip reads wide — secondary reference only, since study samples differ in proportions from the clip lifters. Decision (a) 14/11/2026 (delegated to C by Kiet): accepted as the standard bench press guide. Corrected 14/11/2026: this note previously said 0.66 m and 'close to the medium condition of Larsen 2021' — stale, 0.66 m was the lower end of the tune range, not the animation's grip.",
     "touch_point": "Lower sternum at about nipple level (Lockie 2017, citing Algra 1982: 'just above the xiphoid process'). 0.115 m towards the feet from the shoulder joints on this character.",
     "bar_path": "Curved in the side view: about 0.115 m of horizontal travel over 0.42 m of vertical travel. Larsen 2021 reports 0.34 to 0.43 m vertical travel and about 0.13 m horizontal offset at the chest (1RM, recreational men, axis not defined), so only the order of magnitude is supported. The exact curve shape is the author's choice.",
     "lockout": "Elbows extended (IPF 4.2), bar over the shoulder joints. No source gives a number for the horizontal offset at lockout.",

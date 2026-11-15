@@ -203,14 +203,14 @@
         "value": 101.4,
         "tolerance": 8.3,
         "weight": 2.0,
-        "source": "Mausehund et al. 2022, medium grip 101.4 +/- 8.3 deg"
+        "source": "Mausehund et al. 2022, medium-grip condition 101.4 +/- 8.3 deg (study-condition value; see grip_note)"
       },
       {
         "metric": "arm_elev_at_max_flexion_deg",
         "value": 59.3,
         "tolerance": 8.2,
         "weight": 1.0,
-        "source": "Mausehund et al. 2022, shoulder abduction at the bottom, medium grip 59.3 +/- 8.2 deg"
+        "source": "Mausehund et al. 2022, shoulder abduction at the bottom, medium-grip condition 59.3 +/- 8.2 deg (study-condition value; see grip_note)"
       },
       {
         "metric": "humerus_depth_min_deg",
@@ -224,7 +224,7 @@
         "max": 21.0,
         "tolerance": 5.0,
         "weight": 0.5,
-        "source": "Mausehund et al. 2022, forearm angle medium grip 20.8 +/- 4.7 deg"
+        "source": "Mausehund et al. 2022, forearm angle, medium-grip condition 20.8 +/- 4.7 deg (study-condition value; see grip_note)"
       }
     ],
     "tune": {
@@ -248,7 +248,8 @@
         0.19,
         0.02
       ]
-    }
+    },
+    "grip_note": "Grip: 0.78 m between hand centres (technique.grip_width_between_hand_centres_m). PRIMARY BASIS per the owner correction of 14/11/2026: comparison against the people in licensed reference clips — the same absolute grip as real lifters (0.74 m in the Wikimedia Commons / FitnessScape clip, 0.79 m in the YMove clip, each +/-0.04-0.06 m; see reference_measurements_medium_grip.json and REFERENCE_EVAL_2026-11-14.md, PR #893). The grip/shoulder-width ratio of the clip lifters could NOT be measured reliably from the available clips (shoulder joint centres occluded and foreshortened in the front view; two independent methods disagreed by 0.08 m), so no clip-grounded ratio is claimed. SECONDARY REFERENCE ONLY: on Mausehund et al. 2022's relative scale the 0.78 m grip reads wide (214% of the character's 0.358 m shoulder-joint distance, a joint-centre proxy for biacromial distance — approximate), while the bottom kinematics follow the study's medium-condition pattern (flexion 105.8 deg vs medium 101.4, abduction 50.1 deg vs medium 59.3). Study samples differ in proportions from the clip lifters, so study scales are corroboration only, never the primary basis. DECISION (a), 14/11/2026: Kiet delegated the grip call to C; C accepted the wide-relative grip + deep bottom + tucked elbows as the standard barbell bench press guide, because the motion matches real lifting and narrowing to ~0.58 m would make the guide less like real lifting. The 'medium grip' label formerly implied by the brief is corrected by this note. Known limitation accepted by the owner 14/11/2026: elbows below the pad at the bottom (character-003 geometry; see BOTTOM_POSE_FINDINGS.md, PR #891)."
   },
   "motion_provenance": [
     {
@@ -274,7 +275,7 @@
     "closeup_grip"
   ],
   "technique": {
-    "comment": "Parameters of this provisional demonstration. Each one cites reference_notes.json; none is a universal 'correct' value and reasonable lifters differ in all of them.",
+    "comment": "Parameters of this demonstration (approved 14/11/2026; see approval_basis). Each one cites reference_notes.json; none is a universal 'correct' value and reasonable lifters differ in all of them.",
     "grip_width_between_hand_centres_m": 0.78,
     "wrist_extension_deg": 18.0,
     "touch_point": "lower_sternum",
@@ -300,7 +301,7 @@
   },
   "validation_profile": {
     "profile_id": "bench_press_v1",
-    "comment": "Thresholds for automated checks. They catch defects in the animation data (jumps, slides, penetration, asymmetry). They do not certify exercise technique; that needs a qualified human.",
+    "comment": "Thresholds for automated checks. They catch defects in the animation data (jumps, slides, penetration, asymmetry). They do not certify exercise technique; technique approval is recorded separately (status, reviewer, approval_date, approval_basis).",
     "max_hand_to_socket_m": 0.004,
     "max_grip_asymmetry_m": 0.004,
     "max_bar_tilt_deg": 0.5,
