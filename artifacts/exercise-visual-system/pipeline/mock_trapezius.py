@@ -57,6 +57,13 @@ def main():
     brand = config.brand_config()
     bpy.ops.wm.open_mainfile(filepath=str(config.character_blend(cfg["master_character_id"])))
     body = bpy.data.objects[cfg["names"]["body_object"]]
+    if body.get("evs_trapezius_volume"):
+        # The saved character already carries a level (sculpt_trapezius.py):
+        # every row would add a second layer and "003" would not be the
+        # original. Build the character without the step first.
+        raise SystemExit("[mock] the character already has trapezius level "
+                         f"{body['evs_trapezius_volume']}; remove body_shape.trapezius_volume, run "
+                         "`factory.py character`, then run this mock")
     rig = next(o for o in bpy.data.objects if o.type == "ARMATURE")
     w = trapezius_weights(body, rig)
     tall = {reach: tall_weights(body, rig, reach) for _l, _a, _b, reach in options if reach}
