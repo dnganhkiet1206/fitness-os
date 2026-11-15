@@ -205,6 +205,68 @@ def build_bench_rack(name: str, spec: dict, mats: dict, rack_height: float) -> d
             "lip_top": seat_z + lip + 0.004, "upright_y": upright_y, "upright_half_spacing": half_spacing}
 
 
+def build_utility_bench(name: str, spec: dict, mats: dict) -> dict:
+    """Upright utility bench for seated presses, built around its own
+    origin: the origin is the middle of the seat pad's back edge on the
+    floor, the lifter faces -Y (sits towards -Y of the back pad). The back
+    pad leans back by back_angle_from_vertical_deg. A template places the
+    whole bench against the body (generate_exercise, static "place")."""
+    seat_top, depth, width, t = spec["seat_top_height"], spec["seat_depth"], spec["seat_width"], spec["pad_thickness"]
+    tube = spec["frame_tube"]
+    lean = math.radians(spec["back_angle_from_vertical_deg"])
+    pad = _object(f"{name}_Pad", bmesh.new(), smooth_angle=None)
+    pm = _material_index(pad, mats["pad"])
+    bm = bmesh.new()
+    _box(bm, (0, -depth * 0.5, seat_top - t * 0.5), (width, depth, t), pm, bevel=0.018)
+    # Back pad: a box rotated about X, its front face starting at the seat's
+    # back edge just above the seat.
+    back = bmesh.new()
+    L = spec["back_length"]
+    _box(back, (0, t * 0.5, L * 0.5), (spec["back_width"], t, L), pm, bevel=0.018)
+    bmesh.ops.rotate(back, verts=back.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(-lean, 3, "X"))
+    bmesh.ops.translate(back, verts=back.verts, vec=(0, 0.0, seat_top + 0.01))
+    tmp = bpy.data.meshes.new("_tmp_back")
+    back.to_mesh(tmp)
+    back.free()
+    bm.from_mesh(tmp)
+    bpy.data.meshes.remove(tmp)
+    bm.to_mesh(pad.data)
+    bm.free()
+    bl_util.set_smooth(pad.data)
+    frame = _object(f"{name}_Frame", bmesh.new(), smooth_angle=None)
+    fm = _material_index(frame, mats["frame"])
+    bm = bmesh.new()
+    b = 0.006
+    under = seat_top - t
+    _box(bm, (0, -depth * 0.5, under * 0.5), (tube, tube, under), fm, bevel=b)          # seat post
+    _box(bm, (0, -depth * 0.5, tube * 0.5), (spec["foot_width"], tube, tube), fm, bevel=b)  # front foot
+    _box(bm, (0, 0.30, tube * 0.5), (spec["foot_width"], tube, tube), fm, bevel=b)          # rear foot
+    _box(bm, (0, (0.30 - depth * 0.5) * 0.5, tube * 0.5), (tube, 0.30 + depth * 0.5, tube), fm, bevel=b)  # spine
+    # Back support: from the rear foot up behind the back pad.
+    post_top = seat_top + 0.45
+    py = 0.30
+    top_y = t + math.tan(lean) * (post_top - seat_top) + tube * 0.5
+    length = math.hypot(post_top, top_y - py)
+    ang = math.atan2(top_y - py, post_top)
+    post = bmesh.new()
+    _box(post, (0, 0, length * 0.5), (tube, tube, length), fm, bevel=b)
+    bmesh.ops.rotate(post, verts=post.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(-ang, 3, "X"))
+    bmesh.ops.translate(post, verts=post.verts, vec=(0, py, 0))
+    tmp = bpy.data.meshes.new("_tmp_post")
+    post.to_mesh(tmp)
+    post.free()
+    bm.from_mesh(tmp)
+    bpy.data.meshes.remove(tmp)
+    bm.to_mesh(frame.data)
+    bm.free()
+    bl_util.set_smooth(frame.data)
+    for obj in (pad, frame):
+        mod = obj.modifiers.new("Edge Split", "EDGE_SPLIT")
+        mod.split_angle = math.radians(50)
+        obj["evs_equipment"] = "utility_bench"
+    return {"pad": pad, "frame": frame, "seat_top": seat_top}
+
+
 def build_dumbbell(name: str, spec: dict, mats: dict) -> bpy.types.Object:
     """Hex dumbbell along X: knurled handle between two hexagonal heads.
     The object origin is the centre of the handle, so a hand socket at the

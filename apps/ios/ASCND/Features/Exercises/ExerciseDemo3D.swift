@@ -116,7 +116,7 @@ enum ExerciseDemo3D {
       LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.secondary"),
       LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
     ],
-    cameraPosition: [2.2529, 2.0924, 2.3874], cameraTarget: [0.0102, 0.938, 0.1448],
+    cameraPosition: [2.4272, 2.1371, 2.4476], cameraTarget: [0.0779, 0.9279, 0.0983],
     focusTexturePrefix: "side_lateral_raise_focus")
 
   /// Motion Lab (14/11, P1): họ "hinge" (`motionlab/families/hinge.py`).
@@ -128,18 +128,109 @@ enum ExerciseDemo3D {
       LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.secondary"),
       LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.secondary"),
     ],
-    cameraPosition: [1.6231, 1.798, 1.7876], cameraTarget: [-0.0182, 0.9532, 0.1462],
+    // Góc mặc định từ phía sau (14/11): cơ chính ở mặt sau thân.
+    cameraPosition: [1.3624, 1.7978, -1.8002], cameraTarget: [-0.0119, 0.9257, 0.1624],
     focusTexturePrefix: "stiff_leg_dumbbell_deadlift_focus")
 
+  /// Motion Lab (14/11, P1 lô 2): họ "row" (`motionlab/families/row.py`).
+  static let bentOverRow = Demo(
+    usdzFile: "bent_over_two_dumbbell_row_animation", loopFile: nil, posterFile: "bent_over_two_dumbbell_row_poster",
+    durationS: 8.2,
+    legend: [
+      LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.latissimusDorsi", roleKey: "eg.demo3d.legend.primary"),
+      LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
+      LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidPosterior", roleKey: "eg.demo3d.legend.secondary"),
+      LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
+    ],
+    // Góc mặc định từ phía sau (14/11): cơ lưng xô ở mặt sau thân.
+    cameraPosition: [1.0343, 1.294, -1.4504], cameraTarget: [-0.0586, 0.6005, 0.1104],
+    focusTexturePrefix: "bent_over_two_dumbbell_row_focus")
+
+  /// Motion Lab (14/11, P1 lô 2): họ "press_vertical", ngồi ghế tựa, bả vai theo tay.
+  static let dumbbellShoulderPress = Demo(
+    usdzFile: "dumbbell_shoulder_press_animation", loopFile: nil, posterFile: "dumbbell_shoulder_press_poster",
+    durationS: 8.8,
+    legend: [
+      LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.primary"),
+      LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidLateral", roleKey: "eg.demo3d.legend.primary"),
+      LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.tricepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
+      LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
+    ],
+    cameraPosition: [1.7982, 1.6958, 1.9101], cameraTarget: [0.015, 0.7779, 0.1269],
+    focusTexturePrefix: "dumbbell_shoulder_press_focus")
+
+  /// Kết quả agent tự kiểm một bài (Kiệt 14/11: bài đã kiểm đầy đủ có dấu
+  /// tích xanh kèm ghi chú đã kiểm những gì). KHÔNG phải duyệt chuyên môn:
+  /// chuyển động vẫn "chưa duyệt" cho tới khi có người có chuyên môn xem.
+  /// Nguồn: `agent_review` trong `<bài>/exercise.json` của Motion Lab.
+  struct Review {
+    let date: String
+    /// Những gì đã kiểm và đạt.
+    let checked: [String]
+    /// Lỗi còn lại đã biết (rỗng = không còn lỗi máy bắt được).
+    let remaining: [String]
+  }
+
+  struct CatalogEntry {
+    let title: String
+    let key: String
+    let family: String
+    /// nil = chưa kiểm lại đầy đủ.
+    let review: Review?
+    var note: String?
+  }
+
+  private static func fullCheck(qa: String, technique: String, extra: [String] = []) -> [String] {
+    [
+      "QA tự động \(qa): xương, tay bám dụng cụ, chân không trượt, dụng cụ không xuyên da, dáng toàn thân, khớp nhịp tempo.json",
+      "Tờ soi xoay vòng 8 góc × 3 khung (đầu, giữa, cuối pha)",
+      "Tờ soi tầm mắt người đứng nhìn (1,6 m) 5 góc: \(technique)",
+      "Mở trong trình xem 3D của app (simulator iPhone 17), chú thích cơ đúng",
+    ] + extra
+  }
+
+  private static let groinStretch = "Giãn da vùng háng trước khi gập hông sâu (giới hạn lưới nhân vật 003, chung cho mọi bài gập hông ≥ 90°)"
+
   /// Danh sách các bài đã có bản 3D, mỗi bài một dòng (màn Lab "3D", Kiệt
-  /// 14/11): tên hiện + tên tra trong `demos` + họ động tác của Motion Lab.
-  static let catalog: [(title: String, key: String, family: String)] = [
-    ("Barbell Bench Press", "bench press", "press_horizontal (script riêng)"),
-    ("Barbell Back Squat", "back squat", "squat"),
-    ("Dumbbell Biceps Curl", "dumbbell curl", "curl"),
-    ("Hammer Curl", "hammer curl", "curl"),
-    ("Side Lateral Raise", "side lateral raise", "raise_lateral"),
-    ("Stiff-Legged Dumbbell Deadlift", "stiff-legged dumbbell deadlift", "hinge"),
+  /// 14/11): tên hiện + tên tra trong `demos` + họ động tác của Motion Lab
+  /// + kết quả tự kiểm.
+  static let catalog: [CatalogEntry] = [
+    CatalogEntry(
+      title: "Barbell Bench Press", key: "bench press", family: "press_horizontal (script riêng)", review: nil,
+      note: "Chưa kiểm lại: bản trong app là bản cũ; dựng lại trên nhân vật 003 đang chờ chọn phương án đáy A/B"),
+    CatalogEntry(
+      title: "Barbell Back Squat", key: "back squat", family: "squat",
+      review: Review(
+        date: "14/11",
+        checked: fullCheck(qa: "16/17", technique: "đáy ngang song song, thân đổ ~40°, thanh trên giữa bàn chân, gối theo mũi chân, gót chạm sàn"),
+        remaining: [groinStretch + ": 3,28 / ngưỡng 2,6"])),
+    CatalogEntry(
+      title: "Dumbbell Biceps Curl", key: "dumbbell curl", family: "curl",
+      review: Review(
+        date: "14/11",
+        checked: fullCheck(qa: "18/18", technique: "cánh tay trên sát thân, khuỷu gập ~138°, lòng bàn tay ngửa, thân đứng yên"),
+        remaining: [])),
+    CatalogEntry(
+      title: "Hammer Curl", key: "hammer curl", family: "curl",
+      review: Review(
+        date: "14/11",
+        checked: fullCheck(qa: "18/18", technique: "tay cầm trung tính (ngón cái hướng lên) suốt đường đi, khuỷu sát thân"),
+        remaining: [])),
+    CatalogEntry(
+      title: "Side Lateral Raise", key: "side lateral raise", family: "raise_lateral", review: nil,
+      note: "Kiệt 14/11: chưa đúng. Đã sửa theo ảnh ExRx: bắt đầu tạ trước đùi, thân hơi cúi, gối hơi gập; ở đỉnh khuỷu ngang vai ngay bên vai, cẳng tay chếch trước; tay cầm nằm ngang (trước bị xoay nghiêng ~45°); vai nâng theo tay. QA 18/18. Chờ Kiệt xem lại"),
+    CatalogEntry(
+      title: "Stiff-Legged Dumbbell Deadlift", key: "stiff-legged dumbbell deadlift", family: "hinge",
+      review: Review(
+        date: "14/11",
+        checked: fullCheck(qa: "16/17", technique: "gập hông, lưng thẳng, gối mềm, hông lùi ra sau, tạ sát chân xuống giữa cẳng chân, trọng tâm trên bàn chân"),
+        remaining: [groinStretch + ": 2,80 / ngưỡng 2,6"])),
+    CatalogEntry(
+      title: "Bent Over Two-Dumbbell Row", key: "bent over two-dumbbell row", family: "row", review: nil,
+      note: "Kiệt 14/11: sai tư thế. Đã sửa: gối gập 31° (cẳng chân thẳng đứng, hông đẩy ra sau), lưng thẳng hơi ưỡn ngực, đầu ngẩng thẳng hàng cột sống, bả vai kéo về sau ở đỉnh. Chờ Kiệt xem lại; còn giãn da háng 2,98"),
+    CatalogEntry(
+      title: "Dumbbell Shoulder Press", key: "dumbbell shoulder press", family: "press_vertical (ngồi)", review: nil,
+      note: "Kiệt 14–15/11: sai hoàn toàn, rồi ghi chú thêm. Soi lại 3 video YouTube người thật + ACE + ExRx: ghế 70°, lưng và đầu tựa đệm (đệm dài 82 cm); vai hạ; khuỷu khép ~35° ra trước; hạ sâu tới tạ gần chạm vai (cánh tay trên 37° so với thân, Kiệt 15/11: thấp thêm); lòng bàn tay xoay vào ~20°; cẳng tay thẳng đứng, đẩy thẳng lên, hai tạ không chạm nhau. QA 18/19 (còn giãn da háng). Chờ Kiệt xem lại"),
   ]
 
   /// Tên bài (đã gập như `PersonalRecords.exerciseKey`) → bản minh hoạ.
@@ -165,6 +256,12 @@ enum ExerciseDemo3D {
     "stiff-legged dumbbell deadlift": stiffLegDeadlift,
     "stiff-leg dumbbell deadlift": stiffLegDeadlift,
     "dumbbell stiff-legged deadlift": stiffLegDeadlift,
+    "bent over two-dumbbell row": bentOverRow,
+    "bent over dumbbell row": bentOverRow,
+    "dumbbell bent over row": bentOverRow,
+    "dumbbell shoulder press": dumbbellShoulderPress,
+    "seated dumbbell shoulder press": dumbbellShoulderPress,
+    "seated dumbbell press": dumbbellShoulderPress,
   ]
 
   /// Bản minh hoạ của bài, nếu được phép hiện ở bản build này: bản Debug

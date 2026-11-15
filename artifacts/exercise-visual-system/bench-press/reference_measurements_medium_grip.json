@@ -1,0 +1,71 @@
+{
+  "tool": "pipeline/measure_video.py",
+  "pose_model": "MediaPipe Pose Landmarker heavy (Apache 2.0)",
+  "measured": "2026-11-15",
+  "source": "Wikimedia Commons File:Bench_press_-_exercise_demonstration_video.webm (FitnessScape, Half Rack Workout)",
+  "license": "CC BY 3.0, attribution: FitnessScape",
+  "note": "Numbers measured from the video; no footage or per-frame skeleton is stored.",
+  "frames": 213,
+  "detected": 213,
+  "fps": 30.0,
+  "segments": [
+    {
+      "start_s": 0.0,
+      "end_s": 7.1,
+      "side": "left",
+      "visibility": 0.98,
+      "reps": [
+        {
+          "top_s": 1.77,
+          "bottom_s": 3.37,
+          "end_s": 4.63,
+          "down_s": 1.6,
+          "up_s": 1.27,
+          "angles_2d_top": {
+            "elbow": 174.5,
+            "knee": 129.6,
+            "hip": 120.0
+          },
+          "angles_2d_bottom": {
+            "elbow": 36.3,
+            "knee": 134.2,
+            "hip": 113.7
+          },
+          "angles_3d_top": {
+            "elbow": 128.3,
+            "knee": 118.8,
+            "hip": 125.0
+          },
+          "angles_3d_bottom": {
+            "elbow": 89.1,
+            "knee": 124.0,
+            "hip": 116.5
+          },
+          "path_trunk_lengths": {
+            "along_top": 0.411,
+            "along_bottom": 0.26,
+            "across_top": 1.34,
+            "across_bottom": 0.289
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "reps": 1,
+    "down_s_median": 1.6,
+    "up_s_median": 1.27,
+    "elbow_top_2d_median": 174.5,
+    "elbow_top_3d_median": 128.3,
+    "elbow_bottom_2d_median": 36.3,
+    "elbow_bottom_3d_median": 89.1,
+    "knee_top_2d_median": 129.6,
+    "knee_top_3d_median": 118.8,
+    "knee_bottom_2d_median": 134.2,
+    "knee_bottom_3d_median": 124.0,
+    "hip_top_2d_median": 120.0,
+    "hip_top_3d_median": 125.0,
+    "hip_bottom_2d_median": 113.7,
+    "hip_bottom_3d_median": 116.5
+  }
+}
