@@ -152,3 +152,11 @@ Không phương án nào được thực hiện trong PR này. QA baseline giữ
 `elbow_tracking`, `bench_contact` — đã biết) / 2 NOT_TESTED / 4
 REQUIRES_MANUAL_REVIEW / 2 UNVERIFIED; pose không đổi nên không render
 lại tờ soi/MP4.
+
+## 7. Quyết định của Kiệt (14/11/2026)
+
+Kiệt chọn phương án 1: CHẤP NHẬN hình học hiện tại. Khuỷu dưới mặt đệm
+ở đáy bench được ghi nhận là giới hạn đã biết của nhân vật 003; không
+đổi tầng character/arch, không nới quy tắc cẳng tay. Quyết định này chỉ
+đóng hướng xử lý lỗi hình học — bài bench vẫn ở trạng thái DRAFT và vẫn
+cần duyệt chuyên môn trước khi xuất bản.
