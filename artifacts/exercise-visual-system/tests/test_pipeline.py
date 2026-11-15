@@ -53,7 +53,13 @@ class ConfigTests(unittest.TestCase):
         ex = config.exercise_config("bench-press")
         problems = report.validate_exercise_config(ex, list(config.muscle_map()["groups"]), list(config.camera_presets()["presets"]))
         self.assertEqual(problems, [])
-        self.assertNotEqual(ex["status"], "APPROVED")
+        # Bench press was approved 14/11/2026 by reference comparison per the
+        # owner decision (no expert review, no budget). The approval record
+        # must be complete and must state that basis honestly.
+        self.assertEqual(ex["status"], "APPROVED")
+        self.assertTrue(ex["reviewer"])
+        self.assertTrue(ex["approval_date"])
+        self.assertIn("NOT expert review", ex["approval_basis"])
 
 
 class ExerciseSchemaTests(unittest.TestCase):
@@ -67,7 +73,7 @@ class ExerciseSchemaTests(unittest.TestCase):
 
     def test_approved_needs_reviewer(self):
         ex = self.base()
-        ex["status"] = "APPROVED"
+        ex.update(status="APPROVED", reviewer=None, approval_date="2026-11-14")
         self.assertTrue(any("reviewer" in p for p in report.validate_exercise_config(ex)))
 
     def test_phase_gap_detected(self):
@@ -88,7 +94,10 @@ class ExerciseSchemaTests(unittest.TestCase):
 
 class ApprovalGateTests(unittest.TestCase):
     def test_draft_is_blocked_and_never_pass_on_biomechanics(self):
+        # Bench press itself is APPROVED since 14/11/2026; drive the draft
+        # guard with an explicit draft copy so the guard keeps working.
         ex = config.exercise_config("bench-press")
+        ex.update(status="DRAFT", reviewer=None, approval_date=None)
         recs = report.approval_records(ex)
         status = {r["id"]: r["status"] for r in recs}
         self.assertEqual(status["biomechanical_correctness"], "UNVERIFIED")
