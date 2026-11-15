@@ -383,5 +383,38 @@
     },
     "total_seconds": 77.9,
     "qa": "{\"PASS\": 18, \"FAIL\": 1}"
+  },
+  {
+    "version": 14,
+    "when": "2026-11-15T00:34:11",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 6.6
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 9.6
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.3
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 29.9
+      },
+      "export": {
+        "ok": true,
+        "seconds": 21.9
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 4.1
+      }
+    },
+    "total_seconds": 75.5,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1}"
   }
 ]

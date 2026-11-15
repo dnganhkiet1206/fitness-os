@@ -146,7 +146,7 @@
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.tricepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
       ],
-      cameraPosition: [1.803, 1.6958, 1.9053], cameraTarget: [0.0198, 0.7779, 0.1221],
+      cameraPosition: [1.7982, 1.6958, 1.9101], cameraTarget: [0.015, 0.7779, 0.1269],
       focusTexturePrefix: "dumbbell_shoulder_press_focus")
 
     /// Kết quả agent tự kiểm một bài (Kiệt 14/11: bài đã kiểm đầy đủ có dấu
@@ -220,7 +220,7 @@
         note: "Kiệt 14/11: sai tư thế. Đã sửa: gối gập 31° (cẳng chân thẳng đứng, hông đẩy ra sau), lưng thẳng hơi ưỡn ngực, đầu ngẩng thẳng hàng cột sống, bả vai kéo về sau ở đỉnh. Chờ Kiệt xem lại; còn giãn da háng 2,98"),
       CatalogEntry(
         title: "Dumbbell Shoulder Press", key: "dumbbell shoulder press", family: "press_vertical (ngồi)", review: nil,
-        note: "Kiệt 14–15/11: sai hoàn toàn, rồi ghi chú thêm. Soi lại 3 video YouTube người thật + ACE + ExRx: ghế 70°, lưng và đầu tựa đệm (đệm dài 82 cm); vai hạ; khuỷu khép ~35° ra trước; hạ sâu tới tạ gần chạm vai; lòng bàn tay xoay vào ~20°; cẳng tay thẳng đứng, đẩy thẳng lên, hai tạ không chạm nhau. QA 18/19 (còn giãn da háng). Chờ Kiệt xem lại"),
+        note: "Kiệt 14–15/11: sai hoàn toàn, rồi ghi chú thêm. Soi lại 3 video YouTube người thật + ACE + ExRx: ghế 70°, lưng và đầu tựa đệm (đệm dài 82 cm); vai hạ; khuỷu khép ~35° ra trước; hạ sâu tới tạ gần chạm vai (cánh tay trên 37° so với thân, Kiệt 15/11: thấp thêm); lòng bàn tay xoay vào ~20°; cẳng tay thẳng đứng, đẩy thẳng lên, hai tạ không chạm nhau. QA 18/19 (còn giãn da háng). Chờ Kiệt xem lại"),
     ]
 
     /// Tên bài (đã gập như `PersonalRecords.exerciseKey`) → bản minh hoạ.

@@ -33,10 +33,10 @@
       "stage": "B",
       "title": "No joint moves faster than a human joint plausibly does",
       "status": "PASS",
-      "measured": 0.841,
+      "measured": 0.895,
       "limit": 2.5,
       "where": {
-        "joint": "knuckle_l",
+        "joint": "wrist_l",
         "frame": 130
       },
       "detail": "m/s"
@@ -46,7 +46,7 @@
       "stage": "B",
       "title": "No sudden bone rotation between frames",
       "status": "PASS",
-      "measured": 7.082,
+      "measured": 7.528,
       "limit": 12.0,
       "where": {
         "bone": "lowerarm_l",
@@ -59,11 +59,11 @@
       "stage": "B",
       "title": "Hands stay on the implements in every frame",
       "status": "PASS",
-      "measured": 1e-05,
+      "measured": 2e-05,
       "limit": 0.004,
       "where": {
-        "implement": "SOCKET_hand_r",
-        "frame": 6
+        "implement": "SOCKET_hand_l",
+        "frame": 2
       },
       "detail": "m wrist to grip socket"
     },
@@ -130,7 +130,7 @@
       "stage": "C",
       "title": "Elbow flexion inside the soft-tissue limit",
       "status": "PASS",
-      "measured": 134.998,
+      "measured": 142.997,
       "limit": 145.0,
       "where": {
         "side": "r",
@@ -170,7 +170,7 @@
       "status": "PASS",
       "measured": {
         "shift_frames": 0,
-        "correlation": 0.9991
+        "correlation": 0.9987
       },
       "limit": {
         "max_shift_frames": 1,
@@ -224,7 +224,7 @@
       "stage": "D",
       "title": "press_vertical: elbow_min_deg inside the family bounds",
       "status": "PASS",
-      "measured": 45.002,
+      "measured": 37.003,
       "limit": [
         null,
         100

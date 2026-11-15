@@ -8,7 +8,7 @@ Technique facts used (sources in the exercise spec's motion_provenance):
 * bench back pad at 70 deg (20 deg off vertical), back and head on the pad;
   shoulder blades held down (depressed) the whole set (14/11 Kiệt);
 * start: deep, the dumbbells come down almost to the shoulders, upper arm
-  ~45 deg from the side, forearms vertical under the weights, palms forward
+  ~37 deg from the side, forearms vertical under the weights, palms forward
   but turned slightly in (~20 deg). Earlier versions stopped at ear height
   (78 deg), much shallower than coaches demonstrate;
 * press: the weights go up until the arms are almost straight and the
@@ -48,7 +48,7 @@ class PressVerticalTemplate(HingeTemplate):
         # Start: upper arm a little below level, forearm vertical, so the
         # handles sit at ear height beside the head (ACE; free-exercise-db
         # "dumbbells at shoulder height").
-        "bottom_upper_arm_elevation_deg": 45.0,   # deep: dumbbells come down almost to the shoulders (Kiệt 14/11)
+        "bottom_upper_arm_elevation_deg": 37.0,   # deep: dumbbells come down almost to the shoulders (Kiệt 14/11)
         "top_upper_arm_elevation_deg": 172.0,
         "top_forearm_in_deg": 6.0,
         "arm_plane_from_frontal_deg": 35.0,       # elbows "tucked", scapular plane 30-45 deg forward (video + ACE)
