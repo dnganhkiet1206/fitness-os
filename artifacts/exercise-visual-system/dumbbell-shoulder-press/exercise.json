@@ -26,14 +26,14 @@
     },
     {
       "id": "bench",
-      "spec": "utility_bench_upright",
+      "spec": "utility_bench_70",
       "location": [
         0,
         0.3,
         0
       ],
       "setup": {
-        "back_pad": "upright, about 80-85 deg from the floor (8 deg off vertical)",
+        "back_pad": "70 deg from the floor (20 deg off vertical); back and head rest on the pad",
         "seat": "flat, 45 cm",
         "placement": "placed by the template so the back pad touches the upper back"
       },
@@ -107,6 +107,11 @@
       "what": "tempo shape",
       "source": "minimum-jerk model, Flash and Hogan 1985",
       "license": "facts"
+    },
+    {
+      "what": "bench back pad at 70 deg (one notch below vertical, not 90); elbows tucked about 30-45 deg in front of the body (scapular plane); deep bottom with the dumbbells close to the shoulders; palms turned slightly in; shoulders held down (15/11, Kiệt's notes, then checked on video and by search)",
+      "source": "YouTube short 'How To: Seated Dumbbell Shoulder Press | Form Tutorial' (E9ShwbwZ1zw, frames at 5/9/13/17 s, caption 'elbows tucked at about 45 degrees'); ACE exercise library 'Seated Shoulder Press' (elbows forward of the body); Muscle & Strength 'Seated Dumbbell Press' (bottom with the arms at about 90 deg or slightly lower)",
+      "license": "facts (watched only, nothing downloaded or copied)"
     }
   ],
   "phase_cues": {
@@ -193,9 +198,10 @@
     "max_elbow_medial_m": 0.02
   },
   "technical_cues": [
-    "Bench upright, back stays on the pad",
-    "Elbows stay under the wrists the whole way",
-    "Press straight up, not in a V"
+    "Bench back at 70 deg, back stays on the pad",
+    "Shoulders down, elbows tucked a little forward",
+    "Lower until the dumbbells nearly touch the shoulders",
+    "Elbows under the wrists, press straight up"
   ],
   "common_mistakes": [
     "Arching the lower back off the pad",

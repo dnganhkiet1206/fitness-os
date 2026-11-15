@@ -251,5 +251,104 @@
     },
     "total_seconds": 86.0,
     "qa": "{\"PASS\": 18, \"FAIL\": 1}"
+  },
+  {
+    "version": 10,
+    "when": "2026-11-15T00:15:08",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 8.8
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 9.7
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.1
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 29.2
+      },
+      "export": {
+        "ok": true,
+        "seconds": 21.1
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 3.7
+      }
+    },
+    "total_seconds": 75.8,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1}"
+  },
+  {
+    "version": 11,
+    "when": "2026-11-15T00:17:10",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.8
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 9.5
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.6
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 30.5
+      },
+      "export": {
+        "ok": true,
+        "seconds": 21.6
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 4.2
+      }
+    },
+    "total_seconds": 74.7,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1}"
+  },
+  {
+    "version": 12,
+    "when": "2026-11-15T00:20:23",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 5.2
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 9.1
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.1
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 29.4
+      },
+      "export": {
+        "ok": true,
+        "seconds": 25.1
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 5.3
+      }
+    },
+    "total_seconds": 77.7,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1}"
   }
 ]

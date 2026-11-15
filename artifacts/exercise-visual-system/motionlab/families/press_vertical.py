@@ -5,11 +5,12 @@ with other parameters).
 Technique facts used (sources in the exercise spec's motion_provenance):
 * seated on a bench with the back pad upright, back against the pad, feet
   flat on the floor (free-exercise-db "Dumbbell Shoulder Press", ACE);
-* start: dumbbells at shoulder height (beside the ears), palms forward,
-  elbows BELOW the shoulders (upper arm ~60-65 deg from the side) and only a
-  little in front of the body (~15 deg), forearms vertical. 14/11 Kiệt: the
-  first version started with the weights above the head and the elbows far
-  in front of the face, which reads as a wrong position;
+* bench back pad at 70 deg (20 deg off vertical), back and head on the pad;
+  shoulder blades held down (depressed) the whole set (14/11 Kiệt);
+* start: deep, the dumbbells come down almost to the shoulders, upper arm
+  ~45 deg from the side, forearms vertical under the weights, palms forward
+  but turned slightly in (~20 deg). Earlier versions stopped at ear height
+  (78 deg), much shallower than coaches demonstrate;
 * press: the weights go up until the arms are almost straight and the
   dumbbells meet above the head, slightly in front of it; then back down;
 * the shoulder girdle moves with the arm: the shoulder blade turns upward
@@ -38,8 +39,8 @@ class PressVerticalTemplate(HingeTemplate):
         **HingeTemplate.defaults,
         "seat_top_m": 0.45,               # must match the bench spec in exercise.json
         "hip_joint_above_seat_m": 0.09,   # hip joint above the compressed seat skin
-        "trunk_lean_deg": -6.0,           # leaning back on the pad (pad ~8 deg off vertical)
-        "back_pad_angle_from_vertical_deg": 8.0,
+        "trunk_lean_deg": -19.0,          # back along the pad (bench at 70 deg, 14/11 Kiệt)
+        "back_pad_angle_from_vertical_deg": 20.0,  # must match utility_bench_70
         "pelvis_share_of_lean": 0.6,
         "head_extension_share_of_lean": 0.0,
         "seated_ankle_half_width_m": 0.20,
@@ -47,10 +48,12 @@ class PressVerticalTemplate(HingeTemplate):
         # Start: upper arm a little below level, forearm vertical, so the
         # handles sit at ear height beside the head (ACE; free-exercise-db
         # "dumbbells at shoulder height").
-        "bottom_upper_arm_elevation_deg": 78.0,
+        "bottom_upper_arm_elevation_deg": 45.0,   # deep: dumbbells come down almost to the shoulders (Kiệt 14/11)
         "top_upper_arm_elevation_deg": 172.0,
         "top_forearm_in_deg": 6.0,
-        "arm_plane_from_frontal_deg": 15.0,
+        "arm_plane_from_frontal_deg": 35.0,       # elbows "tucked", scapular plane 30-45 deg forward (video + ACE)
+        "grip_turn_in_deg": 20.0,                 # palms turned slightly in from straight forward
+        "scapular_depression_deg": 6.0,           # shoulders held down, away from the ears
         # Dumbbells "touch at the top": the inner heads meet, so the handle
         # centres sit one half-length (0.15 m) from the midline. 14/11
         # Kiệt's recording: at 0.10 the two dumbbells passed through each other.
@@ -87,7 +90,10 @@ class PressVerticalTemplate(HingeTemplate):
         sign = 1.0 if side == "l" else -1.0
         L1, L2 = s["upper_arm_m"], s["forearm_m"]
         elev = t["bottom_upper_arm_elevation_deg"] + progress * (t["top_upper_arm_elevation_deg"] - t["bottom_upper_arm_elevation_deg"])
-        g = scapulohumeral(elev)
+        g = dict(scapulohumeral(elev))
+        # Shoulders held down (scapular depression): the clavicle sits
+        # below the rhythm's value the whole set.
+        g["clavicle_elevation_deg"] -= t["scapular_depression_deg"]
         sh = self.shoulder(side, g["clavicle_elevation_deg"])
         phi = math.radians(t["arm_plane_from_frontal_deg"])
         horiz = unit(sign * LEFT * math.cos(phi) + FORWARD * math.sin(phi))
@@ -109,11 +115,14 @@ class PressVerticalTemplate(HingeTemplate):
         for side, sign in (("l", 1.0), ("r", -1.0)):
             a = self._arm(side, progress)
             fore = unit(a["wrist"] - a["elbow"])
-            palm = FORWARD - fore * float(np.dot(FORWARD, fore))      # palms forward
-            palm = unit(palm)
-            # Handle level (left-right) whatever the forearm's tilt: the
-            # wrist takes the small sideways bend, the weight does not tip.
-            x = -sign * LEFT                                          # thumb towards the midline
+            # Palms forward, turned slightly in towards the midline
+            # (semi-pronated grip); the thumb end of the handle moves back.
+            gi = math.radians(t["grip_turn_in_deg"])
+            palm = FORWARD * math.cos(gi) - sign * LEFT * math.sin(gi)
+            palm = unit(palm - fore * float(np.dot(palm, fore)))
+            # Handle level whatever the forearm's tilt: the wrist takes the
+            # small sideways bend, the weight does not tip.
+            x = -sign * LEFT * math.cos(gi) - FORWARD * math.sin(gi)  # thumb towards the midline
             x = unit(x - palm * float(np.dot(x, palm)))
             z = np.cross(x, palm)
             centre = a["wrist"] + fore * t["palm_centre_beyond_wrist_m"]
