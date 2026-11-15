@@ -6,6 +6,8 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
 
 **Trước khi làm bài mới: đọc `MOTION_KIT_LESSONS.md` (sổ lỗi). Gặp lỗi mới thì ghi vào đó trong cùng PR sửa.**
 
+Bài toán production rút ra từ phân tích ngược các app fitness (Apple Fitness+ Gym Strength, Ladder, Fitbod, Muscle & Motion, Peloton IQ…): `MARKET_REVERSE_ANALYSIS.md` (P1–P10, thứ tự ưu tiên).
+
 ## Một bài tập = một file mô tả
 
 `artifacts/exercise-visual-system/<bài>/exercise.json`. Các trường của kit:
@@ -73,3 +75,4 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
 7. **Tạc khối cơ theo giải phẫu:** phồng bụng cơ, rãnh giữa các cơ, vạch gân bụng (3 cặp ở mỏm mũi kiếm, giữa, rốn), rãnh delta–ngực. Làm theo bản đồ cơ, trước khi làm hàng loạt.
 8. **Dụng cụ:** thư viện tạ đơn, cáp, máy, ghế dốc, có kích thước theo nguồn (`config/equipment.json`).
 9. **Danh sách 20 bài đầu:** chọn theo tần suất trong lịch tập của app; mỗi bài có file mô tả và trích nguồn.
+10. **Bài toán production từ phân tích thị trường (14/11, `MARKET_REVERSE_ANALYSIS.md`):** P1 xuất xưởng 350 bài (≤ 30 phút công người/bài), P2 biến thể theo dụng cụ + `alternatives.json` để đổi bài khi máy bận, P3 một lần dựng nhiều định dạng (USDZ, vòng lặp 3 góc, hình bóng cho đồng hồ), P5 `tempo.json` nhịp từng rep. Sau mock cho Kiệt: P4 bản đồ cơ 2D dùng lại, P6 chuỗi dễ → khó cho người mới. Sau đó: P7 clip lỗi sai có QA đảo chiều, P8 quỹ đạo khớp chuẩn (33 mốc MediaPipe), P9 thiết kế giao tài sản.
