@@ -1,5 +1,5 @@
 {
-  "comment": "Parametric gym equipment in metres. Every exercise reuses these definitions; nothing here is specific to the bench press. 'source' says where a dimension comes from. IPF = International Powerlifting Federation Technical Rulebook 2026 (PDF text read on 2026-11-11). Details of each check: bench-press/reference_notes.json.",
+  "comment": "Parametric gym equipment in metres. Every exercise reuses these definitions; nothing here is specific to the bench press. 'source' says where a dimension comes from. IPF = International Powerlifting Federation Technical Rulebook 2026 (PDF text read on 2026-11-11). Details of each check: bench-press/reference_notes.json. Entries added 2026-11-15 for P2 (docs/exercise-visual-system/MARKET_REVERSE_ANALYSIS.md) each cite their own manufacturer source in 'source'; dimensions the published specs do not give are left out and noted there. Lookup log: docs/exercise-visual-system/MOTION_KIT.md, section 'Thư viện dụng cụ'.",
   "barbell_olympic_20kg": {
     "type": "barbell",
     "total_length": 2.2,
@@ -54,5 +54,95 @@
     "head_across_corners": 0.135,
     "mass_kg": 12.0,
     "source": "Approximate dimensions of a common commercial 12-12.5 kg rubber hex dumbbell (handle 13 cm between heads, 32 mm grip). No standard defines dumbbell sizes; values are typical, not from one manufacturer's drawing."
+  },
+  "kettlebell_competition_16kg": {
+    "type": "kettlebell",
+    "height": 0.282,
+    "bell_width": 0.208,
+    "base_diameter": 0.14,
+    "handle_diameter": 0.033,
+    "handle_window_width": 0.123,
+    "mass_kg": 16.0,
+    "source": "Rogue Fitness Competition Kettlebell spec sheet (roguefitness.com/rogue-competition-kettlebells): the same outside dimensions for every weight from 8 to 48 kg — height 282 mm, bell width 208 mm, base diameter 140 mm, handle diameter 33 mm, distance between handles 123 mm (the handle window). Read 2026-11-15."
+  },
+  "bench_adjustable_ab5000": {
+    "type": "adjustable_bench",
+    "footprint_length": 1.448,
+    "footprint_width": 0.533,
+    "pad_top_height_flat": 0.445,
+    "back_pad_length": 0.978,
+    "back_pad_width": 0.311,
+    "seat_pad_length": 0.381,
+    "seat_pad_width_max": 0.305,
+    "seat_pad_width_min": 0.203,
+    "total_pad_length_flat": 1.359,
+    "back_angles_deg": [0, 15, 30, 45, 60, 75, 90],
+    "seat_angles_deg": [-15, 0, 15, 30, 45],
+    "mass_kg": 50.0,
+    "source": "REP Fitness AB-5000 Zero Gap Adjustable Bench spec sheet: 57 x 21 x 17.5 in; back pad 38.5 x 12.25 in; seat pad 15 in long, 12 in tapering to 8 in wide; 53.5 in total pad run at zero gap; 7 back angles 0-90 deg and 5 seat angles -15 to 45 deg; 110 lb (50 kg). Published figures vary slightly by revision (height 17.5-17.75 in, width 20.25-21 in); the values here follow the most widely published set. Pad thickness is not in the published spec and is left out. Read 2026-11-15: fitness-superstore.co.uk/rep-ab-5000-zero-gap-bench.html; garagegymreviews.com AB-5000 review; github.com/wesbos/gym-equipment rack-generator research (REP manuals checked 2026-09-19)."
+  },
+  "cable_functional_trainer_ft5000": {
+    "type": "functional_trainer",
+    "overall_height": 2.172,
+    "overall_width": 1.727,
+    "overall_depth": 0.914,
+    "rear_width": 0.838,
+    "pulley_max_height": 1.829,
+    "pulley_positions": 21,
+    "cable_travel": 2.184,
+    "pulley_ratio": 2.0,
+    "stack_mass_kg_each": 101.6,
+    "mass_kg": 397.0,
+    "source": "REP Fitness FT-5000 2.0 Functional Trainer spec sheet: 85.5 in H x 68 in W (widest) x 36 in D, back tapering to 33 in; trolley travel height 72 in over 21 positions; cable travel 86 in; 2:1 pulley ratio; dual 224 lb stacks; 875 lb machine weight. As published by REP and reported by Garage Gym Reviews and Breaking Muscle. The distance between the two pulley columns and the low end of the trolley travel are not in the published spec and are left out. Read 2026-11-15."
+  },
+  "lat_pulldown_hspd": {
+    "type": "lat_pulldown",
+    "overall_length": 1.37,
+    "overall_width": 0.84,
+    "overall_height": 2.26,
+    "pulley_diameter_small": 0.11,
+    "pulley_diameter_large": 0.15,
+    "stack_mass_kg": 138.0,
+    "mass_kg": 247.0,
+    "source": "Hammer Strength Select Lat Pulldown HS-PD, Life Fitness product page (lifefitness.com): 54 x 33 x 89 in (137 x 84 x 226 cm); machine weight 545 lb (247 kg); weight stack 295 lb (138 kg); pulleys 4.5 in (11 cm) and 6 in (15 cm); seat adjusts on a roller mechanism and thigh pads adjust. Seat height, thigh-pad range and pulldown-bar length are not in the published spec and are left out. Read 2026-11-15."
+  },
+  "leg_press_45_hsllp": {
+    "type": "leg_press",
+    "overall_length": 2.41,
+    "overall_width": 1.65,
+    "overall_height": 1.45,
+    "rail_angle_deg": 45,
+    "weight_horns": 4,
+    "starting_resistance_kg": 53.0,
+    "max_load_kg": 816.0,
+    "mass_kg": 286.0,
+    "source": "Hammer Strength Plate-Loaded Linear Leg Press HS-LLP, Life Fitness spec sheet: 95 x 65 x 57 in (241 x 165 x 145 cm); 630 lb (286 kg); 45-degree linear rails; starting resistance 118 lb (53 kg); 4 loading horns plus 4 storage horns; max load 1800 lb (816 kg), ten 45 lb plates per rod. Footplate size and sled travel are not in the published spec and are left out. Read 2026-11-15: lifefitness.com.au HS-LLP page; shop.lifefitness.com product page."
+  },
+  "suspension_trainer_trx_pro4": {
+    "type": "suspension_trainer",
+    "anchor_height_min": 2.13,
+    "anchor_height_max": 2.74,
+    "anchor_loop_height": 1.83,
+    "suspension_anchor_length": 0.97,
+    "xtender_length": 0.94,
+    "strap_length_max": 1.75,
+    "mass_kg": 0.9,
+    "source": "TRX setup guidance (trxtraining.com): anchor point 7-9 ft (2.1-2.7 m) off the floor; bottom of the suspension anchor about 6 ft (1.83 m); suspension anchor strap 38 in (0.97 m); Xtender 37 in (0.94 m); PRO4 system weight 2 lb (0.9 kg). strap_length_max is an ESTIMATE derived from the same guidance: fully lengthened, the bottom of each foot cradle sits about 3 in off the floor with the anchor loop at 6 ft, giving 69 in (1.75 m) of strap. Handle size and strap width are not published and are left out. Read 2026-11-15."
+  },
+  "pull_up_bar_monster_lite": {
+    "type": "pull_up_bar",
+    "bar_diameter": 0.032,
+    "bar_length": 1.092,
+    "source": "Rogue Fitness Monster Lite pull-up bar, Rogue support product guide: 1.25 in (31.75 mm) diameter bar, 43 in mounting width between 3x3 in Monster Lite uprights. Mounting height is adjustable (pin holes), so it is a placement parameter, not a property of the bar, and is left out. Read 2026-11-15."
+  },
+  "plyo_box_3in1": {
+    "type": "plyo_box",
+    "length": 0.762,
+    "width": 0.61,
+    "height": 0.508,
+    "heights": [0.508, 0.61, 0.762],
+    "wall_thickness": 0.019,
+    "mass_kg": 25.4,
+    "source": "Rogue Games Box (3-in-1 wood plyo box), Rogue Fitness spec sheet: 30 x 24 x 20 in, giving 20/24/30 in height options by rotation; 3/4 in Radiata Pine plywood; 56 lb. Read 2026-11-15."
   }
 }
