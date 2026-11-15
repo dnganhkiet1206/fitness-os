@@ -39,7 +39,9 @@ Bài toán production rút ra từ phân tích ngược các app fitness (Apple 
                 - tờ soi xoay vòng: 6 góc quanh người + 2 góc cao × đứng / giữa / đáy
                   (factory.py sheet). BẮT BUỘC soi tay, lưng, đầu, chân, dụng cụ ở mọi góc,
                   đối chiếu nguồn kỹ thuật, trước khi báo xong (MOTION_KIT_LESSONS.md luật 1)
-6. Xuất         pipeline/export_usdz.py (sợi cơ vẽ, bản chỉ cơ chính) → app
+6. Xuất         pipeline/export_usdz.py (sợi cơ vẽ, bản chỉ cơ chính) + tempo.json + poster → app
+                bài mới: `python3 pipeline/catalogue.py new "<tên trong catalogue>" --from <bài cùng họ>`
+                rồi `factory.py build <thư mục>`; ghi production.human_minutes khi duyệt xong
 ```
 
 ## Thành phần đã có (14/11)
@@ -56,6 +58,9 @@ Bài toán production rút ra từ phân tích ngược các app fitness (Apple 
 | Trình xem 3D (zoom, mẹo, ẩn cơ phụ) | `apps/ios/.../ExerciseDemo3DView.swift` | xong; đọc USDZ, góc máy, chú thích theo từng bài |
 | **Bộ tạo chung theo template** | `motionlab/` (timing min-jerk, primitives, families: `curl`, `squat`), `pipeline/generate_exercise.py` | xong cho 2 họ; dumbbell-curl QA 12/12, back-squat 10/11 |
 | **Bộ kiểm chung 4 tầng (A–D), lỗi chỉ đúng khung/khớp** | `evs/motion_qa.py`, `pipeline/validate_motion.py` | xong |
+| **Sổ sản xuất (P1, 14/11)**: 43 bài trong chương trình tập của app, xếp theo số set mỗi tuần; độ phủ tính theo set; tốc độ (phút máy, phút người); `new` dựng khung spec cho bài kế tiếp | `config/catalogue.json`, `pipeline/catalogue.py` (`refresh`, `coverage`, `new`) | xong; 6/43 bài đã dựng |
+| **Họ `raise_lateral`, `hinge` (14/11)**: lateral raise (mặt phẳng xương bả vai, khuỷu hơi gập, lòng bàn tay xoay theo tay); hip hinge (trọng tâm toàn thân giữ yên theo khối lượng đoạn Winter 2009, tay treo thẳng trước da chân) | `motionlab/families/raise_lateral.py`, `hinge.py` | xong; lateral raise 17/17, hammer curl 18/18, deadlift chân thẳng tạ đơn 16/17 (giãn da hông) |
+| **Nhịp từng rep cho app (P5, 14/11)**: `tempo.json` (`ascnd.tempo/1`): các pha ms, mốc đổi chiều / xong rep, thở ra–hít vào, lời nhắc theo pha; cổng `tempo_sync` bảo đảm hoạt cảnh lệch ≤ 1 khung so với tệp | `motionlab/tempo.py`, `evs/motion_qa.tempo_sync`, chép cạnh USDZ khi xuất | xong; app chưa đọc (cần mock rung / đếm rep cho Kiệt) |
 | **Giải theo mục tiêu** | `pipeline/solve_targets.py`, `pipeline/measure_animation.py` | xong; bench press: khuỷu 104° / dang vai 60° sau 24 lần thử |
 
 ## Đã học từ dữ liệu (bench press)

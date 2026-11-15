@@ -86,6 +86,52 @@
       cameraPosition: [2.8529, 2.2835, 2.7084], cameraTarget: [0.1056, 0.8694, -0.039],
       focusTexturePrefix: "back_squat_focus")
 
+    /// Motion Lab (14/11, P1): họ "curl", tay cầm trung tính.
+    static let hammerCurl = Demo(
+      usdzFile: "hammer_curl_animation", loopFile: nil, posterFile: "hammer_curl_poster",
+      durationS: 9.8,
+      legend: [
+        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.primary"),
+      ],
+      cameraPosition: [1.6303, 1.7949, 1.7803], cameraTarget: [-0.0105, 0.9503, 0.1396],
+      focusTexturePrefix: "hammer_curl_focus")
+
+    /// Motion Lab (14/11, P1): họ "raise_lateral" (`motionlab/families/raise_lateral.py`).
+    static let sideLateralRaise = Demo(
+      usdzFile: "side_lateral_raise_animation", loopFile: nil, posterFile: "side_lateral_raise_poster",
+      durationS: 9.0,
+      legend: [
+        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidLateral", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
+      ],
+      cameraPosition: [2.2529, 2.0924, 2.3874], cameraTarget: [0.0102, 0.938, 0.1448],
+      focusTexturePrefix: "side_lateral_raise_focus")
+
+    /// Motion Lab (14/11, P1): họ "hinge" (`motionlab/families/hinge.py`).
+    static let stiffLegDeadlift = Demo(
+      usdzFile: "stiff_leg_dumbbell_deadlift_animation", loopFile: nil, posterFile: "stiff_leg_dumbbell_deadlift_poster",
+      durationS: 9.7,
+      legend: [
+        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.hamstrings", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.secondary"),
+      ],
+      cameraPosition: [1.6231, 1.798, 1.7876], cameraTarget: [-0.0182, 0.9532, 0.1462],
+      focusTexturePrefix: "stiff_leg_dumbbell_deadlift_focus")
+
+    /// Danh sách các bài đã có bản 3D, mỗi bài một dòng (màn Lab "3D", Kiệt
+    /// 14/11): tên hiện + tên tra trong `demos` + họ động tác của Motion Lab.
+    static let catalog: [(title: String, key: String, family: String)] = [
+      ("Barbell Bench Press", "bench press", "press_horizontal (script riêng)"),
+      ("Barbell Back Squat", "back squat", "squat"),
+      ("Dumbbell Biceps Curl", "dumbbell curl", "curl"),
+      ("Hammer Curl", "hammer curl", "curl"),
+      ("Side Lateral Raise", "side lateral raise", "raise_lateral"),
+      ("Stiff-Legged Dumbbell Deadlift", "stiff-legged dumbbell deadlift", "hinge"),
+    ]
+
     /// Tên bài (đã gập như `PersonalRecords.exerciseKey`) → bản minh hoạ.
     static let demos: [String: Demo] = [
       "bench press": benchPress,
@@ -100,6 +146,15 @@
       "dumbbell curl": dumbbellCurl,
       "dumbbell bicep curl": dumbbellCurl,
       "dumbbell biceps curl": dumbbellCurl,
+      "hammer curls": hammerCurl,
+      "hammer curl": hammerCurl,
+      "dumbbell hammer curl": hammerCurl,
+      "side lateral raise": sideLateralRaise,
+      "lateral raise": sideLateralRaise,
+      "dumbbell lateral raise": sideLateralRaise,
+      "stiff-legged dumbbell deadlift": stiffLegDeadlift,
+      "stiff-leg dumbbell deadlift": stiffLegDeadlift,
+      "dumbbell stiff-legged deadlift": stiffLegDeadlift,
     ]
 
     static func demo(for name: String) -> Demo? {

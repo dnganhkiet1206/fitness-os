@@ -164,5 +164,30 @@
     },
     "total_seconds": 239.3,
     "qa": "{\"PASS\": 15, \"FAIL\": 1}"
+  },
+  {
+    "version": 7,
+    "when": "2026-11-14T22:12:43",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.5
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 6.8
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.8
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 22.8
+      }
+    },
+    "total_seconds": 35.7,
+    "qa": "{\"PASS\": 16, \"FAIL\": 1}"
   }
 ]
