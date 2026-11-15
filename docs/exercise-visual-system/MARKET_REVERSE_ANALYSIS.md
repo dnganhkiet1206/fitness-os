@@ -95,6 +95,11 @@ Mỗi bài toán ghi kèm: lý do (bằng chứng ở mục 1–2), tiêu chí �
 - **Huấn luyện viên AI nói chuyện.** Apple còn hoãn tính năng này. PRODUCT_DECISION_V1 chọn Daily Plan theo luật.
 - **Phong cách vân cơ toàn thân kiểu Lyfta.** Kiệt đã chốt ngày 13/11 chỉ tô cơ được tác động, trên nền đen.
 
+## 4b. Tiến độ
+
+- **P1 (14/11, bắt đầu):** sổ sản xuất `config/catalogue.json` đếm 43 bài trong chương trình tập của app (gym / tạ đơn ở nhà / không tạ) theo số set mỗi tuần; `pipeline/catalogue.py coverage` báo độ phủ và tốc độ; `new` dựng khung spec. Thêm 2 họ (`raise_lateral`, `hinge`) và 3 bài (hammer curl, side lateral raise, stiff-legged dumbbell deadlift); 6/43 bài; 19 % số set của chương trình (64/336) có bản 3D, 30 % thuộc họ đã có bộ giải. Thời gian máy ~0,6 phút/bài; phút người chưa ghi đủ để tính.
+- **P5 (14/11, xong phía kit):** `tempo.json` cạnh USDZ, cổng `tempo_sync` (≤ 1 khung). App chưa dùng: rung nhịp / đếm rep theo hình cần mock cho Kiệt.
+
 ## 5. Thứ tự đề xuất
 
 1. **Ngay bây giờ (trong kit, không đụng app):** P1 với lô 20 bài và bộ giải cho các họ còn thiếu; P5 xuất `tempo.json` (rẻ, dữ liệu đã có sẵn); P2 mở rộng `equipment.json`.

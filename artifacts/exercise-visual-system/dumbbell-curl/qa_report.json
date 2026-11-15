@@ -6,7 +6,7 @@
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 17
+      "PASS": 18
     },
     "technically_validated": true,
     "states": {
@@ -161,6 +161,24 @@
         "frame": 0
       },
       "detail": "deg, + = chin towards chest"
+    },
+    {
+      "id": "tempo_sync",
+      "stage": "B",
+      "title": "Animation follows tempo.json (rep timeline shipped to the app)",
+      "status": "PASS",
+      "measured": {
+        "shift_frames": 0,
+        "correlation": 0.9987
+      },
+      "limit": {
+        "max_shift_frames": 1,
+        "min_correlation": 0.9
+      },
+      "where": {
+        "joint": "knuckle_r"
+      },
+      "detail": "best alignment of the farthest-travelling joint with the progress rebuilt from tempo.json"
     },
     {
       "id": "skin_stretch",

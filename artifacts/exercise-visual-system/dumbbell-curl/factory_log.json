@@ -139,5 +139,30 @@
     },
     "total_seconds": 157.4,
     "qa": "{\"PASS\": 17}"
+  },
+  {
+    "version": 6,
+    "when": "2026-11-14T22:12:08",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.5
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 3.7
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.6
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 22.0
+      }
+    },
+    "total_seconds": 32.7,
+    "qa": "{\"PASS\": 18}"
   }
 ]
