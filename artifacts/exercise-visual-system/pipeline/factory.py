@@ -126,6 +126,45 @@ def sheet(ex: Path, spec: dict) -> tuple[bool, float]:
     return ok, t
 
 
+EYE = (0, 45, 90, 135, 180)
+
+
+def eye_sheet(ex: Path, spec: dict) -> tuple[bool, float]:
+    """What a person standing and watching sees (Kiệt 14/11): camera at eye
+    height (1.6 m) from the front, three-quarter, side, rear three-quarter
+    and back, at the start, middle and end of the first moving phase.
+    Writes <exercise>/observer_sheet.png. Check the technique here: joint
+    angles, bar/dumbbell path, trunk, head, feet, as a coach would."""
+    phases = {p["id"]: p for p in spec.get("exercise_phases", [])}
+    fps = int(spec["frame_rate"])
+    mid = next((p for k, p in phases.items() if k in ("concentric", "eccentric")), None)
+    a = int(round(mid["start_s"] * fps)) if mid else 0
+    b = int(round((mid["start_s"] + 0.5 * (mid["end_s"] - mid["start_s"])) * fps)) if mid else 30
+    c = int(round(mid["end_s"] * fps)) if mid else 60
+    out_dir = ex / "_eye"
+    keys = [f"eye{d}" for d in EYE]
+    shots = " ".join(f"{k}:{a}:a,{b}:b,{c}:c" for k in keys)
+    ok, _o, t = blender("pipeline/render_stills.py", "--exercise", ex.name, "--out-dir", str(out_dir),
+                        "--shots", shots, "--width", "360", "--height", "540")
+    if ok:
+        rows = []
+        for label in ("a", "b", "c"):
+            files = [out_dir / f"still_{k}_{label}.png" for k in keys]
+            row = out_dir / f"_row_{label}.png"
+            cmd = ["ffmpeg", "-loglevel", "error", "-y"]
+            for f in files:
+                cmd += ["-i", str(f)]
+            cmd += ["-filter_complex", f"hstack=inputs={len(files)}", str(row)]
+            ok = ok and subprocess.run(cmd).returncode == 0
+            rows.append(row)
+        cmd = ["ffmpeg", "-loglevel", "error", "-y"]
+        for r in rows:
+            cmd += ["-i", str(r)]
+        cmd += ["-filter_complex", "vstack=inputs=3", str(ex / "observer_sheet.png")]
+        ok = ok and subprocess.run(cmd).returncode == 0
+    return ok, t
+
+
 def poster(ex: Path, spec: dict) -> tuple[bool, float]:
     """The card image the app shows before the 3D viewer opens: the
     three-quarter view (the viewer's default angle) halfway through the
@@ -202,6 +241,7 @@ def main() -> None:
     b = sub.add_parser("build"); b.add_argument("names", nargs="+"); b.add_argument("--no-export", action="store_true"); b.add_argument("--force", action="store_true")
     bt = sub.add_parser("batch"); bt.add_argument("--no-export", action="store_true"); bt.add_argument("--force", action="store_true")
     s = sub.add_parser("sheet"); s.add_argument("name")
+    e = sub.add_parser("eye"); e.add_argument("names", nargs="+")
     sub.add_parser("character")
     args = ap.parse_args()
     if args.cmd == "status":
@@ -213,6 +253,10 @@ def main() -> None:
         t = time.time()
         res = build(names, not args.no_export, args.force)
         print(f"[factory] batch: {len(res)} exercises in {round(time.time() - t, 1)}s")
+    elif args.cmd == "eye":
+        for n in args.names:
+            ok, t = eye_sheet(ROOT / n, load(ROOT / n))
+            print(f"[factory] {n}: observer sheet {'ok' if ok else 'FAILED'} in {t}s -> {ROOT / n / 'observer_sheet.png'}")
     elif args.cmd == "character":
         character(args)
     elif args.cmd == "sheet":
