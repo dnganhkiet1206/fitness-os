@@ -14,7 +14,8 @@ exercise: equipment that depends on the body (rack height, bar on the back)
 is re-checked by the generators.
 
 build = build_scene -> generate_exercise -> validate_motion -> review sheet
--> export_usdz, with the time of each step. Exercises without a Motion Lab
+-> export_usdz (+ tempo.json and the poster next to the USDZ), with the time
+of each step. Exercises without a Motion Lab
 template (movement.template) keep their own animate script and validator.
 An exercise with an approval_date is approved: it is never rebuilt unless
 --force is given, so regeneration cannot silently replace approved assets.
@@ -125,6 +126,21 @@ def sheet(ex: Path, spec: dict) -> tuple[bool, float]:
     return ok, t
 
 
+def poster(ex: Path, spec: dict) -> tuple[bool, float]:
+    """The card image the app shows before the 3D viewer opens: the
+    three-quarter view (the viewer's default angle) halfway through the
+    first moving phase, 960x540 JPEG, next to the USDZ."""
+    phases = {p["id"]: p for p in spec.get("exercise_phases", [])}
+    mid = next((p for k, p in phases.items() if k in ("concentric", "eccentric")), None)
+    f = int(round((mid["start_s"] + 0.5 * (mid["end_s"] - mid["start_s"])) * int(spec["frame_rate"]))) if mid else 0
+    tmp = ex / "_poster"
+    ok, _o, t = blender("pipeline/render_stills.py", "--exercise", ex.name, "--out-dir", str(tmp),
+                        "--shots", f"three_quarter:{f}:poster", "--width", "960", "--height", "540")
+    out = ex / "usdz" / f"{ex.name.replace('-', '_')}_poster.jpg"
+    ok = ok and subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(tmp / "still_3q_poster.png"), "-q:v", "4", str(out)]).returncode == 0
+    return ok, t
+
+
 def build(names: list[str], export: bool, force: bool) -> list[dict]:
     results = []
     for name in names:
@@ -159,8 +175,15 @@ def build(names: list[str], export: bool, force: bool) -> list[dict]:
             if export:
                 (ex / "usdz").mkdir(exist_ok=True)
                 eok, _o, t = blender("pipeline/export_usdz.py", "--exercise", name, "--out-dir", str(ex / "usdz"))
+                tempo_file = ex / "tempo.json"
+                if eok and tempo_file.exists():  # P5: the app reads it next to the USDZ
+                    (ex / "usdz" / f"{name.replace('-', '_')}_tempo.json").write_text(tempo_file.read_text(encoding="utf-8"), encoding="utf-8")
                 steps["export"] = {"ok": eok, "seconds": t}
                 print(f"[factory] {name}: export    {'ok' if eok else 'FAILED'} in {t}s")
+                if eok:
+                    pok, t = poster(ex, spec)
+                    steps["poster"] = {"ok": pok, "seconds": t}
+                    print(f"[factory] {name}: poster    {'ok' if pok else 'FAILED'} in {t}s")
         log_path = ex / "factory_log.json"
         log = json.loads(log_path.read_text(encoding="utf-8")) if log_path.exists() else []
         entry = {"version": len(log) + 1, "when": datetime.datetime.now().isoformat(timespec="seconds"), "template": template,

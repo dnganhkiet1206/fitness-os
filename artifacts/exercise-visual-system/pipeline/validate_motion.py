@@ -34,7 +34,10 @@ DEFAULTS = {"max_joint_speed_m_s": 2.5, "max_frame_to_frame_joint_jump_deg": 12.
             # under load, no elbow folding behind the shoulder line, head not
             # dropped to the chest; no implement inside the skin.
             "max_wrist_bend_deg": 25.0, "max_elbow_flexion_deg": 145.0, "max_elbow_medial_m": 0.02,
-            "max_neck_flexion_deg": 30.0, "max_implement_penetration_m": 0.004}
+            "max_neck_flexion_deg": 30.0, "max_implement_penetration_m": 0.004,
+            # P5: the rep timeline shipped to the app may differ from the
+            # animation by at most one frame.
+            "max_tempo_shift_frames": 1}
 
 
 def main() -> None:
@@ -131,6 +134,13 @@ def main() -> None:
             o.evaluated_get(dg).to_mesh_clear()
             depths[o.name].append(deep)
 
+    tempo_file = path / "tempo.json"
+    if tempo_file.exists():
+        from motionlab import tempo as tempo_tl
+        tl = config.load_json(tempo_file)
+        tempo_check = Q.tempo_sync(j, tempo_tl.progress_curve(tl, len(frames)), int(prof["max_tempo_shift_frames"]))
+    else:
+        tempo_check = Q.rec("tempo_sync", "B", "Animation follows tempo.json", Q.NOT_TESTED, detail="no tempo.json")
     records = [
         Q.rec("frames", "A", "Animation has frames and finite joint data",
               Q.PASS if len(frames) > 1 and all(np.isfinite(v).all() for v in j.values()) else Q.FAIL, len(frames)),
@@ -141,6 +151,7 @@ def main() -> None:
         Q.symmetry(j, prof["max_left_right_position_difference_m"]),
         Q.penetration(depths, prof["max_implement_penetration_m"]) if depths else Q.rec("implement_penetration", "C", "Implements do not pass through the body", Q.NOT_TESTED),
         *Q.posture(j, prof),
+        tempo_check,
         Q.rec("skin_stretch", "C", "Skin stretch stays within limits", Q.PASS if worst_stretch[0] <= prof["max_p999_edge_stretch"] else Q.FAIL,
               round(worst_stretch[0], 3), prof["max_p999_edge_stretch"], {"frame": worst_stretch[1]}, "p99.9 edge stretch"),
     ]

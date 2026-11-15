@@ -180,14 +180,8 @@ def default_camera(scene, exercise, aspect):
     presets = config.camera_presets()
     preset = presets["presets"]["three_quarter"]
     sensor_mm = presets["sensor_width_mm"]
-    fps = int(exercise["frame_rate"])
-    phases = {p["id"]: p for p in exercise["exercise_phases"]}
-    frames = [0]
-    for name in ("start_position", "bottom"):
-        phase = phases.get(name)
-        if phase is not None:
-            frames.append(int(round(phase["start_s"] * fps)))
-    points = sample_subject_points(scene, frames)
+    from evs.studio import fit_frames
+    points = sample_subject_points(scene, fit_frames(exercise))
     focus, distance = fit_view(points, preset["azimuth_deg"], preset["elevation_deg"],
                                preset["focal_length_mm"], sensor_mm, aspect, preset["margin"])
     direction = Vector((math.cos(math.radians(preset["elevation_deg"])) * math.sin(math.radians(preset["azimuth_deg"])),

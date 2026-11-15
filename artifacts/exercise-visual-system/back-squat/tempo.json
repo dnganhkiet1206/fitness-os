@@ -1,0 +1,158 @@
+{
+  "schema": "ascnd.tempo/1",
+  "exercise_id": "barbell_back_squat",
+  "frame_rate": 24,
+  "duration_ms": 9300,
+  "starts_at": "top",
+  "notation": "2-0.3-1.6-0.5",
+  "reps": [
+    {
+      "index": 1,
+      "phases": [
+        {
+          "kind": "eccentric",
+          "start_ms": 600,
+          "end_ms": 2600,
+          "from": 1.0,
+          "to": 0.0,
+          "breath": "inhale"
+        },
+        {
+          "kind": "bottom_hold",
+          "start_ms": 2600,
+          "end_ms": 2900,
+          "from": 0.0,
+          "to": 0.0,
+          "breath": "hold"
+        },
+        {
+          "kind": "concentric",
+          "start_ms": 2900,
+          "end_ms": 4500,
+          "from": 0.0,
+          "to": 1.0,
+          "breath": "exhale"
+        },
+        {
+          "kind": "top_hold",
+          "start_ms": 4500,
+          "end_ms": 5000,
+          "from": 1.0,
+          "to": 1.0,
+          "breath": "hold"
+        }
+      ],
+      "start_ms": 600,
+      "end_ms": 5000
+    },
+    {
+      "index": 2,
+      "phases": [
+        {
+          "kind": "eccentric",
+          "start_ms": 5000,
+          "end_ms": 7000,
+          "from": 1.0,
+          "to": 0.0,
+          "breath": "inhale"
+        },
+        {
+          "kind": "bottom_hold",
+          "start_ms": 7000,
+          "end_ms": 7300,
+          "from": 0.0,
+          "to": 0.0,
+          "breath": "hold"
+        },
+        {
+          "kind": "concentric",
+          "start_ms": 7300,
+          "end_ms": 8900,
+          "from": 0.0,
+          "to": 1.0,
+          "breath": "exhale"
+        }
+      ],
+      "start_ms": 5000,
+      "end_ms": 8900
+    }
+  ],
+  "marks": [
+    {
+      "at_ms": 2600,
+      "type": "turn",
+      "rep": 1
+    },
+    {
+      "at_ms": 4500,
+      "type": "rep_complete",
+      "rep": 1
+    },
+    {
+      "at_ms": 7000,
+      "type": "turn",
+      "rep": 2
+    },
+    {
+      "at_ms": 8900,
+      "type": "rep_complete",
+      "rep": 2
+    }
+  ],
+  "cues": [
+    {
+      "at_ms": 0,
+      "rep": 0,
+      "phase": "start_position",
+      "text": "Bar on the upper back, feet about shoulder width, toes slightly out"
+    },
+    {
+      "at_ms": 600,
+      "rep": 1,
+      "phase": "eccentric",
+      "text": "Sit down and back, knees track over the toes"
+    },
+    {
+      "at_ms": 600,
+      "rep": 1,
+      "phase": "eccentric",
+      "text": "Keep the chest up and the bar over the middle of the foot"
+    },
+    {
+      "at_ms": 2600,
+      "rep": 1,
+      "phase": "bottom_hold",
+      "text": "Thighs about parallel to the floor"
+    },
+    {
+      "at_ms": 2900,
+      "rep": 1,
+      "phase": "concentric",
+      "text": "Drive up through the whole foot, hips and chest rise together"
+    },
+    {
+      "at_ms": 5000,
+      "rep": 2,
+      "phase": "eccentric",
+      "text": "Sit down and back, knees track over the toes"
+    },
+    {
+      "at_ms": 5000,
+      "rep": 2,
+      "phase": "eccentric",
+      "text": "Keep the chest up and the bar over the middle of the foot"
+    },
+    {
+      "at_ms": 7000,
+      "rep": 2,
+      "phase": "bottom_hold",
+      "text": "Thighs about parallel to the floor"
+    },
+    {
+      "at_ms": 7300,
+      "rep": 2,
+      "phase": "concentric",
+      "text": "Drive up through the whole foot, hips and chest rise together"
+    }
+  ]
+}

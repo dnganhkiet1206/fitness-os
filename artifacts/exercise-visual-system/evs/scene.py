@@ -159,7 +159,7 @@ def set_timeline(scene: bpy.types.Scene, exercise: dict) -> int:
     scene.render.fps_base = 1.0
     # Motion Lab specs get their phases from the generator (tempo); until then
     # the scene only needs some length.
-    end = max((p["end_s"] for p in exercise["exercise_phases"]), default=float(exercise.get("animation_duration") or 10.0))
+    end = max((p["end_s"] for p in exercise.get("exercise_phases", [])), default=float(exercise.get("animation_duration") or 10.0))
     scene.frame_start = 0
     scene.frame_end = int(round(end * fps))
     scene.frame_set(0)

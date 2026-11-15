@@ -1,0 +1,40 @@
+[
+  {
+    "version": 1,
+    "when": "2026-11-14T22:16:48",
+    "template": "raise_lateral",
+    "steps": {
+      "scene": {
+        "ok": false,
+        "seconds": 3.6
+      }
+    },
+    "total_seconds": 3.6,
+    "qa": "-"
+  },
+  {
+    "version": 2,
+    "when": "2026-11-14T22:18:03",
+    "template": "raise_lateral",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.7
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 2.9
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.6
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 22.1
+      }
+    },
+    "total_seconds": 31.2,
+    "qa": "{\"PASS\": 17}"
+  }
+]
