@@ -133,7 +133,7 @@
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
       ],
       // Góc mặc định từ phía sau (14/11): cơ lưng xô ở mặt sau thân.
-      cameraPosition: [1.0283, 1.2948, -1.4406], cameraTarget: [-0.0607, 0.6038, 0.1146],
+      cameraPosition: [1.0343, 1.294, -1.4504], cameraTarget: [-0.0586, 0.6005, 0.1104],
       focusTexturePrefix: "bent_over_two_dumbbell_row_focus")
 
     /// Motion Lab (14/11, P1 lô 2): họ "press_vertical", ngồi ghế tựa, bả vai theo tay.
@@ -146,7 +146,7 @@
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.tricepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
       ],
-      cameraPosition: [1.8265, 1.7499, 1.9738], cameraTarget: [-0.0029, 0.8082, 0.1443],
+      cameraPosition: [1.8631, 1.7526, 1.9419], cameraTarget: [0.0298, 0.8089, 0.1085],
       focusTexturePrefix: "dumbbell_shoulder_press_focus")
 
     /// Kết quả agent tự kiểm một bài (Kiệt 14/11: bài đã kiểm đầy đủ có dấu
@@ -219,19 +219,11 @@
           checked: fullCheck(qa: "16/17", technique: "gập hông, lưng thẳng, gối mềm, hông lùi ra sau, tạ sát chân xuống giữa cẳng chân, trọng tâm trên bàn chân"),
           remaining: [groinStretch + ": 2,80 / ngưỡng 2,6"])),
       CatalogEntry(
-        title: "Bent Over Two-Dumbbell Row", key: "bent over two-dumbbell row", family: "row",
-        review: Review(
-          date: "14/11",
-          checked: fullCheck(qa: "15/16", technique: "thân gần song song sàn và đứng yên, cẳng tay thẳng đứng, khuỷu kéo sát thân lên ngang lưng"),
-          remaining: [groinStretch + ": 2,83 / ngưỡng 2,6", "Chưa có co rút bả vai ở đỉnh"])),
+        title: "Bent Over Two-Dumbbell Row", key: "bent over two-dumbbell row", family: "row", review: nil,
+        note: "Kiệt 14/11: sai tư thế. Đã sửa: gối gập 31° (cẳng chân thẳng đứng, hông đẩy ra sau), lưng thẳng hơi ưỡn ngực, đầu ngẩng thẳng hàng cột sống, bả vai kéo về sau ở đỉnh. Chờ Kiệt xem lại; còn giãn da háng 2,98"),
       CatalogEntry(
-        title: "Dumbbell Shoulder Press", key: "dumbbell shoulder press", family: "press_vertical (ngồi)",
-        review: Review(
-          date: "14/11",
-          checked: fullCheck(
-            qa: "17/18", technique: "ngồi tựa lưng, tạ từ ngang vai đẩy thẳng lên tới gần duỗi, tạ chụm trên đầu, cẳng tay thẳng đứng",
-            extra: ["Bả vai xoay lên theo tay (nhịp vai–cánh tay)"]),
-          remaining: [groinStretch + ": 3,08 / ngưỡng 2,6"])),
+        title: "Dumbbell Shoulder Press", key: "dumbbell shoulder press", family: "press_vertical (ngồi)", review: nil,
+        note: "Kiệt 14/11: sai tư thế. Đã sửa: bắt đầu với tạ ngang tai, khuỷu thấp hơn vai (trước: tạ ngang đỉnh đầu); khuỷu ở hai bên, chỉ chếch trước 15° (trước: 35°, khuỷu chĩa ra trước mặt). Chờ Kiệt xem lại; còn giãn da háng 3,08"),
     ]
 
     /// Tên bài (đã gập như `PersonalRecords.exerciseKey`) → bản minh hoạ.

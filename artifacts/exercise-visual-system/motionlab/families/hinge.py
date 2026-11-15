@@ -153,6 +153,22 @@ class HingeTemplate:
                 hips_rest = rot(hips_rest)
         return {side: p + (hip - hips_rest) for side, p in pts.items()}
 
+    def girdle_shoulder(self, side: str, hip: np.ndarray, lean_deg: float, elevation_deg: float = 0.0,
+                        retraction_deg: float = 0.0) -> np.ndarray:
+        """Shoulder joint after the clavicle turns (elevation, then retraction:
+        generate_exercise.pose_girdle order), then the trunk lean. Rotations
+        are about the clavicle's head in the rest frame."""
+        from ..primitives import rotation
+        s = self.s
+        sign = 1.0 if side == "l" else -1.0
+        p = np.asarray(s[f"shoulder_{side}"], float)
+        c = s.get(f"clavicle_{side}_head")
+        if c is not None and (elevation_deg or retraction_deg):
+            c = np.asarray(c, float)
+            r = rotation(np.array([0.0, 0.0, 1.0]), sign * retraction_deg) @ rotation(np.array([0.0, 1.0, 0.0]), -sign * elevation_deg)
+            p = c + r @ (p - c)
+        return self._shoulders(hip, lean_deg, {side: p})[side]
+
     def _front_y(self, z: float, hip: np.ndarray, knee: np.ndarray, ankle: np.ndarray) -> float:
         """y of the front skin of the posed leg at height z (the handle must
         stay in front of it)."""

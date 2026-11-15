@@ -34,15 +34,25 @@ from .hinge import HingeTemplate
 class RowTemplate(HingeTemplate):
     defaults = {
         **HingeTemplate.defaults,
-        "trunk_lean_deg": 78.0,
-        "knee_flexion_deg": 20.0,
-        "head_extension_share_of_lean": 0.3,
+        # Knees bent enough that the shins stand about vertical and the hips
+        # sit back (14/11 Kiệt: at 20 deg the shins sloped back and the
+        # legs looked locked, the body leaning on stiff legs).
+        "trunk_lean_deg": 75.0,
+        "knee_flexion_deg": 31.0,
+        # Flat back, chest up: the whole lean at the hips, and the spine a
+        # little extended (pelvis share > 1). 14/11 Kiệt: the first version
+        # bent the spine (rounded upper back, shoulders hunched) and the head
+        # hung to the chest; the source says "keep the head up".
+        "pelvis_share_of_lean": 1.12,
+        "head_extension_share_of_lean": 0.55,
+        # Shoulder blades squeeze back at the top of the pull.
+        "top_scapular_retraction_deg": 16.0,
         # Top of the pull: the upper arm lies along the trunk towards the
         # hips, lifted a little above the line of the back, slightly out
         # from the side. The forearm hangs plumb the whole time (the weight
         # pulls straight down), so the hand path follows from the elbow.
         "top_upper_arm_above_back_deg": 12.0,
-        "top_upper_arm_out_deg": 20.0,
+        "top_upper_arm_out_deg": 24.0,
         "start_elbow_flexion_deg": 7.0,
         "start_arm_out_deg": 7.0,
         "grip_half_width_m": 0.17,
@@ -54,6 +64,7 @@ class RowTemplate(HingeTemplate):
         lean, knee = t["trunk_lean_deg"], t["knee_flexion_deg"]
         self.hip, self.hips, self.knees, self.ankles, self.alpha = self.legs(lean, knee)
         self.shoulders = self._shoulders(self.hip, lean)
+        self.lean = lean
         mid = 0.5 * (self.shoulders["l"] + self.shoulders["r"])
         self.up_trunk = unit(mid - self.hip)                   # hips -> shoulders
         self.dorsal = unit(np.cross(LEFT, self.up_trunk))      # back side (faces up when bent)
@@ -86,8 +97,11 @@ class RowTemplate(HingeTemplate):
                         "head_extension_deg": lean * t["head_extension_share_of_lean"]},
                "poles": {}, "implements": {}, "wrists": {},
                "metrics": {"trunk_lean_deg": lean, "knee_flexion_deg": t["knee_flexion_deg"], "shank_tilt_deg": self.alpha}}
+        retract = progress * t["top_scapular_retraction_deg"]
+        out["girdle"] = {}
         for side, sign in (("l", 1.0), ("r", -1.0)):
-            sh = self.shoulders[side]
+            sh = self.girdle_shoulder(side, self.hip, self.lean, retraction_deg=retract)
+            out["girdle"][side] = {"clavicle_retraction_deg": retract}
             elbow = sh + self._upper(side, progress) * s["upper_arm_m"]
             wrist = elbow + np.array([0.0, 0.0, -1.0]) * s["forearm_m"]
             # A fixed bend side (towards the hips, up and out): a pole taken

@@ -149,15 +149,20 @@ def pose_girdle(rig, girdle: dict, frame: int) -> None:
         g = girdle.get(side)
         if not g:
             continue
-        for bone, deg in ((f"clavicle_{side}", g["clavicle_elevation_deg"]), (f"scapula_{side}", g["scapula_upward_deg"])):
+        # Elevation (lateral end up, about front-back Y) then retraction
+        # (lateral end back, about vertical Z: shoulder blades squeezed).
+        for bone, turns in ((f"clavicle_{side}", ((Vector((0, 1, 0)), -sign * g.get("clavicle_elevation_deg", 0.0)),
+                                                   (Vector((0, 0, 1)), sign * g.get("clavicle_retraction_deg", 0.0)))),
+                            (f"scapula_{side}", ((Vector((0, 1, 0)), -sign * g.get("scapula_upward_deg", 0.0)),))):
             if bone not in rig.pose.bones:
                 continue
             pb = rig.pose.bones[bone]
             pb.rotation_mode = "QUATERNION"
             pb.rotation_quaternion = Quaternion()
             bpy.context.view_layer.update()
-            if deg:
-                motion.rotate_bone_about_armature_axis(rig, bone, Vector((0, 1, 0)), -sign * deg)
+            for axis, deg in turns:
+                if deg:
+                    motion.rotate_bone_about_armature_axis(rig, bone, axis, deg)
             pb.keyframe_insert("rotation_quaternion", frame=frame)
     bpy.context.view_layer.update()
 

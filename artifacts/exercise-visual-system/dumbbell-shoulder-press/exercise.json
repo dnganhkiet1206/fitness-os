@@ -319,6 +319,8 @@
     "remaining": [
       "giãn da háng trước (giới hạn lưới nhân vật 003) 3,08/2,6"
     ],
-    "note": "Agent self-check only; status stays DRAFT until a qualified reviewer approves."
+    "note": "Agent self-check only; status stays DRAFT until a qualified reviewer approves.",
+    "owner_feedback": "Kiệt 14/11: wrong posture; fixed start with dumbbells at ear height and elbows below the shoulders, elbows to the sides (15 deg forward, was 35). Awaiting Kiệt's re-check.",
+    "status": "reopened"
   }
 }

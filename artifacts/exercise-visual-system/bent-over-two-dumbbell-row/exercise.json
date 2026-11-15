@@ -310,6 +310,8 @@
       "giãn da háng trước (giới hạn lưới nhân vật 003) 2,83/2,6",
       "chưa có co rút bả vai ở đỉnh"
     ],
-    "note": "Agent self-check only; status stays DRAFT until a qualified reviewer approves."
+    "note": "Agent self-check only; status stays DRAFT until a qualified reviewer approves.",
+    "owner_feedback": "Kiệt 14/11: wrong posture; fixed knees 31 deg (shins vertical, hips back), flat back with chest up, head in line, scapular retraction at the top. Awaiting Kiệt's re-check.",
+    "status": "reopened"
   }
 }

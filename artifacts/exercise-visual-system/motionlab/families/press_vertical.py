@@ -5,9 +5,11 @@ with other parameters).
 Technique facts used (sources in the exercise spec's motion_provenance):
 * seated on a bench with the back pad upright, back against the pad, feet
   flat on the floor (free-exercise-db "Dumbbell Shoulder Press", ACE);
-* start: dumbbells at shoulder height, palms forward, elbows below the
-  hands and a little in front of the body (arms in the plane of the
-  shoulder blade, ~30 deg forward of the frontal plane), forearms vertical;
+* start: dumbbells at shoulder height (beside the ears), palms forward,
+  elbows BELOW the shoulders (upper arm ~60-65 deg from the side) and only a
+  little in front of the body (~15 deg), forearms vertical. 14/11 Kiệt: the
+  first version started with the weights above the head and the elbows far
+  in front of the face, which reads as a wrong position;
 * press: the weights go up until the arms are almost straight and the
   dumbbells meet above the head, slightly in front of it; then back down;
 * the shoulder girdle moves with the arm: the shoulder blade turns upward
@@ -42,12 +44,12 @@ class PressVerticalTemplate(HingeTemplate):
         "head_extension_share_of_lean": 0.0,
         "seated_ankle_half_width_m": 0.20,
         "seated_toe_out_deg": 12.0,
-        "bottom_upper_arm_elevation_deg": 82.0,
-        "arm_plane_from_frontal_deg": 35.0,
+        "bottom_upper_arm_elevation_deg": 64.0,
+        "arm_plane_from_frontal_deg": 15.0,
         "top_wrist_half_gap_m": 0.10,
         "top_wrist_in_front_m": 0.06,
         "top_reach_fraction": 0.988,
-        "bottom_forearm_in_deg": 14.0,
+        "bottom_forearm_in_deg": 8.0,
         "palm_centre_beyond_wrist_m": 0.075,
     }
 
@@ -60,14 +62,7 @@ class PressVerticalTemplate(HingeTemplate):
     # Shoulder joint for a given girdle pose, through the same chain the
     # generator uses: clavicle elevation in the rest frame, then the trunk.
     def shoulder(self, side: str, clav_deg: float) -> np.ndarray:
-        s = self.s
-        sign = 1.0 if side == "l" else -1.0
-        p = np.asarray(s[f"shoulder_{side}"], float)
-        c = s.get(f"clavicle_{side}_head")
-        if c is not None and clav_deg:
-            c = np.asarray(c, float)
-            p = c + rotation(np.array([0.0, 1.0, 0.0]), -sign * clav_deg) @ (p - c)
-        return self._shoulders(self.hip, self.lean, {side: p})[side]
+        return self.girdle_shoulder(side, self.hip, self.lean, elevation_deg=clav_deg)
 
     def _arm(self, side: str, progress: float) -> dict:
         t, s = self.t, self.s

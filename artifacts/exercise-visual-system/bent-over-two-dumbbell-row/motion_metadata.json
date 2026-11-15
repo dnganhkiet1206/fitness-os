@@ -102,8 +102,8 @@
     "trunk_lean_top_deg": 2.0,
     "knee_flexion_top_deg": 6.0,
     "knee_flexion_bottom_deg": 18.0,
-    "pelvis_share_of_lean": 0.85,
-    "head_extension_share_of_lean": 0.3,
+    "pelvis_share_of_lean": 1.12,
+    "head_extension_share_of_lean": 0.55,
     "stance_half_width_m": 0.13,
     "toe_out_deg": 6.0,
     "midfoot_forward_of_ankle_m": 0.05,
@@ -112,10 +112,11 @@
     "handle_behind_arm_line_m": 0.04,
     "elbow_flexion_deg": 8.0,
     "palm_centre_beyond_wrist_m": 0.075,
-    "trunk_lean_deg": 78.0,
-    "knee_flexion_deg": 20.0,
+    "trunk_lean_deg": 75.0,
+    "knee_flexion_deg": 31.0,
+    "top_scapular_retraction_deg": 16.0,
     "top_upper_arm_above_back_deg": 12.0,
-    "top_upper_arm_out_deg": 20.0,
+    "top_upper_arm_out_deg": 24.0,
     "start_elbow_flexion_deg": 7.0,
     "start_arm_out_deg": 7.0
   },
@@ -507,299 +508,299 @@
     {
       "frame": 0,
       "progress": 0.0,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 8.017,
-      "elbow_flexion_r": 8.017
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 7.608,
+      "elbow_flexion_r": 7.608
     },
     {
       "frame": 6,
       "progress": 0.0,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 8.017,
-      "elbow_flexion_r": 8.017
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 7.608,
+      "elbow_flexion_r": 7.608
     },
     {
       "frame": 12,
       "progress": 0.0,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 8.017,
-      "elbow_flexion_r": 8.017
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 7.608,
+      "elbow_flexion_r": 7.608
     },
     {
       "frame": 18,
       "progress": 0.0161,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 7.166,
-      "elbow_flexion_r": 7.166
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 6.795,
+      "elbow_flexion_r": 6.795
     },
     {
       "frame": 24,
       "progress": 0.2099,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 15.971,
-      "elbow_flexion_r": 15.971
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 16.967,
+      "elbow_flexion_r": 16.967
     },
     {
       "frame": 30,
       "progress": 0.5778,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 49.749,
-      "elbow_flexion_r": 49.749
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 51.957,
+      "elbow_flexion_r": 51.957
     },
     {
       "frame": 36,
       "progress": 0.8965,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 79.645,
-      "elbow_flexion_r": 79.645
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 82.83,
+      "elbow_flexion_r": 82.83
     },
     {
       "frame": 42,
       "progress": 0.9993,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 89.308,
-      "elbow_flexion_r": 89.308
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 92.807,
+      "elbow_flexion_r": 92.807
     },
     {
       "frame": 48,
       "progress": 1.0,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 89.372,
-      "elbow_flexion_r": 89.372
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 92.873,
+      "elbow_flexion_r": 92.873
     },
     {
       "frame": 54,
       "progress": 0.9998,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 89.353,
-      "elbow_flexion_r": 89.353
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 92.853,
+      "elbow_flexion_r": 92.853
     },
     {
       "frame": 60,
       "progress": 0.9645,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 86.037,
-      "elbow_flexion_r": 86.037
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 89.429,
+      "elbow_flexion_r": 89.429
     },
     {
       "frame": 66,
       "progress": 0.8295,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 73.352,
-      "elbow_flexion_r": 73.352
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 76.333,
+      "elbow_flexion_r": 76.333
     },
     {
       "frame": 72,
       "progress": 0.6033,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 52.139,
-      "elbow_flexion_r": 52.139
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 54.426,
+      "elbow_flexion_r": 54.426
     },
     {
       "frame": 78,
       "progress": 0.3466,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 28.274,
-      "elbow_flexion_r": 28.274
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 29.752,
+      "elbow_flexion_r": 29.752
     },
     {
       "frame": 84,
       "progress": 0.135,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 9.874,
-      "elbow_flexion_r": 9.874
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 10.51,
+      "elbow_flexion_r": 10.51
     },
     {
       "frame": 90,
       "progress": 0.0215,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 6.928,
-      "elbow_flexion_r": 6.928
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 6.579,
+      "elbow_flexion_r": 6.579
     },
     {
       "frame": 96,
       "progress": 0.0,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 8.017,
-      "elbow_flexion_r": 8.017
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 7.608,
+      "elbow_flexion_r": 7.608
     },
     {
       "frame": 102,
       "progress": 0.0,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 8.017,
-      "elbow_flexion_r": 8.017
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 7.608,
+      "elbow_flexion_r": 7.608
     },
     {
       "frame": 108,
       "progress": 0.0051,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 7.725,
-      "elbow_flexion_r": 7.725
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 7.325,
+      "elbow_flexion_r": 7.325
     },
     {
       "frame": 114,
       "progress": 0.1522,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 11.181,
-      "elbow_flexion_r": 11.181
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 11.915,
+      "elbow_flexion_r": 11.915
     },
     {
       "frame": 120,
       "progress": 0.5,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 42.488,
-      "elbow_flexion_r": 42.488
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 44.454,
+      "elbow_flexion_r": 44.454
     },
     {
       "frame": 126,
       "progress": 0.8478,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 75.068,
-      "elbow_flexion_r": 75.068
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 78.105,
+      "elbow_flexion_r": 78.105
     },
     {
       "frame": 132,
       "progress": 0.9949,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 88.894,
-      "elbow_flexion_r": 88.894
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 92.379,
+      "elbow_flexion_r": 92.379
     },
     {
       "frame": 138,
       "progress": 1.0,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 89.372,
-      "elbow_flexion_r": 89.372
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 92.873,
+      "elbow_flexion_r": 92.873
     },
     {
       "frame": 144,
       "progress": 1.0,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 89.372,
-      "elbow_flexion_r": 89.372
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 92.873,
+      "elbow_flexion_r": 92.873
     },
     {
       "frame": 150,
       "progress": 0.9785,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 87.35,
-      "elbow_flexion_r": 87.35
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 90.785,
+      "elbow_flexion_r": 90.785
     },
     {
       "frame": 156,
       "progress": 0.865,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 76.691,
-      "elbow_flexion_r": 76.691
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 79.781,
+      "elbow_flexion_r": 79.781
     },
     {
       "frame": 162,
       "progress": 0.6534,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 56.828,
-      "elbow_flexion_r": 56.828
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 59.269,
+      "elbow_flexion_r": 59.269
     },
     {
       "frame": 168,
       "progress": 0.3967,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 32.89,
-      "elbow_flexion_r": 32.89
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 34.53,
+      "elbow_flexion_r": 34.53
     },
     {
       "frame": 174,
       "progress": 0.1705,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 12.644,
-      "elbow_flexion_r": 12.644
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 13.47,
+      "elbow_flexion_r": 13.47
     },
     {
       "frame": 180,
       "progress": 0.0355,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 6.466,
-      "elbow_flexion_r": 6.466
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 6.203,
+      "elbow_flexion_r": 6.203
     },
     {
       "frame": 186,
       "progress": 0.0002,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 8.004,
-      "elbow_flexion_r": 8.004
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 7.596,
+      "elbow_flexion_r": 7.596
     },
     {
       "frame": 192,
       "progress": 0.0,
-      "trunk_lean_deg": 78.0,
-      "knee_flexion_deg": 20.0,
-      "shank_tilt_deg": -4.627,
-      "elbow_flexion_l": 8.017,
-      "elbow_flexion_r": 8.017
+      "trunk_lean_deg": 75.0,
+      "knee_flexion_deg": 31.0,
+      "shank_tilt_deg": 0.209,
+      "elbow_flexion_l": 7.608,
+      "elbow_flexion_r": 7.608
     }
   ]
 }
