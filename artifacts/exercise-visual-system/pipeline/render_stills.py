@@ -63,14 +63,8 @@ def fit_camera(scene, exercise, preset_key, aspect):
     else:
         preset = presets["presets"][preset_key]
     sensor_mm = presets["sensor_width_mm"]
-    fps = int(exercise["frame_rate"])
-    phases = {p["id"]: p for p in exercise["exercise_phases"]}
-    frames = [0]
-    for name in ("start_position", "bottom"):
-        phase = phases.get(name)
-        if phase is not None:
-            frames.append(int(round(phase["start_s"] * fps)))
-    points = sample_subject_points(scene, frames)
+    from evs.studio import fit_frames
+    points = sample_subject_points(scene, fit_frames(exercise))
     focus, distance = studio.fit_view(points, preset["azimuth_deg"], preset["elevation_deg"],
                                       preset["focal_length_mm"], sensor_mm, aspect, preset["margin"])
     cam = studio.add_camera(f"EVS_Still_{preset_key}", focus, preset["azimuth_deg"],
