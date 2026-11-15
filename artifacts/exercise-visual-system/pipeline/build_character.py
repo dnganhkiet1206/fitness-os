@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import bpy  # noqa: E402
 from mathutils import Vector  # noqa: E402
 
-from evs import bl_util, character, config, materials, studio  # noqa: E402
+from evs import bl_util, character, config, helper_bones, materials, studio  # noqa: E402
 from evs import rig as evs_rig  # noqa: E402
 
 
@@ -52,6 +52,8 @@ def main() -> None:
         facts.update(character.make_faceless(body, cfg, facts))
         facts["nipple_vertices_faired"] = character.remove_nipples(body)
         character.drop_landmark_groups(body)
+        # Before the shorts: they copy the body's weights, helpers included.
+        facts["helper_bones"] = helper_bones.add_helpers(body, rig, cfg["rig"].get("helper_bones", {}))
         shorts = character.build_shorts(body, rig, cfg)
         character.finish_body(body, rig, cfg)
         facts["grip_joint_angles_deg"] = evs_rig.add_controls(rig, cfg["grip"], body)["l"]

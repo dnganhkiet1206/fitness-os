@@ -199,7 +199,7 @@
       "stage": "C",
       "title": "Skin stretch stays within limits",
       "status": "FAIL",
-      "measured": 2.923,
+      "measured": 2.752,
       "limit": 2.6,
       "where": {
         "frame": 53

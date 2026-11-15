@@ -61,5 +61,38 @@
     },
     "total_seconds": 35.4,
     "qa": "{\"PASS\": 18}"
+  },
+  {
+    "version": 4,
+    "when": "2026-11-15T16:56:37",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 26.5
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 66.6
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 39.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 116.3
+      },
+      "export": {
+        "ok": true,
+        "seconds": 271.6
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 92.3
+      }
+    },
+    "total_seconds": 628.8,
+    "qa": "{\"PASS\": 19}"
   }
 ]

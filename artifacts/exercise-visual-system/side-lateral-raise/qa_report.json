@@ -198,10 +198,10 @@
       "stage": "C",
       "title": "Skin stretch stays within limits",
       "status": "PASS",
-      "measured": 2.373,
+      "measured": 2.261,
       "limit": 2.6,
       "where": {
-        "frame": 109
+        "frame": 54
       },
       "detail": "p99.9 edge stretch"
     },

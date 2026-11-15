@@ -1,6 +1,6 @@
 {
   "master_character_id": "master_character_003",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "One faceless athletic male figure reused by every exercise and every camera. Built from the MakeHuman base mesh through MPFB (generated characters are CC0), then made faceless and given shorts by this pipeline.",
   "generator": {
     "tool": "MPFB (MakeHuman Plugin For Blender)",
@@ -124,6 +124,123 @@
         "upperleg02.R",
         "thigh_r",
         true
+      ]
+    },
+    "helper_bones": {
+      "comment": "Corrective helper bones (evs/helper_bones.py), Kiệt 15/11: traps get their own bone that follows the clavicle, and every deep-bending joint gets a half-rotation fold bone so the skin does not collapse or get dragged by the neighbouring group. Deform bones, constraint driven, exported (baked) like the twist bones.",
+      "folds": [
+        {
+          "name": "hip_fold_{s}",
+          "child": "thigh_{s}",
+          "parent_bone": "pelvis",
+          "parent_groups": [
+            "pelvis",
+            "spine_01"
+          ],
+          "child_groups": [
+            "thigh_{s}",
+            "thigh_twist_{s}"
+          ],
+          "radius_m": 0.18,
+          "share": 0.7,
+          "influence": 0.5
+        },
+        {
+          "name": "knee_fold_{s}",
+          "child": "calf_{s}",
+          "parent_bone": "thigh_{s}",
+          "parent_groups": [
+            "thigh_{s}",
+            "thigh_twist_{s}"
+          ],
+          "child_groups": [
+            "calf_{s}"
+          ],
+          "radius_m": 0.12,
+          "share": 0.7,
+          "influence": 0.5
+        },
+        {
+          "name": "elbow_fold_{s}",
+          "child": "lowerarm_{s}",
+          "parent_bone": "upperarm_{s}",
+          "parent_groups": [
+            "upperarm_{s}",
+            "upperarm_twist_{s}"
+          ],
+          "child_groups": [
+            "lowerarm_{s}",
+            "lowerarm_twist_{s}"
+          ],
+          "radius_m": 0.09,
+          "share": 0.7,
+          "influence": 0.5
+        },
+        {
+          "name": "shoulder_fold_{s}",
+          "child": "upperarm_{s}",
+          "parent_bone": "scapula_{s}",
+          "parent_groups": [
+            "clavicle_{s}",
+            "scapula_{s}",
+            "spine_03",
+            "pec_{s}"
+          ],
+          "child_groups": [
+            "upperarm_{s}",
+            "upperarm_twist_{s}"
+          ],
+          "radius_m": 0.14,
+          "share": 0.6,
+          "influence": 0.5,
+          "why": "The glenoid is on the shoulder blade and the deltoid arises from the scapular spine, acromion and clavicle, so the shoulder fold rides on the scapula (upward rotation) and turns half as far as the arm."
+        },
+        {
+          "name": "thumb_fold_{s}",
+          "child": "thumb_01_{s}",
+          "parent_bone": "hand_{s}",
+          "parent_groups": [
+            "hand_{s}"
+          ],
+          "child_groups": [
+            "thumb_01_{s}",
+            "thumb_02_{s}"
+          ],
+          "radius_m": 0.05,
+          "share": 0.6,
+          "influence": 0.5,
+          "why": "The thenar web between thumb and index finger stretched 5x in every grip: the skin there was split between the hand and the second thumb bone."
+        }
+      ],
+      "trapezius": {
+        "name": "trap_{s}",
+        "parent_bone": "spine_03",
+        "influence": 0.6,
+        "share": 0.7,
+        "neck_reach": 0.5
+      },
+      "smooth": [
+        {
+          "name": "crotch",
+          "hip_bone": "thigh_l",
+          "half_width_m": 0.08,
+          "z_from_hip_m": [
+            -0.23,
+            0.0
+          ],
+          "iterations": 60,
+          "groups": [
+            "pelvis",
+            "spine_01",
+            "thigh_l",
+            "thigh_r",
+            "thigh_twist_l",
+            "thigh_twist_r",
+            "hip_fold_l",
+            "hip_fold_r"
+          ],
+          "why": "The pelvis-to-thigh switch sat on a 4 mm strip at the midline, so 90 deg of hip flexion tore it 8-12x. Skin stretch across a fold is about arc length over band width; spreading the switch over 8 cm each side keeps it under 2.6x (measured on the seated press, 15/11)."
+        }
       ]
     }
   },

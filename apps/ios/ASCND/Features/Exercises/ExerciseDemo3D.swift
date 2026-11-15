@@ -70,7 +70,7 @@
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.secondary"),
       ],
-      cameraPosition: [1.6631, 1.7949, 1.7473], cameraTarget: [-0.0249, 0.926, 0.0593],
+      cameraPosition: [1.628, 1.7949, 1.7825], cameraTarget: [-0.0457, 0.9334, 0.1088],
       focusTexturePrefix: "dumbbell_curl_focus")
 
     /// Motion Lab (14/11): tạo từ template họ "squat" (`motionlab/families/squat.py`).
@@ -83,7 +83,7 @@
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.adductors", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.secondary"),
       ],
-      cameraPosition: [2.8529, 2.2835, 2.7084], cameraTarget: [0.1056, 0.8694, -0.039],
+      cameraPosition: [2.8566, 2.297, 2.7079], cameraTarget: [0.1091, 0.8827, -0.0397],
       focusTexturePrefix: "back_squat_focus")
 
     /// Motion Lab (14/11, P1): họ "curl", tay cầm trung tính.
@@ -94,7 +94,7 @@
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.primary"),
       ],
-      cameraPosition: [1.6303, 1.7949, 1.7803], cameraTarget: [-0.0105, 0.9503, 0.1396],
+      cameraPosition: [1.6303, 1.7949, 1.7803], cameraTarget: [-0.0145, 0.9483, 0.1356],
       focusTexturePrefix: "hammer_curl_focus")
 
     /// Motion Lab (14/11, P1): họ "raise_lateral" (`motionlab/families/raise_lateral.py`).
@@ -106,7 +106,7 @@
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
       ],
-      cameraPosition: [2.4272, 2.1371, 2.4476], cameraTarget: [0.0779, 0.9279, 0.0983],
+      cameraPosition: [2.4272, 2.1371, 2.4476], cameraTarget: [0.0783, 0.9281, 0.0987],
       focusTexturePrefix: "side_lateral_raise_focus")
 
     /// Motion Lab (14/11, P1): họ "hinge" (`motionlab/families/hinge.py`).
@@ -119,7 +119,7 @@
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.secondary"),
       ],
       // Góc mặc định từ phía sau (14/11): cơ chính ở mặt sau thân.
-      cameraPosition: [1.3624, 1.7978, -1.8002], cameraTarget: [-0.0119, 0.9257, 0.1624],
+      cameraPosition: [1.3615, 1.7978, -1.8009], cameraTarget: [-0.013, 0.9256, 0.162],
       focusTexturePrefix: "stiff_leg_dumbbell_deadlift_focus")
 
     /// Motion Lab (14/11, P1 lô 2): họ "row" (`motionlab/families/row.py`).
@@ -133,7 +133,7 @@
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
       ],
       // Góc mặc định từ phía sau (14/11): cơ lưng xô ở mặt sau thân.
-      cameraPosition: [1.0387, 1.2962, -1.4546], cameraTarget: [-0.0576, 0.6005, 0.1111],
+      cameraPosition: [1.0397, 1.2966, -1.4554], cameraTarget: [-0.0595, 0.5992, 0.1143],
       focusTexturePrefix: "bent_over_two_dumbbell_row_focus")
 
     /// Motion Lab (14/11, P1 lô 2): họ "press_vertical", ngồi ghế tựa, bả vai theo tay.
