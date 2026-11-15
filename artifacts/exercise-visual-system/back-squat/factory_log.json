@@ -164,5 +164,32 @@
     },
     "total_seconds": 239.3,
     "qa": "{\"PASS\": 15, \"FAIL\": 1}"
+  },
+  {
+    "version": 7,
+    "when": "2026-11-15T02:26:22",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true
+      },
+      "generate": {
+        "ok": true
+      },
+      "validate": {
+        "ok": true
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 677.8
+      },
+      "export": {
+        "ok": true,
+        "seconds": 48.6
+      }
+    },
+    "total_seconds": null,
+    "qa": "{\"PASS\": 15, \"FAIL\": 1}",
+    "note": "Factory build killed mid-sheet by a runtime restart after scene/generate/validate had completed (18/24 stills rendered). Resumed with the same render script for the 6 missing high-view stills, the factory ffmpeg compose, and export_usdz.py; step timings for the killed run were lost with it."
   }
 ]
