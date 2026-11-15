@@ -139,5 +139,117 @@
     },
     "total_seconds": 61.5,
     "qa": "{\"PASS\": 17, \"FAIL\": 1}"
+  },
+  {
+    "version": 6,
+    "when": "2026-11-14T23:51:59",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.9
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 9.4
+      },
+      "validate": {
+        "ok": false,
+        "seconds": 1.9
+      }
+    },
+    "total_seconds": 16.1,
+    "qa": "{\"PASS\": 17, \"FAIL\": 1}"
+  },
+  {
+    "version": 7,
+    "when": "2026-11-14T23:53:29",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.7
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 9.4
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.9
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 28.2
+      }
+    },
+    "total_seconds": 44.2,
+    "qa": "{\"PASS\": 17, \"FAIL\": 1, \"REQUIRES_MANUAL_REVIEW\": 1}"
+  },
+  {
+    "version": 8,
+    "when": "2026-11-15T00:01:18",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 5.1
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 12.5
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.9
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 48.9
+      },
+      "export": {
+        "ok": true,
+        "seconds": 28.6
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 5.4
+      }
+    },
+    "total_seconds": 105.6,
+    "qa": "{\"PASS\": 17, \"FAIL\": 1, \"REQUIRES_MANUAL_REVIEW\": 1}"
+  },
+  {
+    "version": 9,
+    "when": "2026-11-15T00:05:35",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.2
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 9.0
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.0
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 37.8
+      },
+      "export": {
+        "ok": true,
+        "seconds": 26.4
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 5.0
+      }
+    },
+    "total_seconds": 86.0,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1}"
   }
 ]

@@ -3,28 +3,28 @@
   "exercise_id": "dumbbell_shoulder_press",
   "master_character_id": "master_character_003",
   "usdz": "dumbbell_shoulder_press_animation.usdz",
-  "size_bytes": 4241428,
+  "size_bytes": 4219418,
   "zip_members": [
     "dumbbell_shoulder_press_animation.usdc",
+    "textures/_usdz_apparel_emission.png",
+    "textures/_usdz_apparel_albedo.png",
     "textures/_usdz_body_emission.png",
     "textures/_usdz_body_normal.png",
-    "textures/_usdz_body_albedo.png",
-    "textures/_usdz_apparel_emission.png",
-    "textures/_usdz_apparel_albedo.png"
+    "textures/_usdz_body_albedo.png"
   ],
   "default_camera": {
     "preset_id": "three_quarter",
     "position_m": [
-      1.8631,
-      1.7526,
-      1.9419
+      1.8737,
+      1.7303,
+      1.8984
     ],
     "target_m": [
-      0.0298,
-      0.8089,
-      0.1085
+      0.0554,
+      0.7944,
+      0.0801
     ],
-    "distance_m": 2.7591,
+    "distance_m": 2.7365,
     "vertical_fov_deg": 41.26,
     "aspect": 0.5625
   },

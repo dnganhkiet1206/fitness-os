@@ -3,7 +3,7 @@
   "exercise_id": "side_lateral_raise",
   "master_character_id": "master_character_003",
   "usdz": "side_lateral_raise_animation.usdz",
-  "size_bytes": 3965148,
+  "size_bytes": 3981513,
   "zip_members": [
     "side_lateral_raise_animation.usdc",
     "textures/_usdz_body_emission.png",
@@ -15,16 +15,16 @@
   "default_camera": {
     "preset_id": "three_quarter",
     "position_m": [
-      2.2529,
-      2.0924,
-      2.3874
+      2.4272,
+      2.1371,
+      2.4476
     ],
     "target_m": [
-      0.0102,
-      0.938,
-      0.1448
+      0.0779,
+      0.9279,
+      0.0983
     ],
-    "distance_m": 3.3751,
+    "distance_m": 3.5355,
     "vertical_fov_deg": 41.26,
     "aspect": 0.5625
   },

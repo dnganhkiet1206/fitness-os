@@ -199,3 +199,17 @@ def tempo_sync(j: dict, expected: list, max_shift_frames: int = 1, min_corr: flo
     return rec("tempo_sync", "B", "Animation follows tempo.json (rep timeline shipped to the app)", PASS if ok else FAIL,
                {"shift_frames": shift, "correlation": round(score, 4)}, {"max_shift_frames": max_shift_frames, "min_correlation": min_corr},
                {"joint": joint}, "best alignment of the farthest-travelling joint with the progress rebuilt from tempo.json")
+
+
+def implement_clash(overlaps: dict, frames: list) -> dict:
+    """Two implements must never pass through each other (14/11 Kiệt's
+    recording: the two dumbbells of the shoulder press overlapped at the
+    top and no check caught it). ``overlaps``: "A|B" -> per-frame count of
+    overlapping triangle pairs."""
+    worst = (0, None, None)
+    for pair, arr in overlaps.items():
+        for i, n in enumerate(arr):
+            if n > worst[0]:
+                worst = (int(n), pair, frames[i])
+    return rec("implement_clash", "C", "Implements do not pass through each other", PASS if worst[0] == 0 else FAIL,
+               worst[0], 0, {"pair": worst[1], "frame": worst[2]}, "overlapping triangle pairs")

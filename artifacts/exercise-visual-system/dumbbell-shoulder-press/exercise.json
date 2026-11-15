@@ -31,7 +31,13 @@
         0,
         0.3,
         0
-      ]
+      ],
+      "setup": {
+        "back_pad": "upright, about 80-85 deg from the floor (8 deg off vertical)",
+        "seat": "flat, 45 cm",
+        "placement": "placed by the template so the back pad touches the upper back"
+      },
+      "role": "part of the exercise: seated, back on the pad"
     }
   ],
   "primary_muscles": [
@@ -83,8 +89,8 @@
       "license": "original work of this repository"
     },
     {
-      "what": "seated on an upright bench, back on the pad; dumbbells at shoulder height, palms forward; press until the arms are almost straight and the weights meet overhead",
-      "source": "free-exercise-db 'Dumbbell Shoulder Press' (Unlicense, used by the app library); ACE exercise library (seated shoulder press)",
+      "what": "seated on an upright bench, back on the pad; dumbbells to each side of the shoulders with elbows below the wrists; press up until the arms are extended overhead (compared with the ExRx photo, 14/11)",
+      "source": "ExRx 'Dumbbell Shoulder Press' (instructions and photo); free-exercise-db 'Dumbbell Shoulder Press' (Unlicense, used by the app library)",
       "license": "facts"
     },
     {
@@ -105,18 +111,18 @@
   ],
   "phase_cues": {
     "start_position": [
-      "Sit tall, back against the pad, feet flat",
-      "Dumbbells at shoulder height, palms forward"
+      "Set the bench back upright (80-85°), sit with your back and head against the pad, feet flat",
+      "Dumbbells beside the shoulders, palms forward, elbows under the wrists"
     ],
     "concentric": [
-      "Press the weights straight up",
-      "Bring them together above the head"
+      "Press straight up over the shoulders",
+      "Forearms stay vertical under the weights"
     ],
     "top_hold": [
-      "Arms almost straight, do not lock hard"
+      "Arms almost straight above the shoulders; do not bang the weights together"
     ],
     "eccentric": [
-      "Lower slowly back to shoulder height"
+      "Lower slowly back beside the shoulders"
     ]
   },
   "camera_presets": [
@@ -184,18 +190,17 @@
     "max_forearm_frontal_tilt_during_rep_deg": 10.0,
     "max_hand_into_bar_comment": "The skin of the palm is rigid in this rig. Up to 8 mm of palm pad inside the bar stands for soft tissue pressed flat by the load; more than that, or any finger passing through the bar, is a defect.",
     "elbow_tracking_below_deg": 150.0,
-    "max_elbow_medial_m": 0.06,
-    "max_elbow_medial_comment": "Overhead press: at lockout the hands meet above the head, so the elbows sit a few cm inside the shoulder line by design (free-exercise-db: 'push the dumbbells upward until they touch'). The default 0.02 m targets elbows tucked behind the back in squats."
+    "max_elbow_medial_m": 0.02
   },
   "technical_cues": [
-    "Back stays on the pad; no arching",
-    "Forearms stay vertical under the weights",
-    "Press up and slightly in"
+    "Bench upright, back stays on the pad",
+    "Elbows stay under the wrists the whole way",
+    "Press straight up, not in a V"
   ],
   "common_mistakes": [
     "Arching the lower back off the pad",
-    "Flaring the elbows straight out and behind the body",
-    "Lowering only halfway"
+    "Letting the elbows drift behind the body or in front of the face",
+    "Bringing the dumbbells together in a V and knocking them at the top"
   ],
   "status": "DRAFT",
   "brand_profile_id": "placeholder",
@@ -221,8 +226,8 @@
       "start_s": 0.0,
       "end_s": 0.6,
       "cues": [
-        "Sit tall, back against the pad, feet flat",
-        "Dumbbells at shoulder height, palms forward"
+        "Set the bench back upright (80-85°), sit with your back and head against the pad, feet flat",
+        "Dumbbells beside the shoulders, palms forward, elbows under the wrists"
       ],
       "checks": []
     },
@@ -232,8 +237,8 @@
       "start_s": 0.6,
       "end_s": 2.0,
       "cues": [
-        "Press the weights straight up",
-        "Bring them together above the head"
+        "Press straight up over the shoulders",
+        "Forearms stay vertical under the weights"
       ],
       "checks": []
     },
@@ -243,7 +248,7 @@
       "start_s": 2.0,
       "end_s": 2.3,
       "cues": [
-        "Arms almost straight, do not lock hard"
+        "Arms almost straight above the shoulders; do not bang the weights together"
       ],
       "checks": []
     },
@@ -253,7 +258,7 @@
       "start_s": 2.3,
       "end_s": 4.3,
       "cues": [
-        "Lower slowly back to shoulder height"
+        "Lower slowly back beside the shoulders"
       ],
       "checks": []
     },
@@ -271,8 +276,8 @@
       "start_s": 4.7,
       "end_s": 6.1,
       "cues": [
-        "Press the weights straight up",
-        "Bring them together above the head"
+        "Press straight up over the shoulders",
+        "Forearms stay vertical under the weights"
       ],
       "checks": []
     },
@@ -282,7 +287,7 @@
       "start_s": 6.1,
       "end_s": 6.4,
       "cues": [
-        "Arms almost straight, do not lock hard"
+        "Arms almost straight above the shoulders; do not bang the weights together"
       ],
       "checks": []
     },
@@ -292,7 +297,7 @@
       "start_s": 6.4,
       "end_s": 8.4,
       "cues": [
-        "Lower slowly back to shoulder height"
+        "Lower slowly back beside the shoulders"
       ],
       "checks": []
     },
@@ -320,7 +325,7 @@
       "giãn da háng trước (giới hạn lưới nhân vật 003) 3,08/2,6"
     ],
     "note": "Agent self-check only; status stays DRAFT until a qualified reviewer approves.",
-    "owner_feedback": "Kiệt 14/11: wrong posture; fixed start with dumbbells at ear height and elbows below the shoulders, elbows to the sides (15 deg forward, was 35). Awaiting Kiệt's re-check.",
+    "owner_feedback": "Kiệt 14/11: completely wrong (V-shaped path, dumbbells clashing). Redone against the ExRx photo: upright bench as part of the exercise, elbows under wrists, forearms vertical, straight press to lockout over the shoulders. Awaiting re-check.",
     "status": "reopened"
   }
 }

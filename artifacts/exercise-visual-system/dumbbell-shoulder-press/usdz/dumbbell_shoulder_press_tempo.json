@@ -104,61 +104,61 @@
       "at_ms": 0,
       "rep": 0,
       "phase": "start_position",
-      "text": "Sit tall, back against the pad, feet flat"
+      "text": "Set the bench back upright (80-85°), sit with your back and head against the pad, feet flat"
     },
     {
       "at_ms": 0,
       "rep": 0,
       "phase": "start_position",
-      "text": "Dumbbells at shoulder height, palms forward"
+      "text": "Dumbbells beside the shoulders, palms forward, elbows under the wrists"
     },
     {
       "at_ms": 600,
       "rep": 1,
       "phase": "concentric",
-      "text": "Press the weights straight up"
+      "text": "Press straight up over the shoulders"
     },
     {
       "at_ms": 600,
       "rep": 1,
       "phase": "concentric",
-      "text": "Bring them together above the head"
+      "text": "Forearms stay vertical under the weights"
     },
     {
       "at_ms": 2000,
       "rep": 1,
       "phase": "top_hold",
-      "text": "Arms almost straight, do not lock hard"
+      "text": "Arms almost straight above the shoulders; do not bang the weights together"
     },
     {
       "at_ms": 2300,
       "rep": 1,
       "phase": "eccentric",
-      "text": "Lower slowly back to shoulder height"
+      "text": "Lower slowly back beside the shoulders"
     },
     {
       "at_ms": 4700,
       "rep": 2,
       "phase": "concentric",
-      "text": "Press the weights straight up"
+      "text": "Press straight up over the shoulders"
     },
     {
       "at_ms": 4700,
       "rep": 2,
       "phase": "concentric",
-      "text": "Bring them together above the head"
+      "text": "Forearms stay vertical under the weights"
     },
     {
       "at_ms": 6100,
       "rep": 2,
       "phase": "top_hold",
-      "text": "Arms almost straight, do not lock hard"
+      "text": "Arms almost straight above the shoulders; do not bang the weights together"
     },
     {
       "at_ms": 6400,
       "rep": 2,
       "phase": "eccentric",
-      "text": "Lower slowly back to shoulder height"
+      "text": "Lower slowly back beside the shoulders"
     }
   ]
 }

@@ -44,9 +44,17 @@ class PressVerticalTemplate(HingeTemplate):
         "head_extension_share_of_lean": 0.0,
         "seated_ankle_half_width_m": 0.20,
         "seated_toe_out_deg": 12.0,
-        "bottom_upper_arm_elevation_deg": 64.0,
+        # Start: upper arm a little below level, forearm vertical, so the
+        # handles sit at ear height beside the head (ACE; free-exercise-db
+        # "dumbbells at shoulder height").
+        "bottom_upper_arm_elevation_deg": 78.0,
+        "top_upper_arm_elevation_deg": 172.0,
+        "top_forearm_in_deg": 6.0,
         "arm_plane_from_frontal_deg": 15.0,
-        "top_wrist_half_gap_m": 0.10,
+        # Dumbbells "touch at the top": the inner heads meet, so the handle
+        # centres sit one half-length (0.15 m) from the midline. 14/11
+        # Kiệt's recording: at 0.10 the two dumbbells passed through each other.
+        "top_wrist_half_gap_m": 0.155,
         "top_wrist_in_front_m": 0.06,
         "top_reach_fraction": 0.988,
         "bottom_forearm_in_deg": 8.0,
@@ -65,31 +73,32 @@ class PressVerticalTemplate(HingeTemplate):
         return self.girdle_shoulder(side, self.hip, self.lean, elevation_deg=clav_deg)
 
     def _arm(self, side: str, progress: float) -> dict:
+        """The press as a coach describes it: the forearm stays vertical
+        under the weight and the upper arm rises in its plane (15 deg in
+        front of the frontal plane) from just below level to almost
+        overhead; the elbow straightens by itself because the hand stays
+        over it. Only near lockout the forearms lean in a little so the
+        weights finish over the shoulders, close but not touching.
+        14/11 Kiệt ("sai hoàn toàn"): the first versions moved the wrist on
+        a straight diagonal from the wide bottom to a meeting point overhead,
+        so the forearms leaned in the whole way (a V-shaped lift) and the two
+        dumbbells passed through each other at the top."""
         t, s = self.t, self.s
         sign = 1.0 if side == "l" else -1.0
         L1, L2 = s["upper_arm_m"], s["forearm_m"]
-        clav = 0.0
-        for _ in range(3):  # the girdle depends on the arm and moves the shoulder
-            sh = self.shoulder(side, clav)
-            phi = math.radians(t["arm_plane_from_frontal_deg"])
-            horiz = unit(sign * LEFT * math.cos(phi) + FORWARD * math.sin(phi))
-            axis = unit(np.cross(-UP, horiz))
-            ub = rotation(axis, t["bottom_upper_arm_elevation_deg"]) @ (-UP)
-            # Forearm near plumb at the bottom, tilted a little in so the
-            # weights sit just outside the shoulders, not out at the elbows.
-            w0 = sh + ub * L1 + unit(UP - sign * LEFT * math.tan(math.radians(t["bottom_forearm_in_deg"]))) * L2
-            reach = t["top_reach_fraction"] * (L1 + L2)
-            dx = sign * t["top_wrist_half_gap_m"] - sh[0]
-            dy = -t["top_wrist_in_front_m"]
-            w1 = sh + np.array([dx, dy, math.sqrt(max(reach * reach - dx * dx - dy * dy, 1e-6))])
-            wrist = w0 + progress * (w1 - w0)
-            # Elbows point out and a little down/back (in the arm's plane).
-            pole_dir = unit(horiz - UP * 0.6 + FORWARD * -0.2)
-            elbow = two_bone_knee(sh, wrist, L1, L2, forward=pole_dir)
-            up_dir = unit(elbow - sh)
-            elev = math.degrees(math.acos(float(np.clip(np.dot(up_dir, -UP), -1, 1))))
-            g = scapulohumeral(elev)
-            clav = g["clavicle_elevation_deg"]
+        elev = t["bottom_upper_arm_elevation_deg"] + progress * (t["top_upper_arm_elevation_deg"] - t["bottom_upper_arm_elevation_deg"])
+        g = scapulohumeral(elev)
+        sh = self.shoulder(side, g["clavicle_elevation_deg"])
+        phi = math.radians(t["arm_plane_from_frontal_deg"])
+        horiz = unit(sign * LEFT * math.cos(phi) + FORWARD * math.sin(phi))
+        axis = unit(np.cross(-UP, horiz))
+        upper = rotation(axis, elev) @ (-UP)
+        elbow = sh + upper * L1
+        lean_in = math.radians(t["top_forearm_in_deg"]) * max(0.0, (progress - 0.6) / 0.4) ** 2
+        fore = unit(UP - sign * LEFT * math.tan(lean_in))
+        wrist = elbow + fore * L2
+        # Elbow bends out to the side and a little down/back.
+        pole_dir = unit(horiz - UP * 0.4 - FORWARD * 0.2)
         return {"shoulder": sh, "elbow": elbow, "wrist": wrist, "elevation": elev, "girdle": g, "pole": pole_dir}
 
     def frame(self, progress: float) -> dict:
@@ -102,8 +111,10 @@ class PressVerticalTemplate(HingeTemplate):
             fore = unit(a["wrist"] - a["elbow"])
             palm = FORWARD - fore * float(np.dot(FORWARD, fore))      # palms forward
             palm = unit(palm)
+            # Handle level (left-right) whatever the forearm's tilt: the
+            # wrist takes the small sideways bend, the weight does not tip.
             x = -sign * LEFT                                          # thumb towards the midline
-            x = unit(x - fore * float(np.dot(x, fore)) - palm * float(np.dot(x, palm)))
+            x = unit(x - palm * float(np.dot(x, palm)))
             z = np.cross(x, palm)
             centre = a["wrist"] + fore * t["palm_centre_beyond_wrist_m"]
             out["implements"][f"dumbbell_{side}"] = matrix(np.column_stack([x, palm, z]), centre)

@@ -106,7 +106,7 @@
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
       ],
-      cameraPosition: [2.2529, 2.0924, 2.3874], cameraTarget: [0.0102, 0.938, 0.1448],
+      cameraPosition: [2.4272, 2.1371, 2.4476], cameraTarget: [0.0779, 0.9279, 0.0983],
       focusTexturePrefix: "side_lateral_raise_focus")
 
     /// Motion Lab (14/11, P1): họ "hinge" (`motionlab/families/hinge.py`).
@@ -146,7 +146,7 @@
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.tricepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
       ],
-      cameraPosition: [1.8631, 1.7526, 1.9419], cameraTarget: [0.0298, 0.8089, 0.1085],
+      cameraPosition: [1.8737, 1.7303, 1.8984], cameraTarget: [0.0554, 0.7944, 0.0801],
       focusTexturePrefix: "dumbbell_shoulder_press_focus")
 
     /// Kết quả agent tự kiểm một bài (Kiệt 14/11: bài đã kiểm đầy đủ có dấu
@@ -207,11 +207,8 @@
           checked: fullCheck(qa: "18/18", technique: "tay cầm trung tính (ngón cái hướng lên) suốt đường đi, khuỷu sát thân"),
           remaining: [])),
       CatalogEntry(
-        title: "Side Lateral Raise", key: "side lateral raise", family: "raise_lateral",
-        review: Review(
-          date: "14/11",
-          checked: fullCheck(qa: "17/17", technique: "tay nâng tới ngang vai trong mặt phẳng xương bả vai, khuỷu hơi gập, lòng bàn tay úp ở đỉnh, không nhún vai"),
-          remaining: [])),
+        title: "Side Lateral Raise", key: "side lateral raise", family: "raise_lateral", review: nil,
+        note: "Kiệt 14/11: chưa đúng. Đã sửa theo ảnh ExRx: bắt đầu tạ trước đùi, thân hơi cúi, gối hơi gập; ở đỉnh khuỷu ngang vai ngay bên vai, cẳng tay chếch trước; tay cầm nằm ngang (trước bị xoay nghiêng ~45°); vai nâng theo tay. QA 18/18. Chờ Kiệt xem lại"),
       CatalogEntry(
         title: "Stiff-Legged Dumbbell Deadlift", key: "stiff-legged dumbbell deadlift", family: "hinge",
         review: Review(
@@ -223,7 +220,7 @@
         note: "Kiệt 14/11: sai tư thế. Đã sửa: gối gập 31° (cẳng chân thẳng đứng, hông đẩy ra sau), lưng thẳng hơi ưỡn ngực, đầu ngẩng thẳng hàng cột sống, bả vai kéo về sau ở đỉnh. Chờ Kiệt xem lại; còn giãn da háng 2,98"),
       CatalogEntry(
         title: "Dumbbell Shoulder Press", key: "dumbbell shoulder press", family: "press_vertical (ngồi)", review: nil,
-        note: "Kiệt 14/11: sai tư thế. Đã sửa: bắt đầu với tạ ngang tai, khuỷu thấp hơn vai (trước: tạ ngang đỉnh đầu); khuỷu ở hai bên, chỉ chếch trước 15° (trước: 35°, khuỷu chĩa ra trước mặt). Chờ Kiệt xem lại; còn giãn da háng 3,08"),
+        note: "Kiệt 14/11: sai hoàn toàn. Đã làm lại theo ảnh ExRx: ghế dựng gần thẳng là một phần của bài (lưng tựa đệm suốt bài); tạ bắt đầu hai bên vai, khuỷu ngay dưới cổ tay; đẩy thẳng lên, cẳng tay thẳng đứng, tay duỗi trên vai (trước: tay đi chéo hình chữ V và hai quả tạ đâm xuyên nhau). QA 18/19 (còn giãn da háng). Chờ Kiệt xem lại"),
     ]
 
     /// Tên bài (đã gập như `PersonalRecords.exerciseKey`) → bản minh hoạ.

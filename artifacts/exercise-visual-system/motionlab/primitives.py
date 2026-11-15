@@ -80,3 +80,16 @@ def scapulohumeral(elevation_deg: float) -> dict:
     shoulder blade turning on it."""
     st = 0.4 * max(0.0, float(elevation_deg) - 30.0)
     return {"clavicle_elevation_deg": 0.25 * st, "scapula_upward_deg": 0.75 * st, "upward_rotation_deg": st}
+
+
+def girdle_point(point, clavicle_head, side: str, elevation_deg: float = 0.0, retraction_deg: float = 0.0) -> np.ndarray:
+    """A point that rides on the clavicle (the shoulder joint) after the
+    clavicle elevates then retracts about its head, in the rest frame (same
+    order and axes as generate_exercise.pose_girdle)."""
+    sign = 1.0 if side == "l" else -1.0
+    p = np.asarray(point, float)
+    if clavicle_head is None or not (elevation_deg or retraction_deg):
+        return p
+    c = np.asarray(clavicle_head, float)
+    r = rotation(np.array([0.0, 0.0, 1.0]), sign * retraction_deg) @ rotation(np.array([0.0, 1.0, 0.0]), -sign * elevation_deg)
+    return c + r @ (p - c)

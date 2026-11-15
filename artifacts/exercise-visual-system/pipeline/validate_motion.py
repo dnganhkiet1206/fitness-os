@@ -135,6 +135,24 @@ def main() -> None:
             o.evaluated_get(dg).to_mesh_clear()
             depths[o.name].append(deep)
 
+    # Implements against each other, every 2nd frame (dumbbells are small).
+    clash_frames = frames[::2]
+    overlaps = {}
+    if len(implements) > 1:
+        for f in clash_frames:
+            scene.frame_set(f)
+            dg = bpy.context.evaluated_depsgraph_get()
+            trees = []
+            for o in implements:
+                bm = bmesh.new()
+                bm.from_object(o, dg)
+                bm.transform(o.matrix_world)
+                trees.append((o.name, BVHTree.FromBMesh(bm)))
+                bm.free()
+            for ia in range(len(trees)):
+                for ib in range(ia + 1, len(trees)):
+                    key = f"{trees[ia][0]}|{trees[ib][0]}"
+                    overlaps.setdefault(key, []).append(len(trees[ia][1].overlap(trees[ib][1])))
     tempo_file = path / "tempo.json"
     if tempo_file.exists():
         from motionlab import tempo as tempo_tl
@@ -153,6 +171,7 @@ def main() -> None:
         Q.penetration(depths, prof["max_implement_penetration_m"], pen_frames) if depths else Q.rec("implement_penetration", "C", "Implements do not pass through the body", Q.NOT_TESTED),
         *Q.posture(j, prof),
         tempo_check,
+        Q.implement_clash(overlaps, clash_frames) if overlaps else Q.rec("implement_clash", "C", "Implements do not pass through each other", Q.NOT_TESTED, detail="fewer than two implements"),
         Q.rec("skin_stretch", "C", "Skin stretch stays within limits", Q.PASS if worst_stretch[0] <= prof["max_p999_edge_stretch"] else Q.FAIL,
               round(worst_stretch[0], 3), prof["max_p999_edge_stretch"], {"frame": worst_stretch[1]}, "p99.9 edge stretch"),
     ]

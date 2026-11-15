@@ -2,7 +2,7 @@
   "pipeline_version": "0.1.0",
   "generator": "pipeline/generate_exercise.py",
   "template": "press_vertical",
-  "generated": "2026-11-14",
+  "generated": "2026-11-15",
   "exercise_id": "dumbbell_shoulder_press",
   "frame_rate": 24,
   "frame_end": 212,
@@ -13,8 +13,8 @@
       "start_s": 0.0,
       "end_s": 0.6,
       "cues": [
-        "Sit tall, back against the pad, feet flat",
-        "Dumbbells at shoulder height, palms forward"
+        "Set the bench back upright (80-85°), sit with your back and head against the pad, feet flat",
+        "Dumbbells beside the shoulders, palms forward, elbows under the wrists"
       ],
       "checks": []
     },
@@ -24,8 +24,8 @@
       "start_s": 0.6,
       "end_s": 2.0,
       "cues": [
-        "Press the weights straight up",
-        "Bring them together above the head"
+        "Press straight up over the shoulders",
+        "Forearms stay vertical under the weights"
       ],
       "checks": []
     },
@@ -35,7 +35,7 @@
       "start_s": 2.0,
       "end_s": 2.3,
       "cues": [
-        "Arms almost straight, do not lock hard"
+        "Arms almost straight above the shoulders; do not bang the weights together"
       ],
       "checks": []
     },
@@ -45,7 +45,7 @@
       "start_s": 2.3,
       "end_s": 4.3,
       "cues": [
-        "Lower slowly back to shoulder height"
+        "Lower slowly back beside the shoulders"
       ],
       "checks": []
     },
@@ -63,8 +63,8 @@
       "start_s": 4.7,
       "end_s": 6.1,
       "cues": [
-        "Press the weights straight up",
-        "Bring them together above the head"
+        "Press straight up over the shoulders",
+        "Forearms stay vertical under the weights"
       ],
       "checks": []
     },
@@ -74,7 +74,7 @@
       "start_s": 6.1,
       "end_s": 6.4,
       "cues": [
-        "Arms almost straight, do not lock hard"
+        "Arms almost straight above the shoulders; do not bang the weights together"
       ],
       "checks": []
     },
@@ -84,7 +84,7 @@
       "start_s": 6.4,
       "end_s": 8.4,
       "cues": [
-        "Lower slowly back to shoulder height"
+        "Lower slowly back beside the shoulders"
       ],
       "checks": []
     },
@@ -118,9 +118,11 @@
     "back_pad_angle_from_vertical_deg": 8.0,
     "seated_ankle_half_width_m": 0.2,
     "seated_toe_out_deg": 12.0,
-    "bottom_upper_arm_elevation_deg": 64.0,
+    "bottom_upper_arm_elevation_deg": 78.0,
+    "top_upper_arm_elevation_deg": 172.0,
+    "top_forearm_in_deg": 6.0,
     "arm_plane_from_frontal_deg": 15.0,
-    "top_wrist_half_gap_m": 0.1,
+    "top_wrist_half_gap_m": 0.155,
     "top_wrist_in_front_m": 0.06,
     "top_reach_fraction": 0.988,
     "bottom_forearm_in_deg": 8.0
@@ -513,362 +515,362 @@
     {
       "frame": 0,
       "progress": 0.0,
-      "arm_elevation_l_deg": 65.079,
-      "scapula_upward_l_deg": 14.031,
-      "elbow_flexion_l_deg": 123.706,
-      "arm_elevation_r_deg": 65.079,
-      "scapula_upward_r_deg": 14.031,
-      "elbow_flexion_r_deg": 123.706
+      "arm_elevation_l_deg": 78.0,
+      "scapula_upward_l_deg": 19.2,
+      "elbow_flexion_l_deg": 102.0,
+      "arm_elevation_r_deg": 78.0,
+      "scapula_upward_r_deg": 19.2,
+      "elbow_flexion_r_deg": 102.0
     },
     {
       "frame": 6,
       "progress": 0.0,
-      "arm_elevation_l_deg": 65.079,
-      "scapula_upward_l_deg": 14.031,
-      "elbow_flexion_l_deg": 123.706,
-      "arm_elevation_r_deg": 65.079,
-      "scapula_upward_r_deg": 14.031,
-      "elbow_flexion_r_deg": 123.706
+      "arm_elevation_l_deg": 78.0,
+      "scapula_upward_l_deg": 19.2,
+      "elbow_flexion_l_deg": 102.0,
+      "arm_elevation_r_deg": 78.0,
+      "scapula_upward_r_deg": 19.2,
+      "elbow_flexion_r_deg": 102.0
     },
     {
       "frame": 12,
       "progress": 0.0,
-      "arm_elevation_l_deg": 65.079,
-      "scapula_upward_l_deg": 14.031,
-      "elbow_flexion_l_deg": 123.706,
-      "arm_elevation_r_deg": 65.079,
-      "scapula_upward_r_deg": 14.031,
-      "elbow_flexion_r_deg": 123.706
+      "arm_elevation_l_deg": 78.0,
+      "scapula_upward_l_deg": 19.2,
+      "elbow_flexion_l_deg": 102.0,
+      "arm_elevation_r_deg": 78.0,
+      "scapula_upward_r_deg": 19.2,
+      "elbow_flexion_r_deg": 102.0
     },
     {
       "frame": 18,
       "progress": 0.0104,
-      "arm_elevation_l_deg": 66.16,
-      "scapula_upward_l_deg": 14.464,
-      "elbow_flexion_l_deg": 123.726,
-      "arm_elevation_r_deg": 66.16,
-      "scapula_upward_r_deg": 14.464,
-      "elbow_flexion_r_deg": 123.726
+      "arm_elevation_l_deg": 78.978,
+      "scapula_upward_l_deg": 19.591,
+      "elbow_flexion_l_deg": 101.022,
+      "arm_elevation_r_deg": 78.978,
+      "scapula_upward_r_deg": 19.591,
+      "elbow_flexion_r_deg": 101.022
     },
     {
       "frame": 24,
       "progress": 0.1447,
-      "arm_elevation_l_deg": 80.988,
-      "scapula_upward_l_deg": 20.395,
-      "elbow_flexion_l_deg": 121.942,
-      "arm_elevation_r_deg": 80.988,
-      "scapula_upward_r_deg": 20.395,
-      "elbow_flexion_r_deg": 121.942
+      "arm_elevation_l_deg": 91.602,
+      "scapula_upward_l_deg": 24.641,
+      "elbow_flexion_l_deg": 88.398,
+      "arm_elevation_r_deg": 91.602,
+      "scapula_upward_r_deg": 24.641,
+      "elbow_flexion_r_deg": 88.398
     },
     {
       "frame": 30,
       "progress": 0.4333,
-      "arm_elevation_l_deg": 113.147,
-      "scapula_upward_l_deg": 33.259,
-      "elbow_flexion_l_deg": 106.47,
-      "arm_elevation_r_deg": 113.147,
-      "scapula_upward_r_deg": 33.259,
-      "elbow_flexion_r_deg": 106.47
+      "arm_elevation_l_deg": 118.727,
+      "scapula_upward_l_deg": 35.491,
+      "elbow_flexion_l_deg": 61.273,
+      "arm_elevation_r_deg": 118.727,
+      "scapula_upward_r_deg": 35.491,
+      "elbow_flexion_r_deg": 61.273
     },
     {
       "frame": 36,
       "progress": 0.7536,
-      "arm_elevation_l_deg": 145.843,
-      "scapula_upward_l_deg": 46.337,
-      "elbow_flexion_l_deg": 72.987,
-      "arm_elevation_r_deg": 145.843,
-      "scapula_upward_r_deg": 46.337,
-      "elbow_flexion_r_deg": 72.987
+      "arm_elevation_l_deg": 148.842,
+      "scapula_upward_l_deg": 47.537,
+      "elbow_flexion_l_deg": 32.014,
+      "arm_elevation_r_deg": 148.842,
+      "scapula_upward_r_deg": 47.537,
+      "elbow_flexion_r_deg": 32.014
     },
     {
       "frame": 42,
       "progress": 0.9572,
-      "arm_elevation_l_deg": 168.867,
-      "scapula_upward_l_deg": 55.547,
-      "elbow_flexion_l_deg": 34.485,
-      "arm_elevation_r_deg": 168.867,
-      "scapula_upward_r_deg": 55.547,
-      "elbow_flexion_r_deg": 34.485
+      "arm_elevation_l_deg": 167.979,
+      "scapula_upward_l_deg": 55.191,
+      "elbow_flexion_l_deg": 16.689,
+      "arm_elevation_r_deg": 167.979,
+      "scapula_upward_r_deg": 55.191,
+      "elbow_flexion_r_deg": 16.689
     },
     {
       "frame": 48,
       "progress": 1.0,
-      "arm_elevation_l_deg": 171.216,
-      "scapula_upward_l_deg": 56.486,
-      "elbow_flexion_l_deg": 17.773,
-      "arm_elevation_r_deg": 171.216,
-      "scapula_upward_r_deg": 56.486,
-      "elbow_flexion_r_deg": 17.773
+      "arm_elevation_l_deg": 172.0,
+      "scapula_upward_l_deg": 56.8,
+      "elbow_flexion_l_deg": 13.882,
+      "arm_elevation_r_deg": 172.0,
+      "scapula_upward_r_deg": 56.8,
+      "elbow_flexion_r_deg": 13.882
     },
     {
       "frame": 54,
       "progress": 1.0,
-      "arm_elevation_l_deg": 171.216,
-      "scapula_upward_l_deg": 56.486,
-      "elbow_flexion_l_deg": 17.773,
-      "arm_elevation_r_deg": 171.216,
-      "scapula_upward_r_deg": 56.486,
-      "elbow_flexion_r_deg": 17.773
+      "arm_elevation_l_deg": 172.0,
+      "scapula_upward_l_deg": 56.8,
+      "elbow_flexion_l_deg": 13.882,
+      "arm_elevation_r_deg": 172.0,
+      "scapula_upward_r_deg": 56.8,
+      "elbow_flexion_r_deg": 13.882
     },
     {
       "frame": 60,
       "progress": 0.9914,
-      "arm_elevation_l_deg": 171.53,
-      "scapula_upward_l_deg": 56.612,
-      "elbow_flexion_l_deg": 22.148,
-      "arm_elevation_r_deg": 171.53,
-      "scapula_upward_r_deg": 56.612,
-      "elbow_flexion_r_deg": 22.148
+      "arm_elevation_l_deg": 171.195,
+      "scapula_upward_l_deg": 56.478,
+      "elbow_flexion_l_deg": 14.431,
+      "arm_elevation_r_deg": 171.195,
+      "scapula_upward_r_deg": 56.478,
+      "elbow_flexion_r_deg": 14.431
     },
     {
       "frame": 66,
       "progress": 0.9211,
-      "arm_elevation_l_deg": 164.511,
-      "scapula_upward_l_deg": 53.805,
-      "elbow_flexion_l_deg": 43.903,
-      "arm_elevation_r_deg": 164.511,
-      "scapula_upward_r_deg": 53.805,
-      "elbow_flexion_r_deg": 43.903
+      "arm_elevation_l_deg": 164.581,
+      "scapula_upward_l_deg": 53.833,
+      "elbow_flexion_l_deg": 19.178,
+      "arm_elevation_r_deg": 164.581,
+      "scapula_upward_r_deg": 53.833,
+      "elbow_flexion_r_deg": 19.178
     },
     {
       "frame": 72,
       "progress": 0.7648,
-      "arm_elevation_l_deg": 147.006,
-      "scapula_upward_l_deg": 46.802,
-      "elbow_flexion_l_deg": 71.429,
-      "arm_elevation_r_deg": 147.006,
-      "scapula_upward_r_deg": 46.802,
-      "elbow_flexion_r_deg": 71.429
+      "arm_elevation_l_deg": 149.894,
+      "scapula_upward_l_deg": 47.958,
+      "elbow_flexion_l_deg": 31.091,
+      "arm_elevation_r_deg": 149.894,
+      "scapula_upward_r_deg": 47.958,
+      "elbow_flexion_r_deg": 31.091
     },
     {
       "frame": 78,
       "progress": 0.5468,
-      "arm_elevation_l_deg": 124.897,
-      "scapula_upward_l_deg": 37.959,
-      "elbow_flexion_l_deg": 96.655,
-      "arm_elevation_r_deg": 124.897,
-      "scapula_upward_r_deg": 37.959,
-      "elbow_flexion_r_deg": 96.655
+      "arm_elevation_l_deg": 129.399,
+      "scapula_upward_l_deg": 39.76,
+      "elbow_flexion_l_deg": 50.601,
+      "arm_elevation_r_deg": 129.399,
+      "scapula_upward_r_deg": 39.76,
+      "elbow_flexion_r_deg": 50.601
     },
     {
       "frame": 84,
       "progress": 0.3174,
-      "arm_elevation_l_deg": 100.595,
-      "scapula_upward_l_deg": 28.238,
-      "elbow_flexion_l_deg": 114.405,
-      "arm_elevation_r_deg": 100.595,
-      "scapula_upward_r_deg": 28.238,
-      "elbow_flexion_r_deg": 114.405
+      "arm_elevation_l_deg": 107.839,
+      "scapula_upward_l_deg": 31.136,
+      "elbow_flexion_l_deg": 72.161,
+      "arm_elevation_r_deg": 107.839,
+      "scapula_upward_r_deg": 31.136,
+      "elbow_flexion_r_deg": 72.161
     },
     {
       "frame": 90,
       "progress": 0.1316,
-      "arm_elevation_l_deg": 79.498,
-      "scapula_upward_l_deg": 19.799,
-      "elbow_flexion_l_deg": 122.28,
-      "arm_elevation_r_deg": 79.498,
-      "scapula_upward_r_deg": 19.799,
-      "elbow_flexion_r_deg": 122.28
+      "arm_elevation_l_deg": 90.372,
+      "scapula_upward_l_deg": 24.149,
+      "elbow_flexion_l_deg": 89.628,
+      "arm_elevation_r_deg": 90.372,
+      "scapula_upward_r_deg": 24.149,
+      "elbow_flexion_r_deg": 89.628
     },
     {
       "frame": 96,
       "progress": 0.0266,
-      "arm_elevation_l_deg": 67.869,
-      "scapula_upward_l_deg": 15.148,
-      "elbow_flexion_l_deg": 123.713,
-      "arm_elevation_r_deg": 67.869,
-      "scapula_upward_r_deg": 15.148,
-      "elbow_flexion_r_deg": 123.713
+      "arm_elevation_l_deg": 80.502,
+      "scapula_upward_l_deg": 20.201,
+      "elbow_flexion_l_deg": 99.498,
+      "arm_elevation_r_deg": 80.502,
+      "scapula_upward_r_deg": 20.201,
+      "elbow_flexion_r_deg": 99.498
     },
     {
       "frame": 102,
       "progress": 0.0002,
-      "arm_elevation_l_deg": 65.094,
-      "scapula_upward_l_deg": 14.038,
-      "elbow_flexion_l_deg": 123.706,
-      "arm_elevation_r_deg": 65.094,
-      "scapula_upward_r_deg": 14.038,
-      "elbow_flexion_r_deg": 123.706
+      "arm_elevation_l_deg": 78.014,
+      "scapula_upward_l_deg": 19.206,
+      "elbow_flexion_l_deg": 101.986,
+      "arm_elevation_r_deg": 78.014,
+      "scapula_upward_r_deg": 19.206,
+      "elbow_flexion_r_deg": 101.986
     },
     {
       "frame": 108,
       "progress": 0.0,
-      "arm_elevation_l_deg": 65.079,
-      "scapula_upward_l_deg": 14.031,
-      "elbow_flexion_l_deg": 123.706,
-      "arm_elevation_r_deg": 65.079,
-      "scapula_upward_r_deg": 14.031,
-      "elbow_flexion_r_deg": 123.706
+      "arm_elevation_l_deg": 78.0,
+      "scapula_upward_l_deg": 19.2,
+      "elbow_flexion_l_deg": 102.0,
+      "arm_elevation_r_deg": 78.0,
+      "scapula_upward_r_deg": 19.2,
+      "elbow_flexion_r_deg": 102.0
     },
     {
       "frame": 114,
       "progress": 0.0004,
-      "arm_elevation_l_deg": 65.123,
-      "scapula_upward_l_deg": 14.049,
-      "elbow_flexion_l_deg": 123.707,
-      "arm_elevation_r_deg": 65.123,
-      "scapula_upward_r_deg": 14.049,
-      "elbow_flexion_r_deg": 123.707
+      "arm_elevation_l_deg": 78.041,
+      "scapula_upward_l_deg": 19.216,
+      "elbow_flexion_l_deg": 101.959,
+      "arm_elevation_r_deg": 78.041,
+      "scapula_upward_r_deg": 19.216,
+      "elbow_flexion_r_deg": 101.959
     },
     {
       "frame": 120,
       "progress": 0.0695,
-      "arm_elevation_l_deg": 72.521,
-      "scapula_upward_l_deg": 17.008,
-      "elbow_flexion_l_deg": 123.407,
-      "arm_elevation_r_deg": 72.521,
-      "scapula_upward_r_deg": 17.008,
-      "elbow_flexion_r_deg": 123.407
+      "arm_elevation_l_deg": 84.531,
+      "scapula_upward_l_deg": 21.812,
+      "elbow_flexion_l_deg": 95.469,
+      "arm_elevation_r_deg": 84.531,
+      "scapula_upward_r_deg": 21.812,
+      "elbow_flexion_r_deg": 95.469
     },
     {
       "frame": 126,
       "progress": 0.3052,
-      "arm_elevation_l_deg": 99.229,
-      "scapula_upward_l_deg": 27.692,
-      "elbow_flexion_l_deg": 115.117,
-      "arm_elevation_r_deg": 99.229,
-      "scapula_upward_r_deg": 27.692,
-      "elbow_flexion_r_deg": 115.117
+      "arm_elevation_l_deg": 106.686,
+      "scapula_upward_l_deg": 30.674,
+      "elbow_flexion_l_deg": 73.314,
+      "arm_elevation_r_deg": 106.686,
+      "scapula_upward_r_deg": 30.674,
+      "elbow_flexion_r_deg": 73.314
     },
     {
       "frame": 132,
       "progress": 0.6321,
-      "arm_elevation_l_deg": 133.508,
-      "scapula_upward_l_deg": 41.403,
-      "elbow_flexion_l_deg": 87.909,
-      "arm_elevation_r_deg": 133.508,
-      "scapula_upward_r_deg": 41.403,
-      "elbow_flexion_r_deg": 87.909
+      "arm_elevation_l_deg": 137.419,
+      "scapula_upward_l_deg": 42.968,
+      "elbow_flexion_l_deg": 42.618,
+      "arm_elevation_r_deg": 137.419,
+      "scapula_upward_r_deg": 42.968,
+      "elbow_flexion_r_deg": 42.618
     },
     {
       "frame": 138,
       "progress": 0.8965,
-      "arm_elevation_l_deg": 161.548,
-      "scapula_upward_l_deg": 52.619,
-      "elbow_flexion_l_deg": 49.29,
-      "arm_elevation_r_deg": 161.548,
-      "scapula_upward_r_deg": 52.619,
-      "elbow_flexion_r_deg": 49.29
+      "arm_elevation_l_deg": 162.27,
+      "scapula_upward_l_deg": 52.908,
+      "elbow_flexion_l_deg": 20.931,
+      "arm_elevation_r_deg": 162.27,
+      "scapula_upward_r_deg": 52.908,
+      "elbow_flexion_r_deg": 20.931
     },
     {
       "frame": 144,
       "progress": 0.9967,
-      "arm_elevation_l_deg": 171.425,
-      "scapula_upward_l_deg": 56.57,
-      "elbow_flexion_l_deg": 19.557,
-      "arm_elevation_r_deg": 171.425,
-      "scapula_upward_r_deg": 56.57,
-      "elbow_flexion_r_deg": 19.557
+      "arm_elevation_l_deg": 171.693,
+      "scapula_upward_l_deg": 56.677,
+      "elbow_flexion_l_deg": 14.091,
+      "arm_elevation_r_deg": 171.693,
+      "scapula_upward_r_deg": 56.677,
+      "elbow_flexion_r_deg": 14.091
     },
     {
       "frame": 150,
       "progress": 1.0,
-      "arm_elevation_l_deg": 171.216,
-      "scapula_upward_l_deg": 56.486,
-      "elbow_flexion_l_deg": 17.773,
-      "arm_elevation_r_deg": 171.216,
-      "scapula_upward_r_deg": 56.486,
-      "elbow_flexion_r_deg": 17.773
+      "arm_elevation_l_deg": 172.0,
+      "scapula_upward_l_deg": 56.8,
+      "elbow_flexion_l_deg": 13.882,
+      "arm_elevation_r_deg": 172.0,
+      "scapula_upward_r_deg": 56.8,
+      "elbow_flexion_r_deg": 13.882
     },
     {
       "frame": 156,
       "progress": 0.9988,
-      "arm_elevation_l_deg": 171.304,
-      "scapula_upward_l_deg": 56.522,
-      "elbow_flexion_l_deg": 18.426,
-      "arm_elevation_r_deg": 171.304,
-      "scapula_upward_r_deg": 56.522,
-      "elbow_flexion_r_deg": 18.426
+      "arm_elevation_l_deg": 171.891,
+      "scapula_upward_l_deg": 56.756,
+      "elbow_flexion_l_deg": 13.956,
+      "arm_elevation_r_deg": 171.891,
+      "scapula_upward_r_deg": 56.756,
+      "elbow_flexion_r_deg": 13.956
     },
     {
       "frame": 162,
       "progress": 0.9595,
-      "arm_elevation_l_deg": 169.124,
-      "scapula_upward_l_deg": 55.65,
-      "elbow_flexion_l_deg": 33.807,
-      "arm_elevation_r_deg": 169.124,
-      "scapula_upward_r_deg": 55.65,
-      "elbow_flexion_r_deg": 33.807
+      "arm_elevation_l_deg": 168.192,
+      "scapula_upward_l_deg": 55.277,
+      "elbow_flexion_l_deg": 16.536,
+      "arm_elevation_r_deg": 168.192,
+      "scapula_upward_r_deg": 55.277,
+      "elbow_flexion_r_deg": 16.536
     },
     {
       "frame": 168,
       "progress": 0.8369,
-      "arm_elevation_l_deg": 154.725,
-      "scapula_upward_l_deg": 49.89,
-      "elbow_flexion_l_deg": 60.358,
-      "arm_elevation_r_deg": 154.725,
-      "scapula_upward_r_deg": 49.89,
-      "elbow_flexion_r_deg": 60.358
+      "arm_elevation_l_deg": 156.67,
+      "scapula_upward_l_deg": 50.668,
+      "elbow_flexion_l_deg": 25.368,
+      "arm_elevation_r_deg": 156.67,
+      "scapula_upward_r_deg": 50.668,
+      "elbow_flexion_r_deg": 25.368
     },
     {
       "frame": 174,
       "progress": 0.6385,
-      "arm_elevation_l_deg": 134.152,
-      "scapula_upward_l_deg": 41.661,
-      "elbow_flexion_l_deg": 87.2,
-      "arm_elevation_r_deg": 134.152,
-      "scapula_upward_r_deg": 41.661,
-      "elbow_flexion_r_deg": 87.2
+      "arm_elevation_l_deg": 138.022,
+      "scapula_upward_l_deg": 43.209,
+      "elbow_flexion_l_deg": 42.032,
+      "arm_elevation_r_deg": 138.022,
+      "scapula_upward_r_deg": 43.209,
+      "elbow_flexion_r_deg": 42.032
     },
     {
       "frame": 180,
       "progress": 0.4069,
-      "arm_elevation_l_deg": 110.342,
-      "scapula_upward_l_deg": 32.137,
-      "elbow_flexion_l_deg": 108.466,
-      "arm_elevation_r_deg": 110.342,
-      "scapula_upward_r_deg": 32.137,
-      "elbow_flexion_r_deg": 108.466
+      "arm_elevation_l_deg": 116.246,
+      "scapula_upward_l_deg": 34.498,
+      "elbow_flexion_l_deg": 63.754,
+      "arm_elevation_r_deg": 116.246,
+      "scapula_upward_r_deg": 34.498,
+      "elbow_flexion_r_deg": 63.754
     },
     {
       "frame": 186,
       "progress": 0.1977,
-      "arm_elevation_l_deg": 87.049,
-      "scapula_upward_l_deg": 22.82,
-      "elbow_flexion_l_deg": 120.223,
-      "arm_elevation_r_deg": 87.049,
-      "scapula_upward_r_deg": 22.82,
-      "elbow_flexion_r_deg": 120.223
+      "arm_elevation_l_deg": 96.583,
+      "scapula_upward_l_deg": 26.633,
+      "elbow_flexion_l_deg": 83.417,
+      "arm_elevation_r_deg": 96.583,
+      "scapula_upward_r_deg": 26.633,
+      "elbow_flexion_r_deg": 83.417
     },
     {
       "frame": 192,
       "progress": 0.0579,
-      "arm_elevation_l_deg": 71.25,
-      "scapula_upward_l_deg": 16.5,
-      "elbow_flexion_l_deg": 123.528,
-      "arm_elevation_r_deg": 71.25,
-      "scapula_upward_r_deg": 16.5,
-      "elbow_flexion_r_deg": 123.528
+      "arm_elevation_l_deg": 83.444,
+      "scapula_upward_l_deg": 21.378,
+      "elbow_flexion_l_deg": 96.556,
+      "arm_elevation_r_deg": 83.444,
+      "scapula_upward_r_deg": 21.378,
+      "elbow_flexion_r_deg": 96.556
     },
     {
       "frame": 198,
       "progress": 0.0038,
-      "arm_elevation_l_deg": 65.468,
-      "scapula_upward_l_deg": 14.187,
-      "elbow_flexion_l_deg": 123.716,
-      "arm_elevation_r_deg": 65.468,
-      "scapula_upward_r_deg": 14.187,
-      "elbow_flexion_r_deg": 123.716
+      "arm_elevation_l_deg": 78.353,
+      "scapula_upward_l_deg": 19.341,
+      "elbow_flexion_l_deg": 101.647,
+      "arm_elevation_r_deg": 78.353,
+      "scapula_upward_r_deg": 19.341,
+      "elbow_flexion_r_deg": 101.647
     },
     {
       "frame": 204,
       "progress": 0.0,
-      "arm_elevation_l_deg": 65.079,
-      "scapula_upward_l_deg": 14.031,
-      "elbow_flexion_l_deg": 123.706,
-      "arm_elevation_r_deg": 65.079,
-      "scapula_upward_r_deg": 14.031,
-      "elbow_flexion_r_deg": 123.706
+      "arm_elevation_l_deg": 78.0,
+      "scapula_upward_l_deg": 19.2,
+      "elbow_flexion_l_deg": 102.0,
+      "arm_elevation_r_deg": 78.0,
+      "scapula_upward_r_deg": 19.2,
+      "elbow_flexion_r_deg": 102.0
     },
     {
       "frame": 210,
       "progress": 0.0,
-      "arm_elevation_l_deg": 65.079,
-      "scapula_upward_l_deg": 14.031,
-      "elbow_flexion_l_deg": 123.706,
-      "arm_elevation_r_deg": 65.079,
-      "scapula_upward_r_deg": 14.031,
-      "elbow_flexion_r_deg": 123.706
+      "arm_elevation_l_deg": 78.0,
+      "scapula_upward_l_deg": 19.2,
+      "elbow_flexion_l_deg": 102.0,
+      "arm_elevation_r_deg": 78.0,
+      "scapula_upward_r_deg": 19.2,
+      "elbow_flexion_r_deg": 102.0
     }
   ]
 }

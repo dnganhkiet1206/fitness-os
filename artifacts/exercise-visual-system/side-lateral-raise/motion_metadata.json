@@ -2,7 +2,7 @@
   "pipeline_version": "0.1.0",
   "generator": "pipeline/generate_exercise.py",
   "template": "raise_lateral",
-  "generated": "2026-11-14",
+  "generated": "2026-11-15",
   "exercise_id": "side_lateral_raise",
   "frame_rate": 24,
   "frame_end": 217,
@@ -13,8 +13,8 @@
       "start_s": 0.0,
       "end_s": 0.6,
       "cues": [
-        "Stand tall, dumbbells by the thighs",
-        "Elbows slightly bent"
+        "Dumbbells in front of the thighs, elbows slightly bent",
+        "Lean forward slightly, hips and knees slightly bent"
       ],
       "checks": []
     },
@@ -24,8 +24,8 @@
       "start_s": 0.6,
       "end_s": 2.0,
       "cues": [
-        "Raise the arms out to the sides",
-        "Stop at shoulder height"
+        "Raise the upper arms out to the sides, elbows pointing back",
+        "Stop when the elbows reach shoulder height"
       ],
       "checks": []
     },
@@ -35,7 +35,7 @@
       "start_s": 2.0,
       "end_s": 2.4,
       "cues": [
-        "Pause, elbows a little higher than the hands"
+        "Elbows directly out to the sides, forearms angled slightly forward"
       ],
       "checks": []
     },
@@ -45,7 +45,7 @@
       "start_s": 2.4,
       "end_s": 4.4,
       "cues": [
-        "Lower slowly back to the sides"
+        "Lower slowly back in front of the thighs"
       ],
       "checks": []
     },
@@ -63,8 +63,8 @@
       "start_s": 4.8,
       "end_s": 6.2,
       "cues": [
-        "Raise the arms out to the sides",
-        "Stop at shoulder height"
+        "Raise the upper arms out to the sides, elbows pointing back",
+        "Stop when the elbows reach shoulder height"
       ],
       "checks": []
     },
@@ -74,7 +74,7 @@
       "start_s": 6.2,
       "end_s": 6.6,
       "cues": [
-        "Pause, elbows a little higher than the hands"
+        "Elbows directly out to the sides, forearms angled slightly forward"
       ],
       "checks": []
     },
@@ -84,7 +84,7 @@
       "start_s": 6.6,
       "end_s": 8.6,
       "cues": [
-        "Lower slowly back to the sides"
+        "Lower slowly back in front of the thighs"
       ],
       "checks": []
     },
@@ -98,13 +98,26 @@
     }
   ],
   "technique": {
-    "elevation_bottom_deg": 12.0,
-    "elevation_top_deg": 84.0,
-    "plane_from_frontal_deg": 22.0,
-    "elbow_flexion_deg": 15.0,
-    "palm_centre_beyond_wrist_m": 0.075,
+    "trunk_lean_bottom_deg": 80.0,
+    "trunk_lean_top_deg": 2.0,
+    "knee_flexion_top_deg": 6.0,
+    "knee_flexion_bottom_deg": 18.0,
+    "pelvis_share_of_lean": 1.0,
+    "head_extension_share_of_lean": 0.6,
     "stance_half_width_m": 0.13,
-    "toe_out_deg": 8.0
+    "toe_out_deg": 8.0,
+    "midfoot_forward_of_ankle_m": 0.05,
+    "grip_half_width_m": 0.19,
+    "handle_clearance_from_skin_m": 0.072,
+    "handle_behind_arm_line_m": 0.04,
+    "elbow_flexion_deg": 20.0,
+    "palm_centre_beyond_wrist_m": 0.075,
+    "trunk_lean_deg": 10.0,
+    "knee_flexion_deg": 12.0,
+    "elevation_bottom_deg": 20.0,
+    "elevation_top_deg": 90.0,
+    "plane_bottom_deg": 118.0,
+    "plane_top_deg": 0.0
   },
   "skeleton": {
     "shoulder_l": [
@@ -494,187 +507,261 @@
     {
       "frame": 0,
       "progress": 0.0,
-      "shoulder_elevation_deg": 12.0
+      "shoulder_elevation_deg": 20.0,
+      "arm_plane_deg": 118.0,
+      "scapula_upward_deg": 0.0
     },
     {
       "frame": 6,
       "progress": 0.0,
-      "shoulder_elevation_deg": 12.0
+      "shoulder_elevation_deg": 20.0,
+      "arm_plane_deg": 118.0,
+      "scapula_upward_deg": 0.0
     },
     {
       "frame": 12,
       "progress": 0.0,
-      "shoulder_elevation_deg": 12.0
+      "shoulder_elevation_deg": 20.0,
+      "arm_plane_deg": 118.0,
+      "scapula_upward_deg": 0.0
     },
     {
       "frame": 18,
       "progress": 0.0104,
-      "shoulder_elevation_deg": 12.749
+      "shoulder_elevation_deg": 20.729,
+      "arm_plane_deg": 115.557,
+      "scapula_upward_deg": 0.0
     },
     {
       "frame": 24,
       "progress": 0.1447,
-      "shoulder_elevation_deg": 22.419
+      "shoulder_elevation_deg": 30.129,
+      "arm_plane_deg": 86.321,
+      "scapula_upward_deg": 0.052
     },
     {
       "frame": 30,
       "progress": 0.4333,
-      "shoulder_elevation_deg": 43.195
+      "shoulder_elevation_deg": 50.328,
+      "arm_plane_deg": 37.9,
+      "scapula_upward_deg": 8.131
     },
     {
       "frame": 36,
       "progress": 0.7536,
-      "shoulder_elevation_deg": 66.262
+      "shoulder_elevation_deg": 72.755,
+      "arm_plane_deg": 7.162,
+      "scapula_upward_deg": 17.102
     },
     {
       "frame": 42,
       "progress": 0.9572,
-      "shoulder_elevation_deg": 80.92
+      "shoulder_elevation_deg": 87.005,
+      "arm_plane_deg": 0.216,
+      "scapula_upward_deg": 22.802
     },
     {
       "frame": 48,
       "progress": 1.0,
-      "shoulder_elevation_deg": 84.0
+      "shoulder_elevation_deg": 90.0,
+      "arm_plane_deg": 0.0,
+      "scapula_upward_deg": 24.0
     },
     {
       "frame": 54,
       "progress": 1.0,
-      "shoulder_elevation_deg": 84.0
+      "shoulder_elevation_deg": 90.0,
+      "arm_plane_deg": 0.0,
+      "scapula_upward_deg": 24.0
     },
     {
       "frame": 60,
       "progress": 0.9988,
-      "shoulder_elevation_deg": 83.917
+      "shoulder_elevation_deg": 89.919,
+      "arm_plane_deg": 0.0,
+      "scapula_upward_deg": 23.968
     },
     {
       "frame": 66,
       "progress": 0.9595,
-      "shoulder_elevation_deg": 81.083
+      "shoulder_elevation_deg": 87.164,
+      "arm_plane_deg": 0.194,
+      "scapula_upward_deg": 22.866
     },
     {
       "frame": 72,
       "progress": 0.8369,
-      "shoulder_elevation_deg": 72.258
+      "shoulder_elevation_deg": 78.584,
+      "arm_plane_deg": 3.138,
+      "scapula_upward_deg": 19.434
     },
     {
       "frame": 78,
       "progress": 0.6385,
-      "shoulder_elevation_deg": 57.974
+      "shoulder_elevation_deg": 64.697,
+      "arm_plane_deg": 15.418,
+      "scapula_upward_deg": 13.879
     },
     {
       "frame": 84,
       "progress": 0.4069,
-      "shoulder_elevation_deg": 41.295
+      "shoulder_elevation_deg": 48.481,
+      "arm_plane_deg": 41.512,
+      "scapula_upward_deg": 7.392
     },
     {
       "frame": 90,
       "progress": 0.1977,
-      "shoulder_elevation_deg": 26.233
+      "shoulder_elevation_deg": 33.838,
+      "arm_plane_deg": 75.957,
+      "scapula_upward_deg": 1.535
     },
     {
       "frame": 96,
       "progress": 0.0579,
-      "shoulder_elevation_deg": 16.17
+      "shoulder_elevation_deg": 24.054,
+      "arm_plane_deg": 104.727,
+      "scapula_upward_deg": 0.0
     },
     {
       "frame": 102,
       "progress": 0.0038,
-      "shoulder_elevation_deg": 12.271
+      "shoulder_elevation_deg": 20.263,
+      "arm_plane_deg": 117.115,
+      "scapula_upward_deg": 0.0
     },
     {
       "frame": 108,
       "progress": 0.0,
-      "shoulder_elevation_deg": 12.0
+      "shoulder_elevation_deg": 20.0,
+      "arm_plane_deg": 118.0,
+      "scapula_upward_deg": 0.0
     },
     {
       "frame": 114,
       "progress": 0.0,
-      "shoulder_elevation_deg": 12.0
+      "shoulder_elevation_deg": 20.0,
+      "arm_plane_deg": 118.0,
+      "scapula_upward_deg": 0.0
     },
     {
       "frame": 120,
       "progress": 0.0233,
-      "shoulder_elevation_deg": 13.675
+      "shoulder_elevation_deg": 21.628,
+      "arm_plane_deg": 112.574,
+      "scapula_upward_deg": 0.0
     },
     {
       "frame": 126,
       "progress": 0.1926,
-      "shoulder_elevation_deg": 25.864
+      "shoulder_elevation_deg": 33.479,
+      "arm_plane_deg": 76.931,
+      "scapula_upward_deg": 1.392
     },
     {
       "frame": 132,
       "progress": 0.5,
-      "shoulder_elevation_deg": 48.0
+      "shoulder_elevation_deg": 55.0,
+      "arm_plane_deg": 29.5,
+      "scapula_upward_deg": 10.0
     },
     {
       "frame": 138,
       "progress": 0.8074,
-      "shoulder_elevation_deg": 70.136
+      "shoulder_elevation_deg": 76.521,
+      "arm_plane_deg": 4.375,
+      "scapula_upward_deg": 18.608
     },
     {
       "frame": 144,
       "progress": 0.9767,
-      "shoulder_elevation_deg": 82.325
+      "shoulder_elevation_deg": 88.372,
+      "arm_plane_deg": 0.064,
+      "scapula_upward_deg": 23.349
     },
     {
       "frame": 150,
       "progress": 1.0,
-      "shoulder_elevation_deg": 84.0
+      "shoulder_elevation_deg": 90.0,
+      "arm_plane_deg": 0.0,
+      "scapula_upward_deg": 24.0
     },
     {
       "frame": 156,
       "progress": 1.0,
-      "shoulder_elevation_deg": 84.0
+      "shoulder_elevation_deg": 90.0,
+      "arm_plane_deg": 0.0,
+      "scapula_upward_deg": 24.0
     },
     {
       "frame": 162,
       "progress": 0.9962,
-      "shoulder_elevation_deg": 83.729
+      "shoulder_elevation_deg": 89.737,
+      "arm_plane_deg": 0.002,
+      "scapula_upward_deg": 23.895
     },
     {
       "frame": 168,
       "progress": 0.9421,
-      "shoulder_elevation_deg": 79.83
+      "shoulder_elevation_deg": 85.946,
+      "arm_plane_deg": 0.396,
+      "scapula_upward_deg": 22.378
     },
     {
       "frame": 174,
       "progress": 0.8023,
-      "shoulder_elevation_deg": 69.767
+      "shoulder_elevation_deg": 76.162,
+      "arm_plane_deg": 4.611,
+      "scapula_upward_deg": 18.465
     },
     {
       "frame": 180,
       "progress": 0.5931,
-      "shoulder_elevation_deg": 54.705
+      "shoulder_elevation_deg": 61.519,
+      "arm_plane_deg": 19.534,
+      "scapula_upward_deg": 12.608
     },
     {
       "frame": 186,
       "progress": 0.3615,
-      "shoulder_elevation_deg": 38.026
+      "shoulder_elevation_deg": 45.303,
+      "arm_plane_deg": 48.111,
+      "scapula_upward_deg": 6.121
     },
     {
       "frame": 192,
       "progress": 0.1631,
-      "shoulder_elevation_deg": 23.742
+      "shoulder_elevation_deg": 31.416,
+      "arm_plane_deg": 82.651,
+      "scapula_upward_deg": 0.566
     },
     {
       "frame": 198,
       "progress": 0.0405,
-      "shoulder_elevation_deg": 14.917
+      "shoulder_elevation_deg": 22.836,
+      "arm_plane_deg": 108.633,
+      "scapula_upward_deg": 0.0
     },
     {
       "frame": 204,
       "progress": 0.0012,
-      "shoulder_elevation_deg": 12.083
+      "shoulder_elevation_deg": 20.081,
+      "arm_plane_deg": 117.727,
+      "scapula_upward_deg": 0.0
     },
     {
       "frame": 210,
       "progress": 0.0,
-      "shoulder_elevation_deg": 12.0
+      "shoulder_elevation_deg": 20.0,
+      "arm_plane_deg": 118.0,
+      "scapula_upward_deg": 0.0
     },
     {
       "frame": 216,
       "progress": 0.0,
-      "shoulder_elevation_deg": 12.0
+      "shoulder_elevation_deg": 20.0,
+      "arm_plane_deg": 118.0,
+      "scapula_upward_deg": 0.0
     }
   ]
 }
