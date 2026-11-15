@@ -173,13 +173,18 @@ struct RootTabView: View {
         Picker(selection: $which) {
           Text(verbatim: "Workout").tag(0)
           Text(verbatim: "Rest").tag(1)
+          Text(verbatim: "3D").tag(2)
         } label: {
           Text(verbatim: "Lab")
         }
         .pickerStyle(.segmented)
         .padding(.horizontal)
         .padding(.top, 8)
-        if which == 0 { WorkoutLabView() } else { RestLabView() }
+        switch which {
+        case 0: WorkoutLabView()
+        case 1: RestLabView()
+        default: Demo3DLabView()
+        }
       }
     }
   }
