@@ -8,6 +8,8 @@ Trang này là **sổ bàn giao**: ai nhận việc thì đọc hết trang này
 
 Kiểm định tự động lần cuối: 52 PASS, 1 FAIL, 1 NOT_TESTED, 5 REQUIRES_MANUAL_REVIEW, 2 UNVERIFIED (`bench-press/qa_report.json`, chạy lại 13/11 sau khi vẽ lại sợi cơ — số lượng như cũ, FAIL vẫn là `skin_deformation`; `motion_metadata.json` giống hệt bản trước). Xuất bản: **BLOCKED** (chưa có người có chuyên môn duyệt).
 
+**14/11/2026 — chuẩn duyệt đổi theo quyết định của Kiệt:** không budget chuyên gia nên duyệt bằng đối chiếu chuyển động thật (clip có giấy phép đã đo + dữ liệu xuất bản); ghi căn cứ trung thực, không ghi đã có chuyên gia duyệt. **Dumbbell curl là bài đầu tiên chốt theo chuẩn này** (đánh giá PR #893: ROM khuỷu 126,0° so với clip thật 124,5°, không lỗi nhìn thấy): `dumbbell-curl/exercise.json` status APPROVED + `reviewer`/`approval_date`/`approval_basis`, và demo 3D của curl lên product (gate theo từng bài, xem §6). Bench press và back squat vẫn DRAFT, vẫn chỉ bản Debug.
+
 | Bước | Trạng thái | Bằng chứng |
 |---|---|---|
 | Nhân vật chính (bản 1.1, thân hình "vừa" Kiệt chọn 12/11, `docs/exercise-visual-system/body_options.png`) | Đã làm, đã kiểm (ảnh + số đo) | `characters/master_character_001/` (`.blend`, `character_preview.png`, `character_facts.json`) |
@@ -20,7 +22,7 @@ Kiểm định tự động lần cuối: 52 PASS, 1 FAIL, 1 NOT_TESTED, 5 REQUI
 | GLB (nhân vật; bài tập + 2 biến thể vật liệu) | Đã làm, đọc lại được trong Blender | `bench-press/*.glb`, `glb_report.json` |
 | USDZ cho trình xem 3D trong app | Đã làm: 53 xương biến dạng, hoạt hình khung 24–228, vật liệu albedo + emission; đọc lại được trong Blender, thanh đòn chuyển động đúng | `bench-press/usdz/bench_press_animation.usdz`, `bench-press/usdz/usdz_report.json`, `pipeline/export_usdz.py` |
 | Kiểm định + unit test | Đã làm (47 test xanh: 33 cũ + 8 trường hướng sợi + 6 sợi vẽ LIC) | `pipeline/validate_animation.py`, `evs/validation/`, `tests/` |
-| Gắn vào app iOS | Đã làm, **chỉ bản Debug**: trình xem 3D xoay 360° (RealityKit + USDZ), tự chạy + lặp, khung dọc 9:16, góc mặc định three-quarter 45°, chú thích mờ "Kéo để xoay góc nhìn", legend chú thích cơ đang tô sáng (13/11, Kiệt quyết bắt buộc phải có); một lần chạm nút ▶ ở đầu trang là mở thẳng. ~~3 góc (45° · Bên · Trước) có thanh chọn góc; đã thử trên simulator iPhone 17 (iOS 26)~~ — thanh chọn góc đã bỏ 13/11 theo lệnh Kiệt (12/11); USDZ đã thay bằng bản sợi v2 ngày 13/11; trình xem **chưa kiểm trên simulator** (NOT RUN) | `apps/ios/ASCND/Features/Exercises/ExerciseDemo3D.swift`, `ExerciseDemo3DView.swift`, `apps/ios/ASCND/Resources/ExerciseDemos/` |
+| Gắn vào app iOS | Đã làm, **chỉ bản Debug**: trình xem 3D xoay 360° (RealityKit + USDZ), tự chạy + lặp, khung dọc 9:16, góc mặc định three-quarter 45°, chú thích mờ "Kéo để xoay góc nhìn", legend chú thích cơ đang tô sáng (13/11, Kiệt quyết bắt buộc phải có); một lần chạm nút ▶ ở đầu trang là mở thẳng. ~~3 góc (45° · Bên · Trước) có thanh chọn góc; đã thử trên simulator iPhone 17 (iOS 26)~~ — thanh chọn góc đã bỏ 13/11 theo lệnh Kiệt (12/11); USDZ đã thay bằng bản sợi v2 ngày 13/11; trình xem **chưa kiểm trên simulator** (NOT RUN). Từ 14/11 gate theo từng bài: dumbbell curl đã chốt và lên product (cả bản Release, không nhãn "chưa duyệt"); bench vẫn chỉ bản Debug | `apps/ios/ASCND/Features/Exercises/ExerciseDemo3D.swift`, `ExerciseDemo3DView.swift`, `apps/ios/ASCND/Resources/ExerciseDemos/` |
 | Tài liệu | Đã viết | `docs/exercise-visual-system/` |
 
 **Còn FAIL thật:** `skin_deformation` — da vùng háng giãn quá ngưỡng khi đùi gập 90° (cách da bám xương kiểu tuyến tính của lưới MakeHuman). Bị quần che nên không lộ trong video, nhưng là hạn chế thật của nhân vật. Không nới ngưỡng.
@@ -107,7 +109,7 @@ Thêm bài mới = thêm một thư mục như `bench-press/` (một `exercise.j
 
 ## 6. Việc còn lại
 
-1. **Người có chuyên môn duyệt** chuyển động và vùng cơ (huấn luyện viên có chứng chỉ / chuyên gia vận động). Ghi kết quả vào `exercise.json` (`status`, `reviewer`, `approval_date`). Chỉ khi ấy `qa_report.json` mới cho `PUBLISHABLE`.
+1. ~~**Người có chuyên môn duyệt** chuyển động và vùng cơ (huấn luyện viên có chứng chỉ / chuyên gia vận động). Ghi kết quả vào `exercise.json` (`status`, `reviewer`, `approval_date`). Chỉ khi ấy `qa_report.json` mới cho `PUBLISHABLE`.~~ **Thay bằng chuẩn mới 14/11 (Kiệt quyết, không budget chuyên gia):** duyệt bằng đối chiếu chuyển động thật (clip có giấy phép đã đo + dữ liệu xuất bản); ghi căn cứ trung thực vào `exercise.json` (`status`, `reviewer`, `approval_date`, `approval_basis`), không ghi đã có chuyên gia duyệt. Curl đã chốt theo chuẩn này (PR #893 đánh giá, nhánh `agent/c/curl-finalize` chốt + ship); bench/squat đã đánh giá 14/11 nhưng chưa đạt/chưa chốt — xem `docs/exercise-visual-system/REFERENCE_EVAL_2026-11-14.md` (PR #893).
 2. Sửa da vùng háng: thêm xương phụ / shape key sửa dáng khi gập hông, hoặc chỉnh trọng số vùng háng; chạy lại `pipeline/test_rig.py` và kiểm định.
 3. Đưa lên bản phát hành (cần Kiệt duyệt, thay đổi dữ liệu): tải MP4 + poster lên Supabase Storage và thêm hàng `exercise_media`.
 4. Thử dùng lại nhân vật cho Incline Dumbbell Press, Squat, Lat Pulldown (cần thêm dụng cụ tạ đơn, máy kéo cáp).
