@@ -1,0 +1,60 @@
+[
+  {
+    "version": 1,
+    "when": "2026-11-14T23:11:11",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.0
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 8.9
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.6
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 23.6
+      }
+    },
+    "total_seconds": 38.9,
+    "qa": "{\"PASS\": 16, \"FAIL\": 2}"
+  },
+  {
+    "version": 2,
+    "when": "2026-11-14T23:13:58",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 2.3
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 8.5
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.6
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 23.6
+      },
+      "export": {
+        "ok": true,
+        "seconds": 20.6
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 3.6
+      }
+    },
+    "total_seconds": 61.1,
+    "qa": "{\"PASS\": 17, \"FAIL\": 1}"
+  }
+]

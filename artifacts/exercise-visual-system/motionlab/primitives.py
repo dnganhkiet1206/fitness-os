@@ -63,3 +63,20 @@ def two_bone_knee(hip, ankle, thigh_len: float, shin_len: float, forward=FORWARD
     h = math.sqrt(max(thigh_len ** 2 - a * a, 0.0))
     bend = unit(np.asarray(forward, float) - n * np.dot(forward, n))
     return hip + n * a + bend * h
+
+
+def scapulohumeral(elevation_deg: float) -> dict:
+    """Shoulder-girdle angles for an arm raised ``elevation_deg`` from the
+    side of the body (0 = hanging, 90 = level, 180 = overhead).
+
+    Inman et al. 1944 (J Bone Joint Surg 26:1): over the whole range the
+    humerus moves about 2 deg on the shoulder blade for every 1 deg the
+    shoulder blade turns upward, after a "setting" phase in the first
+    ~30 deg; full elevation has ~60 deg of upward rotation. McClure et al.
+    2001 (J Shoulder Elbow Surg 10:269) measured clavicle elevation of
+    roughly 10-15 deg at full elevation. Here: upward rotation
+    0.4 x (elevation - 30) (60 deg at 180), of which a quarter is clavicle
+    elevation (the shoulder blade rides on the clavicle) and the rest the
+    shoulder blade turning on it."""
+    st = 0.4 * max(0.0, float(elevation_deg) - 30.0)
+    return {"clavicle_elevation_deg": 0.25 * st, "scapula_upward_deg": 0.75 * st, "upward_rotation_deg": st}

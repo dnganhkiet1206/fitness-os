@@ -121,6 +121,32 @@
       cameraPosition: [1.6231, 1.798, 1.7876], cameraTarget: [-0.0182, 0.9532, 0.1462],
       focusTexturePrefix: "stiff_leg_dumbbell_deadlift_focus")
 
+    /// Motion Lab (14/11, P1 lô 2): họ "row" (`motionlab/families/row.py`).
+    static let bentOverRow = Demo(
+      usdzFile: "bent_over_two_dumbbell_row_animation", loopFile: nil, posterFile: "bent_over_two_dumbbell_row_poster",
+      durationS: 8.2,
+      legend: [
+        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.latissimusDorsi", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidPosterior", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
+      ],
+      cameraPosition: [1.4831, 1.3596, 1.5948], cameraTarget: [0.0211, 0.6071, 0.1328],
+      focusTexturePrefix: "bent_over_two_dumbbell_row_focus")
+
+    /// Motion Lab (14/11, P1 lô 2): họ "press_vertical", ngồi ghế tựa, bả vai theo tay.
+    static let dumbbellShoulderPress = Demo(
+      usdzFile: "dumbbell_shoulder_press_animation", loopFile: nil, posterFile: "dumbbell_shoulder_press_poster",
+      durationS: 8.8,
+      legend: [
+        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidLateral", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.tricepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
+      ],
+      cameraPosition: [1.8265, 1.7499, 1.9738], cameraTarget: [-0.0029, 0.8082, 0.1443],
+      focusTexturePrefix: "dumbbell_shoulder_press_focus")
+
     /// Danh sách các bài đã có bản 3D, mỗi bài một dòng (màn Lab "3D", Kiệt
     /// 14/11): tên hiện + tên tra trong `demos` + họ động tác của Motion Lab.
     static let catalog: [(title: String, key: String, family: String)] = [
@@ -130,6 +156,8 @@
       ("Hammer Curl", "hammer curl", "curl"),
       ("Side Lateral Raise", "side lateral raise", "raise_lateral"),
       ("Stiff-Legged Dumbbell Deadlift", "stiff-legged dumbbell deadlift", "hinge"),
+      ("Bent Over Two-Dumbbell Row", "bent over two-dumbbell row", "row"),
+      ("Dumbbell Shoulder Press", "dumbbell shoulder press", "press_vertical (ngồi)"),
     ]
 
     /// Tên bài (đã gập như `PersonalRecords.exerciseKey`) → bản minh hoạ.
@@ -155,6 +183,12 @@
       "stiff-legged dumbbell deadlift": stiffLegDeadlift,
       "stiff-leg dumbbell deadlift": stiffLegDeadlift,
       "dumbbell stiff-legged deadlift": stiffLegDeadlift,
+      "bent over two-dumbbell row": bentOverRow,
+      "bent over dumbbell row": bentOverRow,
+      "dumbbell bent over row": bentOverRow,
+      "dumbbell shoulder press": dumbbellShoulderPress,
+      "seated dumbbell shoulder press": dumbbellShoulderPress,
+      "seated dumbbell press": dumbbellShoulderPress,
     ]
 
     static func demo(for name: String) -> Demo? {

@@ -1,0 +1,46 @@
+{
+  "pipeline_version": "0.1.0",
+  "exercise_id": "bent_over_two_dumbbell_row",
+  "master_character_id": "master_character_003",
+  "usdz": "bent_over_two_dumbbell_row_animation.usdz",
+  "size_bytes": 4323166,
+  "zip_members": [
+    "bent_over_two_dumbbell_row_animation.usdc",
+    "textures/_usdz_apparel_emission.png",
+    "textures/_usdz_apparel_albedo.png",
+    "textures/_usdz_body_emission.png",
+    "textures/_usdz_body_normal.png",
+    "textures/_usdz_body_albedo.png"
+  ],
+  "default_camera": {
+    "preset_id": "three_quarter",
+    "position_m": [
+      1.4831,
+      1.3596,
+      1.5948
+    ],
+    "target_m": [
+      0.0211,
+      0.6071,
+      0.1328
+    ],
+    "distance_m": 2.2003,
+    "vertical_fov_deg": 41.26,
+    "aspect": 0.5625
+  },
+  "expectations": {
+    "deform_bones": 63,
+    "animation_duration_s": 8.2083,
+    "animation_frames": 198
+  },
+  "reimport": {
+    "armatures": 1,
+    "bones": 63,
+    "mesh_objects": 4,
+    "skinned_mesh_objects": 2,
+    "mesh_vertices": 13300,
+    "actions": 1,
+    "last_animation_frame": 188.0,
+    "materials": 5
+  }
+}

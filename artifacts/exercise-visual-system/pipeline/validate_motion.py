@@ -106,7 +106,8 @@ def main() -> None:
     implements = [o for o in scene.objects if o.type == "MESH" and any(o.name.startswith(i) for i in ids)]
     low = int(np.argmin(j["pelvis"][:, 2]))
     depths = {o.name: [] for o in implements}
-    for f in sorted({stretch_f for _s, stretch_f in stretch} | {frames[low]}):
+    pen_frames = sorted({stretch_f for _s, stretch_f in stretch} | {frames[low]})
+    for f in pen_frames:
         scene.frame_set(f)
         dg = bpy.context.evaluated_depsgraph_get()
         # Implement vertices inside the skin. Tested from the implement's
@@ -149,7 +150,7 @@ def main() -> None:
         Q.contact(dist, prof["max_hand_to_socket_m"]) if dist else Q.rec("hand_implement_contact", "B", "Hands on implements", Q.NOT_TESTED),
         Q.planted(feet, prof["max_foot_slide_m"], prof["max_foot_lift_m"]),
         Q.symmetry(j, prof["max_left_right_position_difference_m"]),
-        Q.penetration(depths, prof["max_implement_penetration_m"]) if depths else Q.rec("implement_penetration", "C", "Implements do not pass through the body", Q.NOT_TESTED),
+        Q.penetration(depths, prof["max_implement_penetration_m"], pen_frames) if depths else Q.rec("implement_penetration", "C", "Implements do not pass through the body", Q.NOT_TESTED),
         *Q.posture(j, prof),
         tempo_check,
         Q.rec("skin_stretch", "C", "Skin stretch stays within limits", Q.PASS if worst_stretch[0] <= prof["max_p999_edge_stretch"] else Q.FAIL,

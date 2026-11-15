@@ -1,0 +1,135 @@
+[
+  {
+    "version": 1,
+    "when": "2026-11-14T23:03:19",
+    "template": "row",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 6.6
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 6.9
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.5
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 22.8
+      }
+    },
+    "total_seconds": 38.8,
+    "qa": "{\"PASS\": 15, \"FAIL\": 1}"
+  },
+  {
+    "version": 2,
+    "when": "2026-11-14T23:04:47",
+    "template": "row",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.7
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 6.8
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.5
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 23.7
+      }
+    },
+    "total_seconds": 37.2,
+    "qa": "{\"PASS\": 13, \"FAIL\": 3}"
+  },
+  {
+    "version": 3,
+    "when": "2026-11-14T23:05:44",
+    "template": "row",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.8
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 6.6
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.5
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 23.9
+      }
+    },
+    "total_seconds": 36.8,
+    "qa": "{\"PASS\": 14, \"FAIL\": 2}"
+  },
+  {
+    "version": 4,
+    "when": "2026-11-14T23:07:04",
+    "template": "row",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.0
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 6.6
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.5
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 23.2
+      }
+    },
+    "total_seconds": 35.5,
+    "qa": "{\"PASS\": 15, \"FAIL\": 1}"
+  },
+  {
+    "version": 5,
+    "when": "2026-11-14T23:12:57",
+    "template": "row",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.2
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 6.5
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.5
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 23.0
+      },
+      "export": {
+        "ok": true,
+        "seconds": 19.2
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 3.2
+      }
+    },
+    "total_seconds": 57.8,
+    "qa": "{\"PASS\": 15, \"FAIL\": 1}"
+  }
+]

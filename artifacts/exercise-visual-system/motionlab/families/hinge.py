@@ -116,7 +116,7 @@ class HingeTemplate:
         return {side: np.array([sign * t["stance_half_width_m"], s[f"ankle_{side}"][1], s[f"ankle_{side}"][2]])
                 for side, sign in (("l", 1.0), ("r", -1.0))}
 
-    def _shoulders(self, hip: np.ndarray, lean_deg: float) -> dict:
+    def _shoulders(self, hip: np.ndarray, lean_deg: float, rest_points: dict | None = None) -> dict:
         """Shoulder joints for a trunk lean, posed the way the generator
         poses it (pipeline/generate_exercise.py pose_body): the pelvis turns
         by lean x pelvis_share about its head, each spine bone by an equal
@@ -125,7 +125,8 @@ class HingeTemplate:
         prediction is exact; without them, a rigid trunk about the hips (a
         few centimetres off, enough to pull the hands off the handles)."""
         s, t = self.s, self.t
-        pts = {side: np.asarray(s[f"shoulder_{side}"], float) for side in ("l", "r")}
+        pts = ({k: np.asarray(v, float) for k, v in rest_points.items()} if rest_points is not None
+               else {side: np.asarray(s[f"shoulder_{side}"], float) for side in ("l", "r")})
         hips_rest = self.hip_rest.copy()
         if "pelvis_head" not in s:
             pivots = [(self.hip_rest, lean_deg)]

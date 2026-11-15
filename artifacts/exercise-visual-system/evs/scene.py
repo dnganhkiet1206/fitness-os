@@ -92,6 +92,11 @@ def build_equipment(exercise: dict, brand: dict) -> dict:
             root = None
             for key in ("pad", "frame"):
                 result[key].location = Vector(item.get("location", (0, 0, 0)))
+        elif spec["type"] == "utility_bench":
+            result = equipment.build_utility_bench(item["id"].capitalize(), spec, mats)
+            root = None
+            for key in ("pad", "frame"):
+                result[key].location = Vector(item.get("location", (0, 0, 0)))
         elif spec["type"] == "dumbbell":
             root = equipment.build_dumbbell(item["id"].capitalize(), spec, mats)
             result = {"bar": root}

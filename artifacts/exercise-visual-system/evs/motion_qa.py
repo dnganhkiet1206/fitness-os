@@ -138,8 +138,11 @@ def posture(j: dict, prof: dict) -> list[dict]:
     return out
 
 
-def penetration(depths: dict, limit_m: float) -> dict:
-    """depths: implement -> per-frame deepest skin point inside the implement (m)."""
+def penetration(depths: dict, limit_m: float, frames: list | None = None) -> dict:
+    """depths: implement -> deepest skin point inside the implement (m) at
+    each sampled frame. ``frames``: the animation frame of each sample, so
+    the report names the real frame (14/11: it named the sample index, and
+    the reviewer looked at the wrong frame)."""
     worst = (0.0, None, None)
     for name, arr in depths.items():
         arr = np.asarray(arr, float)
@@ -147,7 +150,8 @@ def penetration(depths: dict, limit_m: float) -> dict:
         if arr[i] > worst[0]:
             worst = (float(arr[i]), name, i)
     return rec("implement_penetration", "C", "Implements do not pass through the body", PASS if worst[0] <= limit_m else FAIL,
-               round(worst[0], 4), limit_m, {"implement": worst[1], "frame": worst[2]}, "m inside")
+               round(worst[0], 4), limit_m,
+               {"implement": worst[1], "frame": (frames[worst[2]] if frames is not None and worst[2] is not None else worst[2])}, "m inside")
 
 
 def summary(records: list[dict]) -> dict:
