@@ -72,13 +72,13 @@
       "license": "original work of this repository"
     },
     {
-      "what": "arms to shoulder height, elbows slightly bent, plane slightly forward of the frontal plane, palms down at the top",
-      "source": "ACE exercise library (lateral raise); ExRx 'Dumbbell Lateral Raise'",
+      "what": "start in front of the thighs, slight forward lean, elbows slightly bent and fixed, elbows to shoulder height directly lateral at the top, palms down by abduction (compared with the ExRx photos, 14/11)",
+      "source": "ExRx 'Dumbbell Lateral Raise' (instructions and photos); ACE exercise library",
       "license": "facts"
     },
     {
-      "what": "muscles: lateral deltoid target; anterior deltoid, supraspinatus, trapezius, serratus synergists",
-      "source": "ExRx 'Dumbbell Lateral Raise'",
+      "what": "start in front of the thighs, slight forward lean, elbows slightly bent and fixed, elbows to shoulder height directly lateral at the top, palms down by abduction (compared with the ExRx photos, 14/11)",
+      "source": "ExRx 'Dumbbell Lateral Raise' (instructions and photos); ACE exercise library",
       "license": "facts"
     },
     {
@@ -89,18 +89,18 @@
   ],
   "phase_cues": {
     "start_position": [
-      "Stand tall, dumbbells by the thighs",
-      "Elbows slightly bent"
+      "Dumbbells in front of the thighs, elbows slightly bent",
+      "Lean forward slightly, hips and knees slightly bent"
     ],
     "concentric": [
-      "Raise the arms out to the sides",
-      "Stop at shoulder height"
+      "Raise the upper arms out to the sides, elbows pointing back",
+      "Stop when the elbows reach shoulder height"
     ],
     "top_hold": [
-      "Pause, elbows a little higher than the hands"
+      "Elbows directly out to the sides, forearms angled slightly forward"
     ],
     "eccentric": [
-      "Lower slowly back to the sides"
+      "Lower slowly back in front of the thighs"
     ]
   },
   "camera_presets": [
@@ -167,17 +167,19 @@
     "min_still_frame_agreement": 0.97,
     "max_forearm_frontal_tilt_during_rep_deg": 10.0,
     "max_hand_into_bar_comment": "The skin of the palm is rigid in this rig. Up to 8 mm of palm pad inside the bar stands for soft tissue pressed flat by the load; more than that, or any finger passing through the bar, is a defect.",
-    "elbow_tracking_below_deg": 150.0
+    "elbow_tracking_below_deg": 150.0,
+    "max_elbow_medial_m": 0.05,
+    "max_elbow_medial_comment": "Lateral raise starts with the dumbbells in front of the thighs (ExRx), so the elbows sit inside the shoulder line at the bottom by design."
   },
   "technical_cues": [
-    "Lead with the elbows",
-    "Stop at shoulder height; do not shrug",
-    "Keep the trunk still"
+    "Lead with the elbows, keep them slightly bent",
+    "Raise to shoulder height only; do not shrug",
+    "Palms face the floor at the top; do not turn the thumbs up"
   ],
   "common_mistakes": [
-    "Shrugging the shoulders up to the ears",
-    "Swinging the weights with the body",
-    "Raising the hands above the elbows"
+    "Raising the hands above the elbows",
+    "Swinging the weights with the trunk",
+    "Raising the arms in front instead of out to the sides"
   ],
   "status": "DRAFT",
   "brand_profile_id": "placeholder",
@@ -203,8 +205,8 @@
       "start_s": 0.0,
       "end_s": 0.6,
       "cues": [
-        "Stand tall, dumbbells by the thighs",
-        "Elbows slightly bent"
+        "Dumbbells in front of the thighs, elbows slightly bent",
+        "Lean forward slightly, hips and knees slightly bent"
       ],
       "checks": []
     },
@@ -214,8 +216,8 @@
       "start_s": 0.6,
       "end_s": 2.0,
       "cues": [
-        "Raise the arms out to the sides",
-        "Stop at shoulder height"
+        "Raise the upper arms out to the sides, elbows pointing back",
+        "Stop when the elbows reach shoulder height"
       ],
       "checks": []
     },
@@ -225,7 +227,7 @@
       "start_s": 2.0,
       "end_s": 2.4,
       "cues": [
-        "Pause, elbows a little higher than the hands"
+        "Elbows directly out to the sides, forearms angled slightly forward"
       ],
       "checks": []
     },
@@ -235,7 +237,7 @@
       "start_s": 2.4,
       "end_s": 4.4,
       "cues": [
-        "Lower slowly back to the sides"
+        "Lower slowly back in front of the thighs"
       ],
       "checks": []
     },
@@ -253,8 +255,8 @@
       "start_s": 4.8,
       "end_s": 6.2,
       "cues": [
-        "Raise the arms out to the sides",
-        "Stop at shoulder height"
+        "Raise the upper arms out to the sides, elbows pointing back",
+        "Stop when the elbows reach shoulder height"
       ],
       "checks": []
     },
@@ -264,7 +266,7 @@
       "start_s": 6.2,
       "end_s": 6.6,
       "cues": [
-        "Pause, elbows a little higher than the hands"
+        "Elbows directly out to the sides, forearms angled slightly forward"
       ],
       "checks": []
     },
@@ -274,7 +276,7 @@
       "start_s": 6.6,
       "end_s": 8.6,
       "cues": [
-        "Lower slowly back to the sides"
+        "Lower slowly back in front of the thighs"
       ],
       "checks": []
     },
@@ -287,5 +289,19 @@
       "checks": []
     }
   ],
-  "animation_duration": 9.0
+  "animation_duration": 9.0,
+  "agent_review": {
+    "date": "2026-11-14",
+    "by": "agent (not an expert review)",
+    "checked": [
+      "qa_report.json (tất cả cổng tự động)",
+      "review_sheet.png (xoay vòng 8 góc × 3 khung)",
+      "observer_sheet.png (tầm mắt 1,6 m, 5 góc) đối chiếu nguồn kỹ thuật",
+      "mở trong trình xem 3D của app (simulator iPhone 17)"
+    ],
+    "remaining": [],
+    "note": "Agent self-check only; status stays DRAFT until a qualified reviewer approves.",
+    "owner_feedback": "Kiệt 14/11: not right. Redone against the ExRx photos: start in front of the thighs with a slight forward lean, elbows at shoulder height directly lateral at the top, handle level, shoulder girdle follows. Awaiting re-check.",
+    "status": "reopened"
+  }
 }

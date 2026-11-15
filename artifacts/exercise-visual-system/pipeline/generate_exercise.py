@@ -53,6 +53,9 @@ def rest_skeleton(rig) -> dict:
     # puts the shoulders for a given lean (pelvis + spine split).
     for b in ("pelvis",) + SPINE:
         sk[f"{b}_head"] = head(b)
+    for s_ in ("l", "r"):
+        if f"clavicle_{s_}" in rig.pose.bones:
+            sk[f"clavicle_{s_}_head"] = head(f"clavicle_{s_}")
     sk["upper_arm_m"] = float(np.linalg.norm(sk["elbow_l"] - sk["shoulder_l"]))
     sk["forearm_m"] = float(np.linalg.norm(sk["wrist_l"] - sk["elbow_l"]))
     sk["thigh_m"] = float(np.linalg.norm(sk["knee_l"] - sk["hip_l"]))
@@ -134,6 +137,36 @@ def pose_body(rig, body: dict, frame: int) -> None:
         rig.pose.bones[b].keyframe_insert("rotation_quaternion", frame=frame)
 
 
+def pose_girdle(rig, girdle: dict, frame: int) -> None:
+    """Shoulder girdle following the arm (scapulohumeral rhythm, motionlab
+    primitives.scapulohumeral): per side, the clavicle elevates (its lateral
+    end rises, which lifts the shoulder joint) and the shoulder blade turns
+    upward on it. Rotations are about the armature's front-back axis through
+    each bone's head; left and right mirror. Keys both bones."""
+    from mathutils import Quaternion
+    from evs import motion
+    for side, sign in (("l", 1.0), ("r", -1.0)):
+        g = girdle.get(side)
+        if not g:
+            continue
+        # Elevation (lateral end up, about front-back Y) then retraction
+        # (lateral end back, about vertical Z: shoulder blades squeezed).
+        for bone, turns in ((f"clavicle_{side}", ((Vector((0, 1, 0)), -sign * g.get("clavicle_elevation_deg", 0.0)),
+                                                   (Vector((0, 0, 1)), sign * g.get("clavicle_retraction_deg", 0.0)))),
+                            (f"scapula_{side}", ((Vector((0, 1, 0)), -sign * g.get("scapula_upward_deg", 0.0)),))):
+            if bone not in rig.pose.bones:
+                continue
+            pb = rig.pose.bones[bone]
+            pb.rotation_mode = "QUATERNION"
+            pb.rotation_quaternion = Quaternion()
+            bpy.context.view_layer.update()
+            for axis, deg in turns:
+                if deg:
+                    motion.rotate_bone_about_armature_axis(rig, bone, axis, deg)
+            pb.keyframe_insert("rotation_quaternion", frame=frame)
+    bpy.context.view_layer.update()
+
+
 def to_matrix(m: np.ndarray) -> Matrix:
     return Matrix([list(r) for r in m])
 
@@ -176,6 +209,13 @@ def main() -> None:
         obj.parent_bone = v["bone"]
         bpy.context.view_layer.update()
         obj.matrix_world = to_matrix(v["matrix"])
+    # Equipment that does not move but must sit against the body (a bench
+    # placed under the seated character): the template gives its matrix.
+    for key, m in static.get("place", {}).items():
+        prefix = key.capitalize()
+        for obj in bpy.data.objects:
+            if obj.name == prefix or obj.name.startswith(prefix + "_"):
+                obj.matrix_world = to_matrix(m)
     # Feet planted, knees forward.
     for key, v in static.items():
         if not isinstance(v, dict) or key in ("attached", "grips"):
@@ -241,6 +281,8 @@ def main() -> None:
         body = fr.get("body")
         if body:
             pose_body(rig, body, f)
+        if fr.get("girdle"):
+            pose_girdle(rig, fr["girdle"], f)
         if fr.get("poles_trunk"):
             # Offsets given in the trunk's rest frame: rotate with spine_03.
             pb3 = rig.pose.bones["spine_03"]

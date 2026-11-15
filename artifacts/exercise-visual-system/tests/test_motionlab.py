@@ -223,6 +223,31 @@ class TempoTimelineTests(unittest.TestCase):
         self.assertLess(max(abs(a - b) for a, b in zip(curve, ref)), 0.01)
 
 
+class ScapulohumeralTests(unittest.TestCase):
+    def test_rhythm(self):
+        from motionlab.primitives import scapulohumeral
+        self.assertEqual(scapulohumeral(20)["upward_rotation_deg"], 0.0)
+        top = scapulohumeral(180)
+        self.assertAlmostEqual(top["upward_rotation_deg"], 60.0)
+        self.assertAlmostEqual(top["clavicle_elevation_deg"] + top["scapula_upward_deg"], 60.0)
+        self.assertLessEqual(top["clavicle_elevation_deg"], 15.0)
+
+
+class ImplementClashTests(unittest.TestCase):
+    def test_overlap_fails_with_frame(self):
+        r = motion_qa.implement_clash({"Dumbbell_l|Dumbbell_r": [0, 0, 12, 3]}, [0, 2, 4, 6])
+        self.assertEqual(r["status"], motion_qa.FAIL)
+        self.assertEqual(r["where"], {"pair": "Dumbbell_l|Dumbbell_r", "frame": 4})
+        self.assertEqual(motion_qa.implement_clash({"a|b": [0, 0]}, [0, 2])["status"], motion_qa.PASS)
+
+
+class PenetrationFrameTests(unittest.TestCase):
+    def test_reports_the_animation_frame_not_the_sample_index(self):
+        r = motion_qa.penetration({"Dumbbell_r": [0.0, 0.006, 0.001]}, 0.004, [0, 57, 115])
+        self.assertEqual(r["status"], motion_qa.FAIL)
+        self.assertEqual(r["where"]["frame"], 57)
+
+
 class TempoSyncTests(unittest.TestCase):
     def setUp(self):
         phases = timing.build(CURL_TEMPO)

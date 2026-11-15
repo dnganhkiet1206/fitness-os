@@ -104,61 +104,61 @@
       "at_ms": 0,
       "rep": 0,
       "phase": "start_position",
-      "text": "Stand tall, dumbbells by the thighs"
+      "text": "Dumbbells in front of the thighs, elbows slightly bent"
     },
     {
       "at_ms": 0,
       "rep": 0,
       "phase": "start_position",
-      "text": "Elbows slightly bent"
+      "text": "Lean forward slightly, hips and knees slightly bent"
     },
     {
       "at_ms": 600,
       "rep": 1,
       "phase": "concentric",
-      "text": "Raise the arms out to the sides"
+      "text": "Raise the upper arms out to the sides, elbows pointing back"
     },
     {
       "at_ms": 600,
       "rep": 1,
       "phase": "concentric",
-      "text": "Stop at shoulder height"
+      "text": "Stop when the elbows reach shoulder height"
     },
     {
       "at_ms": 2000,
       "rep": 1,
       "phase": "top_hold",
-      "text": "Pause, elbows a little higher than the hands"
+      "text": "Elbows directly out to the sides, forearms angled slightly forward"
     },
     {
       "at_ms": 2400,
       "rep": 1,
       "phase": "eccentric",
-      "text": "Lower slowly back to the sides"
+      "text": "Lower slowly back in front of the thighs"
     },
     {
       "at_ms": 4800,
       "rep": 2,
       "phase": "concentric",
-      "text": "Raise the arms out to the sides"
+      "text": "Raise the upper arms out to the sides, elbows pointing back"
     },
     {
       "at_ms": 4800,
       "rep": 2,
       "phase": "concentric",
-      "text": "Stop at shoulder height"
+      "text": "Stop when the elbows reach shoulder height"
     },
     {
       "at_ms": 6200,
       "rep": 2,
       "phase": "top_hold",
-      "text": "Pause, elbows a little higher than the hands"
+      "text": "Elbows directly out to the sides, forearms angled slightly forward"
     },
     {
       "at_ms": 6600,
       "rep": 2,
       "phase": "eccentric",
-      "text": "Lower slowly back to the sides"
+      "text": "Lower slowly back in front of the thighs"
     }
   ]
 }
