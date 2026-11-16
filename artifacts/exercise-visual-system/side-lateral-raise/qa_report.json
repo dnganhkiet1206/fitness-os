@@ -45,11 +45,11 @@
       "stage": "B",
       "title": "No sudden bone rotation between frames",
       "status": "PASS",
-      "measured": 6.363,
+      "measured": 6.511,
       "limit": 12.0,
       "where": {
-        "bone": "upperarm_r",
-        "frame": 30
+        "bone": "upperarm_swing_l",
+        "frame": 131
       },
       "detail": "deg per frame"
     },

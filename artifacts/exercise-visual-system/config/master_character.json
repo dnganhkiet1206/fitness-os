@@ -1,6 +1,6 @@
 {
   "master_character_id": "master_character_003",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "One faceless athletic male figure reused by every exercise and every camera. Built from the MakeHuman base mesh through MPFB (generated characters are CC0), then made faceless and given shorts by this pipeline.",
   "generator": {
     "tool": "MPFB (MakeHuman Plugin For Blender)",
@@ -188,13 +188,16 @@
           ],
           "child_groups": [
             "upperarm_{s}",
-            "upperarm_twist_{s}"
+            "upperarm_twist_{s}",
+            "upperarm_swing_{s}"
           ],
           "radius_m": 0.14,
           "share": 0.6,
           "influence": 0.5,
           "why": "The glenoid is on the shoulder blade and the deltoid arises from the scapular spine, acromion and clavicle, so the shoulder fold rides on the scapula (upward rotation) and turns half as far as the arm.",
-          "space": "WORLD"
+          "space": "WORLD",
+          "target": "upperarm_swing_{s}",
+          "why_target": "16/11: copies the swing bone, not the arm, so the fold does not carry 60% of the arm twist onto the shoulder."
         },
         {
           "name": "thumb_fold_{s}",
@@ -332,10 +335,30 @@
       "follow_bones": [
         {
           "name": "chest_fold_{s}",
-          "target": "upperarm_{s}",
+          "target": "upperarm_swing_{s}",
           "parent_bone": "spine_03",
           "influence": 0.25,
-          "why": "The pectoralis major runs from the sternum to the humerus, so the arm pulls the chest: this bone turns a quarter of the arm's motion and carries the chest skin near the armpit (15/11 ROM audit)."
+          "why": "The pectoralis major runs from the sternum to the humerus, so the arm pulls the chest: this bone turns a quarter of the arm's motion and carries the chest skin near the armpit (15/11 ROM audit).",
+          "why_target": "16/11: the pectoralis follows the arm direction; the humeral twist must not twist the chest skin."
+        }
+      ],
+      "swing": [
+        {
+          "name": "upperarm_swing_{s}",
+          "bone": "upperarm_{s}",
+          "child": "lowerarm_{s}",
+          "parent_bone": "clavicle_{s}",
+          "groups": [
+            "upperarm_{s}",
+            "upperarm_twist_{s}"
+          ],
+          "fade_t": [
+            0.0,
+            1.0
+          ],
+          "share": 1.0,
+          "why": "Squat 16/11: the bar grip turns the upper arm ~108 deg about its own axis (external rotation). The rig had no twist split at the shoulder, so the deltoid, chest and trapezius skin weighted to the arm took the whole twist and ballooned. Swing-only bone (Damped Track to the elbow): skin from the shoulder (t 0.05) to mid-arm (t 0.6) moves onto it, so the twist ramps from 0 at the shoulder to full at the elbow.",
+          "why_fade": "16/11 ROM: fading over t 0.05-0.6 of the arm bone only left the twist bone (t 0.25-1) at full twist, so the twist jumped mid-arm (arm across the chest 1.59 -> 2.10). Fading both groups over the whole humerus spreads the twist evenly, 0 at the shoulder to full at the elbow, like the forearm twist between the radius and ulna."
         }
       ]
     }

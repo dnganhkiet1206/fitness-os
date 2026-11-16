@@ -62,7 +62,7 @@
       "limit": 0.004,
       "where": {
         "implement": "SOCKET_hand_l",
-        "frame": 128
+        "frame": 43
       },
       "detail": "m wrist to grip socket"
     },
@@ -103,11 +103,11 @@
       "stage": "C",
       "title": "Implements do not pass through the body",
       "status": "PASS",
-      "measured": 0.0,
+      "measured": 0.0038,
       "limit": 0.004,
       "where": {
-        "implement": null,
-        "frame": null
+        "implement": "Barbell",
+        "frame": 0
       },
       "detail": "m inside"
     },
@@ -116,11 +116,11 @@
       "stage": "C",
       "title": "Wrists stay near straight (forearm to hand)",
       "status": "PASS",
-      "measured": 20.106,
+      "measured": 22.258,
       "limit": 25.0,
       "where": {
         "side": "l",
-        "frame": 0
+        "frame": 107
       },
       "detail": "deg"
     },
@@ -129,11 +129,11 @@
       "stage": "C",
       "title": "Elbow flexion inside the soft-tissue limit",
       "status": "PASS",
-      "measured": 143.164,
+      "measured": 139.155,
       "limit": 145.0,
       "where": {
         "side": "r",
-        "frame": 141
+        "frame": 203
       },
       "detail": "deg"
     },

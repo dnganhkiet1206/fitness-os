@@ -108,7 +108,7 @@
     "bar_above_shoulders_m": 0.05,
     "bar_shaft_radius_m": 0.0145,
     "bar_into_soft_tissue_m": 0.003,
-    "grip_width_between_hand_centres_m": 0.7,
+    "grip_width_between_hand_centres_m": 0.74,
     "scapular_retraction_deg": 15.0,
     "clavicle_elevation_deg": 3.0,
     "pelvis_share_of_lean": 0.8,

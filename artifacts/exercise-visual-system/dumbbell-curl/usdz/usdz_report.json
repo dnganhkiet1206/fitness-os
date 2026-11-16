@@ -3,7 +3,7 @@
   "exercise_id": "dumbbell_biceps_curl",
   "master_character_id": "master_character_003",
   "usdz": "dumbbell_curl_animation.usdz",
-  "size_bytes": 5575196,
+  "size_bytes": 5508090,
   "zip_members": [
     "dumbbell_curl_animation.usdc",
     "textures/_usdz_apparel_emission.png",
@@ -15,27 +15,27 @@
   "default_camera": {
     "preset_id": "three_quarter",
     "position_m": [
-      1.628,
+      1.6281,
       1.7949,
       1.7825
     ],
     "target_m": [
       -0.0456,
       0.9334,
-      0.1089
+      0.1088
     ],
     "distance_m": 2.5188,
     "vertical_fov_deg": 41.26,
     "aspect": 0.5625
   },
   "expectations": {
-    "deform_bones": 82,
+    "deform_bones": 84,
     "animation_duration_s": 9.8333,
     "animation_frames": 237
   },
   "reimport": {
     "armatures": 1,
-    "bones": 82,
+    "bones": 84,
     "mesh_objects": 4,
     "skinned_mesh_objects": 2,
     "mesh_vertices": 13300,

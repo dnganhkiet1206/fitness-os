@@ -53,9 +53,9 @@ class SquatTemplate:
         # width), forearms near parallel, elbows down and a little back.
         # 0.8 m put the upper arm near horizontal (118 deg from rest); 0.62 m
         # folded the elbow to 151 deg (soft-tissue limit 145), 0.68 m to
-        # 145.1; 0.70 m is ~1.6 x shoulder width, still "just outside the
-        # shoulders".
-        "grip_width_between_hand_centres_m": 0.70,
+        # 145.1 on the posed rig. 0.74 m: hands about a fist outside the
+        # deltoids, as in the PureGym back view, with margin to the limit.
+        "grip_width_between_hand_centres_m": 0.74,
         # "Squeeze the shoulder blades": retraction builds the trapezius
         # shelf for the bar; the shoulders are not shrugged.
         "scapular_retraction_deg": 15.0,

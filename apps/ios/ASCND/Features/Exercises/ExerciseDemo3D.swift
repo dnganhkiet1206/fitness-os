@@ -221,7 +221,8 @@
         title: "Barbell Back Squat", key: "back squat", family: "squat",
         review: Review(
           date: "16/11",
-          checked: fullCheck(qa: "18/18", technique: "đáy ngang song song, thân đổ ~40°, thanh trên giữa bàn chân, gối theo mũi chân, gót chạm sàn"),
+          checked: fullCheck(qa: "18/18", technique: "đáy ngang song song, thân đổ ~40°, thanh trên giữa bàn chân, gối theo mũi chân, gót chạm sàn; tay nắm ngoài vai 1 nắm tay, kép bả vai, khuỷu chĩa xuống",
+            extra: ["Kiệt 16/11: vai phồng, tư thế chưa đúng. Làm lại theo 2 video (PureGym, Dave Watkeys) + Catalyst Athletics, Squat University; xương phụ chia góc xoay cánh tay"]),
           remaining: [])),
       CatalogEntry(
         title: "Dumbbell Biceps Curl", key: "dumbbell curl", family: "curl",

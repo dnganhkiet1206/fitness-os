@@ -28,27 +28,27 @@
       "label": "Deltoid, posterior head"
     },
     "triceps_long_head": {
-      "texels": 15092,
+      "texels": 8236,
       "label": "Triceps, long head"
     },
     "triceps_lateral_head": {
-      "texels": 5195,
+      "texels": 2737,
       "label": "Triceps, lateral head"
     },
     "triceps_medial_head": {
-      "texels": 6505,
+      "texels": 6454,
       "label": "Triceps, medial head"
     },
     "biceps_long_head": {
-      "texels": 15467,
+      "texels": 11839,
       "label": "Biceps, long head"
     },
     "biceps_short_head": {
-      "texels": 20702,
+      "texels": 12611,
       "label": "Biceps, short head"
     },
     "brachioradialis": {
-      "texels": 7828,
+      "texels": 7824,
       "label": "Brachioradialis"
     },
     "wrist_extensors": {
@@ -56,7 +56,7 @@
       "label": "Wrist and finger extensors"
     },
     "wrist_flexors": {
-      "texels": 28523,
+      "texels": 28503,
       "label": "Wrist and finger flexors"
     },
     "rectus_abdominis": {
@@ -64,15 +64,15 @@
       "label": "Rectus abdominis"
     },
     "obliques": {
-      "texels": 116906,
+      "texels": 117030,
       "label": "External obliques"
     },
     "serratus_anterior": {
-      "texels": 49344,
+      "texels": 62009,
       "label": "Serratus anterior"
     },
     "latissimus_dorsi": {
-      "texels": 60143,
+      "texels": 66539,
       "label": "Latissimus dorsi"
     },
     "trapezius_upper": {
@@ -176,7 +176,7 @@
       "label": "Tibialis anterior"
     },
     "brachialis": {
-      "texels": 5288,
+      "texels": 5219,
       "label": "Brachialis"
     },
     "sartorius": {
@@ -239,7 +239,7 @@
       ]
     },
     "biceps_brachii": {
-      "texels": 36169,
+      "texels": 24450,
       "label": "biceps_brachii",
       "parts": [
         "biceps_long_head",
@@ -247,7 +247,7 @@
       ]
     },
     "triceps_brachii": {
-      "texels": 26792,
+      "texels": 17427,
       "label": "triceps_brachii",
       "parts": [
         "triceps_long_head",
@@ -256,7 +256,7 @@
       ]
     },
     "forearm_muscles": {
-      "texels": 47091,
+      "texels": 47067,
       "label": "forearm_muscles",
       "parts": [
         "brachioradialis",
