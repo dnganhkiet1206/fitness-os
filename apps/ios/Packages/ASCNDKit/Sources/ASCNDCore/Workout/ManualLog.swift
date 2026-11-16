@@ -487,11 +487,17 @@ public final class ManualLogController {
   }
 
   /// Gợi ý từ thư viện cho ô tên đang gõ (`suggestionsFor`, `:387`): rỗng →
-  /// cả thư viện; không thì tên CHỨA chữ gõ (không phân biệt hoa thường); bỏ
-  /// bài trùng đúng chữ gõ; tối đa 5.
+  /// bài phổ biến (RN: 5 bài đầu thư viện theo ABC — 15/11 đổi, "3/4 Sit-Up"
+  /// không phải gợi ý); không thì `ExerciseSearch.rank` (viết tắt, không dấu,
+  /// lỗi gõ nhẹ, bài phổ biến trước); bỏ bài trùng đúng chữ gõ; tối đa 5.
   public static func suggestions(for query: String, in exercises: [LibraryExercise], limit: Int = 5) -> [LibraryExercise] {
     let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    guard !q.isEmpty else { return Array(exercises.prefix(limit)) }
+    guard !q.isEmpty else {
+      // Phổ biến trước, thiếu thì bù bằng thư viện theo thứ tự cũ.
+      let popular = ExerciseSearch.popular(exercises, limit: limit)
+      let ids = Set(popular.map(\.id))
+      return Array((popular + exercises.filter { !ids.contains($0.id) }).prefix(limit))
+    }
     // Xếp hạng chung (`ExerciseCatalog.ranked`); bỏ bài trùng đúng chữ gõ.
     let pool = exercises.filter { $0.name.lowercased() != q && $0.displayName.lowercased() != q }
     return Array(ExerciseCatalog.ranked(pool, query: q).prefix(limit))
