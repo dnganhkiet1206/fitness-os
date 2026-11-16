@@ -221,11 +221,32 @@ def reimport(path: str) -> dict:
             "materials": len(bpy.data.materials)}
 
 
+def write_focus_textures(exercise: dict, prefix: str, out_dir: Path, colors: dict) -> None:
+    """"Focus" textures with the primary muscles only (Kiệt 13/11: a switch in
+    the viewer hides the secondary and stabilizer groups; 16/11: hidden by
+    default). Same UVs as the USDZ, so the app swaps them at runtime: body
+    (albedo, emission, normal) and shorts (albedo, emission), because the
+    shorts show the muscles underneath and would keep the hidden groups."""
+    f_small, f_shade, f_normal, f_rim = painted_textures(exercise, roles=["primary"])
+    for key, base_key, gain in (("", "character_body_viewer", 1.0), ("_apparel", "character_apparel", 0.8)):
+        albedo = apply_shade(muscle_eval.albedo_from_highlight(
+            f_small, colors[base_key], colors["muscle_primary"], colors["muscle_secondary"],
+            colors["muscle_stabilizer"], gain), f_shade)
+        emission = painted_emission(muscle_eval.emission_from_highlight(
+            f_small, colors["muscle_primary"], colors["muscle_secondary"], colors["muscle_stabilizer"], gain), f_shade, f_rim)
+        pngio.write_png(out_dir / f"{prefix}_focus{key}_albedo.png", albedo)
+        pngio.write_png(out_dir / f"{prefix}_focus{key}_emission.png", emission)
+    # Without it the hidden groups would keep their fibre relief on bare skin.
+    pngio.write_png(out_dir / f"{prefix}_focus_normal.png", f_normal)
+    print(f"[evs] usdz: focus textures {prefix}_focus[_apparel]_albedo/emission + _focus_normal.png")
+
+
 def main(exercise_name: str | None = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--exercise", default=exercise_name, required=exercise_name is None)
     parser.add_argument("--out-dir", default=None)
     parser.add_argument("--size", type=int, default=TEXTURE_SIZE)
+    parser.add_argument("--focus-only", action="store_true", help="only rewrite the focus textures (no scene, no USDZ)")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:])
 
     exercise_path = config.exercise_dir(args.exercise)
@@ -237,6 +258,9 @@ def main(exercise_name: str | None = None) -> None:
     out_dir = Path(args.out_dir) if args.out_dir else exercise_path
     out_dir.mkdir(parents=True, exist_ok=True)
     prefix = exercise_path.name.replace("-", "_")
+    if args.focus_only:
+        write_focus_textures(exercise, prefix, out_dir, colors)
+        return
 
     bpy.ops.wm.open_mainfile(filepath=str(exercise_path / exercise["animation_file"]))
     scene = bpy.context.scene
@@ -284,20 +308,7 @@ def main(exercise_name: str | None = None) -> None:
                                                   normal_image if key == "Body" else None))
 
     if painted:
-        # "Focus" body textures with the primary muscles only (Kiệt 13/11: a
-        # switch in the viewer hides the secondary groups). Same UVs as the
-        # USDZ body, so the app swaps them onto the body material at runtime.
-        f_small, f_shade, f_normal, f_rim = painted_textures(exercise, roles=["primary"])
-        f_albedo = apply_shade(muscle_eval.albedo_from_highlight(
-            f_small, colors["character_body_viewer"], colors["muscle_primary"], colors["muscle_secondary"],
-            colors["muscle_stabilizer"], 1.0), f_shade)
-        f_emission = painted_emission(muscle_eval.emission_from_highlight(
-            f_small, colors["muscle_primary"], colors["muscle_secondary"], colors["muscle_stabilizer"], 1.0), f_shade, f_rim)
-        pngio.write_png(out_dir / f"{prefix}_focus_albedo.png", f_albedo)
-        pngio.write_png(out_dir / f"{prefix}_focus_emission.png", f_emission)
-        # Without it the hidden groups would keep their fibre relief on bare skin.
-        pngio.write_png(out_dir / f"{prefix}_focus_normal.png", f_normal)
-        print(f"[evs] usdz: focus textures {prefix}_focus_albedo/emission/normal.png")
+        write_focus_textures(exercise, prefix, out_dir, colors)
 
     equipment_objects = [o for o in scene.objects if o.type == "MESH" and o.get("evs_equipment")]
     select([rig, body, shorts, *equipment_objects])

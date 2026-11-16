@@ -29,7 +29,8 @@
     @State private var showTips = false
     @State private var selectedTip: String?
     /// Ẩn vùng tô sáng của cơ phụ để tập trung vào cơ chính (Kiệt 13/11).
-    @State private var hideSecondary = false
+    /// Mặc định chỉ hiện cơ chính (Kiệt 16/11); nút "Hiện cơ phụ" bật Phụ + Ổn định.
+    @State private var hideSecondary = true
     @State private var bodySkins = BodySkins()
     @GestureState private var dragOffset: CGSize = .zero
     @GestureState private var pinch: CGFloat = 1
@@ -108,6 +109,8 @@
                   content.add(scene)
                   if let prefix = ExerciseDemo3D.demo(for: name)?.focusTexturePrefix {
                     await bodySkins.prepare(scene: scene, prefix: prefix)
+                    // update{} không chạy lại khi texture nạp xong: gán ngay.
+                    bodySkins.apply(focus: hideSecondary)
                   }
                   Self.addLights(to: content, target: cameraTarget)
                   // Tự chạy và lặp vô hạn, không dừng ở cuối.
@@ -429,6 +432,12 @@
     @ObservationIgnored private weak var body: ModelEntity?
     @ObservationIgnored private var full: Skin = (nil, nil, nil)
     @ObservationIgnored private var focus: Skin = (nil, nil, nil)
+    /// Quần (vật liệu không có normal map) cũng tô cơ bên dưới, nên có bộ
+    /// texture "chỉ cơ chính" riêng (`<prefix>_apparel_*`, từ 16/11). Bài cũ
+    /// không có thì quần giữ nguyên.
+    @ObservationIgnored private var apparelIndex: Int?
+    @ObservationIgnored private var fullApparel: Skin = (nil, nil, nil)
+    @ObservationIgnored private var focusApparel: Skin = (nil, nil, nil)
     @ObservationIgnored private var shownFocus = false
     private(set) var ready = false
 
@@ -440,30 +449,52 @@
       guard let body = Self.find(in: scene), let model = body.model,
         let bodyMaterial = model.materials.lazy.compactMap({ $0 as? PhysicallyBasedMaterial })
           .first(where: { $0.normal.texture != nil }),
-        let albedoURL = Bundle.main.url(forResource: "\(prefix)_albedo", withExtension: "png"),
-        let emissionURL = Bundle.main.url(forResource: "\(prefix)_emission", withExtension: "png"),
-        let normalURL = Bundle.main.url(forResource: "\(prefix)_normal", withExtension: "png"),
-        let albedo = try? await TextureResource(contentsOf: albedoURL, options: .init(semantic: .color)),
-        let emission = try? await TextureResource(contentsOf: emissionURL, options: .init(semantic: .color)),
-        let normal = try? await TextureResource(contentsOf: normalURL, options: .init(semantic: .normal))
+        let albedo = await Self.texture("\(prefix)_albedo", .color),
+        let emission = await Self.texture("\(prefix)_emission", .color),
+        let normal = await Self.texture("\(prefix)_normal", .normal)
       else { return }
       full = (bodyMaterial.baseColor.texture, bodyMaterial.emissiveColor.texture, bodyMaterial.normal.texture)
       focus = (.init(albedo), .init(emission), .init(normal))
+      if let index = model.materials.firstIndex(where: {
+        guard let pbr = $0 as? PhysicallyBasedMaterial else { return false }
+        return pbr.normal.texture == nil && pbr.baseColor.texture != nil
+      }),
+        let apparel = model.materials[index] as? PhysicallyBasedMaterial,
+        let apparelAlbedo = await Self.texture("\(prefix)_apparel_albedo", .color),
+        let apparelEmission = await Self.texture("\(prefix)_apparel_emission", .color)
+      {
+        apparelIndex = index
+        fullApparel = (apparel.baseColor.texture, apparel.emissiveColor.texture, nil)
+        focusApparel = (.init(apparelAlbedo), .init(apparelEmission), nil)
+      }
       self.body = body
       ready = true
     }
 
-    /// Gán bộ texture vào vật liệu thân hiện tại (vật liệu duy nhất có normal
-    /// map — quần giữ nguyên). Gán lại mảng vật liệu cũ thì RealityKit không
-    /// vẽ lại, nên luôn dựng vật liệu mới.
+    private static func texture(_ name: String, _ semantic: TextureResource.Semantic) async -> TextureResource? {
+      guard let url = Bundle.main.url(forResource: name, withExtension: "png") else { return nil }
+      return try? await TextureResource(contentsOf: url, options: .init(semantic: semantic))
+    }
+
+    /// Gán bộ texture vào vật liệu thân (vật liệu duy nhất có normal map) và
+    /// quần. Gán lại mảng vật liệu cũ thì RealityKit không vẽ lại, nên luôn
+    /// dựng vật liệu mới.
     func apply(focus on: Bool) {
       guard ready, on != shownFocus, let body, let model = body.model else { return }
       let skin = on ? focus : full
-      body.model?.materials = model.materials.map { material in
-        guard var pbr = material as? PhysicallyBasedMaterial, pbr.normal.texture != nil else { return material }
-        pbr.baseColor.texture = skin.base
-        pbr.emissiveColor.texture = skin.emissive
-        pbr.normal.texture = skin.normal
+      let apparelSkin = on ? focusApparel : fullApparel
+      body.model?.materials = model.materials.enumerated().map { index, material in
+        guard var pbr = material as? PhysicallyBasedMaterial else { return material }
+        if pbr.normal.texture != nil {
+          pbr.baseColor.texture = skin.base
+          pbr.emissiveColor.texture = skin.emissive
+          pbr.normal.texture = skin.normal
+        } else if index == apparelIndex {
+          pbr.baseColor.texture = apparelSkin.base
+          pbr.emissiveColor.texture = apparelSkin.emissive
+        } else {
+          return material
+        }
         return pbr
       }
       shownFocus = on
