@@ -212,10 +212,12 @@ public enum ExerciseSearch {
     return out
   }()
 
-  /// Độ phổ biến của một bài (theo tên gốc, rồi tên tiếng Anh).
+  /// Độ phổ biến của một bài (theo tên gốc, rồi tên tiếng Anh) — từ bảng đang dùng
+  /// (`ExercisePopularity.current`: số liệu server khi đủ, không thì danh sách soạn tay).
   public static func popularity(of e: LibraryExercise) -> Double {
-    popularity[PersonalRecords.exerciseKey(e.name)]
-      ?? e.localNames?["en"].flatMap { popularity[PersonalRecords.exerciseKey($0)] } ?? 0
+    let table = ExercisePopularity.current
+    return table[PersonalRecords.exerciseKey(e.name)]
+      ?? e.localNames?["en"].flatMap { table[PersonalRecords.exerciseKey($0)] } ?? 0
   }
 
   /// Token đã chuẩn hoá của một bài, theo ba mức tin cậy.

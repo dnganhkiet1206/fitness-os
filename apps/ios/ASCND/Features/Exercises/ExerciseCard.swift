@@ -158,11 +158,15 @@ struct ChipLabelStyle: LabelStyle {
 struct FavoriteStarButton: View {
   let exercise: LibraryExercise
   let favorites: ExerciseFavorites
+  @Environment(AppServices.self) private var services: AppServices?
 
   var body: some View {
     let on = favorites.contains(exercise.id)
     Button {
       favorites.set(exercise.id, !on)
+      // Lưu trên máy ngay; gửi lên server sau (hỏng thì lần sau gửi bù).
+      let userId = favorites.userId
+      Task { await services?.syncExerciseFavorites(userId: userId) }
     } label: {
       Image(systemName: on ? "star.fill" : "star")
         .font(.system(size: 18, weight: .semibold))
