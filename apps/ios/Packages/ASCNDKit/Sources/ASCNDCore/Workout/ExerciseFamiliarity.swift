@@ -6,10 +6,9 @@ public import Observation
 // - Quen thuộc: số BUỔI đã tập mỗi bài trong cửa sổ của `InsightBook` (90 ngày),
 //   lần gần nhất để phân thứ hạng khi bằng số buổi. Khoá là
 //   `PersonalRecords.exerciseKey(tên)` — cùng khoá với lịch sử, kỷ lục.
-// - Yêu thích: ngôi sao trên thẻ bài. Bảng `exercises` không có cột yêu thích
-//   (món ăn có `is_favorite`), thêm cột / bảng là đổi schema — chưa được duyệt —
-//   nên sao lưu TRÊN MÁY theo tài khoản (`ExerciseFavoriteStore`). Đổi máy thì mất;
-//   ghi ở sổ hạn chế.
+// - Yêu thích: ngôi sao trên thẻ bài. Lưu trên máy theo tài khoản (`ExerciseFavoriteStore`)
+//   và đồng bộ lên bảng `exercise_favorites` (16/11, migration 20261116120000 — CHƯA DEPLOY:
+//   lỗi bảng chưa có thì giữ bản trên máy, lần sau gửi bù), `ExerciseFavoritesSync`.
 
 /// Mức quen thuộc của một bài với người dùng.
 public struct ExerciseUsage: Sendable, Hashable {
@@ -58,10 +57,16 @@ public enum ExerciseFamiliarity {
   }
 }
 
-/// Nơi giữ sao yêu thích của một tài khoản (app: trên máy).
+/// Nơi giữ sao yêu thích của một tài khoản (app: trên máy). Hai ô: `.local` là điều người
+/// dùng thấy, `.synced` là điều server đã nhận — chênh lệch giữa hai ô là phần chưa gửi.
 public protocol ExerciseFavoriteStore: Sendable {
-  func load(userId: String) -> Set<String>
-  func save(userId: String, _ ids: Set<String>)
+  func load(userId: String, slot: ExerciseFavoriteSlot) -> Set<String>
+  func save(userId: String, slot: ExerciseFavoriteSlot, _ ids: Set<String>)
+}
+
+public enum ExerciseFavoriteSlot: String, Sendable {
+  case local
+  case synced
 }
 
 /// Sao yêu thích của bài tập — một cờ TUYỆT ĐỐI theo id bài (đặt / bỏ, không "đảo",
@@ -75,7 +80,7 @@ public final class ExerciseFavorites {
   public init(userId: String, store: any ExerciseFavoriteStore) {
     self.userId = userId
     self.store = store
-    ids = store.load(userId: userId)
+    ids = store.load(userId: userId, slot: .local)
   }
 
   public func contains(_ id: String) -> Bool { ids.contains(id.lowercased()) }
@@ -85,7 +90,36 @@ public final class ExerciseFavorites {
     let key = id.lowercased()
     guard ids.contains(key) != value else { return }
     if value { ids.insert(key) } else { ids.remove(key) }
-    store.save(userId: userId, ids)
+    store.save(userId: userId, slot: .local, ids)
+  }
+
+  /// Đẩy phần chưa gửi lên `exercise_favorites`, rồi lấy bản server về khi không còn gì chờ
+  /// (sao đánh ở máy khác hiện ra ở đây). Từng dòng một: một bài server chưa có (bài vừa tạo
+  /// còn trong hàng chờ, khoá ngoại hỏng) không chặn các sao khác. Hỏng (mất mạng, bảng chưa
+  /// deploy) thì giữ nguyên trên máy, lần sau gửi bù. `true` khi sao trên máy vừa đổi theo server.
+  @discardableResult
+  public func sync(rows: any RowStore) async -> Bool {
+    var synced = store.load(userId: userId, slot: .synced)
+    for row in ExerciseFavoritesSync.rows(from: synced, to: ids, userId: userId) {
+      guard let id = row["exercise_id"]?.stringValue else { continue }
+      do {
+        try await rows.upsert(ExerciseFavoritesSync.table, [row], onConflict: ExerciseFavoritesSync.conflict)
+        if row["is_favorite"] == .bool(true) { synced.insert(id) } else { synced.remove(id) }
+        store.save(userId: userId, slot: .synced, synced)
+      } catch {
+        continue
+      }
+    }
+    guard synced == ids, let found = try? await rows.select(ExerciseFavoritesSync.query(userId: userId)) else {
+      return false
+    }
+    let server = ExerciseFavoritesSync.decode(found)
+    store.save(userId: userId, slot: .synced, server)
+    // Có người vừa đánh sao trong lúc chờ server trả lời: giữ ý mới, lần sau gửi.
+    guard synced == ids, server != ids else { return false }
+    ids = server
+    store.save(userId: userId, slot: .local, server)
+    return true
   }
 
   /// Bài yêu thích có trong danh sách, giữ thứ tự danh sách.
@@ -117,5 +151,32 @@ extension ExerciseSearch {
     let fav = favorites.contains(e.id.lowercased()) ? 3.0 : 0
     let n = usage[PersonalRecords.exerciseKey(e.name)] ?? 0
     return fav + (n > 0 ? min(1.5, 0.75 * log2(Double(n) + 1)) : 0)
+  }
+}
+
+/// Bảng `exercise_favorites` (migration 20261116120000, CHƯA DEPLOY): một cờ tuyệt đối mỗi
+/// (người, bài), chỉ upsert, không xoá — bỏ sao là `is_favorite = false`.
+public enum ExerciseFavoritesSync {
+  public static let table = "exercise_favorites"
+  public static let conflict = "user_id,exercise_id"
+
+  public static func query(userId: String) -> RowQuery {
+    RowQuery(
+      table: table, columns: "exercise_id,is_favorite",
+      filters: [.eq("user_id", .string(userId)), .eq("is_favorite", .bool(true))], limit: 2000)
+  }
+
+  public static func decode(_ rows: [JSONValue]) -> Set<String> {
+    Set(rows.compactMap { r in r["is_favorite"] == .bool(false) ? nil : r["exercise_id"]?.stringValue?.lowercased() })
+  }
+
+  /// Dòng cần ghi để server đi từ `synced` tới `local`: sao mới (true) và sao đã bỏ (false),
+  /// xếp theo id cho ổn định.
+  public static func rows(from synced: Set<String>, to local: Set<String>, userId: String) -> [[String: JSONValue]] {
+    func row(_ id: String, _ on: Bool) -> [String: JSONValue] {
+      ["user_id": .string(userId), "exercise_id": .string(id), "is_favorite": .bool(on)]
+    }
+    return local.subtracting(synced).sorted().map { row($0, true) }
+      + synced.subtracting(local).sorted().map { row($0, false) }
   }
 }

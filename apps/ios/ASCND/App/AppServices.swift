@@ -935,6 +935,44 @@ final class AppServices {
     return true
   }
 
+  // MARK: - Bài tập: sao yêu thích + độ phổ biến (Kiệt 16/11)
+
+  /// Đẩy sao chưa gửi lên `exercise_favorites` rồi lấy bản server (sao đánh ở máy khác). Bảng
+  /// chưa deploy (migration 20261116120000) hay mất mạng thì giữ bản trên máy, lần sau gửi bù.
+  func syncExerciseFavorites(userId: String) async {
+    guard !Self.uiTest, let rows, session.session?.userId == userId else { return }
+    await ExerciseFavoritesShared.book(for: userId).sync(rows: rows)
+  }
+
+  private static let popularityKey = "ex.popularity.rows"
+  private static let popularityAtKey = "ex.popularity.at"
+
+  /// Độ phổ biến từ số liệu thật (`exercise_popularity()`), đọc tối đa mỗi ngày một lần; bản cuối
+  /// lưu trên máy. Hàm chưa deploy / mất mạng thì thử lại sau một giờ, trong lúc ấy dùng bản đã
+  /// lưu hay danh sách soạn tay.
+  func refreshExercisePopularity() async {
+    Self.applyCachedExercisePopularity()
+    guard !Self.uiTest, let backend else { return }
+    let defaults = UserDefaults.standard
+    let now = Date().timeIntervalSince1970
+    guard now - defaults.double(forKey: Self.popularityAtKey) >= 86_400 else { return }
+    guard let raw = try? await SupabaseExercisePopularity(backend: backend).popularity() else {
+      defaults.set(now - 86_400 + 3_600, forKey: Self.popularityAtKey)
+      return
+    }
+    let rows = ExercisePopularity.decode(raw)
+    if let data = try? JSONEncoder().encode(rows) { defaults.set(data, forKey: Self.popularityKey) }
+    defaults.set(now, forKey: Self.popularityAtKey)
+    ExercisePopularity.use(ExercisePopularity.blend(curated: ExerciseSearch.popularity, server: rows))
+  }
+
+  private static func applyCachedExercisePopularity() {
+    guard let data = UserDefaults.standard.data(forKey: popularityKey),
+      let rows = try? JSONDecoder().decode([ExercisePopularity.Row].self, from: data)
+    else { return }
+    ExercisePopularity.use(ExercisePopularity.blend(curated: ExerciseSearch.popularity, server: rows))
+  }
+
   private func storeKoaPause(_ pause: KoaPause?, userId: String) {
     let key = "koa.pause.\(userId)"
     if Self.uiTest {

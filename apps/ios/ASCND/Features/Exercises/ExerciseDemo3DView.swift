@@ -63,7 +63,10 @@
     private static let dragScale = 0.006
     /// Giới hạn bay: không chui xuống sàn, không chạm trần hay tường của
     /// phòng (12 m vuông, trần 5 m — `pipeline/build_gym_room.py`).
-    private static let pitchRange = 0.06...0.95
+    /// Trần góc 0,55 rad (≈ 31°, 16/11): ở 0,95 rad mà zoom sát thì máy quay chúc
+    /// thẳng xuống đỉnh đầu, chân co ngắn, nền phòng mất — Kiệt tưởng hình hỏng.
+    /// Góc mặc định của các bài ≈ 0,35 rad; 31° vẫn thấy được vai, lưng trên.
+    private static let pitchRange = 0.06...0.55
     /// Gần nhất 1,6 m để soi được sợi cơ (thanh zoom, Kiệt 13/11).
     private static let distanceRange = 1.6...5.4
 

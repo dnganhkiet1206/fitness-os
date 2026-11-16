@@ -51,6 +51,11 @@ struct WorkoutsHomeView: View {
       .padding(.bottom, DS.Spacing.lg)
     }
     .refreshable { await flow.refresh() }
+    // Sao yêu thích bài tập (đồng bộ) + độ phổ biến từ số liệu thật (16/11).
+    .task {
+      await services.syncExerciseFavorites(userId: userId)
+      await services.refreshExercisePopularity()
+    }
     // Đầu trang trong nội dung như Hôm nay / Dinh dưỡng.
     .navigationTitle(Text("tab.workouts"))
     .toolbar(.hidden, for: .navigationBar)
