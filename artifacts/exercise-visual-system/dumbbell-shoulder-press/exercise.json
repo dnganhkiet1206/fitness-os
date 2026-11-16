@@ -41,17 +41,16 @@
     }
   ],
   "primary_muscles": [
-    "deltoid_anterior",
-    "deltoid_lateral"
+    "deltoid_anterior"
   ],
   "secondary_muscles": [
+    "deltoid_lateral",
     "triceps_brachii",
-    "trapezius"
+    "trapezius",
+    "serratus_anterior"
   ],
   "stabilizing_muscles": [
-    "serratus_anterior",
-    "rotator_cuff_posterior",
-    "rectus_abdominis"
+    "biceps_brachii"
   ],
   "master_character_id": "master_character_003",
   "motion_source_id": "motionlab_press_vertical_v1",
@@ -117,6 +116,11 @@
       "what": "full re-check (15/11, Kiệt asked): bench marked 70 deg on screen; bottom with the dumbbells at the top of the shoulders; elbows slightly forward and under the wrists; shoulder blades pulled down (arrow overlay); handles turned slightly in; dumbbells close together at the top without touching; head and back on the pad; feet flat and wide",
       "source": "YouTube shorts 'The PERFECT Dumbbell Shoulder Press (DO THIS!)' (k6tzKisR3NY, frames 1/2.5/4/5.5/7/8.3 s), 'Seated Dumbbell Shoulder Press' (FghebqCF_o8, frames at 1/30/50/70 %), 'Seated Dumbbell Shoulder Press Correct Movement Path' (hOTABpGvhBc, description: press up and slightly back, elbows stacked under the wrists); a CGI short (ueKPnQ49gNE) was skipped as a reference",
       "license": "facts (watched only, nothing downloaded or copied)"
+    },
+    {
+      "what": "muscle roles (target -> primary, synergists -> secondary, stabilizers -> stabilizing)",
+      "source": "ExRx https://exrx.net/WeightExercises/DeltoidAnterior/DBShoulderPress",
+      "license": "facts"
     }
   ],
   "phase_cues": {
@@ -221,7 +225,7 @@
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Anterior and lateral deltoid raise the arm overhead; triceps straightens the elbow; trapezius and serratus anterior turn the shoulder blade upward (ExRx).",
+  "muscle_roles_note": "Target anterior deltoid; synergists lateral deltoid, triceps, middle/lower trapezius, serratus anterior (supraspinatus and coracobrachialis are hidden; the clavicular pectoral is left out because the atlas has one pectoral group); biceps is a dynamic stabilizer; upper trapezius stabilizes. Checked against ExRx 15/11 (Kiệt: \"nhóm cơ hoạt động đã chính xác chưa\").",
   "production": {
     "catalogue_name": "Dumbbell Shoulder Press",
     "scaffolded_from": "side-lateral-raise",

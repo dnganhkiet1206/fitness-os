@@ -30,11 +30,14 @@
   ],
   "secondary_muscles": [
     "gluteus_maximus",
-    "erector_spinae"
+    "adductors"
   ],
   "stabilizing_muscles": [
-    "forearm_muscles",
-    "trapezius"
+    "erector_spinae",
+    "trapezius",
+    "rectus_abdominis",
+    "obliques",
+    "forearm_muscles"
   ],
   "master_character_id": "master_character_003",
   "motion_source_id": "motionlab_hinge_v1",
@@ -89,6 +92,11 @@
     {
       "what": "tempo shape",
       "source": "minimum-jerk model, Flash and Hogan 1985",
+      "license": "facts"
+    },
+    {
+      "what": "muscle roles (target -> primary, synergists -> secondary, stabilizers -> stabilizing)",
+      "source": "ExRx https://exrx.net/WeightExercises/Hamstrings/DBStrBackStrLegDeadlift",
       "license": "facts"
     }
   ],
@@ -193,7 +201,7 @@
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Hamstrings extend the hip under stretch; gluteus maximus finishes the lockout; erector spinae hold the back flat (free-exercise-db; ExRx).",
+  "muscle_roles_note": "Target hamstrings; synergists gluteus maximus, adductor magnus; erector spinae and trapezius/rhomboids stabilize; abdominals are antagonist stabilizers; the forearm flexors hold the dumbbells. Checked against ExRx 15/11 (Kiệt: \"nhóm cơ hoạt động đã chính xác chưa\").",
   "reviewer": null,
   "approval_date": null,
   "production": {

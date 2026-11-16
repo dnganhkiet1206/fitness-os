@@ -79,9 +79,9 @@
       durationS: 9.3,
       legend: [
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.quadriceps", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.adductors", roleKey: "eg.demo3d.legend.secondary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.calves", roleKey: "eg.demo3d.legend.secondary"),
       ],
       cameraPosition: [2.8566, 2.297, 2.7079], cameraTarget: [0.1091, 0.8827, -0.0397],
       focusTexturePrefix: "back_squat_focus")
@@ -92,7 +92,7 @@
       durationS: 9.8,
       legend: [
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
       ],
       cameraPosition: [1.6303, 1.7949, 1.7803], cameraTarget: [-0.0145, 0.9483, 0.1356],
       focusTexturePrefix: "hammer_curl_focus")
@@ -105,6 +105,7 @@
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidLateral", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.serratusAnterior", roleKey: "eg.demo3d.legend.secondary"),
       ],
       cameraPosition: [2.4272, 2.1371, 2.4476], cameraTarget: [0.0783, 0.9281, 0.0987],
       focusTexturePrefix: "side_lateral_raise_focus")
@@ -116,7 +117,7 @@
       legend: [
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.hamstrings", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.secondary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.adductors", roleKey: "eg.demo3d.legend.secondary"),
       ],
       // Góc mặc định từ phía sau (14/11): cơ chính ở mặt sau thân.
       cameraPosition: [1.3615, 1.7978, -1.8009], cameraTarget: [-0.013, 0.9256, 0.162],
@@ -128,9 +129,10 @@
       durationS: 8.2,
       legend: [
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.latissimusDorsi", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidPosterior", roleKey: "eg.demo3d.legend.secondary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.rotatorCuffPosterior", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.secondary"),
       ],
       // Góc mặc định từ phía sau (14/11): cơ lưng xô ở mặt sau thân.
       cameraPosition: [1.0558, 1.4568, -1.514], cameraTarget: [-0.0757, 0.7388, 0.1019],
@@ -142,9 +144,10 @@
       durationS: 8.8,
       legend: [
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidLateral", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidLateral", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.tricepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.serratusAnterior", roleKey: "eg.demo3d.legend.secondary"),
       ],
       cameraPosition: [1.7982, 1.6958, 1.9101], cameraTarget: [0.0105, 0.7756, 0.1224],
       focusTexturePrefix: "dumbbell_shoulder_press_focus")

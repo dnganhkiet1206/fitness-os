@@ -30,10 +30,10 @@
   ],
   "secondary_muscles": [
     "deltoid_anterior",
-    "trapezius"
+    "trapezius",
+    "serratus_anterior"
   ],
   "stabilizing_muscles": [
-    "rotator_cuff_posterior",
     "forearm_muscles"
   ],
   "master_character_id": "master_character_003",
@@ -84,6 +84,11 @@
     {
       "what": "tempo shape",
       "source": "minimum-jerk model, Flash and Hogan 1985",
+      "license": "facts"
+    },
+    {
+      "what": "muscle roles (target -> primary, synergists -> secondary, stabilizers -> stabilizing)",
+      "source": "ExRx https://exrx.net/WeightExercises/DeltoidLateral/DBLateralRaise",
       "license": "facts"
     }
   ],
@@ -189,7 +194,7 @@
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "The lateral deltoid abducts the arm; the anterior deltoid and the trapezius assist, the rotator cuff keeps the shoulder centred (ExRx).",
+  "muscle_roles_note": "Target lateral deltoid; synergists anterior deltoid, middle/lower trapezius, serratus anterior (supraspinatus is hidden under the trapezius); upper trapezius and wrist extensors stabilize. Checked against ExRx 15/11 (Kiệt: \"nhóm cơ hoạt động đã chính xác chưa\").",
   "reviewer": null,
   "approval_date": null,
   "production": {

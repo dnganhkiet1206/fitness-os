@@ -26,12 +26,14 @@
     }
   ],
   "primary_muscles": [
-    "forearm_muscles",
+    "forearm_muscles"
+  ],
+  "secondary_muscles": [
     "biceps_brachii"
   ],
-  "secondary_muscles": [],
   "stabilizing_muscles": [
-    "deltoid_anterior"
+    "deltoid_anterior",
+    "trapezius"
   ],
   "master_character_id": "master_character_003",
   "motion_source_id": "motionlab_curl_v1",
@@ -83,6 +85,11 @@
     {
       "what": "tempo shape",
       "source": "minimum-jerk model, Flash and Hogan 1985",
+      "license": "facts"
+    },
+    {
+      "what": "muscle roles (target -> primary, synergists -> secondary, stabilizers -> stabilizing)",
+      "source": "ExRx https://exrx.net/WeightExercises/Brachioradialis/DBHammerCurl",
       "license": "facts"
     }
   ],
@@ -186,7 +193,7 @@
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "With a neutral grip the brachioradialis (forearm group) works hardest; the biceps and brachialis assist (ExRx).",
+  "muscle_roles_note": "Target brachioradialis (forearm group); synergists brachialis (hidden) and biceps; anterior deltoid, upper/middle trapezius and wrist muscles stabilize. Checked against ExRx 15/11 (Kiệt: \"nhóm cơ hoạt động đã chính xác chưa\").",
   "reviewer": null,
   "approval_date": null,
   "production": {
