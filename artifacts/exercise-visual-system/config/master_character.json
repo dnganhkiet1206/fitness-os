@@ -211,6 +211,53 @@
           "share": 0.6,
           "influence": 0.5,
           "why": "The thenar web between thumb and index finger stretched 5x in every grip: the skin there was split between the hand and the second thumb bone."
+        },
+        {
+          "name": "wrist_fold_{s}",
+          "child": "hand_{s}",
+          "parent_bone": "lowerarm_{s}",
+          "parent_groups": [
+            "lowerarm_{s}",
+            "lowerarm_twist_{s}"
+          ],
+          "child_groups": [
+            "hand_{s}"
+          ],
+          "radius_m": 0.06,
+          "share": 0.6,
+          "influence": 0.5,
+          "why": "ROM audit 15/11: wrist flexion/extension stretched the wrist skin 1.4-1.7x between forearm and hand."
+        },
+        {
+          "name": "ankle_fold_{s}",
+          "child": "foot_{s}",
+          "parent_bone": "calf_{s}",
+          "parent_groups": [
+            "calf_{s}"
+          ],
+          "child_groups": [
+            "foot_{s}"
+          ],
+          "radius_m": 0.08,
+          "share": 0.6,
+          "influence": 0.5,
+          "why": "ROM audit 15/11: plantarflexion stretched the front of the ankle 1.4-1.9x."
+        },
+        {
+          "name": "neck_fold",
+          "child": "neck_01",
+          "parent_bone": "spine_03",
+          "parent_groups": [
+            "spine_03"
+          ],
+          "child_groups": [
+            "neck_01"
+          ],
+          "radius_m": 0.1,
+          "share": 0.5,
+          "influence": 0.5,
+          "why": "ROM audit 15/11: neck flexion/rotation stretched the base of the neck 1.4-1.9x.",
+          "midline": true
         }
       ],
       "trapezius": {
@@ -241,6 +288,54 @@
             "hip_fold_r"
           ],
           "why": "The pelvis-to-thigh switch sat on a 4 mm strip at the midline, so 90 deg of hip flexion tore it 8-12x. Skin stretch across a fold is about arc length over band width; spreading the switch over 8 cm each side keeps it under 2.6x (measured on the seated press, 15/11)."
+        }
+      ],
+      "attach": [
+        {
+          "name": "scapula_skin_{s}",
+          "from": "spine_03",
+          "to": "scapula_{s}",
+          "x_m": [
+            0.1,
+            0.2
+          ],
+          "z_m": [
+            1.29,
+            1.48
+          ],
+          "facing_y": 1.0,
+          "share": 0.6,
+          "soft_m": 0.08,
+          "why": "Skin over the shoulder blade moves with the scapula (it slides over the ribs); 15/11 ROM audit: weighted to the upper spine it stayed behind and stretched 2.7x when the arm was raised with the scapulohumeral rhythm. The share ramps from 0 at the spine (x 0.02) to full at the medial border of the scapula (x 0.10): the interscapular skin shares the stretch instead of one seam (15/11 ROM re-test: a narrow ramp moved the 2.7x seam inward and made it 3.2x)."
+        },
+        {
+          "name": "front_chest_{s}",
+          "from": [
+            "spine_03",
+            "pec_{s}"
+          ],
+          "to": "chest_fold_{s}",
+          "x_m": [
+            0.15,
+            0.24
+          ],
+          "z_m": [
+            1.29,
+            1.42
+          ],
+          "facing_y": -1.0,
+          "share": 0.6,
+          "soft_m": 0.07,
+          "why": "The chest and the front of the armpit lie on the pectoralis major, which the arm pulls; the game rig weighted them to spine_03. The share ramps from 0 at x 0.08 to 0.8 at x 0.15 so there is no new seam (15/11 ROM audit)."
+        }
+      ],
+      "follow_bones": [
+        {
+          "name": "chest_fold_{s}",
+          "target": "upperarm_{s}",
+          "parent_bone": "spine_03",
+          "influence": 0.25,
+          "why": "The pectoralis major runs from the sternum to the humerus, so the arm pulls the chest: this bone turns a quarter of the arm's motion and carries the chest skin near the armpit (15/11 ROM audit)."
         }
       ]
     }

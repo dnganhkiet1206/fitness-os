@@ -108,7 +108,7 @@ def main(exercise_name: str | None = None) -> None:
     cameras = config.camera_presets()["presets"]
 
     results = []
-    problems = report.validate_exercise_config(exercise, list(muscle_map["groups"]), list(cameras))
+    problems = report.validate_exercise_config(exercise, config.muscle_names(), list(cameras))
     results.append(checks.record("exercise_config", "configuration", "exercise.json has every required field and consistent phases",
                                  "PASS" if not problems else "FAIL", detail="; ".join(problems)))
     clip = checks.Clip(samples, exercise)

@@ -1,8 +1,8 @@
 {
-  "muscle_map_id": "master_character_003.muscles.v1",
+  "muscle_map_id": "master_character_003.muscles.v2",
   "master_character_id": "master_character_003",
   "status": "DRAFT",
-  "review": "Regions were placed by the pipeline author on the rest pose of master_character_001 from surface anatomy (bony landmarks and visible muscle borders). They are illustrative surface regions for highlighting, not dissections. An anatomist or qualified coach has NOT reviewed them.",
+  "review": "Regions were placed by the pipeline author on the rest pose of master_character_001 from surface anatomy (bony landmarks and visible muscle borders). They are illustrative surface regions for highlighting, not dissections. An anatomist or qualified coach has NOT reviewed them. v2 (15/11, Kiệt): every muscle split into its anatomical parts (Gray (1918) and the labelled anterior/posterior muscle charts on Wikimedia Commons (public domain), placed on this character's rest-pose landmarks.)",
   "atlas_resolution": 2048,
   "default_feather_m": 0.008,
   "charts": {
@@ -17,101 +17,1489 @@
     "calf": "s from knee (0) to ankle (1); same angles as the thigh."
   },
   "groups": {
-    "pectoralis_major": {
-      "label": "Pectoralis major",
+    "pectoralis_major_clavicular": {
+      "label": "Pectoralis major, clavicular part",
       "patches": [
-        { "chart": "torso_front", "polygon": [[0.007, 1.447], [0.07, 1.454], [0.135, 1.449], [0.172, 1.427], [0.194, 1.385], [0.188, 1.345], [0.166, 1.316], [0.13, 1.291], [0.09, 1.278], [0.045, 1.276], [0.007, 1.286]], "feather": 0.009 }
+        {
+          "chart": "torso_front",
+          "polygon": [
+            [
+              0.007,
+              1.447
+            ],
+            [
+              0.07,
+              1.454
+            ],
+            [
+              0.135,
+              1.449
+            ],
+            [
+              0.172,
+              1.427
+            ],
+            [
+              0.194,
+              1.385
+            ],
+            [
+              0.1924,
+              1.3746
+            ],
+            [
+              0.007,
+              1.4126
+            ]
+          ],
+          "feather": 0.009
+        }
       ],
-      "minus": ["deltoid_anterior"]
+      "anatomy": "Medial half of the clavicle to the bicipital groove; fibres down and lateral.",
+      "minus": [
+        "deltoid_anterior"
+      ]
+    },
+    "pectoralis_major_sternocostal": {
+      "label": "Pectoralis major, sternocostal part",
+      "patches": [
+        {
+          "chart": "torso_front",
+          "polygon": [
+            [
+              0.1924,
+              1.3746
+            ],
+            [
+              0.1913,
+              1.3672
+            ],
+            [
+              0.007,
+              1.3025
+            ],
+            [
+              0.007,
+              1.4126
+            ]
+          ],
+          "feather": 0.009
+        }
+      ],
+      "anatomy": "Sternum and costal cartilages 1-6 to the bicipital groove; fibres horizontal.",
+      "minus": [
+        "deltoid_anterior"
+      ]
+    },
+    "pectoralis_major_abdominal": {
+      "label": "Pectoralis major, abdominal part",
+      "patches": [
+        {
+          "chart": "torso_front",
+          "polygon": [
+            [
+              0.1913,
+              1.3672
+            ],
+            [
+              0.188,
+              1.345
+            ],
+            [
+              0.166,
+              1.316
+            ],
+            [
+              0.13,
+              1.291
+            ],
+            [
+              0.09,
+              1.278
+            ],
+            [
+              0.045,
+              1.276
+            ],
+            [
+              0.007,
+              1.286
+            ],
+            [
+              0.007,
+              1.3025
+            ]
+          ],
+          "feather": 0.009
+        }
+      ],
+      "anatomy": "Aponeurosis of the external oblique / rectus sheath to the bicipital groove; fibres up and lateral, twisting under the others.",
+      "minus": [
+        "deltoid_anterior"
+      ]
     },
     "deltoid_anterior": {
       "label": "Deltoid, anterior head",
-      "patches": [ { "chart": "shoulder", "s": [-0.2, 0.44], "angle": 5, "half_width": 44, "taper_far": 0.75, "radius": 0.065, "max_radius": 0.115 } ]
+      "patches": [
+        {
+          "chart": "shoulder",
+          "s": [
+            -0.2,
+            0.44
+          ],
+          "angle": 5,
+          "half_width": 44,
+          "taper_far": 0.75,
+          "radius": 0.065,
+          "max_radius": 0.115
+        }
+      ]
     },
     "deltoid_lateral": {
       "label": "Deltoid, lateral head",
-      "patches": [ { "chart": "shoulder", "s": [-0.2, 0.5], "angle": 92, "half_width": 43, "taper_far": 0.75, "radius": 0.065, "max_radius": 0.115 } ]
+      "patches": [
+        {
+          "chart": "shoulder",
+          "s": [
+            -0.2,
+            0.5
+          ],
+          "angle": 92,
+          "half_width": 43,
+          "taper_far": 0.75,
+          "radius": 0.065,
+          "max_radius": 0.115
+        }
+      ]
     },
     "deltoid_posterior": {
       "label": "Deltoid, posterior head",
-      "patches": [ { "chart": "shoulder", "s": [-0.2, 0.44], "angle": 178, "half_width": 43, "taper_far": 0.75, "radius": 0.065, "max_radius": 0.115 } ]
+      "patches": [
+        {
+          "chart": "shoulder",
+          "s": [
+            -0.2,
+            0.44
+          ],
+          "angle": 178,
+          "half_width": 43,
+          "taper_far": 0.75,
+          "radius": 0.065,
+          "max_radius": 0.115
+        }
+      ]
     },
-    "triceps_brachii": {
-      "label": "Triceps brachii",
-      "patches": [ { "chart": "upperarm", "s": [0.1, 0.98], "angle": 186, "half_width": 74, "taper_near": 0.45, "taper_far": 0.35, "radius": 0.048 } ],
-      "minus": ["deltoid_posterior", "deltoid_lateral"]
+    "triceps_long_head": {
+      "label": "Triceps, long head",
+      "patches": [
+        {
+          "chart": "upperarm",
+          "s": [
+            0.1,
+            0.8
+          ],
+          "angle": -150.0,
+          "half_width": 44.0,
+          "radius": 0.048,
+          "taper_near": 0.25,
+          "taper_far": 0.2
+        }
+      ],
+      "anatomy": "Infraglenoid tubercle of the scapula to the olecranon; the inner back head.",
+      "minus": [
+        "deltoid_posterior"
+      ]
     },
-    "biceps_brachii": {
-      "label": "Biceps brachii",
-      "patches": [ { "chart": "upperarm", "s": [0.2, 0.96], "angle": -6, "half_width": 56, "taper_near": 0.5, "taper_far": 0.45, "radius": 0.048 } ],
-      "minus": ["deltoid_anterior"]
+    "triceps_lateral_head": {
+      "label": "Triceps, lateral head",
+      "patches": [
+        {
+          "chart": "upperarm",
+          "s": [
+            0.12,
+            0.65
+          ],
+          "angle": 135.0,
+          "half_width": 31.0,
+          "radius": 0.048,
+          "taper_near": 0.2,
+          "taper_far": 0.3
+        }
+      ],
+      "anatomy": "Back of the humerus above the radial groove to the olecranon; the outer horseshoe.",
+      "minus": [
+        "deltoid_posterior",
+        "deltoid_lateral"
+      ]
     },
-    "forearm_muscles": {
-      "label": "Forearm flexors and extensors",
-      "patches": [ { "chart": "lowerarm", "s": [0.03, 0.8], "angle": 0, "half_width": 180, "taper_far": 0.0, "radius": 0.04 } ]
+    "triceps_medial_head": {
+      "label": "Triceps, medial head",
+      "patches": [
+        {
+          "chart": "upperarm",
+          "s": [
+            0.58,
+            0.98
+          ],
+          "angle": 180,
+          "half_width": 70,
+          "radius": 0.048,
+          "taper_far": 0.3
+        }
+      ],
+      "anatomy": "Back of the humerus below the radial groove to the olecranon; shows above the elbow.",
+      "minus": [
+        "triceps_long_head",
+        "triceps_lateral_head"
+      ]
+    },
+    "biceps_long_head": {
+      "label": "Biceps, long head",
+      "patches": [
+        {
+          "chart": "upperarm",
+          "s": [
+            0.2,
+            0.96
+          ],
+          "angle": 28.0,
+          "half_width": 28.0,
+          "radius": 0.048,
+          "taper_near": 0.35,
+          "taper_far": 0.3
+        }
+      ],
+      "anatomy": "Supraglenoid tubercle to the radial tuberosity; the lateral head.",
+      "minus": [
+        "deltoid_anterior"
+      ]
+    },
+    "biceps_short_head": {
+      "label": "Biceps, short head",
+      "patches": [
+        {
+          "chart": "upperarm",
+          "s": [
+            0.2,
+            0.96
+          ],
+          "angle": -30.0,
+          "half_width": 30.0,
+          "radius": 0.048,
+          "taper_near": 0.35,
+          "taper_far": 0.3
+        }
+      ],
+      "anatomy": "Coracoid process to the radial tuberosity; the medial head.",
+      "minus": [
+        "deltoid_anterior"
+      ]
+    },
+    "brachioradialis": {
+      "label": "Brachioradialis",
+      "patches": [
+        {
+          "chart": "lowerarm",
+          "s": [
+            0.0,
+            0.65
+          ],
+          "angle": 60,
+          "half_width": 28,
+          "radius": 0.04,
+          "taper_far": 0.5
+        }
+      ],
+      "anatomy": "Lateral supracondylar ridge of the humerus to the styloid of the radius; the thumb-side ridge."
+    },
+    "wrist_extensors": {
+      "label": "Wrist and finger extensors",
+      "patches": [
+        {
+          "chart": "lowerarm",
+          "s": [
+            0.05,
+            0.85
+          ],
+          "angle": 140,
+          "half_width": 45,
+          "radius": 0.04,
+          "taper_far": 0.4
+        }
+      ],
+      "anatomy": "Lateral epicondyle (common extensor origin) to the back of the hand: ECRL/ECRB, extensor digitorum, ECU.",
+      "minus": [
+        "brachioradialis"
+      ]
+    },
+    "wrist_flexors": {
+      "label": "Wrist and finger flexors",
+      "patches": [
+        {
+          "chart": "lowerarm",
+          "s": [
+            0.05,
+            0.85
+          ],
+          "angle": -55,
+          "half_width": 70,
+          "radius": 0.04,
+          "taper_far": 0.4
+        }
+      ],
+      "anatomy": "Medial epicondyle (common flexor origin) to the palm: FCR, palmaris longus, FDS, FCU.",
+      "minus": [
+        "brachioradialis"
+      ]
     },
     "rectus_abdominis": {
       "label": "Rectus abdominis",
-      "patches": [ { "chart": "torso_front", "polygon": [[0.007, 1.262], [0.058, 1.268], [0.068, 1.2], [0.064, 1.1], [0.05, 1.0], [0.03, 0.94], [0.007, 0.93]] } ]
+      "patches": [
+        {
+          "chart": "torso_front",
+          "polygon": [
+            [
+              0.007,
+              1.262
+            ],
+            [
+              0.058,
+              1.268
+            ],
+            [
+              0.068,
+              1.2
+            ],
+            [
+              0.064,
+              1.1
+            ],
+            [
+              0.05,
+              1.0
+            ],
+            [
+              0.03,
+              0.94
+            ],
+            [
+              0.007,
+              0.93
+            ]
+          ]
+        }
+      ]
     },
     "obliques": {
       "label": "External obliques",
-      "patches": [ { "chart": "torso_around", "polygon": [[30, 1.215], [56, 1.255], [88, 1.24], [93, 1.1], [82, 1.04], [42, 1.0], [29, 1.06]] } ],
-      "minus": ["rectus_abdominis"]
+      "patches": [
+        {
+          "chart": "torso_around",
+          "polygon": [
+            [
+              30,
+              1.215
+            ],
+            [
+              56,
+              1.255
+            ],
+            [
+              88,
+              1.24
+            ],
+            [
+              93,
+              1.1
+            ],
+            [
+              82,
+              1.04
+            ],
+            [
+              42,
+              1.0
+            ],
+            [
+              29,
+              1.06
+            ]
+          ]
+        }
+      ],
+      "minus": [
+        "rectus_abdominis"
+      ]
     },
     "serratus_anterior": {
       "label": "Serratus anterior",
-      "patches": [ { "chart": "torso_around", "polygon": [[50, 1.325], [80, 1.345], [96, 1.33], [99, 1.255], [72, 1.24], [52, 1.268]] } ],
-      "minus": ["pectoralis_major", "latissimus_dorsi"]
+      "patches": [
+        {
+          "chart": "torso_around",
+          "polygon": [
+            [
+              50,
+              1.325
+            ],
+            [
+              80,
+              1.345
+            ],
+            [
+              96,
+              1.33
+            ],
+            [
+              99,
+              1.255
+            ],
+            [
+              72,
+              1.24
+            ],
+            [
+              52,
+              1.268
+            ]
+          ]
+        }
+      ],
+      "minus": [
+        "pectoralis_major_clavicular",
+        "pectoralis_major_sternocostal",
+        "pectoralis_major_abdominal",
+        "latissimus_dorsi"
+      ]
     },
     "latissimus_dorsi": {
       "label": "Latissimus dorsi",
-      "patches": [ { "chart": "torso_around", "polygon": [[97, 1.35], [124, 1.372], [150, 1.34], [171, 1.25], [174, 1.085], [150, 1.06], [118, 1.12], [101, 1.2]] } ],
-      "minus": ["trapezius", "rotator_cuff_posterior", "erector_spinae"]
+      "patches": [
+        {
+          "chart": "torso_around",
+          "polygon": [
+            [
+              97,
+              1.35
+            ],
+            [
+              124,
+              1.372
+            ],
+            [
+              150,
+              1.34
+            ],
+            [
+              171,
+              1.25
+            ],
+            [
+              174,
+              1.085
+            ],
+            [
+              150,
+              1.06
+            ],
+            [
+              118,
+              1.12
+            ],
+            [
+              101,
+              1.2
+            ]
+          ]
+        }
+      ],
+      "minus": [
+        "trapezius_upper",
+        "trapezius_middle",
+        "trapezius_lower",
+        "infraspinatus",
+        "teres_minor",
+        "erector_spinalis",
+        "erector_longissimus",
+        "erector_iliocostalis",
+        "rhomboid_minor",
+        "rhomboid_major",
+        "teres_major"
+      ]
     },
-    "trapezius": {
-      "label": "Trapezius",
-      "patches": [ { "chart": "torso_back_top", "polygon": [[0.0, 1.6], [0.034, 1.585], [0.05, 1.53], [0.12, 1.492], [0.186, 1.476], [0.176, 1.446], [0.1, 1.42], [0.05, 1.33], [0.02, 1.2], [0.0, 1.19]] } ],
-      "minus": ["deltoid_posterior", "deltoid_lateral"]
+    "trapezius_upper": {
+      "label": "Trapezius, upper",
+      "patches": [
+        {
+          "chart": "torso_back_top",
+          "polygon": [
+            [
+              0.0,
+              1.655
+            ],
+            [
+              0.03,
+              1.648
+            ],
+            [
+              0.052,
+              1.6
+            ],
+            [
+              0.07,
+              1.565
+            ],
+            [
+              0.12,
+              1.535
+            ],
+            [
+              0.19,
+              1.495
+            ],
+            [
+              0.196,
+              1.47
+            ],
+            [
+              0.176,
+              1.446
+            ],
+            [
+              0.1,
+              1.455
+            ],
+            [
+              0.045,
+              1.49
+            ],
+            [
+              0.0,
+              1.5
+            ]
+          ]
+        }
+      ],
+      "minus": [
+        "deltoid_posterior",
+        "deltoid_lateral"
+      ],
+      "anatomy": "External occipital protuberance, superior nuchal line and ligamentum nuchae down to C7, inserting on the lateral third of the clavicle and the acromion (Gray 1918). Runs up the back and side of the neck toward the ear; 15/11 Kiệt: the old region stopped at the base of the neck, under the new trapezius volume. Covers the top of the shoulder to the acromion (15/11: a grey strip was left between it and the deltoid)."
     },
-    "rotator_cuff_posterior": {
-      "label": "Infraspinatus and teres minor",
-      "patches": [ { "chart": "torso_back", "polygon": [[0.076, 1.405], [0.165, 1.426], [0.186, 1.386], [0.17, 1.336], [0.11, 1.3], [0.076, 1.34]] } ],
-      "minus": ["trapezius", "deltoid_posterior"]
+    "trapezius_middle": {
+      "label": "Trapezius, middle",
+      "patches": [
+        {
+          "chart": "torso_back_top",
+          "polygon": [
+            [
+              0.0,
+              1.5
+            ],
+            [
+              0.045,
+              1.49
+            ],
+            [
+              0.1,
+              1.455
+            ],
+            [
+              0.176,
+              1.446
+            ],
+            [
+              0.13,
+              1.43
+            ],
+            [
+              0.1,
+              1.42
+            ],
+            [
+              0.07,
+              1.405
+            ],
+            [
+              0.0,
+              1.4
+            ]
+          ]
+        }
+      ],
+      "anatomy": "C7-T3 spinous processes to the acromion and scapular spine; fibres horizontal.",
+      "minus": [
+        "deltoid_posterior",
+        "deltoid_lateral"
+      ]
     },
-    "erector_spinae": {
-      "label": "Erector spinae",
-      "patches": [ { "chart": "torso_back", "polygon": [[0.008, 1.19], [0.05, 1.19], [0.06, 1.1], [0.055, 1.0], [0.008, 0.99]] } ]
+    "trapezius_lower": {
+      "label": "Trapezius, lower",
+      "patches": [
+        {
+          "chart": "torso_back_top",
+          "polygon": [
+            [
+              0.0,
+              1.4
+            ],
+            [
+              0.07,
+              1.405
+            ],
+            [
+              0.1,
+              1.42
+            ],
+            [
+              0.075,
+              1.36
+            ],
+            [
+              0.04,
+              1.27
+            ],
+            [
+              0.02,
+              1.2
+            ],
+            [
+              0.0,
+              1.19
+            ]
+          ]
+        }
+      ],
+      "anatomy": "T4-T12 spinous processes to the root of the scapular spine; fibres up and lateral.",
+      "minus": [
+        "deltoid_posterior",
+        "deltoid_lateral"
+      ]
+    },
+    "rhomboid_minor": {
+      "label": "Rhomboid minor",
+      "patches": [
+        {
+          "chart": "torso_back",
+          "polygon": [
+            [
+              0.008,
+              1.5
+            ],
+            [
+              0.035,
+              1.495
+            ],
+            [
+              0.08,
+              1.44
+            ],
+            [
+              0.082,
+              1.425
+            ],
+            [
+              0.008,
+              1.465
+            ]
+          ]
+        }
+      ],
+      "anatomy": "C7-T1 spinous processes to the medial border of the scapula at the root of the spine. Deep to the trapezius: drawn under it.",
+      "minus": [
+        "infraspinatus"
+      ],
+      "layer": "deep"
+    },
+    "rhomboid_major": {
+      "label": "Rhomboid major",
+      "patches": [
+        {
+          "chart": "torso_back",
+          "polygon": [
+            [
+              0.008,
+              1.465
+            ],
+            [
+              0.082,
+              1.425
+            ],
+            [
+              0.09,
+              1.33
+            ],
+            [
+              0.07,
+              1.3
+            ],
+            [
+              0.008,
+              1.34
+            ]
+          ]
+        }
+      ],
+      "anatomy": "T2-T5 spinous processes to the medial border of the scapula, root of the spine to the inferior angle. Deep to the trapezius: drawn under it.",
+      "minus": [
+        "infraspinatus",
+        "teres_major"
+      ],
+      "layer": "deep"
+    },
+    "infraspinatus": {
+      "label": "Infraspinatus",
+      "patches": [
+        {
+          "chart": "torso_back",
+          "polygon": [
+            [
+              0.076,
+              1.405
+            ],
+            [
+              0.165,
+              1.426
+            ],
+            [
+              0.18,
+              1.395
+            ],
+            [
+              0.13,
+              1.36
+            ],
+            [
+              0.09,
+              1.325
+            ],
+            [
+              0.076,
+              1.34
+            ]
+          ]
+        }
+      ],
+      "anatomy": "Infraspinous fossa to the greater tubercle; fibres converge up and lateral.",
+      "minus": [
+        "trapezius_middle",
+        "trapezius_lower",
+        "trapezius_upper",
+        "deltoid_posterior"
+      ]
+    },
+    "teres_minor": {
+      "label": "Teres minor",
+      "patches": [
+        {
+          "chart": "torso_back",
+          "polygon": [
+            [
+              0.18,
+              1.395
+            ],
+            [
+              0.186,
+              1.386
+            ],
+            [
+              0.175,
+              1.355
+            ],
+            [
+              0.14,
+              1.345
+            ],
+            [
+              0.13,
+              1.36
+            ]
+          ]
+        }
+      ],
+      "anatomy": "Upper lateral border of the scapula to the greater tubercle (lowest facet).",
+      "minus": [
+        "deltoid_posterior"
+      ]
+    },
+    "erector_spinalis": {
+      "label": "Erector spinae, spinalis",
+      "patches": [
+        {
+          "chart": "torso_back",
+          "polygon": [
+            [
+              0.008,
+              1.19
+            ],
+            [
+              0.018,
+              1.19
+            ],
+            [
+              0.022,
+              1.1
+            ],
+            [
+              0.018,
+              1.0
+            ],
+            [
+              0.008,
+              0.99
+            ]
+          ]
+        }
+      ],
+      "anatomy": "Spinous processes, the most medial column. Common origin: sacrum, iliac crest, lumbar spinous processes."
+    },
+    "erector_longissimus": {
+      "label": "Erector spinae, longissimus",
+      "patches": [
+        {
+          "chart": "torso_back",
+          "polygon": [
+            [
+              0.018,
+              1.19
+            ],
+            [
+              0.036,
+              1.19
+            ],
+            [
+              0.039999999999999994,
+              1.1
+            ],
+            [
+              0.036,
+              1.0
+            ],
+            [
+              0.018,
+              0.99
+            ]
+          ]
+        }
+      ],
+      "anatomy": "Transverse processes, the middle column. Common origin: sacrum, iliac crest, lumbar spinous processes."
+    },
+    "erector_iliocostalis": {
+      "label": "Erector spinae, iliocostalis",
+      "patches": [
+        {
+          "chart": "torso_back",
+          "polygon": [
+            [
+              0.036,
+              1.19
+            ],
+            [
+              0.06,
+              1.19
+            ],
+            [
+              0.064,
+              1.1
+            ],
+            [
+              0.06,
+              1.0
+            ],
+            [
+              0.036,
+              0.99
+            ]
+          ]
+        }
+      ],
+      "anatomy": "Angles of the ribs, the lateral column. Common origin: sacrum, iliac crest, lumbar spinous processes."
     },
     "gluteus_maximus": {
       "label": "Gluteus maximus",
-      "patches": [ { "chart": "torso_around", "polygon": [[100, 1.0], [135, 1.03], [172, 1.0], [178, 0.9], [170, 0.856], [130, 0.86], [100, 0.9]], "include_legs": true } ]
+      "patches": [
+        {
+          "chart": "torso_around",
+          "polygon": [
+            [
+              100,
+              1.0
+            ],
+            [
+              135,
+              1.03
+            ],
+            [
+              172,
+              1.0
+            ],
+            [
+              178,
+              0.9
+            ],
+            [
+              170,
+              0.856
+            ],
+            [
+              130,
+              0.86
+            ],
+            [
+              100,
+              0.9
+            ]
+          ],
+          "include_legs": true
+        }
+      ]
     },
     "gluteus_medius": {
       "label": "Gluteus medius",
-      "patches": [ { "chart": "torso_around", "polygon": [[62, 1.05], [100, 1.065], [128, 1.04], [98, 0.985], [70, 0.975]] } ],
-      "minus": ["gluteus_maximus"]
+      "patches": [
+        {
+          "chart": "torso_around",
+          "polygon": [
+            [
+              62,
+              1.05
+            ],
+            [
+              100,
+              1.065
+            ],
+            [
+              128,
+              1.04
+            ],
+            [
+              98,
+              0.985
+            ],
+            [
+              70,
+              0.975
+            ]
+          ]
+        }
+      ],
+      "minus": [
+        "gluteus_maximus"
+      ]
     },
-    "quadriceps": {
-      "label": "Quadriceps femoris",
-      "patches": [ { "chart": "thigh", "s": [0.1, 0.93], "angle": 18, "half_width": 80, "taper_near": 0.3, "taper_far": 0.3, "radius": 0.075 } ]
+    "rectus_femoris": {
+      "label": "Rectus femoris",
+      "patches": [
+        {
+          "chart": "thigh",
+          "s": [
+            0.05,
+            0.88
+          ],
+          "angle": 8.0,
+          "half_width": 22.0,
+          "radius": 0.075,
+          "taper_near": 0.15,
+          "taper_far": 0.3
+        }
+      ],
+      "anatomy": "Anterior inferior iliac spine to the patella; the middle of the front of the thigh."
     },
-    "adductors": {
-      "label": "Hip adductors",
-      "patches": [ { "chart": "thigh", "s": [0.03, 0.64], "angle": -98, "half_width": 36, "taper_far": 0.6, "radius": 0.075 } ],
-      "minus": ["quadriceps", "hamstrings"]
+    "vastus_lateralis": {
+      "label": "Vastus lateralis",
+      "patches": [
+        {
+          "chart": "thigh",
+          "s": [
+            0.12,
+            0.92
+          ],
+          "angle": 67.5,
+          "half_width": 37.5,
+          "radius": 0.075,
+          "taper_near": 0.12,
+          "taper_far": 0.15
+        }
+      ],
+      "anatomy": "Greater trochanter and linea aspera to the patella; the outer thigh.",
+      "minus": [
+        "rectus_femoris",
+        "tensor_fasciae_latae"
+      ]
     },
-    "hamstrings": {
-      "label": "Hamstrings",
-      "patches": [ { "chart": "thigh", "s": [0.13, 0.94], "angle": 186, "half_width": 62, "taper_near": 0.3, "taper_far": 0.3, "radius": 0.075 } ]
+    "vastus_medialis": {
+      "label": "Vastus medialis",
+      "patches": [
+        {
+          "chart": "thigh",
+          "s": [
+            0.5,
+            0.95
+          ],
+          "angle": -36.0,
+          "half_width": 24.0,
+          "radius": 0.075,
+          "taper_near": 0.45,
+          "taper_far": 0.1
+        }
+      ],
+      "anatomy": "Linea aspera to the patella; the teardrop above the inner knee.",
+      "minus": [
+        "sartorius"
+      ]
     },
-    "calves": {
-      "label": "Gastrocnemius and soleus",
-      "patches": [ { "chart": "calf", "s": [0.03, 0.74], "angle": 182, "half_width": 72, "taper_near": 0.2, "taper_far": 0.6, "radius": 0.052 } ]
+    "adductor_longus": {
+      "label": "Adductor longus",
+      "patches": [
+        {
+          "chart": "thigh",
+          "s": [
+            0.0,
+            0.42
+          ],
+          "angle": -69.0,
+          "half_width": 19.0,
+          "radius": 0.075,
+          "taper_far": 0.4
+        }
+      ],
+      "anatomy": "Body of the pubis to the middle linea aspera; the inner thigh near the groin.",
+      "minus": [
+        "sartorius",
+        "vastus_medialis",
+        "gracilis"
+      ]
+    },
+    "gracilis": {
+      "label": "Gracilis",
+      "patches": [
+        {
+          "chart": "thigh",
+          "s": [
+            0.0,
+            0.95
+          ],
+          "angle": -96.0,
+          "half_width": 8.0,
+          "radius": 0.075
+        }
+      ],
+      "anatomy": "Pubis to the medial tibia; the thin strap on the inner thigh.",
+      "minus": [
+        "sartorius"
+      ]
+    },
+    "adductor_magnus": {
+      "label": "Adductor magnus",
+      "patches": [
+        {
+          "chart": "thigh",
+          "s": [
+            0.04,
+            0.62
+          ],
+          "angle": -112.0,
+          "half_width": 8.0,
+          "radius": 0.075,
+          "taper_far": 0.3
+        }
+      ],
+      "anatomy": "Ischiopubic ramus and ischial tuberosity to the linea aspera and adductor tubercle; the back of the inner thigh.",
+      "minus": [
+        "semimembranosus",
+        "gracilis"
+      ]
+    },
+    "biceps_femoris": {
+      "label": "Biceps femoris",
+      "patches": [
+        {
+          "chart": "thigh",
+          "angle_center": -155.0,
+          "radius": 0.075,
+          "polygon": [
+            [
+              -4,
+              0.1
+            ],
+            [
+              -40,
+              0.12
+            ],
+            [
+              -80,
+              0.5
+            ],
+            [
+              -88,
+              0.97
+            ],
+            [
+              -55,
+              0.97
+            ],
+            [
+              -14,
+              0.55
+            ]
+          ]
+        }
+      ],
+      "anatomy": "Ischial tuberosity (long head) and linea aspera (short head) to the head of the fibula; the outer hamstring. Diverges laterally in the distal third to the head of the fibula: the upper-lateral border of the popliteal fossa (StatPearls).",
+      "minus": [
+        "vastus_lateralis"
+      ]
+    },
+    "semitendinosus": {
+      "label": "Semitendinosus",
+      "patches": [
+        {
+          "chart": "thigh",
+          "angle_center": -155.0,
+          "radius": 0.075,
+          "polygon": [
+            [
+              -4,
+              0.1
+            ],
+            [
+              30,
+              0.12
+            ],
+            [
+              42,
+              0.5
+            ],
+            [
+              50,
+              0.97
+            ],
+            [
+              32,
+              0.97
+            ],
+            [
+              14,
+              0.55
+            ],
+            [
+              -14,
+              0.55
+            ]
+          ]
+        }
+      ],
+      "anatomy": "Ischial tuberosity to the medial tibia; the inner hamstring with the long tendon. Superficial medial hamstring; with the semimembranosus the upper-medial border of the popliteal fossa.",
+      "minus": [
+        "biceps_femoris"
+      ]
+    },
+    "semimembranosus": {
+      "label": "Semimembranosus",
+      "patches": [
+        {
+          "chart": "thigh",
+          "angle_center": -155.0,
+          "radius": 0.075,
+          "polygon": [
+            [
+              30,
+              0.18
+            ],
+            [
+              58,
+              0.28
+            ],
+            [
+              72,
+              0.7
+            ],
+            [
+              78,
+              0.97
+            ],
+            [
+              50,
+              0.97
+            ],
+            [
+              42,
+              0.5
+            ]
+          ]
+        }
+      ],
+      "anatomy": "Ischial tuberosity to the medial tibial condyle; wider and deeper, shows lower and inner to the semitendinosus. Deeper and wider in the lower thigh, medial to the semitendinosus.",
+      "minus": [
+        "semitendinosus"
+      ]
+    },
+    "gastrocnemius_medial": {
+      "label": "Gastrocnemius, medial head",
+      "patches": [
+        {
+          "chart": "calf",
+          "s": [
+            0.03,
+            0.55
+          ],
+          "angle": -148,
+          "half_width": 36,
+          "radius": 0.052,
+          "taper_near": 0.2,
+          "taper_far": 0.5
+        }
+      ],
+      "anatomy": "Medial femoral condyle to the calcaneus (Achilles); the bigger, lower inner calf head."
+    },
+    "gastrocnemius_lateral": {
+      "label": "Gastrocnemius, lateral head",
+      "patches": [
+        {
+          "chart": "calf",
+          "s": [
+            0.03,
+            0.48
+          ],
+          "angle": 150,
+          "half_width": 32,
+          "radius": 0.052,
+          "taper_near": 0.2,
+          "taper_far": 0.5
+        }
+      ],
+      "anatomy": "Lateral femoral condyle to the calcaneus (Achilles); the outer calf head.",
+      "minus": [
+        "gastrocnemius_medial"
+      ]
+    },
+    "soleus": {
+      "label": "Soleus",
+      "patches": [
+        {
+          "chart": "calf",
+          "s": [
+            0.3,
+            0.8
+          ],
+          "angle": 180,
+          "half_width": 80,
+          "radius": 0.052,
+          "taper_far": 0.5
+        }
+      ],
+      "anatomy": "Soleal line of the tibia and head of the fibula to the calcaneus; shows below and beside the gastrocnemius.",
+      "minus": [
+        "gastrocnemius_medial",
+        "gastrocnemius_lateral"
+      ]
     },
     "tibialis_anterior": {
       "label": "Tibialis anterior",
-      "patches": [ { "chart": "calf", "s": [0.06, 0.7], "angle": 28, "half_width": 27, "taper_far": 0.5, "radius": 0.045 } ]
+      "patches": [
+        {
+          "chart": "calf",
+          "s": [
+            0.06,
+            0.7
+          ],
+          "angle": 28,
+          "half_width": 27,
+          "taper_far": 0.5,
+          "radius": 0.045
+        }
+      ]
+    },
+    "brachialis": {
+      "label": "Brachialis",
+      "patches": [
+        {
+          "chart": "upperarm",
+          "s": [
+            0.5,
+            0.95
+          ],
+          "angle": 80.0,
+          "half_width": 24.0,
+          "radius": 0.048,
+          "taper_near": 0.25
+        }
+      ],
+      "anatomy": "Lower half of the front of the humerus to the coronoid process of the ulna; shows between biceps and triceps on the outer arm.",
+      "minus": [
+        "biceps_long_head",
+        "biceps_short_head",
+        "triceps_lateral_head",
+        "deltoid_lateral"
+      ]
+    },
+    "sartorius": {
+      "label": "Sartorius",
+      "anatomy": "Anterior superior iliac spine to the medial tibia (pes anserinus); crosses the thigh diagonally from the outer hip to the inner knee.",
+      "patches": [
+        {
+          "chart": "thigh",
+          "angle_center": 0.0,
+          "radius": 0.075,
+          "polygon": [
+            [
+              52,
+              -0.02
+            ],
+            [
+              34,
+              -0.02
+            ],
+            [
+              -120,
+              1.0
+            ],
+            [
+              -104,
+              1.0
+            ]
+          ]
+        }
+      ]
+    },
+    "tensor_fasciae_latae": {
+      "label": "Tensor fasciae latae",
+      "patches": [
+        {
+          "chart": "thigh",
+          "s": [
+            -0.02,
+            0.24
+          ],
+          "angle": 62,
+          "half_width": 18,
+          "radius": 0.075,
+          "taper_far": 0.4
+        }
+      ],
+      "anatomy": "Anterior iliac crest to the iliotibial band; front of the outer hip."
+    },
+    "teres_major": {
+      "label": "Teres major",
+      "patches": [
+        {
+          "chart": "torso_back",
+          "polygon": [
+            [
+              0.175,
+              1.355
+            ],
+            [
+              0.17,
+              1.336
+            ],
+            [
+              0.14,
+              1.315
+            ],
+            [
+              0.11,
+              1.3
+            ],
+            [
+              0.09,
+              1.325
+            ],
+            [
+              0.13,
+              1.36
+            ],
+            [
+              0.14,
+              1.345
+            ]
+          ]
+        }
+      ],
+      "anatomy": "Inferior angle of the scapula to the medial lip of the bicipital groove; runs with the latissimus.",
+      "minus": [
+        "deltoid_posterior"
+      ]
+    },
+    "fibularis_longus": {
+      "label": "Fibularis (peroneus) longus",
+      "patches": [
+        {
+          "chart": "calf",
+          "s": [
+            0.05,
+            0.75
+          ],
+          "angle": 95,
+          "half_width": 18,
+          "radius": 0.045,
+          "taper_far": 0.5
+        }
+      ],
+      "anatomy": "Head of the fibula to the first metatarsal; the outer side of the leg.",
+      "minus": [
+        "soleus",
+        "gastrocnemius_lateral",
+        "tibialis_anterior"
+      ]
     }
+  },
+  "aggregates": {
+    "pectoralis_major": [
+      "pectoralis_major_clavicular",
+      "pectoralis_major_sternocostal",
+      "pectoralis_major_abdominal"
+    ],
+    "trapezius": [
+      "trapezius_upper",
+      "trapezius_middle",
+      "trapezius_lower"
+    ],
+    "rhomboids": [
+      "rhomboid_minor",
+      "rhomboid_major"
+    ],
+    "rotator_cuff_posterior": [
+      "infraspinatus",
+      "teres_minor"
+    ],
+    "erector_spinae": [
+      "erector_spinalis",
+      "erector_longissimus",
+      "erector_iliocostalis"
+    ],
+    "biceps_brachii": [
+      "biceps_long_head",
+      "biceps_short_head"
+    ],
+    "triceps_brachii": [
+      "triceps_long_head",
+      "triceps_lateral_head",
+      "triceps_medial_head"
+    ],
+    "forearm_muscles": [
+      "brachioradialis",
+      "wrist_extensors",
+      "wrist_flexors"
+    ],
+    "quadriceps": [
+      "rectus_femoris",
+      "vastus_lateralis",
+      "vastus_medialis"
+    ],
+    "hamstrings": [
+      "biceps_femoris",
+      "semitendinosus",
+      "semimembranosus"
+    ],
+    "adductors": [
+      "adductor_longus",
+      "gracilis",
+      "adductor_magnus"
+    ],
+    "calves": [
+      "gastrocnemius_medial",
+      "gastrocnemius_lateral",
+      "soleus"
+    ]
   }
 }

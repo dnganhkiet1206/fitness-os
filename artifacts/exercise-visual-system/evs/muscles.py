@@ -9,7 +9,7 @@ from pathlib import Path
 import bpy
 import numpy as np
 
-from . import bl_util, fibers as fibers_mod, muscle_eval, pngio
+from . import bl_util, config, fibers as fibers_mod, muscle_eval, pngio
 
 # Twist bones (character 002 rig) carry part of the limb skin: they belong to the limb gate.
 ARM_BONES = ("upperarm", "upperarm_twist", "lowerarm", "lowerarm_twist", "hand", "index_01", "index_02", "index_03", "middle_01", "middle_02", "middle_03",
@@ -140,6 +140,12 @@ def bake_atlas(body: bpy.types.Object, rig: bpy.types.Object, muscle_map: dict, 
         packed[n] = m
         pngio.write_png(out_dir / f"{n}.png", np.flipud(m)[::2, ::2])
         facts["groups"][n] = {"texels": int((m > 127).sum()), "label": muscle_map["groups"][n]["label"]}
+    # Whole muscles as the union of their parts (pectoralis_major = clavicular
+    # + sternocostal + abdominal...), so exercise roles and older code can
+    # still name the whole muscle (15/11).
+    for agg, parts in muscle_map.get("aggregates", {}).items():
+        packed[agg] = np.maximum.reduce([packed[p] for p in parts])
+        facts["groups"][agg] = {"texels": int((packed[agg] > 127).sum()), "label": agg, "parts": parts}
     packed["_side_left"] = np.clip(_dilate(side, valid, 6) + 0.5, 0, 255).astype(np.uint8)
     np.savez_compressed(out_dir / "masks.npz", **packed)
     return facts
@@ -187,13 +193,43 @@ DEBUG_COLORS = [
 ]
 
 
-def write_debug_map(atlas_dir: Path, path: Path) -> None:
+def write_debug_map(atlas_dir: Path, path: Path, fibers: bool = False) -> None:
     """Every group in its own colour on a grey body, for checking placement."""
+    import colorsys
     masks = load_masks(atlas_dir)
     masks.pop("_side_left", None)
-    first = next(iter(masks.values()))
+    # Whole-muscle unions (pectoralis_major...) would paint over their parts:
+    # draw the parts only (15/11, muscle_map v2).
+    aggregates = set(config.muscle_map().get("aggregates", {}))
+    groups = config.muscle_map()["groups"]
+    # Deep muscles first, so the superficial ones (trapezius over the
+    # rhomboids) are painted on top, as they lie in the body (15/11).
+    names = sorted((n for n in masks if n not in aggregates),
+                   key=lambda n: 0 if groups.get(n, {}).get("layer") == "deep" else 1)
+    import os
+    if os.environ.get("EVS_ONLY"):  # debug: draw a subset, in the given order
+        names = [n for n in os.environ["EVS_ONLY"].split(",") if n in masks]
+    first = masks[names[0]]
     rgb = np.full(first.shape + (3,), 128.0, dtype=np.float32)
-    for i, (_name, m) in enumerate(masks.items()):
-        a = (m.astype(np.float32) / 255.0)[..., None]
-        rgb = rgb * (1 - a) + np.array(DEBUG_COLORS[i % len(DEBUG_COLORS)], dtype=np.float32) * a
+    for i, name in enumerate(names):
+        # Golden-ratio hue steps: neighbouring parts (listed one after the
+        # other) always get clearly different colours, for any group count.
+        r, g, b = colorsys.hsv_to_rgb((i * 0.618034) % 1.0, 0.7 if i % 2 else 0.55, 0.95 if i % 3 else 0.8)
+        a = (masks[name].astype(np.float32) / 255.0)[..., None]
+        rgb = rgb * (1 - a) + np.array([r * 255, g * 255, b * 255], dtype=np.float32) * a
+    if fibers:
+        # Fibre simulation (15/11, Kiệt: "vẽ mô phỏng các sợi cơ"): darken
+        # each part along its own fibre stripes from fiber_phase.npz, so the
+        # direction of every part can be checked against anatomy references.
+        with np.load(Path(atlas_dir) / "fiber_phase.npz") as ph:
+            phases = {k: ph[k] for k in ph.files}
+        shade = np.ones(first.shape, dtype=np.float32)
+        for name in names:
+            if name not in phases:
+                continue
+            a = masks[name].astype(np.float32) / 255.0
+            stripe = 0.5 + 0.5 * np.cos(2.0 * np.pi * phases[name].astype(np.float32) / 255.0)
+            line = np.clip((stripe - 0.55) / 0.45, 0.0, 1.0) ** 1.5      # thin dark fibres, wide light gaps
+            shade = shade * (1.0 - a) + (1.0 - 0.55 * line) * a
+        rgb = rgb * shade[..., None]
     pngio.write_png(path, np.flipud(rgb.astype(np.uint8)))

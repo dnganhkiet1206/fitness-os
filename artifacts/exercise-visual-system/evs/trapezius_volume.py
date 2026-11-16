@@ -33,7 +33,11 @@ def smoothstep(e0, e1, x):
 def mask_weights(body, rig) -> np.ndarray:
     cfg = config.character_config()
     atlas = config.character_dir(cfg["master_character_id"]) / "muscle_atlas" / "masks.npz"
-    mask = np.load(atlas)["trapezius"].astype(np.float32) / 255.0
+    # Upper and middle/lower trapezius are two regions since 15/11; the
+    # volume covers both, as it did when they were one.
+    masks = np.load(atlas)
+    parts = [masks[n].astype(np.float32) for n in ("trapezius", "trapezius_upper") if n in masks.files]  # "trapezius" is the whole muscle since 15/11
+    mask = np.maximum.reduce(parts) / 255.0
     res = mask.shape[0]
     mesh = body.data
     n = len(mesh.vertices)

@@ -51,6 +51,13 @@ def muscle_map() -> dict:
     return load_json(CONFIG_DIR / "muscle_map.json")
 
 
+def muscle_names() -> list[str]:
+    """Every name an exercise may highlight: the anatomical parts (v2: 48)
+    plus the whole-muscle aggregates (pectoralis_major = its three parts)."""
+    m = muscle_map()
+    return list(m["groups"]) + list(m.get("aggregates", {}))
+
+
 def fiber_map() -> dict:
     return load_json(CONFIG_DIR / "fiber_map.json")
 

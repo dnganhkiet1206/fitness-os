@@ -26,6 +26,8 @@ from evs import bl_util, config, muscles, studio  # noqa: E402
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-preview", action="store_true")
+    parser.add_argument("--preview-only", action="store_true", help="render the preview from the saved masks, no bake")
+    parser.add_argument("--fibers", action="store_true", help="preview with the fibre stripes of every part (needs fiber_phase.npz)")
     args = bl_util.script_args(parser)
 
     cfg = config.character_config()
@@ -38,17 +40,21 @@ def main() -> None:
     rig = bpy.data.objects[cfg["names"]["armature_object"]]
 
     t0 = time.time()
-    facts = muscles.bake_atlas(body, rig, muscle_map, atlas_dir)
-    facts["muscle_map_id"] = muscle_map["muscle_map_id"]
-    config.save_json(atlas_dir / "atlas_facts.json", facts)
-    print(f"[evs] atlas baked in {time.time() - t0:.1f}s: {facts['samples']} samples, UV coverage {facts['uv_coverage']}")
-    for name, g in facts["groups"].items():
-        print(f"[evs]   {name:26s} {g['texels']:8d} texels")
+    if args.preview_only:
+        facts = None
+    else:
+        facts = muscles.bake_atlas(body, rig, muscle_map, atlas_dir)
+    if facts is not None:
+        facts["muscle_map_id"] = muscle_map["muscle_map_id"]
+        config.save_json(atlas_dir / "atlas_facts.json", facts)
+        print(f"[evs] atlas baked in {time.time() - t0:.1f}s: {facts['samples']} samples, UV coverage {facts['uv_coverage']}")
+        for name, g in facts["groups"].items():
+            print(f"[evs]   {name:26s} {g['texels']:8d} texels")
     if args.no_preview:
         return
 
     debug_png = atlas_dir / "_all_groups.png"
-    muscles.write_debug_map(atlas_dir, debug_png)
+    muscles.write_debug_map(atlas_dir, debug_png, fibers=args.fibers)
     image = bpy.data.images.load(str(debug_png))
     mat = bpy.data.materials.new("EVS_MuscleDebug")
     tree = mat.node_tree
@@ -79,15 +85,35 @@ def main() -> None:
         path = str(out_dir / f"_muscle_{name}.png")
         studio.render_still(scene, cam, path, focus)
         tiles.append(path)
-    sheet = str(out_dir / "muscle_map_preview.png")
+    sheet = str(out_dir / ("muscle_fiber_preview.png" if args.fibers else "muscle_map_preview.png"))
     cmd = ["ffmpeg", "-loglevel", "error", "-y"]
     for t in tiles:
         cmd += ["-i", t]
     subprocess.run(cmd + ["-filter_complex", f"hstack=inputs={len(tiles)}", sheet], check=True)
     for t in tiles:
         os.remove(t)
+    # Close-ups by region (15/11, muscle_map v2 review): the full-body tiles
+    # are too small to judge the boundaries between parts.
+    preset["resolution"] = [720, 900]
+    studio.apply_render_preset(scene, preset)
+    close = []
+    for name, z, az, dist in (("torso_front", 1.25, 0, 2.6), ("torso_back", 1.25, 180, 2.6),
+                              ("legs_front", 0.55, 0, 3.0), ("legs_back", 0.55, 180, 3.0),
+                              ("arm_side", 1.2, 70, 2.4), ("arm_back_side", 1.2, 130, 2.4)):
+        f = Vector((0.0, 0.0, z))
+        cam = studio.add_camera(f"EVS_MuscleClose_{name}", f, az, 4.0, dist, focal_length=85.0)
+        path = str(out_dir / f"_close_{name}.png")
+        studio.render_still(scene, cam, path, f)
+        close.append(path)
+    closeups = str(out_dir / ("muscle_fiber_closeups.png" if args.fibers else "muscle_map_closeups.png"))
+    cmd = ["ffmpeg", "-loglevel", "error", "-y"]
+    for t in close:
+        cmd += ["-i", t]
+    subprocess.run(cmd + ["-filter_complex", "[0][1][2]hstack=inputs=3[a];[3][4][5]hstack=inputs=3[b];[a][b]vstack", closeups], check=True)
+    for t in close:
+        os.remove(t)
     os.remove(debug_png)
-    print(f"[evs] preview: {sheet}")
+    print(f"[evs] preview: {sheet} (+ {closeups})")
 
 
 if __name__ == "__main__":
