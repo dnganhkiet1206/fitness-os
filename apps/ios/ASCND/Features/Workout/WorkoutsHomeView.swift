@@ -398,7 +398,7 @@ struct WorkoutsHomeView: View {
             .accessibilityAddTraits(.isHeader)
           Spacer()
           NavigationLink {
-            ExercisesView(library: library)
+            ExercisesView(library: library, insights: flow.insights)
           } label: {
             Text("workoutshome.seeall")
               .font(DS.TextStyle.footnote.weight(.semibold))
@@ -408,7 +408,7 @@ struct WorkoutsHomeView: View {
         }
         .padding(.horizontal, 4)
         .padding(.top, DS.Spacing.sm)
-        MuscleGrid(library: library)
+        MuscleGrid(library: library, insights: flow.insights)
       }
     } else if flow.today.failure != nil {
       DSErrorView(message: String(localized: "history.loadFailed")) {
@@ -512,6 +512,7 @@ struct WorkoutsHomeView: View {
 struct MuscleGrid: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let library: ExerciseLibrary
+  var insights: InsightBook?
   @Environment(\.locale) private var locale
   @State private var expanded = false
 
@@ -528,7 +529,7 @@ struct MuscleGrid: View {
       LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: DS.Spacing.sm), count: 3), spacing: DS.Spacing.sm) {
         ForEach(tiles, id: \.self) { g in
           NavigationLink {
-            ExercisesView(library: library, only: g)
+            ExercisesView(library: library, only: g, insights: insights)
           } label: {
             tile(g, count: counts[g] ?? 0)
           }

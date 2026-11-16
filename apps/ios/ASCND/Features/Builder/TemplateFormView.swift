@@ -32,6 +32,8 @@ struct TemplateFormView: View {
   @State private var step = 1
   @State private var search = ""
   @State private var group: MuscleGroup?
+  /// Bộ lọc Yêu thích / Quen thuộc (Kiệt 15/11), cộng dồn với nhóm cơ.
+  @State private var scope: ExerciseScope = .all
   @State private var editing: Int?
   @State private var templateId: String?
   @State private var saving = false
@@ -76,7 +78,7 @@ struct TemplateFormView: View {
         if let library = flow.library {
           // Builder vẫn nằm dưới: quay lại thì bài đã chọn còn nguyên, bài vừa
           // tạo đã có trong danh sách (cùng `ExerciseLibrary`).
-          ExercisesView(library: library, create: target.name) { picked in
+          ExercisesView(library: library, create: target.name, insights: flow.insights) { picked in
             // "Có phải bạn muốn…?": dùng bài có sẵn → chọn vào buổi, về builder.
             if !draft.items.contains(where: { $0.exerciseId == picked.id }) {
               draft.toggle(id: picked.id, name: picked.name)
@@ -116,10 +118,19 @@ struct TemplateFormView: View {
 
   private var pickStep: some View {
     let library = flow.library
-    let matched = TemplateDraft.visible(library?.exercises ?? [], group: group, search: search)
-    // Chưa gõ: bài phổ biến đứng đầu danh sách, không nhãn riêng (Kiệt 15/11).
-    let visible = search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-      ? ExerciseSearch.popularFirst(matched) : matched
+    // Chưa gõ: yêu thích → hay tập → phổ biến đứng đầu, không nhãn riêng (Kiệt 15/11).
+    let usage = ExerciseFamiliarity.usage(flow.insights?.performances ?? [])
+    let favorites = library.map { ExerciseFavoritesShared.book(for: $0.userId) }
+    let all = TemplateDraft.visible(
+      library?.exercises ?? [], group: group, search: search, usage: ExerciseFamiliarity.counts(usage),
+      favorites: favorites?.ids ?? [], personal: true)
+    let visible: [LibraryExercise] = switch scope {
+    case .all: all
+    case .favorites: favorites?.filter(all) ?? []
+    case .familiar:
+      search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        ? ExerciseFamiliarity.familiar(all, usage: usage) : all.filter { usage[PersonalRecords.exerciseKey($0.name)] != nil }
+    }
     return ScrollView {
       LazyVStack(alignment: .leading, spacing: 0) {
         if visible.isEmpty {
@@ -149,7 +160,18 @@ struct TemplateFormView: View {
         searchField
         ScrollView(.horizontal, showsIndicators: false) {
           HStack(spacing: DS.Spacing.xs) {
-            chip(String(localized: "wb.all"), on: group == nil) { group = nil }
+            chip(String(localized: "wb.all"), on: group == nil && scope == .all) {
+              group = nil
+              scope = .all
+            }
+            chip(String(localized: "ex.filter.favorites"), icon: "star.fill", on: scope == .favorites) {
+              scope = scope == .favorites ? .all : .favorites
+            }
+            if flow.insights != nil {
+              chip(String(localized: "ex.filter.familiar"), icon: "clock.arrow.circlepath", on: scope == .familiar) {
+                scope = scope == .familiar ? .all : .familiar
+              }
+            }
             ForEach(MuscleGroup.allCases, id: \.self) { g in
               chip(Self.muscleName(g), on: group == g) { group = group == g ? nil : g }
             }
@@ -283,9 +305,14 @@ struct TemplateFormView: View {
   }
 
   /// Chip chọn: đang chọn tô màu Tập luyện, chữ trắng; chưa chọn kính + viền.
-  private func chip(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
+  private func chip(_ title: String, icon: String? = nil, on: Bool, action: @escaping () -> Void) -> some View {
     Button(action: action) {
-      Text(verbatim: title)
+      Label {
+        Text(verbatim: title)
+      } icon: {
+        if let icon { Image(systemName: icon).imageScale(.small) }
+      }
+        .labelStyle(ChipLabelStyle())
         .font(DS.TextStyle.footnote.weight(on ? .bold : .medium))
         .foregroundStyle(on ? Color.white : DS.Color.foreground.swiftUI)
         .padding(.horizontal, DS.Spacing.md)
