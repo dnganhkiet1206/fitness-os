@@ -75572,19 +75572,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trapezius"
+            "value": "Middle & lower trapezius"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trapecio"
+            "value": "Trapecio medio e inferior"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cơ thang"
+            "value": "Cơ thang giữa, dưới"
           }
         }
       }
@@ -76574,6 +76574,98 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tên này gần giống một bài đã có. Dùng bài có sẵn để lịch sử và kỷ lục không bị tách đôi."
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.stabilizer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stabilizer"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estabilizador"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ổn định"
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.trapeziusUpper": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upper trapezius"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trapecio superior"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cơ thang trên"
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.rhomboids": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rhomboids"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Romboides"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cơ trám"
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.rectusAbdominis": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abs"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recto abdominal"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cơ bụng thẳng"
           }
         }
       }

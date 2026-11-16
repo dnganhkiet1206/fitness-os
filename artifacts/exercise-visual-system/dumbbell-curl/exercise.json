@@ -33,7 +33,9 @@
   ],
   "stabilizing_muscles": [
     "deltoid_anterior",
-    "trapezius"
+    "trapezius_upper",
+    "trapezius_middle",
+    "trapezius_lower"
   ],
   "master_character_id": "master_character_003",
   "motion_source_id": "motionlab_curl_v1",
@@ -284,11 +286,12 @@
   "brand_profile_id": "placeholder",
   "highlight_roles": [
     "primary",
-    "secondary"
+    "secondary",
+    "stabilizing"
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Target biceps; synergists brachialis (hidden) and brachioradialis; anterior deltoid, upper/middle trapezius and wrist muscles stabilize. Checked against ExRx 15/11 (Kiệt: \"nhóm cơ hoạt động đã chính xác chưa\").",
+  "muscle_roles_note": "Three levels (Kiệt 15/11): primary = carries the load and produces the main force; secondary = directly assists the movement; stabilizing = holds posture and keeps joints stable. Elbow flexion with a supinated grip: biceps (ExRx target), brachioradialis assists (brachialis is hidden). Anterior deltoid, upper/middle trapezius and the wrist muscles stabilise.",
   "agent_review": {
     "date": "2026-11-14",
     "by": "agent (not an expert review)",

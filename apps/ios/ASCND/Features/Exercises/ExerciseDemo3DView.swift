@@ -267,6 +267,8 @@
     /// Chú thích cơ đang tô sáng (Kiệt 13/11: bắt buộc phải có, đặt dưới
     /// khung viewer gần dòng chú thích xoay): mỗi hàng là chấm màu đúng màu
     /// render + tên cơ + vai trò. Tĩnh, không tương tác.
+    static let roleOrder = ["eg.demo3d.legend.primary", "eg.demo3d.legend.secondary", "eg.demo3d.legend.stabilizer"]
+
     private func legendView(_ legend: [ExerciseDemo3D.LegendEntry]) -> some View {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         HStack {
@@ -295,31 +297,44 @@
             .accessibilityAddTraits(hideSecondary ? [.isButton, .isSelected] : .isButton)
           }
         }
-        ForEach(Array(legend.enumerated()), id: \.offset) { _, entry in
-          let tint = Color(hex: entry.hex)
-          let primary = entry.roleKey.hasSuffix(".primary")
-          let hidden = hideSecondary && !primary
-          HStack(spacing: DS.Spacing.sm) {
-            Circle()
-              .fill(tint)
-              .frame(width: 10, height: 10)
-              .shadow(color: tint.opacity(0.8), radius: 5)
-              .accessibilityHidden(true)
-            Text(LocalizedStringKey(entry.nameKey))
-              .font(DS.TextStyle.body.weight(.semibold))
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-            Spacer(minLength: DS.Spacing.sm)
-            Text(LocalizedStringKey(entry.roleKey))
-              .font(DS.TextStyle.caption.weight(.semibold))
-              .foregroundStyle(primary ? Color.white : DS.Color.metricOrange.swiftUI)
-              .padding(.horizontal, 10)
-              .padding(.vertical, 4)
-              .background {
-                Capsule().fill(primary ? tint : tint.opacity(0.14))
+        // Ba cấp (Kiệt 15/11): Chính = chịu tải, tạo lực chính; Phụ = hỗ trợ
+        // trực tiếp chuyển động; Ổn định = giữ tư thế, ổn định khớp. Mỗi cấp
+        // một hàng: nhãn màu + chip tên cơ xuống dòng tự do, để 10+ cơ vẫn
+        // gọn và không che mô hình.
+        ForEach(Self.roleOrder, id: \.self) { role in
+          let entries = legend.filter { $0.roleKey == role }
+          if let first = entries.first {
+            let tint = Color(hex: first.hex)
+            let primary = role.hasSuffix(".primary")
+            HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
+              Text(LocalizedStringKey(role))
+                .font(DS.TextStyle.caption.weight(.semibold))
+                .foregroundStyle(primary ? Color.white : tint)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background { Capsule().fill(primary ? tint : tint.opacity(0.16)) }
+                .frame(minWidth: 72, alignment: .leading)
+              FlowRows(spacing: 6, centered: false) {
+                ForEach(Array(entries.enumerated()), id: \.offset) { _, entry in
+                  HStack(spacing: 6) {
+                    Circle()
+                      .fill(tint)
+                      .frame(width: 8, height: 8)
+                      .shadow(color: tint.opacity(0.8), radius: 4)
+                      .accessibilityHidden(true)
+                    Text(LocalizedStringKey(entry.nameKey))
+                      .font(DS.TextStyle.footnote.weight(.semibold))
+                      .foregroundStyle(DS.Color.foreground.swiftUI)
+                  }
+                  .padding(.horizontal, 8)
+                  .padding(.vertical, 4)
+                  .background(DS.Color.foreground.swiftUI.opacity(0.06), in: Capsule())
+                }
               }
+            }
+            .opacity(hideSecondary && !primary ? 0.35 : 1)
+            .accessibilityElement(children: .combine)
           }
-          .opacity(hidden ? 0.35 : 1)
-          .accessibilityElement(children: .combine)
         }
       }
       .padding(DS.Spacing.md)

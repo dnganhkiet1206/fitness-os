@@ -1,6 +1,6 @@
 {
   "tool": "pipeline/validate_motion.py",
-  "date": "2026-11-15",
+  "date": "2026-11-16",
   "exercise_id": "hammer_curl",
   "frames": 237,
   "fps": 24,

@@ -69,6 +69,9 @@
       legend: [
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.trapeziusUpper", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.stabilizer"),
       ],
       cameraPosition: [1.628, 1.7949, 1.7825], cameraTarget: [-0.0457, 0.9334, 0.1088],
       focusTexturePrefix: "dumbbell_curl_focus")
@@ -79,9 +82,13 @@
       durationS: 9.3,
       legend: [
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.quadriceps", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.adductors", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.calves", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.hamstrings", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.rectusAbdominis", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.trapeziusUpper", roleKey: "eg.demo3d.legend.stabilizer"),
       ],
       cameraPosition: [2.8566, 2.297, 2.7079], cameraTarget: [0.1091, 0.8827, -0.0397],
       focusTexturePrefix: "back_squat_focus")
@@ -93,6 +100,8 @@
       legend: [
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.trapeziusUpper", roleKey: "eg.demo3d.legend.stabilizer"),
       ],
       cameraPosition: [1.6303, 1.7949, 1.7803], cameraTarget: [-0.0145, 0.9483, 0.1356],
       focusTexturePrefix: "hammer_curl_focus")
@@ -106,6 +115,10 @@
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.serratusAnterior", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.trapeziusUpper", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.rotatorCuffPosterior", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.stabilizer"),
       ],
       cameraPosition: [2.4272, 2.1371, 2.4476], cameraTarget: [0.0783, 0.9281, 0.0987],
       focusTexturePrefix: "side_lateral_raise_focus")
@@ -118,6 +131,10 @@
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.hamstrings", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.adductors", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.trapeziusUpper", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.rhomboids", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.stabilizer"),
       ],
       // Góc mặc định từ phía sau (14/11): cơ chính ở mặt sau thân.
       cameraPosition: [1.3615, 1.7978, -1.8009], cameraTarget: [-0.013, 0.9256, 0.162],
@@ -130,9 +147,15 @@
       legend: [
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.latissimusDorsi", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.rhomboids", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidPosterior", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.rotatorCuffPosterior", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.trapeziusUpper", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.hamstrings", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.stabilizer"),
       ],
       // Góc mặc định từ phía sau (14/11): cơ lưng xô ở mặt sau thân.
       cameraPosition: [1.0558, 1.4568, -1.514], cameraTarget: [-0.0757, 0.7388, 0.1019],
@@ -144,10 +167,13 @@
       durationS: 8.8,
       legend: [
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidLateral", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidLateral", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.tricepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.serratusAnterior", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.trapeziusUpper", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.rotatorCuffPosterior", roleKey: "eg.demo3d.legend.stabilizer"),
+        LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.stabilizer"),
       ],
       cameraPosition: [1.7982, 1.6958, 1.9101], cameraTarget: [0.0105, 0.7756, 0.1224],
       focusTexturePrefix: "dumbbell_shoulder_press_focus")
@@ -179,11 +205,10 @@
         "Tờ soi xoay vòng 8 góc × 3 khung (đầu, giữa, cuối pha)",
         "Tờ soi tầm mắt người đứng nhìn (1,6 m) 5 góc: \(technique)",
         "Mở trong trình xem 3D của app (simulator iPhone 17), chú thích cơ đúng",
-        "Render lại 15/11 trên nhân vật 3.2 (xương phụ hông, gối, khuỷu, vai, ngón cái, cơ thang; háng làm mượt)",
+        "Render lại 16/11 trên nhân vật 3.3: bản đồ cơ 48 phần, thớ cơ theo từng phần, tô 3 cấp Chính / Phụ / Ổn định (vai trò theo ExRx)",
       ] + extra
     }
 
-    private static let groinStretch = "Giãn da vùng háng trước khi gập hông sâu (giới hạn lưới nhân vật 003, chung cho mọi bài gập hông ≥ 90°)"
 
     /// Danh sách các bài đã có bản 3D, mỗi bài một dòng (màn Lab "3D", Kiệt
     /// 14/11): tên hiện + tên tra trong `demos` + họ động tác của Motion Lab
@@ -195,19 +220,19 @@
       CatalogEntry(
         title: "Barbell Back Squat", key: "back squat", family: "squat",
         review: Review(
-          date: "15/11",
+          date: "16/11",
           checked: fullCheck(qa: "18/18", technique: "đáy ngang song song, thân đổ ~40°, thanh trên giữa bàn chân, gối theo mũi chân, gót chạm sàn"),
-          remaining: [groinStretch + ": 3,28 / ngưỡng 2,6"])),
+          remaining: [])),
       CatalogEntry(
         title: "Dumbbell Biceps Curl", key: "dumbbell curl", family: "curl",
         review: Review(
-          date: "15/11",
+          date: "16/11",
           checked: fullCheck(qa: "19/19", technique: "cánh tay trên sát thân, khuỷu gập ~138°, lòng bàn tay ngửa, thân đứng yên"),
           remaining: [])),
       CatalogEntry(
         title: "Hammer Curl", key: "hammer curl", family: "curl",
         review: Review(
-          date: "15/11",
+          date: "16/11",
           checked: fullCheck(qa: "19/19", technique: "tay cầm trung tính (ngón cái hướng lên) suốt đường đi, khuỷu sát thân"),
           remaining: [])),
       CatalogEntry(
@@ -216,25 +241,25 @@
       CatalogEntry(
         title: "Stiff-Legged Dumbbell Deadlift", key: "stiff-legged dumbbell deadlift", family: "hinge",
         review: Review(
-          date: "15/11",
+          date: "16/11",
           checked: fullCheck(qa: "18/18", technique: "gập hông, lưng thẳng, gối mềm, hông lùi ra sau, tạ sát chân xuống giữa cẳng chân, trọng tâm trên bàn chân"),
-          remaining: [groinStretch + ": 2,80 / ngưỡng 2,6"])),
+          remaining: [])),
       CatalogEntry(
         title: "Bent Over Two-Dumbbell Row", key: "bent over two-dumbbell row", family: "row", review: nil,
         note: "Kiệt 14–15/11: sai tư thế. Làm lại theo 2 video YouTube người thật + Garage Gym Reviews, PowerliftingTechnique, Muscle & Strength: thân gập ~52° và giữ nguyên, gối hơi gập, lưng thẳng, cổ trung tính; khuỷu sát thân kéo về phía hông, tạ lên ngang eo. QA 17/17. Chờ Kiệt xem lại"),
       CatalogEntry(
         title: "Dumbbell Shoulder Press", key: "dumbbell shoulder press", family: "press_vertical (ngồi)",
         review: Review(
-          date: "15/11",
+          date: "16/11",
           checked: fullCheck(
-            qa: "18/19",
+            qa: "19/19",
             technique: "ghế 70°, lưng và đầu tựa đệm, vai hạ, khuỷu dưới cổ tay ~35° ra trước, hạ tới ngang cằm, đẩy thẳng lên, hai tạ không chạm",
             extra: [
               "Đối chiếu 3 video YouTube người thật + ACE, Muscle & Strength, ExRx",
               "Kiệt duyệt động tác 15/11",
               "Mẹo: 5 ô (ghế, vai, khuỷu, độ sâu, bụng)",
             ]),
-          remaining: ["Giãn da háng 2,92 (ngưỡng 2,6), chung cho mọi bài gập hông ≥ 90°"]),
+          remaining: []),
         note: "Kiệt duyệt động tác 15/11. Bấm nút Mẹo (bóng đèn) trong trình xem để xem 5 mẹo kỹ thuật"),
     ]
 

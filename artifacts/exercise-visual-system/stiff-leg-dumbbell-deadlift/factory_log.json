@@ -235,5 +235,38 @@
     },
     "total_seconds": 142.0,
     "qa": "{\"PASS\": 18}"
+  },
+  {
+    "version": 10,
+    "when": "2026-11-16T00:18:34",
+    "template": "hinge",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 10.2
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 19.0
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 4.0
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 46.4
+      },
+      "export": {
+        "ok": true,
+        "seconds": 81.6
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 5.7
+      }
+    },
+    "total_seconds": 169.7,
+    "qa": "{\"PASS\": 18}"
   }
 ]

@@ -1,6 +1,6 @@
 {
   "tool": "pipeline/validate_motion.py",
-  "date": "2026-11-15",
+  "date": "2026-11-16",
   "exercise_id": "side_lateral_raise",
   "frames": 218,
   "fps": 24,
@@ -198,7 +198,7 @@
       "stage": "C",
       "title": "Skin stretch stays within limits",
       "status": "PASS",
-      "measured": 2.261,
+      "measured": 2.253,
       "limit": 2.6,
       "where": {
         "frame": 54

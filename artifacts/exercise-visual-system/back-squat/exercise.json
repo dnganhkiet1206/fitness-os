@@ -18,18 +18,18 @@
     }
   ],
   "primary_muscles": [
-    "quadriceps"
+    "quadriceps",
+    "gluteus_maximus"
   ],
   "secondary_muscles": [
-    "gluteus_maximus",
     "adductors",
     "calves"
   ],
   "stabilizing_muscles": [
-    "hamstrings",
     "erector_spinae",
+    "hamstrings",
     "rectus_abdominis",
-    "obliques"
+    "trapezius_upper"
   ],
   "master_character_id": "master_character_003",
   "motion_source_id": "motionlab_squat_v1",
@@ -283,11 +283,12 @@
   "brand_profile_id": "placeholder",
   "highlight_roles": [
     "primary",
-    "secondary"
+    "secondary",
+    "stabilizing"
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Target quadriceps; synergists gluteus maximus, adductor magnus, soleus; hamstrings and gastrocnemius are dynamic stabilizers; erector spinae stabilizes; abdominals are antagonist stabilizers. Checked against ExRx 15/11 (Kiệt: \"nhóm cơ hoạt động đã chính xác chưa\").",
+  "muscle_roles_note": "Three levels (Kiệt 15/11): primary = carries the load and produces the main force; secondary = directly assists the movement; stabilizing = holds posture and keeps joints stable. The load is moved by knee extension (quadriceps) and hip extension (gluteus maximus), which by the definition both produce the main force (ExRx lists the gluteus as synergist; at full depth it is a prime hip extensor). Adductor magnus and soleus assist. Erector spinae and the abdominals brace the trunk, hamstrings act as dynamic stabilisers, the upper trapezius carries the bar shelf.",
   "agent_review": {
     "date": "2026-11-14",
     "by": "agent (not an expert review)",

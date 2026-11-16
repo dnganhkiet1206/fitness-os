@@ -41,15 +41,18 @@
     }
   ],
   "primary_muscles": [
-    "deltoid_anterior"
+    "deltoid_anterior",
+    "deltoid_lateral"
   ],
   "secondary_muscles": [
-    "deltoid_lateral",
     "triceps_brachii",
-    "trapezius",
+    "trapezius_middle",
+    "trapezius_lower",
     "serratus_anterior"
   ],
   "stabilizing_muscles": [
+    "trapezius_upper",
+    "rotator_cuff_posterior",
     "biceps_brachii"
   ],
   "master_character_id": "master_character_003",
@@ -221,11 +224,12 @@
   "brand_profile_id": "placeholder",
   "highlight_roles": [
     "primary",
-    "secondary"
+    "secondary",
+    "stabilizing"
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Target anterior deltoid; synergists lateral deltoid, triceps, middle/lower trapezius, serratus anterior (supraspinatus and coracobrachialis are hidden; the clavicular pectoral is left out because the atlas has one pectoral group); biceps is a dynamic stabilizer; upper trapezius stabilizes. Checked against ExRx 15/11 (Kiệt: \"nhóm cơ hoạt động đã chính xác chưa\").",
+  "muscle_roles_note": "Three levels (Kiệt 15/11): primary = carries the load and produces the main force; secondary = directly assists the movement; stabilizing = holds posture and keeps joints stable. The press is shoulder flexion/abduction in the scapular plane: anterior and lateral deltoid carry it (ExRx target anterior deltoid; EMG of the seated dumbbell press shows the lateral deltoid close to the anterior, Saeterbakken & Fimland 2013). Triceps extends the elbow, middle/lower trapezius and serratus rotate the scapula upward. Upper trapezius, cuff and biceps (long head) stabilise; the bench supports the trunk.",
   "production": {
     "catalogue_name": "Dumbbell Shoulder Press",
     "scaffolded_from": "side-lateral-raise",
