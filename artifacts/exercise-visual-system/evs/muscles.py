@@ -16,6 +16,10 @@ ARM_BONES = ("upperarm", "upperarm_twist", "lowerarm", "lowerarm_twist", "hand",
              "ring_01", "ring_02", "ring_03", "pinky_01", "pinky_02", "pinky_03", "thumb_01", "thumb_02", "thumb_03")
 LEG_BONES = ("thigh", "thigh_twist", "calf", "foot", "ball")
 HEAD_BONES = ("head",)
+# Helper bones wholly inside a limb (evs/helper_bones.py). Hip and shoulder
+# folds straddle the trunk and stay out, as before.
+ARM_HELPERS = ("upperarm_swing", "elbow_fold", "wrist_fold", "thumb_fold")
+LEG_HELPERS = ("knee_fold", "ankle_fold")
 
 
 def rest_joints(rig: bpy.types.Object) -> dict:
@@ -32,9 +36,17 @@ def rest_joints(rig: bpy.types.Object) -> dict:
 def _gate_weights(body: bpy.types.Object) -> np.ndarray:
     def total(stems: tuple[str, ...], sided: bool = True) -> np.ndarray:
         names = [f"{s}_{side}" for s in stems for side in ("l", "r")] if sided else list(stems)
+        # Helper bones inside a limb carry limb skin too (PR #909 review,
+        # 16/11: the upper-arm swing ladder took most of the arm's weight, so
+        # the arm gate dropped and the arm muscles lost their highlight).
+        # Ladder segments are named <swing>_<side>_<k>.
+        names += [g.name for g in body.vertex_groups
+                  if sided and any(g.name.startswith(f"{s}_{side}_") and g.name[len(s) + 3:].isdigit()
+                                   for s in stems for side in ("l", "r"))]
         return bl_util.group_weights(body, names).sum(axis=1)
 
-    return np.stack([total(ARM_BONES), total(LEG_BONES), total(HEAD_BONES, sided=False)], axis=1).astype(np.float32)
+    return np.stack([total(ARM_BONES + ARM_HELPERS), total(LEG_BONES + LEG_HELPERS), total(HEAD_BONES, sided=False)],
+                    axis=1).astype(np.float32)
 
 
 def _surface_samples(body: bpy.types.Object, resolution: int, chunk: int = 300_000):

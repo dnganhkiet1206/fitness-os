@@ -2,7 +2,7 @@
   "pipeline_version": "0.1.0",
   "generator": "pipeline/generate_exercise.py",
   "template": "curl",
-  "generated": "2026-11-15",
+  "generated": "2026-11-16",
   "exercise_id": "dumbbell_biceps_curl",
   "frame_rate": 24,
   "frame_end": 236,
@@ -427,7 +427,7 @@
         ],
         [
           0.1,
-          0.04180558603256941
+          0.04188994150608778
         ],
         [
           0.15000000000000002,

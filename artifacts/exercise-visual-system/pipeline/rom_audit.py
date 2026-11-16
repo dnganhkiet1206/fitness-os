@@ -49,6 +49,11 @@ POSES = {
     # with the arm (evs primitives.scapulohumeral uses the same split).
     "shoulder_flexion": [("clavicle", Y, 15, UP), ("scapula", Y, 30, UP), ("upperarm", X, 110, FWD + UP)],
     "shoulder_abduction": [("clavicle", Y, 15, UP), ("scapula", Y, 30, UP), ("upperarm", Y, 90, UP)],
+    # Bar on the back (squat), overhead press start: arm out to the side,
+    # elbow bent, forearm turned up and back (external rotation ~85 deg).
+    # 16/11: missing here, so the shoulder ballooned in the squat unseen.
+    "shoulder_external_rotation": [("clavicle", Y, 10, UP), ("scapula", Y, 20, UP), ("upperarm", Y, 75, UP),
+                                   ("lowerarm", "local_x", 90, FWD), ("upperarm", "local_y", 85, "child_up")],
     "shoulder_extension": [("upperarm", X, 45, -FWD)],
     "arm_across_chest": [("upperarm", X, 70, FWD), ("upperarm", Z, 45, "in")],
     "elbow_flexion": [("lowerarm", "local_x", 140, "to_shoulder")],
@@ -70,7 +75,7 @@ POSES = {
 }
 SIDED = {"upperarm", "lowerarm", "hand", "clavicle", "scapula", "thigh", "calf", "foot"}
 # Close-up camera per pose: (bone to frame, view azimuth, distance).
-FOCUS = {"shoulder_flexion": ("upperarm_l", 60, 1.3), "shoulder_abduction": ("upperarm_l", 150, 1.3),
+FOCUS = {"shoulder_external_rotation": ("upperarm_l", 20, 1.3), "shoulder_flexion": ("upperarm_l", 60, 1.3), "shoulder_abduction": ("upperarm_l", 150, 1.3),
          "shoulder_extension": ("upperarm_l", 90, 1.3), "arm_across_chest": ("upperarm_l", 20, 1.3),
          "elbow_flexion": ("lowerarm_l", 70, 1.0), "wrist_flexion": ("hand_l", 60, 0.8), "wrist_extension": ("hand_l", 60, 0.8),
          "shrug": ("neck_01", 160, 1.2), "hip_flexion": ("thigh_l", 70, 1.6), "hip_extension": ("thigh_l", 120, 1.6),
@@ -87,7 +92,10 @@ def mute_ik(rig) -> None:
     for pb in rig.pose.bones:
         for c in pb.constraints:
             sub = getattr(c, "subtarget", "") or ""
-            if c.type != "COPY_ROTATION" or sub.startswith(("ctl_", "mch_")):
+            # Helper bones follow deform bones with Copy Rotation or, for the
+            # upper-arm swing bone, Damped Track to the elbow (PR #909 review:
+            # muting it froze the swing bone, so the audit missed the skin).
+            if c.type not in ("COPY_ROTATION", "DAMPED_TRACK") or sub.startswith(("ctl_", "mch_")):
                 c.mute = True
 
 
@@ -106,15 +114,25 @@ def rotate(rig, name: str, axis, deg: float, toward, side_sign: float) -> None:
     pb = rig.pose.bones[name]
     mw = rig.matrix_world
     head, tail = mw @ pb.head, mw @ pb.tail
-    ax = (mw.to_3x3() @ pb.matrix.to_3x3() @ X).normalized() if axis == "local_x" else Vector(axis)
+    if axis in ("local_x", "local_y"):
+        ax = (mw.to_3x3() @ pb.matrix.to_3x3() @ (X if axis == "local_x" else Vector((0.0, 1.0, 0.0)))).normalized()
+    else:
+        ax = Vector(axis)
     sign = 1.0
     if toward is not None:
         if toward == "to_shoulder":
             want = ((mw @ pb.parent.head) - tail).normalized()
+        elif toward == "child_up":
+            want = Vector((0.0, 0.0, 1.0))
         elif toward in ("out", "in"):
             want = Vector((side_sign if toward == "out" else -side_sign, 0.0, 0.0))
         else:
             want = Vector((toward.x * side_sign, toward.y, toward.z)).normalized()
+        if toward == "child_up":
+            # Twist about the bone's own axis: judge by the child's tail
+            # (the forearm) moving up.
+            want = Vector((0.0, 0.0, 1.0))
+            tail = mw @ next(c for c in pb.children if c.name.startswith(("lowerarm", "calf"))).tail
         probe = Matrix.Rotation(math.radians(5.0), 3, ax) @ (tail - head)
         sign = 1.0 if (probe - (tail - head)).dot(want) >= 0 else -1.0
     rot = Matrix.Translation(head) @ Matrix.Rotation(math.radians(deg * sign), 4, ax) @ Matrix.Translation(-head)

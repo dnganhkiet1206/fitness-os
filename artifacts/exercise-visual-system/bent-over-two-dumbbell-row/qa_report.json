@@ -1,6 +1,6 @@
 {
   "tool": "pipeline/validate_motion.py",
-  "date": "2026-11-15",
+  "date": "2026-11-16",
   "exercise_id": "bent_over_two_dumbbell_row",
   "frames": 198,
   "fps": 24,
@@ -45,11 +45,11 @@
       "stage": "B",
       "title": "No sudden bone rotation between frames",
       "status": "PASS",
-      "measured": 5.748,
+      "measured": 5.793,
       "limit": 12.0,
       "where": {
-        "bone": "lowerarm_r",
-        "frame": 121
+        "bone": "upperarm_swing_r",
+        "frame": 29
       },
       "detail": "deg per frame"
     },

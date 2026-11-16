@@ -102,6 +102,8 @@ def add_helpers(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict) -> dic
     facts = {}
     co = np.array([(body.matrix_world @ v.co)[:] for v in body.data.vertices])
     facts["cross_side_fixed"] = fix_cross_side(body, co)
+    for spec in cfg.get("swing", []):
+        _swing(body, rig, spec, co, facts)
     for spec in cfg.get("folds", []):
         # Midline helpers (neck) exist once; limb helpers on both sides.
         for side in (("l",) if spec.get("midline") else ("l", "r")):
@@ -109,7 +111,7 @@ def add_helpers(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict) -> dic
                 return n.replace("{s}", side)
             name, child, parent = s(spec["name"]), s(spec["child"]), s(spec["parent_bone"])
             _add_bone(rig, name, like=child, parent=parent, length=spec.get("length_m", 0.06))
-            _follow(rig, name, child, spec.get("influence", 0.5), spec.get("space", "LOCAL"))
+            _follow(rig, name, s(spec.get("target", spec["child"])), spec.get("influence", 0.5), spec.get("space", "LOCAL"))
             body.vertex_groups.new(name=name)
             w, names = _weights(body)
             idx = {n: i for i, n in enumerate(names)}
@@ -150,6 +152,72 @@ def add_helpers(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict) -> dic
         facts[spec["name"]] = _smooth_region(body, rig, spec, co)
     bpy.context.view_layer.update()
     return facts
+
+
+def _swing(body, rig, spec: dict, co: np.ndarray, facts: dict) -> None:
+    """Swing-only copy of a limb bone (16/11, squat): a bone with the same
+    rest pose that points at the child joint (Damped Track) and so turns with
+    the limb but never twists about it. The upper arm turns ~108 deg about its
+    own axis with the bar on the back (external rotation); weighted to the arm
+    bone, the shoulder skin took all of it and ballooned. Skin near the joint
+    moves to the swing bone, fading out along the limb, so the twist spreads
+    from 0 at the shoulder to full at the elbow (the humerus turns inside the
+    deltoid; the skin over it follows only part of the way)."""
+    for side in ("l", "r"):
+        def s(n):
+            return n.replace("{s}", side)
+        name, bone, child = s(spec["name"]), s(spec["bone"]), s(spec["child"])
+        rb = rig.data.bones[bone]
+        length = float((rb.tail_local - rb.head_local).length)
+        _add_bone(rig, name, like=bone, parent=s(spec["parent_bone"]), length=length)
+        # Edit mode reallocates bone data: fetch the bones again afterwards.
+        b = rig.data.bones[bone]
+        c = rig.pose.bones[name].constraints.new("DAMPED_TRACK")
+        c.target, c.subtarget, c.track_axis, c.head_tail = rig, child, "TRACK_Y", 0.0
+        body.vertex_groups.new(name=name)
+        # Twist ladder (16/11, Kiệt: "tay nhìn teo"): one jump from the swing
+        # bone (0 twist) to the arm (full twist) blends two frames 108 deg
+        # apart, and linear blend skinning shrinks the radius by cos(54 deg),
+        # 0.59: the mid upper arm lost 39 % (56 -> 34 mm). Segment bones at
+        # k/n of the twist (Copy Rotation of the swing bone, then of the arm
+        # at influence k/n) keep neighbours <= 108/n deg apart: n = 4 shrinks
+        # by cos(13.5 deg), 3 %.
+        n = int(spec.get("segments", 4))
+        ladder = [name]
+        for k in range(1, n):
+            seg = f"{name}_{k}"
+            _add_bone(rig, seg, like=bone, parent=s(spec["parent_bone"]), length=0.5 * length)
+            for tgt, inf in ((name, 1.0), (bone, k / n)):
+                c = rig.pose.bones[seg].constraints.new("COPY_ROTATION")
+                c.target, c.subtarget = rig, tgt
+                c.owner_space = c.target_space = "WORLD"
+                c.mix_mode, c.influence = "REPLACE", inf
+            body.vertex_groups.new(name=seg)
+            ladder.append(seg)
+        b = rig.data.bones[bone]
+        w, names = _weights(body)
+        idx = {nm: i for i, nm in enumerate(names)}
+        head = np.array((rig.matrix_world @ b.head_local)[:])
+        end = np.array((rig.matrix_world @ rig.data.bones[child].head_local)[:])
+        t = (co - head) @ (end - head) / float(np.dot(end - head, end - head))
+        t0, t1 = spec["fade_t"]
+        u = np.clip((t - t0) / (t1 - t0), 0.0, 1.0) * n
+        lo = np.minimum(np.floor(u).astype(int), n - 1)
+        frac = u - lo
+        G = [idx[s(g)] for g in spec["groups"] if s(g) in idx]
+        orig = w[:, G].copy()
+        W = orig.sum(1) * spec.get("share", 1.0)
+        keep = np.where(orig.sum(1)[:, None] > 1e-9, orig / np.maximum(orig.sum(1), 1e-9)[:, None], 0.0)
+        w[:, G] -= W[:, None] * keep
+        for step in range(n + 1):
+            part = W * (np.where(lo == step, 1.0 - frac, 0.0) + np.where(lo + 1 == step, frac, 0.0))
+            if step == n:  # full twist: back onto the arm's own groups, same split
+                w[:, G] += part[:, None] * keep
+            else:
+                w[:, idx[ladder[step]]] += part
+        touched = W > 1e-4
+        _write(body, w, names, touched)
+        facts[name] = int(touched.sum())
 
 
 def fix_cross_side(body, co: np.ndarray, margin: float = 0.02) -> int:

@@ -3,7 +3,7 @@
   "exercise_id": "side_lateral_raise",
   "master_character_id": "master_character_003",
   "usdz": "side_lateral_raise_animation.usdz",
-  "size_bytes": 6040603,
+  "size_bytes": 6047238,
   "zip_members": [
     "side_lateral_raise_animation.usdc",
     "textures/_usdz_apparel_emission.png",
@@ -29,13 +29,13 @@
     "aspect": 0.5625
   },
   "expectations": {
-    "deform_bones": 82,
+    "deform_bones": 90,
     "animation_duration_s": 9.0417,
     "animation_frames": 218
   },
   "reimport": {
     "armatures": 1,
-    "bones": 82,
+    "bones": 90,
     "mesh_objects": 4,
     "skinned_mesh_objects": 2,
     "mesh_vertices": 13300,

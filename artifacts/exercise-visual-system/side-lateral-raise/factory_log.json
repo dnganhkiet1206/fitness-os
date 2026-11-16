@@ -322,5 +322,71 @@
     },
     "total_seconds": 182.6,
     "qa": "{\"PASS\": 18}"
+  },
+  {
+    "version": 13,
+    "when": "2026-11-16T15:27:33",
+    "template": "raise_lateral",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.2
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 10.0
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.9
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 26.9
+      },
+      "export": {
+        "ok": true,
+        "seconds": 46.5
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 3.3
+      }
+    },
+    "total_seconds": 92.6,
+    "qa": "{\"PASS\": 18}"
+  },
+  {
+    "version": 14,
+    "when": "2026-11-16T16:08:39",
+    "template": "raise_lateral",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.1
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 11.1
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.7
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 32.5
+      },
+      "export": {
+        "ok": true,
+        "seconds": 50.2
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 3.5
+      }
+    },
+    "total_seconds": 103.9,
+    "qa": "{\"PASS\": 18}"
   }
 ]
