@@ -62,7 +62,7 @@ def painted_textures(exercise: dict, roles: list[str] | None = None) -> tuple[np
     # feathering it into the skin.
     crisp = {k: (fiber_lic.crisp_mask(v) * 255.0 + 0.5).astype(np.uint8) for k, v in masks.items()}
     solid = muscle_eval.compose_highlight(crisp, primary, secondary, stabilizing)
-    groups = list(dict.fromkeys(primary + secondary + stabilizing))
+    groups = config.expand_muscles(primary + secondary + stabilizing)  # fibres are per part
     dir_path = atlas / "fiber_dir.npz"
     angles = dict(np.load(dir_path)) if dir_path.exists() else None
     if angles is None:

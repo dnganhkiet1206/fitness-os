@@ -101,8 +101,10 @@ def add_helpers(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict) -> dic
     and moves skin weight onto it. Returns facts (vertices per helper)."""
     facts = {}
     co = np.array([(body.matrix_world @ v.co)[:] for v in body.data.vertices])
+    facts["cross_side_fixed"] = fix_cross_side(body, co)
     for spec in cfg.get("folds", []):
-        for side in ("l", "r"):
+        # Midline helpers (neck) exist once; limb helpers on both sides.
+        for side in (("l",) if spec.get("midline") else ("l", "r")):
             def s(n):
                 return n.replace("{s}", side)
             name, child, parent = s(spec["name"]), s(spec["child"]), s(spec["parent_bone"])
@@ -129,10 +131,76 @@ def add_helpers(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict) -> dic
             facts[name] = int(touched.sum())
     tr = cfg.get("trapezius")
     _trapezius(body, rig, tr, co, facts) if tr else None
+    for spec in cfg.get("follow_bones", []):
+        # A new deform bone with the target's REST orientation, so a WORLD
+        # copy at partial influence is a pure share of the target's motion
+        # (15/11: a WORLD copy onto the existing pec bone, whose rest
+        # orientation differs from the arm's, turned the chest even at rest).
+        for side in ("l", "r"):
+            name = spec["name"].replace("{s}", side)
+            target = spec["target"].replace("{s}", side)
+            _add_bone(rig, name, like=target, parent=spec["parent_bone"].replace("{s}", side), length=0.06)
+            _follow(rig, name, target, spec["influence"], "WORLD")
+            body.vertex_groups.new(name=name)
+            facts[name] = spec["influence"]
+    for spec in cfg.get("attach", []):
+        for side, sign in (("l", 1.0), ("r", -1.0)):
+            facts[spec["name"].replace("{s}", side)] = _attach(body, spec, co, side, sign)
     for spec in cfg.get("smooth", []):
         facts[spec["name"]] = _smooth_region(body, rig, spec, co)
     bpy.context.view_layer.update()
     return facts
+
+
+def fix_cross_side(body, co: np.ndarray, margin: float = 0.02) -> int:
+    """Moves weight of a left bone on the right half of the body (and the
+    reverse) to its mirror bone. 15/11: 416 right-side vertices carried
+    weight of clavicle_l (from the MakeHuman rig transfer), so lifting the
+    left arm pulled the right chest. Vertices within ``margin`` of the
+    midline keep both sides."""
+    w, names = _weights(body)
+    idx = {n: i for i, n in enumerate(names)}
+    touched = np.zeros(len(co), dtype=bool)
+    for n, i in idx.items():
+        if n.endswith("_l") or n.endswith("_r"):
+            mirror = n[:-2] + ("_r" if n.endswith("_l") else "_l")
+            if mirror not in idx:
+                continue
+            wrong = (co[:, 0] < -margin) if n.endswith("_l") else (co[:, 0] > margin)
+            move = np.where(wrong, w[:, i], 0.0)
+            if move.any():
+                w[:, idx[mirror]] += move
+                w[:, i] -= move
+                touched |= move > 0
+    _write(body, w, names, touched)
+    return int(touched.sum())
+
+
+def _attach(body, spec: dict, co: np.ndarray, side: str, sign: float) -> int:
+    """Skin that rides on a bone it was not weighted to: inside a box region
+    (|x| range, z range, back- or front-facing) ``share`` of the ``from``
+    group's weight moves to the ``to`` bone (15/11 ROM audit: the skin over
+    the shoulder blade was weighted to the upper spine, so it stayed behind
+    and stretched when the scapula rotated up with the arm)."""
+    w, names = _weights(body)
+    nor = np.array([v.normal[:] for v in body.data.vertices])
+    sources = spec["from"] if isinstance(spec["from"], list) else [spec["from"]]
+    dst = names.index(spec["to"].replace("{s}", side))
+    x = co[:, 0] * sign
+    (x0, x1), (z0, z1) = spec["x_m"], spec["z_m"]
+    soft = spec.get("soft_m", 0.03)
+    region = (smoothstep(x0 - soft, x0, x) * (1 - smoothstep(x1, x1 + soft, x)) *
+              smoothstep(z0 - soft, z0, co[:, 2]) * (1 - smoothstep(z1, z1 + soft, co[:, 2])))
+    facing = smoothstep(0.0, 0.4, nor[:, 1] * spec.get("facing_y", 1.0))
+    touched = np.zeros(len(co), dtype=bool)
+    for src_name in sources:
+        src = names.index(src_name.replace("{s}", side))
+        move = spec["share"] * region * facing * w[:, src]
+        w[:, src] -= move
+        w[:, dst] += move
+        touched |= move > 1e-4
+    _write(body, w, names, touched)
+    return int(touched.sum())
 
 
 def _smooth_region(body, rig, spec: dict, co: np.ndarray) -> int:

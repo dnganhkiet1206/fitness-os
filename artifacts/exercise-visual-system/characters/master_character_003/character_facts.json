@@ -37,6 +37,7 @@
   "faceless_max_displacement_m": 0.1068,
   "nipple_vertices_faired": 128,
   "helper_bones": {
+    "cross_side_fixed": 692,
     "hip_fold_l": 332,
     "hip_fold_r": 330,
     "knee_fold_l": 146,
@@ -47,8 +48,19 @@
     "shoulder_fold_r": 234,
     "thumb_fold_l": 102,
     "thumb_fold_r": 102,
+    "wrist_fold_l": 131,
+    "wrist_fold_r": 131,
+    "ankle_fold_l": 124,
+    "ankle_fold_r": 119,
+    "neck_fold": 340,
     "trap_l": 309,
     "trap_r": 309,
+    "chest_fold_l": 0.25,
+    "chest_fold_r": 0.25,
+    "scapula_skin_l": 173,
+    "scapula_skin_r": 173,
+    "front_chest_l": 255,
+    "front_chest_r": 255,
     "crotch": 238
   },
   "grip_joint_angles_deg": {
@@ -114,7 +126,7 @@
   "thigh_length_m": 0.4435,
   "shank_length_m": 0.4564,
   "max_left_right_asymmetry_m": 2.5e-05,
-  "deform_bone_count": 75,
+  "deform_bone_count": 82,
   "bones": {
     "Root": {
       "parent": null,
@@ -350,6 +362,15 @@
         1.17438
       ]
     },
+    "wrist_fold_l": {
+      "parent": "lowerarm_l",
+      "length_m": 0.06,
+      "head_rest_m": [
+        0.53115,
+        -0.21433,
+        1.10029
+      ]
+    },
     "upperarm_twist_l": {
       "parent": "upperarm_l",
       "length_m": 0.1888,
@@ -575,6 +596,15 @@
         1.17438
       ]
     },
+    "wrist_fold_r": {
+      "parent": "lowerarm_r",
+      "length_m": 0.06,
+      "head_rest_m": [
+        -0.53115,
+        -0.21433,
+        1.10029
+      ]
+    },
     "upperarm_twist_r": {
       "parent": "upperarm_r",
       "length_m": 0.1888,
@@ -647,6 +677,15 @@
         1.32308
       ]
     },
+    "neck_fold": {
+      "parent": "spine_03",
+      "length_m": 0.06,
+      "head_rest_m": [
+        0.0,
+        -0.01178,
+        1.53407
+      ]
+    },
     "trap_l": {
       "parent": "spine_03",
       "length_m": 0.08,
@@ -663,6 +702,24 @@
         -0.02335,
         -0.02422,
         1.45802
+      ]
+    },
+    "chest_fold_l": {
+      "parent": "spine_03",
+      "length_m": 0.06,
+      "head_rest_m": [
+        0.215,
+        -0.01826,
+        1.42983
+      ]
+    },
+    "chest_fold_r": {
+      "parent": "spine_03",
+      "length_m": 0.06,
+      "head_rest_m": [
+        -0.215,
+        -0.01826,
+        1.42983
       ]
     },
     "thigh_l": {
@@ -699,6 +756,15 @@
         0.20651,
         -0.1436,
         0.0085
+      ]
+    },
+    "ankle_fold_l": {
+      "parent": "calf_l",
+      "length_m": 0.06,
+      "head_rest_m": [
+        0.20241,
+        -0.01385,
+        0.07392
       ]
     },
     "thigh_twist_l": {
@@ -755,6 +821,15 @@
         0.0085
       ]
     },
+    "ankle_fold_r": {
+      "parent": "calf_r",
+      "length_m": 0.06,
+      "head_rest_m": [
+        -0.20241,
+        -0.01385,
+        0.07392
+      ]
+    },
     "thigh_twist_r": {
       "parent": "thigh_r",
       "length_m": 0.33826,
@@ -796,8 +871,8 @@
   "version": "3.2.0",
   "trapezius_volume": {
     "level": "E",
-    "vertices_moved_over_1mm": 621,
-    "max_offset_m": 0.0418
+    "vertices_moved_over_1mm": 654,
+    "max_offset_m": 0.0583
   },
   "uv_flat_points": [
     [
@@ -806,9 +881,9 @@
     ]
   ],
   "muscle_sculpt": {
-    "parts": 70,
-    "outline_points": 37112,
-    "vertices_moved": 1962,
+    "parts": 108,
+    "outline_points": 50581,
+    "vertices_moved": 2098,
     "max_displacement_m": 0.004,
     "geometry": {
       "amplitude_m": 0.004,

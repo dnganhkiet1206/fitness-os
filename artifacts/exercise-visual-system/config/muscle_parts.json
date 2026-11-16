@@ -1,5 +1,5 @@
 {
-  "comment": "Anatomical parts inside each muscle group, used by evs/muscle_sculpt.py to sculpt each part as its own block with a groove between parts (Kiệt 14/11: muscles drawn as separate layered blocks that follow the real parts of the body, not one generic mass). Left and right are always separate parts (midline groove: linea alba, sternum, spine). Split types: 'level' = fraction of the group's own height (0 bottom, 1 top); 'sector' = angle around the limb axis, 0 = front, + = lateral, +-180 = back; 'mask' limits a split to a range of limb position t (0 at the proximal joint, 1 at the distal one). Groups not listed are one block per side; neighbouring groups are always separated (deltoid heads, serratus vs obliques, glutes...). 'tilt' slopes a level cut (+ = descends laterally); 'twist' turns sector cuts along the limb (+ = more lateral at the proximal end).",
+  "comment": "Anatomical parts inside each muscle group, used by evs/muscle_sculpt.py to sculpt each part as its own block with a groove between parts (Kiệt 14/11: muscles drawn as separate layered blocks that follow the real parts of the body, not one generic mass). Left and right are always separate parts (midline groove: linea alba, sternum, spine). Split types: 'level' = fraction of the group's own height (0 bottom, 1 top); 'sector' = angle around the limb axis, 0 = front, + = lateral, +-180 = back; 'mask' limits a split to a range of limb position t (0 at the proximal joint, 1 at the distal one). Groups not listed are one block per side; neighbouring groups are always separated (deltoid heads, serratus vs obliques, glutes...). 'tilt' slopes a level cut (+ = descends laterally); 'twist' turns sector cuts along the limb (+ = more lateral at the proximal end). 15/11: chest, triceps, quadriceps, hamstrings and calf parts are now real muscle groups (muscle_map v2); only the rectus abdominis rows and serratus digitations stay as relief parts.",
   "sources": [
     "Gray's Anatomy (public domain 1918 edition): rectus abdominis has three tendinous intersections, at the umbilicus, at the xiphoid process and midway between; pectoralis major clavicular and sternocostal heads; quadriceps rectus femoris between vastus lateralis and vastus medialis; gastrocnemius medial and lateral heads above the soleus; triceps long and lateral heads; serratus anterior digitations.",
     "OpenStax Anatomy and Physiology 2e (CC BY 4.0), chapter 11: axial and appendicular muscles."
@@ -46,19 +46,6 @@
     }
   },
   "groups": {
-    "pectoralis_major": [
-      {
-        "type": "level",
-        "fractions": [
-          0.62
-        ],
-        "names": [
-          "sternocostal",
-          "clavicular"
-        ],
-        "tilt": 0.55
-      }
-    ],
     "rectus_abdominis": [
       {
         "type": "level",
@@ -88,69 +75,6 @@
           "digit_3",
           "digit_2",
           "digit_1"
-        ]
-      }
-    ],
-    "quadriceps": [
-      {
-        "type": "sector",
-        "limb": "thigh",
-        "bounds": [
-          -25,
-          30
-        ],
-        "names": [
-          "vastus_medialis",
-          "rectus_femoris",
-          "vastus_lateralis"
-        ],
-        "twist": 40
-      }
-    ],
-    "hamstrings": [
-      {
-        "type": "sector",
-        "limb": "thigh",
-        "bounds": [
-          0
-        ],
-        "names": [
-          "semitendinosus_semimembranosus",
-          "biceps_femoris"
-        ]
-      }
-    ],
-    "calves": [
-      {
-        "type": "sector",
-        "limb": "calf",
-        "bounds": [
-          0
-        ],
-        "mask": [
-          0.0,
-          0.6
-        ],
-        "names": [
-          "gastrocnemius_medial",
-          "gastrocnemius_lateral"
-        ]
-      }
-    ],
-    "triceps_brachii": [
-      {
-        "type": "sector",
-        "limb": "upperarm",
-        "bounds": [
-          0
-        ],
-        "mask": [
-          0.0,
-          0.75
-        ],
-        "names": [
-          "long_head",
-          "lateral_head"
         ]
       }
     ]
