@@ -32,6 +32,9 @@
     /// Mặc định chỉ hiện cơ chính (Kiệt 16/11); nút "Hiện cơ phụ" bật Phụ + Ổn định.
     @State private var hideSecondary = true
     @State private var bodySkins = BodySkins()
+    /// Thu gọn thẻ chú thích / thanh zoom (Kiệt 16/11), nhớ cho lần mở sau.
+    @AppStorage("demo3d.legendCollapsed") private var legendCollapsed = false
+    @AppStorage("demo3d.zoomCollapsed") private var zoomCollapsed = false
     @GestureState private var dragOffset: CGSize = .zero
     @GestureState private var pinch: CGFloat = 1
 
@@ -267,7 +270,41 @@
 
     /// Thanh zoom dọc ở mép phải (Kiệt 13/11): kéo lên để lại gần soi sợi cơ.
     private var zoomSlider: some View {
+      Group {
+        if zoomCollapsed {
+          // Thu gọn: một nút kính lúp; chụm hai ngón vẫn zoom được.
+          Button {
+            withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { zoomCollapsed = false }
+          } label: {
+            Image(systemName: "plus.magnifyingglass")
+              .font(.system(size: 15, weight: .semibold))
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+              .frame(width: 44, height: 44)
+              .background(.ultraThinMaterial, in: Circle())
+              .overlay(Circle().strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel(Text("eg.demo3d.expandZoom"))
+          .transition(.scale.combined(with: .opacity))
+        } else {
+          zoomBar.transition(.move(edge: .trailing).combined(with: .opacity))
+        }
+      }
+    }
+
+    private var zoomBar: some View {
       VStack(spacing: DS.Spacing.sm) {
+        Button {
+          withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { zoomCollapsed = true }
+        } label: {
+          Image(systemName: "chevron.right")
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(width: 30, height: 28)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("eg.demo3d.collapseZoom"))
         Image(systemName: "plus.magnifyingglass")
         Slider(value: zoom, in: 0...1)
           .tint(Color(red: 0.91, green: 0.33, blue: 0.17))
@@ -300,7 +337,7 @@
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             .accessibilityAddTraits(.isHeader)
           Spacer(minLength: DS.Spacing.sm)
-          if bodySkins.ready, legend.contains(where: { !$0.roleKey.hasSuffix(".primary") }) {
+          if bodySkins.ready, !legendCollapsed, legend.contains(where: { !$0.roleKey.hasSuffix(".primary") }) {
             Button {
               withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { hideSecondary.toggle() }
             } label: {
@@ -317,7 +354,39 @@
             .buttonStyle(.plain)
             .accessibilityAddTraits(hideSecondary ? [.isButton, .isSelected] : .isButton)
           }
+          Button {
+            withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) { legendCollapsed.toggle() }
+          } label: {
+            Image(systemName: legendCollapsed ? "chevron.up" : "chevron.down")
+              .font(.system(size: 13, weight: .bold))
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+              .frame(width: 30, height: 30)
+              .background(DS.Color.foreground.swiftUI.opacity(0.08), in: Circle())
+              .frame(minWidth: 44, minHeight: 44)
+              .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel(Text(legendCollapsed ? "eg.demo3d.expandLegend" : "eg.demo3d.collapseLegend"))
         }
+        if legendCollapsed {
+          // Thu gọn: chỉ còn tên cơ chính trên một dòng.
+          Text(legend.filter { $0.roleKey.hasSuffix(".primary") }
+            .map { String(localized: String.LocalizationValue($0.nameKey)) }.joined(separator: " · "))
+            .font(DS.TextStyle.footnote.weight(.semibold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .lineLimit(1)
+        } else {
+          legendRows(legend)
+        }
+      }
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.vertical, legendCollapsed ? DS.Spacing.xs : DS.Spacing.md)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .todayCard()
+    }
+
+    @ViewBuilder
+    private func legendRows(_ legend: [ExerciseDemo3D.LegendEntry]) -> some View {
         // Ba cấp (Kiệt 15/11): Chính = chịu tải, tạo lực chính; Phụ = hỗ trợ
         // trực tiếp chuyển động; Ổn định = giữ tư thế, ổn định khớp. Mỗi cấp
         // một hàng: nhãn màu + chip tên cơ xuống dòng tự do, để 10+ cơ vẫn
@@ -357,10 +426,6 @@
             .accessibilityElement(children: .combine)
           }
         }
-      }
-      .padding(DS.Spacing.md)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .todayCard()
     }
 
     /// USDZ không nạp được thì nói thẳng, kèm poster của bài.
