@@ -72,6 +72,8 @@ Lợi thêm: 8 bài hiện chiếm 47 MB. Sang dạng khối thì còn 1 nhân v
   Texture da đủ vai trò vẫn nặng vì normal map 2 MB/bài. Việc tiếp: một normal map nền dùng chung, mỗi bài chỉ còn màu (JPEG/HEIC). Đây là bước 2.
 - Sửa nhân vật từ nay: dựng lại chuỗi nhân vật → xuất lại `character_003.usdz` (một lệnh). Bài dạng khối không phải render lại, trừ khi cây xương đổi (thêm xương phụ). Khi đó chỉ chạy lại `--split` để xuất file chuyển động: vài giây/bài, không render cảnh.
 
+**16/11 — Đổi phòng thực tế:** vệt bóng ghế bench nướng cứng vào sàn → dựng lại phòng trống (`build_gym_room.py --empty`), thay 2 file, mọi bài đổi theo; bóng tiếp xúc do app vẽ lúc chạy (`contactShadow`).
+
 ## Lộ trình đề xuất
 
 1. ~~**Nguyên mẫu (≈ nửa ngày):**~~ **xong 16/11 (xem trên).** `export_usdz.py --split` xuất `character.usdz` + `dumbbell_curl_motion.usdz` + `equipment/dumbbell.usdz`. App ghép lại và so khung hình với bản cũ trên simulator.

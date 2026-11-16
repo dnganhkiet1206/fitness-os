@@ -257,6 +257,9 @@ def main() -> None:
     parser.add_argument("--looks", default="light,dark")
     parser.add_argument("--samples", type=int, default=128)
     parser.add_argument("--scale", type=float, default=1.0, help="texture size factor, 0.5 for a quick test")
+    parser.add_argument("--empty", action="store_true",
+                        help="bake the room without the exercise (16/11: the room is shared by every exercise; "
+                             "the bench and the lifter baked their shadows into the floor of all of them)")
     args = bl_util.script_args(parser)
     os.makedirs(args.out, exist_ok=True)
     exercise_path = config.exercise_dir(args.exercise)
@@ -270,6 +273,11 @@ def main() -> None:
         scene.frame_set(scene.frame_start)
         for o in list(scene.objects):
             if o.type in ("CAMERA", "LIGHT") or o.name.startswith(("EVS_Floor", "EVS_LightRig")) or o.type == "EMPTY" and o.name == "EVS_LightRig":
+                bpy.data.objects.remove(o, do_unlink=True)
+        if args.empty:
+            # Same room placement (from --exercise's default camera), nothing
+            # in it: the floor bake carries no exercise shadow.
+            for o in list(scene.objects):
                 bpy.data.objects.remove(o, do_unlink=True)
         scene.render.engine = "CYCLES"
         scene.cycles.device = "GPU"

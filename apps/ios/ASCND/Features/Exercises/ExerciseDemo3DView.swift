@@ -123,6 +123,11 @@
                     bodySkins.apply(focus: hideSecondary, force: true)
                   }
                   Self.addLights(to: content, target: cameraTarget)
+                  // Phòng nướng sẵn không còn bóng của bài nào (dùng chung,
+                  // 16/11): bóng tiếp xúc mềm dưới nhân vật + dụng cụ.
+                  if let shadow = Self.contactShadow(under: [scene] + (motion.map { [$0] } ?? [])) {
+                    content.add(shadow)
+                  }
                   // Tự chạy và lặp vô hạn, không dừng ở cuối. Dạng khối: cùng
                   // một chuyển động phát trên nhân vật và trên file chuyển động
                   // (dụng cụ), bắt đầu cùng khung hình nên khớp nhau.
@@ -418,6 +423,51 @@
         PerspectiveCameraComponent(near: 0.1, far: 100, fieldOfViewInDegrees: verticalFOV))
       camera.look(at: cameraTarget, from: cameraPosition, relativeTo: nil)
       return camera
+    }
+
+    /// Bóng tiếp xúc mềm trên sàn (y = 0) dưới khung bao của nhân vật và
+    /// dụng cụ: mặt phẳng không chiếu sáng, texture dải mờ tròn sinh lúc chạy.
+    /// Thay cho bóng nướng vào sàn phòng, vốn chỉ đúng với một bài.
+    private static func contactShadow(under entities: [Entity]) -> Entity? {
+      var bounds: BoundingBox?
+      for e in entities {
+        let b = e.visualBounds(relativeTo: nil)
+        guard b.isEmpty == false else { continue }
+        bounds = bounds.map { $0.union(b) } ?? b
+      }
+      guard let bounds, let texture = shadowTexture() else { return nil }
+      let w = max(bounds.extents.x * 1.15, 0.9), d = max(bounds.extents.z * 1.15, 0.9)
+      var material = UnlitMaterial()
+      // Texture đen có kênh alpha = độ đậm của bóng.
+      material.color = .init(tint: .white, texture: .init(texture))
+      material.blending = .transparent(opacity: .init(floatLiteral: 1.0))
+      let plane = ModelEntity(mesh: .generatePlane(width: w, depth: d), materials: [material])
+      plane.position = [bounds.center.x, 0.003, bounds.center.z]
+      plane.name = "ContactShadow"
+      return plane
+    }
+
+    /// Bóng đen, alpha 55 % ở tâm, tắt dần ra mép (smoothstep), alpha nhân sẵn.
+    private static func shadowTexture() -> TextureResource? {
+      let n = 128
+      var px = [UInt8](repeating: 0, count: n * n * 4)
+      for y in 0..<n {
+        for x in 0..<n {
+          let dx = (Double(x) + 0.5) / Double(n) * 2 - 1, dy = (Double(y) + 0.5) / Double(n) * 2 - 1
+          let r = min((dx * dx + dy * dy).squareRoot(), 1)
+          let t = 1 - r
+          let a = 0.55 * t * t * (3 - 2 * t)
+          px[(y * n + x) * 4 + 3] = UInt8(a * 255)  // RGB 0 = đen (nhân sẵn)
+        }
+      }
+      guard let provider = CGDataProvider(data: Data(px) as CFData),
+        let image = CGImage(
+          width: n, height: n, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: n * 4,
+          space: CGColorSpaceCreateDeviceRGB(),
+          bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+          provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent)
+      else { return nil }
+      return try? TextureResource(image: image, options: .init(semantic: .color))
     }
 
     /// USDZ không kèm đèn: một đèn chính + một đèn phụ, đủ thấy khối cơ và
