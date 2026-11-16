@@ -138,8 +138,9 @@ struct ExerciseSearchTests {
   @MainActor @Test func manualLogSuggestions() {
     #expect(ManualLogController.suggestions(for: "", in: RealLibrary.all).count == 5)
     #expect(ManualLogController.suggestions(for: "", in: RealLibrary.all).allSatisfy {
-      ExerciseSearch.popularity(of: $0) == 1
+      ExerciseSearch.popularity(of: $0) > 0.98
     })
+    #expect(ExerciseSearch.popular(RealLibrary.all, limit: 3).map(\.name) == ["Bench Press", "Barbell Squat", "Deadlift"])
     #expect(ManualLogController.suggestions(for: "bp", in: RealLibrary.all).first?.name == "Bench Press")
   }
 }

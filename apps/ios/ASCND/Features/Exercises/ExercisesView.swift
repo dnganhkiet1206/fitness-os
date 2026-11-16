@@ -42,6 +42,9 @@ struct ExercisesView: View {
   @State private var form: AddForm
   @State private var pendingDelete: LibraryExercise?
   @State private var deleteFailed = false
+  /// Bài đang mở trong trình xem 3D (Kiệt 15/11: chạm thẻ có 3D là xem 3D ngay;
+  /// thẻ chưa có 3D chạm không làm gì — hướng dẫn chữ làm sau).
+  @State private var demo: DemoTarget?
 
   /// - Parameter create: chữ builder đã tìm mà không thấy — mở sẵn form với tên ấy.
   init(
@@ -125,6 +128,16 @@ struct ExercisesView: View {
       .alert(String(localized: "workout.finishError.generic"), isPresented: $deleteFailed) {
         Button(String(localized: "workout.ok")) {}
       }
+      #if DEBUG
+        .fullScreenCover(item: $demo) { t in
+          ExerciseDemo3DView(name: t.name)
+        }
+      #endif
+  }
+
+  struct DemoTarget: Identifiable {
+    let name: String
+    var id: String { name }
   }
 
   /// Viên tìm như ô lọc món (`FoodListView`): tên vi / en / es, gõ không dấu cũng ra.
@@ -240,6 +253,7 @@ struct ExercisesView: View {
   /// Thẻ A (Kiệt duyệt 15/11): poster 3D khi có, nhóm cơ chính + dụng cụ.
   private func row(_ e: LibraryExercise) -> some View {
     let own = e.userId?.lowercased() == library.userId.lowercased()
+    let has3D = ExercisePoster.image(for: e.name) != nil
     return ExerciseCard(exercise: e, lang: lang) {
       // Chỉ bài của mình mới xoá được (bài mẫu là của chung).
       if own {
@@ -255,6 +269,11 @@ struct ExercisesView: View {
       }
     }
     .padding(.vertical, 2)
+    .contentShape(Rectangle())
+    .onTapGesture {
+      if has3D { demo = DemoTarget(name: e.name) }
+    }
+    .accessibilityAddTraits(has3D ? .isButton : [])
   }
 
   private func delete(_ e: LibraryExercise) async {
@@ -299,6 +318,9 @@ struct AddExerciseSheet: View {
         Section {
           TextField(text: $form.name) { Text("ex.name.placeholder") }
             .focused($nameFocused)
+            // Tên bài thường là tiếng Anh: bàn phím tiếng Việt tự sửa "Squat" thành
+            // "Sửa" khi rời ô (thấy trên simulator 15/11).
+            .autocorrectionDisabled()
             .submitLabel(.done)
             .onSubmit { Task { await save() } }
         } header: {

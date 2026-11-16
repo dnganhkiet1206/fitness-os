@@ -203,9 +203,11 @@ public enum ExerciseSearch {
         "EZ-Bar Curl", "Incline Dumbbell Curl", "Machine Shoulder (Military) Press", "Close-Grip Barbell Bench Press",
       ]),
     ]
+    // Trong một mức, bài đứng trước phổ biến hơn chút (0,001 / bậc): mục "Phổ biến"
+    // ra Bench Press, Squat, Deadlift… thay vì theo ABC của thư viện.
     var out: [String: Double] = [:]
     for (w, names) in tiers {
-      for n in names { out[PersonalRecords.exerciseKey(n)] = w }
+      for (i, n) in names.enumerated() { out[PersonalRecords.exerciseKey(n)] = w - Double(i) * 0.001 }
     }
     return out
   }()
