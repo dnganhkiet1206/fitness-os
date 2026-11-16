@@ -58,7 +58,8 @@ INSERT INTO owned VALUES
   ('plan_day_overrides', 'SIUD', 33, 'đổi lịch riêng một ngày (GĐ1) — 20261020140000'),
   ('koa_pauses', 'SIUD', 34, 'tạm nghỉ của Koa, một dòng mỗi người — 20261103120000'),
   ('koa_pause_log', 'SIU', 35, 'sổ các đợt tạm nghỉ: không xoá, huỷ là ghi ngày cuối trước ngày đầu — 20261104120000'),
-  ('body_checks', 'SIUD', 36, 'đo cơ thể bằng AI, con của progress_photos — 20261105090000');
+  ('body_checks', 'SIUD', 36, 'đo cơ thể bằng AI, con của progress_photos — 20261105090000'),
+  ('exercise_favorites', 'SIU', 37, 'sao yêu thích bài tập: cờ is_favorite, không xoá (bỏ sao = false) — 20261116120000');
 -- Bảng không có user_id: quyền đi qua dòng cha.
 CREATE TEMP TABLE kids (tbl text PRIMARY KEY, fk text NOT NULL, parent text NOT NULL);
 INSERT INTO kids VALUES
