@@ -22,6 +22,8 @@ struct ExerciseCard<Accessory: View>: View {
   var body: some View {
     let poster = ExercisePoster.image(for: exercise.name)
     HStack(spacing: DS.Spacing.sm) {
+      // Ảnh + chữ là MỘT phần tử VoiceOver; nút ở `accessory` (sao, xoá) đứng riêng.
+      HStack(spacing: DS.Spacing.sm) {
       if let poster {
         Self.thumbnail(poster)
       }
@@ -49,11 +51,12 @@ struct ExerciseCard<Accessory: View>: View {
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
+      }
+      .accessibilityElement(children: .combine)
+      .accessibilityHint(poster != nil ? Text(String(localized: "ex.card.has3d")) : Text(verbatim: ""))
       accessory()
     }
     .frame(minHeight: poster == nil ? 48 : Self.thumbSide)
-    .accessibilityElement(children: .combine)
-    .accessibilityHint(poster != nil ? Text(String(localized: "ex.card.has3d")) : Text(verbatim: ""))
   }
 
   /// Nhóm cơ chính (khoá đầu tiên); không nhận ra thì chữ gốc.
@@ -129,5 +132,47 @@ enum ExercisePoster {
     #else
       return nil
     #endif
+  }
+}
+
+/// Bộ lọc riêng của người dùng trên danh sách bài (Kiệt 15/11).
+enum ExerciseScope: Hashable {
+  case all
+  /// Bài có sao.
+  case favorites
+  /// Bài đã tập trong 90 ngày, nhiều buổi trước.
+  case familiar
+}
+
+/// Biểu tượng nhỏ trước chữ của chip, không có thì chỉ chữ.
+struct ChipLabelStyle: LabelStyle {
+  func makeBody(configuration: Configuration) -> some View {
+    HStack(spacing: 5) {
+      configuration.icon
+      configuration.title
+    }
+  }
+}
+
+/// Ngôi sao yêu thích trên thẻ bài (Kiệt 15/11): chạm để đặt / bỏ sao.
+struct FavoriteStarButton: View {
+  let exercise: LibraryExercise
+  let favorites: ExerciseFavorites
+
+  var body: some View {
+    let on = favorites.contains(exercise.id)
+    Button {
+      favorites.set(exercise.id, !on)
+    } label: {
+      Image(systemName: on ? "star.fill" : "star")
+        .font(.system(size: 18, weight: .semibold))
+        .foregroundStyle(on ? Color(red: 0.98, green: 0.74, blue: 0.18) : DS.Color.mutedForeground.swiftUI)
+        .frame(minWidth: 44, minHeight: 44)
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.borderless)
+    .sensoryFeedback(.selection, trigger: on)
+    .accessibilityLabel(Text(String(localized: on ? "ex.favorite.remove" : "ex.favorite.add")))
+    .accessibilityAddTraits(on ? .isSelected : [])
   }
 }

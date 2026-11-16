@@ -216,7 +216,10 @@ struct ManualLogView: View {
         .accessibilityLabel(Text(String(localized: "manualLog.removeExercise")))
       }
       if suggesting == group.id, let library = flow.library {
-        let picks = ManualLogController.suggestions(for: group.name, in: library.exercises)
+        let picks = ManualLogController.suggestions(
+          for: group.name, in: library.exercises,
+          usage: ExerciseFamiliarity.counts(ExerciseFamiliarity.usage(flow.insights?.performances ?? [])),
+          favorites: ExerciseFavoritesShared.book(for: library.userId).ids)
         if !picks.isEmpty {
           ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: DS.Spacing.xs) {

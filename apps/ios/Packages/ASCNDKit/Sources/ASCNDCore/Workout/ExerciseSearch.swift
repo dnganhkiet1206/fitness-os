@@ -280,7 +280,9 @@ public enum ExerciseSearch {
   /// - phổ biến × 0,5 và dùng nhiều (`usage`, số lần đã ghi) tới +0,3: đủ để
   ///   bài quen vượt biến thể lạ cùng độ khớp, không đủ để một khớp sai chính tả
   ///   vượt một khớp đúng của bài khác ở cùng độ phổ biến.
-  static func score(_ entry: Entry, query: [String], phrase: String, popularity: Double, usage: Int) -> Double? {
+  static func score(
+    _ entry: Entry, query: [String], phrase: String, popularity: Double, usage: Int, favorite: Bool = false
+  ) -> Double? {
     guard !query.isEmpty else { return nil }
     var sum = 0.0
     for (i, q) in query.enumerated() {
@@ -301,13 +303,17 @@ public enum ExerciseSearch {
     score += 0.25 * min(1, Double(query.count) / Double(max(entry.primary.count, 1)))
     score += 0.5 * popularity
     if usage > 0 { score += min(0.3, 0.1 * log2(Double(usage) + 1)) }
+    // Bài yêu thích: +0,8 — lựa chọn của chính người dùng thắng độ phổ biến chung
+    // (tối đa 0,5) và phần cụm / gọn, nhưng không cứu được một bài không khớp.
+    if favorite { score += 0.8 }
     return score
   }
 
   /// Lọc + xếp theo điểm. Chữ gõ rỗng → giữ nguyên danh sách. Cùng điểm giữ thứ
-  /// tự thư viện. `usage`: số lần người dùng đã ghi mỗi bài (khoá `exerciseKey`).
+  /// tự thư viện. `usage`: số buổi người dùng đã tập mỗi bài (khoá `exerciseKey`);
+  /// `favorites`: id bài có sao.
   public static func rank(
-    _ list: [LibraryExercise], query: String, usage: [String: Int] = [:]
+    _ list: [LibraryExercise], query: String, usage: [String: Int] = [:], favorites: Set<String> = []
   ) -> [LibraryExercise] {
     let q = ExerciseText.tokens(query)
     guard !q.isEmpty else {
@@ -321,7 +327,10 @@ public enum ExerciseSearch {
       .compactMap { i, e -> (s: Double, i: Int, e: LibraryExercise)? in
         let pop = popularity(of: e)
         let use = usage[PersonalRecords.exerciseKey(e.name)] ?? 0
-        if let s = score(Entry(e), query: q, phrase: phrase, popularity: pop, usage: use) { return (s, i, e) }
+        let fav = favorites.contains(e.id.lowercased())
+        if let s = score(Entry(e), query: q, phrase: phrase, popularity: pop, usage: use, favorite: fav) {
+          return (s, i, e)
+        }
         // Lưới an toàn: chữ thô vẫn nằm trong tên (ký tự lạ, "3/4") thì không mất bài.
         return ExerciseCatalog.matches(e, raw) ? (0.3 + 0.5 * pop, i, e) : nil
       }
