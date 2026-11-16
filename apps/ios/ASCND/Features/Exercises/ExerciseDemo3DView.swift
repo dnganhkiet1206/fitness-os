@@ -33,8 +33,13 @@
     @State private var hideSecondary = true
     @State private var bodySkins = BodySkins()
     /// Thu gọn thẻ chú thích / thanh zoom (Kiệt 16/11), nhớ cho lần mở sau.
-    @AppStorage("demo3d.legendCollapsed") private var legendCollapsed = false
-    @AppStorage("demo3d.zoomCollapsed") private var zoomCollapsed = false
+    /// Lưu bằng AppStorage, nhưng vẽ theo @State: thay đổi AppStorage không
+    /// nằm trong transaction của withAnimation nên thẻ / thanh nhảy cái một
+    /// (Kiệt 16/11: "cho mượt").
+    @AppStorage("demo3d.legendCollapsed") private var legendCollapsedStored = false
+    @AppStorage("demo3d.zoomCollapsed") private var zoomCollapsedStored = false
+    @State private var legendCollapsed = false
+    @State private var zoomCollapsed = false
     @Namespace private var zoomMorph
     /// Lò xo nhẹ cho thu gọn / mở (Kiệt 16/11: "cho mượt"); tắt khi Giảm chuyển động.
     private var collapseAnimation: Animation? { reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.86) }
@@ -212,6 +217,7 @@
               legendView(legend)
                 .padding(.horizontal, DS.Spacing.md)
                 .padding(.bottom, DS.Spacing.sm)
+                .animation(collapseAnimation, value: legendCollapsed)
             }
           }
         }
@@ -220,7 +226,14 @@
           zoomSlider
             .padding(.trailing, DS.Spacing.sm)
             .offset(y: -60)
+            .animation(collapseAnimation, value: zoomCollapsed)
         }
+        .onAppear {
+          legendCollapsed = legendCollapsedStored
+          zoomCollapsed = zoomCollapsedStored
+        }
+        .onChange(of: legendCollapsed) { _, v in legendCollapsedStored = v }
+        .onChange(of: zoomCollapsed) { _, v in zoomCollapsedStored = v }
         // Màu tường / sàn của phòng, thấy trong lúc phòng 3D đang tải.
         .background { GymStage() }
         .toolbar {
