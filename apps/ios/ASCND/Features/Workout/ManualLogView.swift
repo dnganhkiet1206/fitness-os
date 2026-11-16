@@ -232,7 +232,8 @@ struct ManualLogView: View {
                     focusedName = nil
                   }
                 } label: {
-                  Text(verbatim: ex.displayName)
+                  // Tên tiếng Anh (Kiệt 15/11: tên bài ai cũng gọi bằng tiếng Anh).
+                  Text(verbatim: ex.primaryName)
                     .font(DS.TextStyle.footnote.weight(.medium))
                     .foregroundStyle(DS.Color.foreground.swiftUI)
                     .padding(.horizontal, DS.Spacing.sm + 4)
