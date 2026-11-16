@@ -835,3 +835,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 15/11/2026: tìm bài xếp theo độ khớp + độ phổ biến, thẻ bài có poster 3D (bản Debug), hộp "Có phải bạn muốn…?" khi tạo bài; xem mục 4.
 - 15/11/2026: bài quen thuộc (số buổi đã tập) + sao yêu thích bài tập lưu trên máy; xem mục 4.
 - 16/11/2026: migration sao yêu thích + độ phổ biến bài tập (CHƯA DEPLOY), app đồng bộ khi có; xem mục 4.
+- 16/11/2026: trình xem 3D hạ trần góc nhìn 0,95 → 0,55 rad (Kiệt thấy hình "hỏng" khi kéo lên cao + zoom sát: chuyển động không sai, máy quay chúc xuống đỉnh đầu; ảnh trước/sau `docs/design/exercise-library/sim-3d-max-pitch-*.jpg`). Ô tìm bài gỡ Telex ("củl" → "curl").

@@ -102,6 +102,38 @@ public enum ExerciseText {
     return out
   }
 
+  /// Gỡ Telex: viết lại chữ có dấu thành các phím đã gõ — "củl" → "curl", "prés" → "press",
+  /// "đ" → "dd", "ê" → "ee", "ơ" → "ow". Chữ không dấu giữ nguyên. Không cố đoán mọi luật
+  /// Telex (bỏ dấu, gõ lại); đủ cho tên bài tiếng Anh bị bàn phím tiếng Việt đổi.
+  public static func untelex(_ s: String) -> String {
+    let tones: [UInt32: Character] = [0x301: "s", 0x300: "f", 0x309: "r", 0x303: "x", 0x323: "j"]
+    var out = ""
+    for ch in s.lowercased() {
+      if ch == "đ" {
+        out += "dd"
+        continue
+      }
+      let scalars = Array(String(ch).decomposedStringWithCanonicalMapping.unicodeScalars)
+      guard let base = scalars.first, scalars.count > 1 else {
+        out.append(ch)
+        continue
+      }
+      var shape = ""
+      var tone: Character?
+      for m in scalars.dropFirst() {
+        switch m.value {
+        case 0x302: shape = String(Character(base))  // â ê ô: gõ chữ hai lần
+        case 0x306, 0x31B: shape = "w"  // ă, ơ ư
+        default: tone = tones[m.value] ?? tone
+        }
+      }
+      out.append(Character(base))
+      out += shape
+      if let tone { out.append(tone) }
+    }
+    return out
+  }
+
   // MARK: - Khoảng cách chuỗi
 
   /// Damerau–Levenshtein (bản "optimal string alignment"): đổi hai chữ liền kề
@@ -323,16 +355,22 @@ public enum ExerciseSearch {
       let raw = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
       return raw.isEmpty ? list : list.filter { ExerciseCatalog.matches($0, raw) }
     }
-    let phrase = q.joined(separator: " ")
+    // Bàn phím Telex đổi chữ tiếng Anh: "curl" → "củl", "press" → "prés" (16/11, simulator).
+    // Chữ gõ có dấu thì tìm thêm bằng bản gỡ Telex, lấy điểm cao hơn.
+    var variants = [q]
+    let untelexed = ExerciseText.tokens(ExerciseText.untelex(query))
+    if !untelexed.isEmpty, untelexed != q { variants.append(untelexed) }
     let raw = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     return list.enumerated()
       .compactMap { i, e -> (s: Double, i: Int, e: LibraryExercise)? in
         let pop = popularity(of: e)
         let use = usage[PersonalRecords.exerciseKey(e.name)] ?? 0
         let fav = favorites.contains(e.id.lowercased())
-        if let s = score(Entry(e), query: q, phrase: phrase, popularity: pop, usage: use, favorite: fav) {
-          return (s, i, e)
-        }
+        let entry = Entry(e)
+        let best = variants.compactMap {
+          score(entry, query: $0, phrase: $0.joined(separator: " "), popularity: pop, usage: use, favorite: fav)
+        }.max()
+        if let s = best { return (s, i, e) }
         // Lưới an toàn: chữ thô vẫn nằm trong tên (ký tự lạ, "3/4") thì không mất bài.
         return ExerciseCatalog.matches(e, raw) ? (0.3 + 0.5 * pop, i, e) : nil
       }

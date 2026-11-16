@@ -106,6 +106,18 @@ struct ExerciseSearchTests {
     #expect(RealLibrary.top("lateral raises").first == "Side Lateral Raise")
   }
 
+  /// Bàn phím Telex đổi chữ tiếng Anh (16/11, thấy trên simulator): vẫn ra đúng bài.
+  @Test func telexMangledEnglish() {
+    #expect(ExerciseText.untelex("củl") == "curl")
+    #expect(ExerciseText.untelex("prés") == "press")
+    #expect(ExerciseText.untelex("đẩy") == "ddaary")
+    #expect(ExerciseText.untelex("squat") == "squat")
+    #expect(RealLibrary.top("củl").first == "Dumbbell Curl")
+    #expect(RealLibrary.top("bench prés").first == "Bench Press")
+    // Tiếng Việt thật vẫn tìm như cũ.
+    #expect(RealLibrary.top("đẩy ngực").first == "Bench Press")
+  }
+
   /// Gõ dở từ cuối vẫn ra (đầu từ), và chữ không liên quan không ra gì.
   @Test func prefixAndNoise() {
     #expect(RealLibrary.top("benc").first == "Bench Press")
