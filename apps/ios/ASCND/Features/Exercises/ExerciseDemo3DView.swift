@@ -35,6 +35,9 @@
     /// Thu gọn thẻ chú thích / thanh zoom (Kiệt 16/11), nhớ cho lần mở sau.
     @AppStorage("demo3d.legendCollapsed") private var legendCollapsed = false
     @AppStorage("demo3d.zoomCollapsed") private var zoomCollapsed = false
+    @Namespace private var zoomMorph
+    /// Lò xo nhẹ cho thu gọn / mở (Kiệt 16/11: "cho mượt"); tắt khi Giảm chuyển động.
+    private var collapseAnimation: Animation? { reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.86) }
     @GestureState private var dragOffset: CGSize = .zero
     @GestureState private var pinch: CGFloat = 1
 
@@ -274,28 +277,36 @@
         if zoomCollapsed {
           // Thu gọn: một nút kính lúp; chụm hai ngón vẫn zoom được.
           Button {
-            withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { zoomCollapsed = false }
+            withAnimation(collapseAnimation) { zoomCollapsed = false }
           } label: {
             Image(systemName: "plus.magnifyingglass")
               .font(.system(size: 15, weight: .semibold))
               .foregroundStyle(DS.Color.foreground.swiftUI)
               .frame(width: 44, height: 44)
-              .background(.ultraThinMaterial, in: Circle())
-              .overlay(Circle().strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
+              .background { zoomShell }
           }
           .buttonStyle(.plain)
           .accessibilityLabel(Text("eg.demo3d.expandZoom"))
-          .transition(.scale.combined(with: .opacity))
+          .transition(.opacity)
         } else {
-          zoomBar.transition(.move(edge: .trailing).combined(with: .opacity))
+          zoomBar.transition(.opacity)
         }
       }
+    }
+
+    /// Vỏ kính chung của thanh zoom và nút thu gọn: hai trạng thái cùng một
+    /// hình (matchedGeometryEffect), nên thanh co lại thành nút tròn liền mạch.
+    private var zoomShell: some View {
+      RoundedRectangle(cornerRadius: 22, style: .continuous)
+        .fill(.ultraThinMaterial)
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
+        .matchedGeometryEffect(id: "zoomShell", in: zoomMorph)
     }
 
     private var zoomBar: some View {
       VStack(spacing: DS.Spacing.sm) {
         Button {
-          withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { zoomCollapsed = true }
+          withAnimation(collapseAnimation) { zoomCollapsed = true }
         } label: {
           Image(systemName: "chevron.right")
             .font(.system(size: 12, weight: .bold))
@@ -318,8 +329,7 @@
       .foregroundStyle(DS.Color.foreground.swiftUI)
       .padding(.vertical, DS.Spacing.sm + 2)
       .padding(.horizontal, 6)
-      .background(.ultraThinMaterial, in: Capsule())
-      .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
+      .background { zoomShell }
     }
 
     /// Chú thích cơ đang tô sáng (Kiệt 13/11: bắt buộc phải có, đặt dưới
@@ -329,13 +339,21 @@
 
     private func legendView(_ legend: [ExerciseDemo3D.LegendEntry]) -> some View {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        HStack {
-          Text("eg.demo3d.legend.title")
-            .font(DS.TextStyle.caption.weight(.semibold))
-            .textCase(.uppercase)
-            .tracking(0.8)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .accessibilityAddTraits(.isHeader)
+        HStack(spacing: DS.Spacing.sm) {
+          if legendCollapsed {
+            // Thu gọn (Kiệt 16/11: "nhìn hơi kì"): một hàng như hàng Chính của
+            // thẻ đầy đủ: nhãn vai trò + chip cơ chính, nút mở ở cuối.
+            collapsedPrimary(legend)
+              .transition(.opacity)
+          } else {
+            Text("eg.demo3d.legend.title")
+              .font(DS.TextStyle.caption.weight(.semibold))
+              .textCase(.uppercase)
+              .tracking(0.8)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .accessibilityAddTraits(.isHeader)
+              .transition(.opacity)
+          }
           Spacer(minLength: DS.Spacing.sm)
           if bodySkins.ready, !legendCollapsed, legend.contains(where: { !$0.roleKey.hasSuffix(".primary") }) {
             Button {
@@ -355,9 +373,10 @@
             .accessibilityAddTraits(hideSecondary ? [.isButton, .isSelected] : .isButton)
           }
           Button {
-            withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) { legendCollapsed.toggle() }
+            withAnimation(collapseAnimation) { legendCollapsed.toggle() }
           } label: {
-            Image(systemName: legendCollapsed ? "chevron.up" : "chevron.down")
+            Image(systemName: "chevron.down")
+              .rotationEffect(.degrees(legendCollapsed ? 180 : 0))
               .font(.system(size: 13, weight: .bold))
               .foregroundStyle(DS.Color.foreground.swiftUI)
               .frame(width: 30, height: 30)
@@ -368,21 +387,45 @@
           .buttonStyle(.plain)
           .accessibilityLabel(Text(legendCollapsed ? "eg.demo3d.expandLegend" : "eg.demo3d.collapseLegend"))
         }
-        if legendCollapsed {
-          // Thu gọn: chỉ còn tên cơ chính trên một dòng.
-          Text(legend.filter { $0.roleKey.hasSuffix(".primary") }
-            .map { String(localized: String.LocalizationValue($0.nameKey)) }.joined(separator: " · "))
-            .font(DS.TextStyle.footnote.weight(.semibold))
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .lineLimit(1)
-        } else {
-          legendRows(legend)
+        if !legendCollapsed {
+          VStack(alignment: .leading, spacing: DS.Spacing.sm) { legendRows(legend) }
+            .transition(.opacity.combined(with: .offset(y: 14)))
         }
       }
       .padding(.horizontal, DS.Spacing.md)
-      .padding(.vertical, legendCollapsed ? DS.Spacing.xs : DS.Spacing.md)
+      .padding(.vertical, legendCollapsed ? DS.Spacing.sm : DS.Spacing.md)
       .frame(maxWidth: .infinity, alignment: .leading)
       .todayCard()
+      .clipped()
+    }
+
+    /// Hàng thu gọn: nhãn "Chính" + chip cơ chính (chấm màu), một dòng, cắt
+    /// bằng dấu … khi quá dài.
+    private func collapsedPrimary(_ legend: [ExerciseDemo3D.LegendEntry]) -> some View {
+      let primary = legend.filter { $0.roleKey.hasSuffix(".primary") }
+      let tint = Color(hex: primary.first?.hex ?? "#E8552B")
+      return HStack(spacing: DS.Spacing.sm) {
+        Text(LocalizedStringKey(Self.roleOrder[0]))
+          .font(DS.TextStyle.caption.weight(.semibold))
+          .foregroundStyle(Color.white)
+          .padding(.horizontal, 10)
+          .padding(.vertical, 4)
+          .background { Capsule().fill(tint) }
+        HStack(spacing: 6) {
+          Circle().fill(tint).frame(width: 8, height: 8)
+            .shadow(color: tint.opacity(0.8), radius: 4)
+            .accessibilityHidden(true)
+          Text(primary.map { String(localized: String.LocalizationValue($0.nameKey)) }.joined(separator: " · "))
+            .font(DS.TextStyle.footnote.weight(.semibold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .lineLimit(1)
+            .truncationMode(.tail)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(DS.Color.foreground.swiftUI.opacity(0.06), in: Capsule())
+      }
+      .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder
