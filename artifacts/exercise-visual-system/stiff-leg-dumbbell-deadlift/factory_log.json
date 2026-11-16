@@ -169,5 +169,71 @@
     },
     "total_seconds": 82.8,
     "qa": "{\"PASS\": 17, \"FAIL\": 1}"
+  },
+  {
+    "version": 8,
+    "when": "2026-11-15T16:11:36",
+    "template": "hinge",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 20.9
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 76.6
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 18.7
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 109.0
+      },
+      "export": {
+        "ok": true,
+        "seconds": 157.6
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 24.0
+      }
+    },
+    "total_seconds": 419.9,
+    "qa": "{\"PASS\": 18}"
+  },
+  {
+    "version": 9,
+    "when": "2026-11-15T17:48:12",
+    "template": "hinge",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 10.9
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 15.9
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 6.4
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 63.9
+      },
+      "export": {
+        "ok": true,
+        "seconds": 37.2
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 5.9
+      }
+    },
+    "total_seconds": 142.0,
+    "qa": "{\"PASS\": 18}"
   }
 ]

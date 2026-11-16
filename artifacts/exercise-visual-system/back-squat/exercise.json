@@ -18,17 +18,18 @@
     }
   ],
   "primary_muscles": [
-    "quadriceps",
-    "gluteus_maximus"
+    "quadriceps"
   ],
   "secondary_muscles": [
+    "gluteus_maximus",
     "adductors",
-    "erector_spinae"
+    "calves"
   ],
   "stabilizing_muscles": [
+    "hamstrings",
+    "erector_spinae",
     "rectus_abdominis",
-    "obliques",
-    "hamstrings"
+    "obliques"
   ],
   "master_character_id": "master_character_003",
   "motion_source_id": "motionlab_squat_v1",
@@ -85,6 +86,11 @@
       "what": "reference measurements 2026-11-14 (knee/hip angles, tempo) - evaluation only, not approval",
       "source": "YMove Barbell Back Squat video, measured with MediaPipe Pose Landmarker heavy; see back-squat/reference_measurements.json",
       "license": "YMove royalty-free commercial use, credit required (Exercise video by Your Move, ymove.app); measurements only, no footage used"
+    },
+    {
+      "what": "muscle roles (target -> primary, synergists -> secondary, stabilizers -> stabilizing)",
+      "source": "ExRx https://exrx.net/WeightExercises/Quadriceps/BBSquat",
+      "license": "facts"
     }
   ],
   "exercise_phases": [
@@ -281,7 +287,7 @@
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Quadriceps and gluteus maximus are the prime movers of the squat; adductors and erector spinae assist (Schoenfeld 2010).",
+  "muscle_roles_note": "Target quadriceps; synergists gluteus maximus, adductor magnus, soleus; hamstrings and gastrocnemius are dynamic stabilizers; erector spinae stabilizes; abdominals are antagonist stabilizers. Checked against ExRx 15/11 (Kiệt: \"nhóm cơ hoạt động đã chính xác chưa\").",
   "agent_review": {
     "date": "2026-11-14",
     "by": "agent (not an expert review)",

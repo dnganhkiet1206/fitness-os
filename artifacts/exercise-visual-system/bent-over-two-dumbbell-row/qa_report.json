@@ -6,12 +6,11 @@
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 16,
-      "FAIL": 1
+      "PASS": 17
     },
-    "technically_validated": false,
+    "technically_validated": true,
     "states": {
-      "technically_validated": false,
+      "technically_validated": true,
       "biomechanically_reviewed": false,
       "human_approved": false,
       "production_approved": false
@@ -33,11 +32,11 @@
       "stage": "B",
       "title": "No joint moves faster than a human joint plausibly does",
       "status": "PASS",
-      "measured": 0.772,
+      "measured": 0.729,
       "limit": 2.5,
       "where": {
-        "joint": "wrist_l",
-        "frame": 121
+        "joint": "knuckle_r",
+        "frame": 29
       },
       "detail": "m/s"
     },
@@ -46,10 +45,10 @@
       "stage": "B",
       "title": "No sudden bone rotation between frames",
       "status": "PASS",
-      "measured": 6.26,
+      "measured": 5.748,
       "limit": 12.0,
       "where": {
-        "bone": "lowerarm_l",
+        "bone": "lowerarm_r",
         "frame": 121
       },
       "detail": "deg per frame"
@@ -59,11 +58,11 @@
       "stage": "B",
       "title": "Hands stay on the implements in every frame",
       "status": "PASS",
-      "measured": 0.0,
+      "measured": 1e-05,
       "limit": 0.004,
       "where": {
-        "implement": "SOCKET_hand_r",
-        "frame": 112
+        "implement": "SOCKET_hand_l",
+        "frame": 176
       },
       "detail": "m wrist to grip socket"
     },
@@ -81,8 +80,8 @@
         "lift_m": 0.005
       },
       "where": {
-        "foot": "foot_l",
-        "frame": 2
+        "foot": null,
+        "frame": null
       },
       "detail": ""
     },
@@ -95,7 +94,7 @@
       "limit": 0.003,
       "where": {
         "joint": "elbow",
-        "frame": 110
+        "frame": 20
       },
       "detail": "m"
     },
@@ -104,11 +103,11 @@
       "stage": "C",
       "title": "Implements do not pass through the body",
       "status": "PASS",
-      "measured": 0.0,
+      "measured": 0.0024,
       "limit": 0.004,
       "where": {
-        "implement": null,
-        "frame": null
+        "implement": "Dumbbell_l",
+        "frame": 49
       },
       "detail": "m inside"
     },
@@ -117,11 +116,11 @@
       "stage": "C",
       "title": "Wrists stay near straight (forearm to hand)",
       "status": "PASS",
-      "measured": 11.438,
+      "measured": 14.06,
       "limit": 25.0,
       "where": {
         "side": "l",
-        "frame": 2
+        "frame": 0
       },
       "detail": "deg"
     },
@@ -130,10 +129,10 @@
       "stage": "C",
       "title": "Elbow flexion inside the soft-tissue limit",
       "status": "PASS",
-      "measured": 92.873,
+      "measured": 85.464,
       "limit": 145.0,
       "where": {
-        "side": "r",
+        "side": "l",
         "frame": 44
       },
       "detail": "deg"
@@ -156,10 +155,10 @@
       "stage": "C",
       "title": "Head stays near neutral (not dropped to the chest)",
       "status": "PASS",
-      "measured": -31.55,
+      "measured": -9.17,
       "limit": 30.0,
       "where": {
-        "frame": 2
+        "frame": 0
       },
       "detail": "deg, + = chin towards chest"
     },
@@ -170,14 +169,14 @@
       "status": "PASS",
       "measured": {
         "shift_frames": 0,
-        "correlation": 0.9997
+        "correlation": 0.9998
       },
       "limit": {
         "max_shift_frames": 1,
         "min_correlation": 0.9
       },
       "where": {
-        "joint": "knuckle_r"
+        "joint": "wrist_l"
       },
       "detail": "best alignment of the farthest-travelling joint with the progress rebuilt from tempo.json"
     },
@@ -198,11 +197,11 @@
       "id": "skin_stretch",
       "stage": "C",
       "title": "Skin stretch stays within limits",
-      "status": "FAIL",
-      "measured": 2.977,
+      "status": "PASS",
+      "measured": 2.294,
       "limit": 2.6,
       "where": {
-        "frame": 99
+        "frame": 49
       },
       "detail": "p99.9 edge stretch"
     },
@@ -211,7 +210,7 @@
       "stage": "D",
       "title": "row: torso_lean_min_deg inside the family bounds",
       "status": "PASS",
-      "measured": 78.24,
+      "measured": 54.505,
       "limit": [
         30,
         null
@@ -224,7 +223,7 @@
       "stage": "D",
       "title": "row: elbow_min_deg inside the family bounds",
       "status": "PASS",
-      "measured": 87.127,
+      "measured": 94.536,
       "limit": [
         null,
         100
@@ -237,7 +236,7 @@
       "stage": "D",
       "title": "row: elbow_max_deg inside the family bounds",
       "status": "PASS",
-      "measured": 173.887,
+      "measured": 171.868,
       "limit": [
         150,
         null

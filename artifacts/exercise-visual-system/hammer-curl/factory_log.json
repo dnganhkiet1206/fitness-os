@@ -61,5 +61,71 @@
     },
     "total_seconds": 35.4,
     "qa": "{\"PASS\": 18}"
+  },
+  {
+    "version": 4,
+    "when": "2026-11-15T16:56:37",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 26.5
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 66.6
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 39.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 116.3
+      },
+      "export": {
+        "ok": true,
+        "seconds": 271.6
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 92.3
+      }
+    },
+    "total_seconds": 628.8,
+    "qa": "{\"PASS\": 19}"
+  },
+  {
+    "version": 5,
+    "when": "2026-11-15T17:54:22",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 10.5
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 10.0
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 6.7
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 64.8
+      },
+      "export": {
+        "ok": true,
+        "seconds": 37.4
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 8.1
+      }
+    },
+    "total_seconds": 139.1,
+    "qa": "{\"PASS\": 19}"
   }
 ]

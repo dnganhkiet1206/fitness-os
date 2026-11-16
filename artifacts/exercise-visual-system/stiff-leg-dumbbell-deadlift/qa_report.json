@@ -6,12 +6,11 @@
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 17,
-      "FAIL": 1
+      "PASS": 18
     },
-    "technically_validated": false,
+    "technically_validated": true,
     "states": {
-      "technically_validated": false,
+      "technically_validated": true,
       "biomechanically_reviewed": false,
       "human_approved": false,
       "production_approved": false
@@ -198,8 +197,8 @@
       "id": "skin_stretch",
       "stage": "C",
       "title": "Skin stretch stays within limits",
-      "status": "FAIL",
-      "measured": 2.795,
+      "status": "PASS",
+      "measured": 2.294,
       "limit": 2.6,
       "where": {
         "frame": 58

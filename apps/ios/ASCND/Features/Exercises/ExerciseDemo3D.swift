@@ -70,7 +70,7 @@
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.secondary"),
       ],
-      cameraPosition: [1.6631, 1.7949, 1.7473], cameraTarget: [-0.0249, 0.926, 0.0593],
+      cameraPosition: [1.628, 1.7949, 1.7825], cameraTarget: [-0.0457, 0.9334, 0.1088],
       focusTexturePrefix: "dumbbell_curl_focus")
 
     /// Motion Lab (14/11): tạo từ template họ "squat" (`motionlab/families/squat.py`).
@@ -79,11 +79,11 @@
       durationS: 9.3,
       legend: [
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.quadriceps", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.adductors", roleKey: "eg.demo3d.legend.secondary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.calves", roleKey: "eg.demo3d.legend.secondary"),
       ],
-      cameraPosition: [2.8529, 2.2835, 2.7084], cameraTarget: [0.1056, 0.8694, -0.039],
+      cameraPosition: [2.8566, 2.297, 2.7079], cameraTarget: [0.1091, 0.8827, -0.0397],
       focusTexturePrefix: "back_squat_focus")
 
     /// Motion Lab (14/11, P1): họ "curl", tay cầm trung tính.
@@ -92,9 +92,9 @@
       durationS: 9.8,
       legend: [
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
       ],
-      cameraPosition: [1.6303, 1.7949, 1.7803], cameraTarget: [-0.0105, 0.9503, 0.1396],
+      cameraPosition: [1.6303, 1.7949, 1.7803], cameraTarget: [-0.0145, 0.9483, 0.1356],
       focusTexturePrefix: "hammer_curl_focus")
 
     /// Motion Lab (14/11, P1): họ "raise_lateral" (`motionlab/families/raise_lateral.py`).
@@ -105,8 +105,9 @@
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidLateral", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.serratusAnterior", roleKey: "eg.demo3d.legend.secondary"),
       ],
-      cameraPosition: [2.4272, 2.1371, 2.4476], cameraTarget: [0.0779, 0.9279, 0.0983],
+      cameraPosition: [2.4272, 2.1371, 2.4476], cameraTarget: [0.0783, 0.9281, 0.0987],
       focusTexturePrefix: "side_lateral_raise_focus")
 
     /// Motion Lab (14/11, P1): họ "hinge" (`motionlab/families/hinge.py`).
@@ -116,10 +117,10 @@
       legend: [
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.hamstrings", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.secondary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.adductors", roleKey: "eg.demo3d.legend.secondary"),
       ],
       // Góc mặc định từ phía sau (14/11): cơ chính ở mặt sau thân.
-      cameraPosition: [1.3624, 1.7978, -1.8002], cameraTarget: [-0.0119, 0.9257, 0.1624],
+      cameraPosition: [1.3615, 1.7978, -1.8009], cameraTarget: [-0.013, 0.9256, 0.162],
       focusTexturePrefix: "stiff_leg_dumbbell_deadlift_focus")
 
     /// Motion Lab (14/11, P1 lô 2): họ "row" (`motionlab/families/row.py`).
@@ -128,12 +129,13 @@
       durationS: 8.2,
       legend: [
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.latissimusDorsi", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.primary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidPosterior", roleKey: "eg.demo3d.legend.secondary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.rotatorCuffPosterior", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.secondary"),
       ],
       // Góc mặc định từ phía sau (14/11): cơ lưng xô ở mặt sau thân.
-      cameraPosition: [1.0387, 1.2962, -1.4546], cameraTarget: [-0.0576, 0.6005, 0.1111],
+      cameraPosition: [1.0558, 1.4568, -1.514], cameraTarget: [-0.0757, 0.7388, 0.1019],
       focusTexturePrefix: "bent_over_two_dumbbell_row_focus")
 
     /// Motion Lab (14/11, P1 lô 2): họ "press_vertical", ngồi ghế tựa, bả vai theo tay.
@@ -142,9 +144,10 @@
       durationS: 8.8,
       legend: [
         LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidLateral", roleKey: "eg.demo3d.legend.primary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidLateral", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.tricepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
         LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
+        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.serratusAnterior", roleKey: "eg.demo3d.legend.secondary"),
       ],
       cameraPosition: [1.7982, 1.6958, 1.9101], cameraTarget: [0.0105, 0.7756, 0.1224],
       focusTexturePrefix: "dumbbell_shoulder_press_focus")
@@ -176,6 +179,7 @@
         "Tờ soi xoay vòng 8 góc × 3 khung (đầu, giữa, cuối pha)",
         "Tờ soi tầm mắt người đứng nhìn (1,6 m) 5 góc: \(technique)",
         "Mở trong trình xem 3D của app (simulator iPhone 17), chú thích cơ đúng",
+        "Render lại 15/11 trên nhân vật 3.2 (xương phụ hông, gối, khuỷu, vai, ngón cái, cơ thang; háng làm mượt)",
       ] + extra
     }
 
@@ -191,20 +195,20 @@
       CatalogEntry(
         title: "Barbell Back Squat", key: "back squat", family: "squat",
         review: Review(
-          date: "14/11",
-          checked: fullCheck(qa: "16/17", technique: "đáy ngang song song, thân đổ ~40°, thanh trên giữa bàn chân, gối theo mũi chân, gót chạm sàn"),
+          date: "15/11",
+          checked: fullCheck(qa: "18/18", technique: "đáy ngang song song, thân đổ ~40°, thanh trên giữa bàn chân, gối theo mũi chân, gót chạm sàn"),
           remaining: [groinStretch + ": 3,28 / ngưỡng 2,6"])),
       CatalogEntry(
         title: "Dumbbell Biceps Curl", key: "dumbbell curl", family: "curl",
         review: Review(
-          date: "14/11",
-          checked: fullCheck(qa: "18/18", technique: "cánh tay trên sát thân, khuỷu gập ~138°, lòng bàn tay ngửa, thân đứng yên"),
+          date: "15/11",
+          checked: fullCheck(qa: "19/19", technique: "cánh tay trên sát thân, khuỷu gập ~138°, lòng bàn tay ngửa, thân đứng yên"),
           remaining: [])),
       CatalogEntry(
         title: "Hammer Curl", key: "hammer curl", family: "curl",
         review: Review(
-          date: "14/11",
-          checked: fullCheck(qa: "18/18", technique: "tay cầm trung tính (ngón cái hướng lên) suốt đường đi, khuỷu sát thân"),
+          date: "15/11",
+          checked: fullCheck(qa: "19/19", technique: "tay cầm trung tính (ngón cái hướng lên) suốt đường đi, khuỷu sát thân"),
           remaining: [])),
       CatalogEntry(
         title: "Side Lateral Raise", key: "side lateral raise", family: "raise_lateral", review: nil,
@@ -212,12 +216,12 @@
       CatalogEntry(
         title: "Stiff-Legged Dumbbell Deadlift", key: "stiff-legged dumbbell deadlift", family: "hinge",
         review: Review(
-          date: "14/11",
-          checked: fullCheck(qa: "16/17", technique: "gập hông, lưng thẳng, gối mềm, hông lùi ra sau, tạ sát chân xuống giữa cẳng chân, trọng tâm trên bàn chân"),
+          date: "15/11",
+          checked: fullCheck(qa: "18/18", technique: "gập hông, lưng thẳng, gối mềm, hông lùi ra sau, tạ sát chân xuống giữa cẳng chân, trọng tâm trên bàn chân"),
           remaining: [groinStretch + ": 2,80 / ngưỡng 2,6"])),
       CatalogEntry(
         title: "Bent Over Two-Dumbbell Row", key: "bent over two-dumbbell row", family: "row", review: nil,
-        note: "Kiệt 14/11: sai tư thế. Đã sửa: gối gập 31° (cẳng chân thẳng đứng, hông đẩy ra sau), lưng thẳng hơi ưỡn ngực, đầu ngẩng thẳng hàng cột sống, bả vai kéo về sau ở đỉnh. Chờ Kiệt xem lại; còn giãn da háng 2,98"),
+        note: "Kiệt 14–15/11: sai tư thế. Làm lại theo 2 video YouTube người thật + Garage Gym Reviews, PowerliftingTechnique, Muscle & Strength: thân gập ~52° và giữ nguyên, gối hơi gập, lưng thẳng, cổ trung tính; khuỷu sát thân kéo về phía hông, tạ lên ngang eo. QA 17/17. Chờ Kiệt xem lại"),
       CatalogEntry(
         title: "Dumbbell Shoulder Press", key: "dumbbell shoulder press", family: "press_vertical (ngồi)",
         review: Review(

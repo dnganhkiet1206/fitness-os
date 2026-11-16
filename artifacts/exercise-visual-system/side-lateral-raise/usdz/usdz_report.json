@@ -3,14 +3,14 @@
   "exercise_id": "side_lateral_raise",
   "master_character_id": "master_character_003",
   "usdz": "side_lateral_raise_animation.usdz",
-  "size_bytes": 3975049,
+  "size_bytes": 4415211,
   "zip_members": [
     "side_lateral_raise_animation.usdc",
-    "textures/_usdz_apparel_emission.png",
-    "textures/_usdz_apparel_albedo.png",
     "textures/_usdz_body_emission.png",
     "textures/_usdz_body_normal.png",
-    "textures/_usdz_body_albedo.png"
+    "textures/_usdz_body_albedo.png",
+    "textures/_usdz_apparel_emission.png",
+    "textures/_usdz_apparel_albedo.png"
   ],
   "default_camera": {
     "preset_id": "three_quarter",
@@ -20,22 +20,22 @@
       2.4476
     ],
     "target_m": [
-      0.0779,
-      0.9279,
-      0.0983
+      0.0783,
+      0.9281,
+      0.0987
     ],
-    "distance_m": 3.5355,
+    "distance_m": 3.5349,
     "vertical_fov_deg": 41.26,
     "aspect": 0.5625
   },
   "expectations": {
-    "deform_bones": 63,
+    "deform_bones": 75,
     "animation_duration_s": 9.0417,
     "animation_frames": 218
   },
   "reimport": {
     "armatures": 1,
-    "bones": 63,
+    "bones": 75,
     "mesh_objects": 4,
     "skinned_mesh_objects": 2,
     "mesh_vertices": 13300,

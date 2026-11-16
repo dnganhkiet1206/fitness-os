@@ -1,12 +1,12 @@
 {
   "tool": "pipeline/validate_motion.py",
-  "date": "2026-11-14",
+  "date": "2026-11-15",
   "exercise_id": "hammer_curl",
   "frames": 237,
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 18
+      "PASS": 19
     },
     "technically_validated": true,
     "states": {
@@ -181,11 +181,24 @@
       "detail": "best alignment of the farthest-travelling joint with the progress rebuilt from tempo.json"
     },
     {
+      "id": "implement_clash",
+      "stage": "C",
+      "title": "Implements do not pass through each other",
+      "status": "PASS",
+      "measured": 0,
+      "limit": 0,
+      "where": {
+        "pair": null,
+        "frame": null
+      },
+      "detail": "overlapping triangle pairs"
+    },
+    {
       "id": "skin_stretch",
       "stage": "C",
       "title": "Skin stretch stays within limits",
       "status": "PASS",
-      "measured": 2.313,
+      "measured": 2.205,
       "limit": 2.6,
       "where": {
         "frame": 59
