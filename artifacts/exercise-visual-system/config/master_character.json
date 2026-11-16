@@ -193,7 +193,8 @@
           "radius_m": 0.14,
           "share": 0.6,
           "influence": 0.5,
-          "why": "The glenoid is on the shoulder blade and the deltoid arises from the scapular spine, acromion and clavicle, so the shoulder fold rides on the scapula (upward rotation) and turns half as far as the arm."
+          "why": "The glenoid is on the shoulder blade and the deltoid arises from the scapular spine, acromion and clavicle, so the shoulder fold rides on the scapula (upward rotation) and turns half as far as the arm.",
+          "space": "WORLD"
         },
         {
           "name": "thumb_fold_{s}",

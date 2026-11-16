@@ -154,9 +154,9 @@ def main() -> None:
                     # Plates sit on their own bar by design (15/11: the squat
                     # failed on Barbell|Barbell_Plate_L1); only separate
                     # implements may not overlap.
-                    if "_Plate" in trees[ia][0] + trees[ib][0] and \
-                            trees[ia][0].split("_Plate")[0] == trees[ib][0].split("_Plate")[0]:
-                        continue
+                    a_name, b_name = trees[ia][0], trees[ib][0]
+                    if b_name.startswith(a_name + "_Plate") or a_name.startswith(b_name + "_Plate"):
+                        continue  # a bar and its own plate (plate against plate is still checked)
                     key = f"{trees[ia][0]}|{trees[ib][0]}"
                     overlaps.setdefault(key, []).append(len(trees[ia][1].overlap(trees[ib][1])))
     tempo_file = path / "tempo.json"

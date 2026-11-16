@@ -179,6 +179,7 @@
         "Tờ soi xoay vòng 8 góc × 3 khung (đầu, giữa, cuối pha)",
         "Tờ soi tầm mắt người đứng nhìn (1,6 m) 5 góc: \(technique)",
         "Mở trong trình xem 3D của app (simulator iPhone 17), chú thích cơ đúng",
+        "Render lại 15/11 trên nhân vật 3.2 (xương phụ hông, gối, khuỷu, vai, ngón cái, cơ thang; háng làm mượt)",
       ] + extra
     }
 
@@ -194,20 +195,20 @@
       CatalogEntry(
         title: "Barbell Back Squat", key: "back squat", family: "squat",
         review: Review(
-          date: "14/11",
-          checked: fullCheck(qa: "16/17", technique: "đáy ngang song song, thân đổ ~40°, thanh trên giữa bàn chân, gối theo mũi chân, gót chạm sàn"),
+          date: "15/11",
+          checked: fullCheck(qa: "18/18", technique: "đáy ngang song song, thân đổ ~40°, thanh trên giữa bàn chân, gối theo mũi chân, gót chạm sàn"),
           remaining: [groinStretch + ": 3,28 / ngưỡng 2,6"])),
       CatalogEntry(
         title: "Dumbbell Biceps Curl", key: "dumbbell curl", family: "curl",
         review: Review(
-          date: "14/11",
-          checked: fullCheck(qa: "18/18", technique: "cánh tay trên sát thân, khuỷu gập ~138°, lòng bàn tay ngửa, thân đứng yên"),
+          date: "15/11",
+          checked: fullCheck(qa: "19/19", technique: "cánh tay trên sát thân, khuỷu gập ~138°, lòng bàn tay ngửa, thân đứng yên"),
           remaining: [])),
       CatalogEntry(
         title: "Hammer Curl", key: "hammer curl", family: "curl",
         review: Review(
-          date: "14/11",
-          checked: fullCheck(qa: "18/18", technique: "tay cầm trung tính (ngón cái hướng lên) suốt đường đi, khuỷu sát thân"),
+          date: "15/11",
+          checked: fullCheck(qa: "19/19", technique: "tay cầm trung tính (ngón cái hướng lên) suốt đường đi, khuỷu sát thân"),
           remaining: [])),
       CatalogEntry(
         title: "Side Lateral Raise", key: "side lateral raise", family: "raise_lateral", review: nil,
@@ -215,8 +216,8 @@
       CatalogEntry(
         title: "Stiff-Legged Dumbbell Deadlift", key: "stiff-legged dumbbell deadlift", family: "hinge",
         review: Review(
-          date: "14/11",
-          checked: fullCheck(qa: "16/17", technique: "gập hông, lưng thẳng, gối mềm, hông lùi ra sau, tạ sát chân xuống giữa cẳng chân, trọng tâm trên bàn chân"),
+          date: "15/11",
+          checked: fullCheck(qa: "18/18", technique: "gập hông, lưng thẳng, gối mềm, hông lùi ra sau, tạ sát chân xuống giữa cẳng chân, trọng tâm trên bàn chân"),
           remaining: [groinStretch + ": 2,80 / ngưỡng 2,6"])),
       CatalogEntry(
         title: "Bent Over Two-Dumbbell Row", key: "bent over two-dumbbell row", family: "row", review: nil,
