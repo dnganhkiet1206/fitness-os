@@ -218,11 +218,8 @@
         title: "Barbell Bench Press", key: "bench press", family: "press_horizontal (script riêng)", review: nil,
         note: "Chưa kiểm lại: bản trong app là bản cũ; dựng lại trên nhân vật 003 đang chờ chọn phương án đáy A/B"),
       CatalogEntry(
-        title: "Barbell Back Squat", key: "back squat", family: "squat",
-        review: Review(
-          date: "16/11",
-          checked: fullCheck(qa: "18/18", technique: "đáy ngang song song, thân đổ ~40°, thanh trên giữa bàn chân, gối theo mũi chân, gót chạm sàn"),
-          remaining: [])),
+        title: "Barbell Back Squat", key: "back squat", family: "squat", review: nil,
+        note: "Kiệt 16/11: vai/ngực/cơ thang phồng, tư thế chưa đúng. Làm lại theo 2 video (PureGym, Dave Watkeys) + Catalyst Athletics, Squat University: tay nắm ngoài vai 1 nắm tay, kép bả vai, khuỷu chĩa xuống, đòn trên cơ thang; nhân vật thêm xương phụ chia góc xoay cánh tay. QA 18/18. Chờ Kiệt xem lại"),
       CatalogEntry(
         title: "Dumbbell Biceps Curl", key: "dumbbell curl", family: "curl",
         review: Review(

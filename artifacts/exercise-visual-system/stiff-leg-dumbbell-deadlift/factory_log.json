@@ -268,5 +268,71 @@
     },
     "total_seconds": 169.7,
     "qa": "{\"PASS\": 18}"
+  },
+  {
+    "version": 11,
+    "when": "2026-11-16T15:29:12",
+    "template": "hinge",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.3
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 7.7
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 28.3
+      },
+      "export": {
+        "ok": true,
+        "seconds": 53.4
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 4.1
+      }
+    },
+    "total_seconds": 99.8,
+    "qa": "{\"PASS\": 18}"
+  },
+  {
+    "version": 12,
+    "when": "2026-11-16T16:10:16",
+    "template": "hinge",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.4
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 8.2
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.1
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 26.8
+      },
+      "export": {
+        "ok": true,
+        "seconds": 52.2
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 3.5
+      }
+    },
+    "total_seconds": 97.1,
+    "qa": "{\"PASS\": 18}"
   }
 ]

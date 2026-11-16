@@ -2,7 +2,7 @@
   "pipeline_version": "0.1.0",
   "generator": "pipeline/generate_exercise.py",
   "template": "row",
-  "generated": "2026-11-15",
+  "generated": "2026-11-16",
   "exercise_id": "bent_over_two_dumbbell_row",
   "frame_rate": 24,
   "frame_end": 197,
@@ -439,7 +439,7 @@
         ],
         [
           0.1,
-          0.04180558603256941
+          0.04188994150608778
         ],
         [
           0.15000000000000002,

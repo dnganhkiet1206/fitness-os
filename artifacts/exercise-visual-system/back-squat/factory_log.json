@@ -313,5 +313,179 @@
     },
     "total_seconds": 2217.7,
     "qa": "{\"PASS\": 18}"
+  },
+  {
+    "version": 12,
+    "when": "2026-11-16T01:33:53",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 183.0
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 1387.4
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 293.7
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 169.8
+      }
+    },
+    "total_seconds": 2122.5,
+    "qa": "{\"PASS\": 17, \"FAIL\": 1}"
+  },
+  {
+    "version": 13,
+    "when": "2026-11-16T02:03:56",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 122.3
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 550.9
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 283.5
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 272.1
+      }
+    },
+    "total_seconds": 1293.9,
+    "qa": "{\"PASS\": 17, \"FAIL\": 1}"
+  },
+  {
+    "version": 14,
+    "when": "2026-11-16T02:30:47",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 104.2
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 366.4
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 17.6
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 93.9
+      },
+      "export": {
+        "ok": true,
+        "seconds": 892.8
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 19.6
+      }
+    },
+    "total_seconds": 1507.9,
+    "qa": "{\"PASS\": 18}"
+  },
+  {
+    "version": 15,
+    "when": "2026-11-16T15:19:17",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.6
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 9.3
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 26.6
+      },
+      "export": {
+        "ok": true,
+        "seconds": 53.3
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 3.7
+      }
+    },
+    "total_seconds": 99.6,
+    "qa": "{\"PASS\": 18}"
+  },
+  {
+    "version": 16,
+    "when": "2026-11-16T15:51:58",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.6
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 10.0
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 26.0
+      }
+    },
+    "total_seconds": 42.7,
+    "qa": "{\"PASS\": 18}"
+  },
+  {
+    "version": 17,
+    "when": "2026-11-16T16:00:49",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.3
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 9.2
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 26.7
+      },
+      "export": {
+        "ok": true,
+        "seconds": 64.3
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 3.9
+      }
+    },
+    "total_seconds": 110.7,
+    "qa": "{\"PASS\": 18}"
   }
 ]
