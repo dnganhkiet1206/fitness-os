@@ -280,5 +280,38 @@
     },
     "total_seconds": 112.6,
     "qa": "{\"PASS\": 17, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 11,
+    "when": "2026-11-15T23:38:42",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 48.7
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 216.5
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 81.8
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 151.8
+      },
+      "export": {
+        "ok": true,
+        "seconds": 1615.9
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 25.3
+      }
+    },
+    "total_seconds": 2217.7,
+    "qa": "{\"PASS\": 18}"
   }
 ]

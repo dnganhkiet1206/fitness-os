@@ -1,6 +1,6 @@
 {
   "tool": "pipeline/validate_motion.py",
-  "date": "2026-11-15",
+  "date": "2026-11-16",
   "exercise_id": "stiff_leg_dumbbell_deadlift",
   "frames": 234,
   "fps": 24,
@@ -129,10 +129,10 @@
       "stage": "C",
       "title": "Elbow flexion inside the soft-tissue limit",
       "status": "PASS",
-      "measured": 8.006,
+      "measured": 8.007,
       "limit": 145.0,
       "where": {
-        "side": "l",
+        "side": "r",
         "frame": 95
       },
       "detail": "deg"

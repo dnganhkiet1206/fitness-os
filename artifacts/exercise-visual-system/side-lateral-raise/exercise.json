@@ -30,10 +30,14 @@
   ],
   "secondary_muscles": [
     "deltoid_anterior",
-    "trapezius",
+    "trapezius_middle",
+    "trapezius_lower",
     "serratus_anterior"
   ],
   "stabilizing_muscles": [
+    "trapezius_upper",
+    "rotator_cuff_posterior",
+    "erector_spinae",
     "forearm_muscles"
   ],
   "master_character_id": "master_character_003",
@@ -190,11 +194,12 @@
   "brand_profile_id": "placeholder",
   "highlight_roles": [
     "primary",
-    "secondary"
+    "secondary",
+    "stabilizing"
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Target lateral deltoid; synergists anterior deltoid, middle/lower trapezius, serratus anterior (supraspinatus is hidden under the trapezius); upper trapezius and wrist extensors stabilize. Checked against ExRx 15/11 (Kiệt: \"nhóm cơ hoạt động đã chính xác chưa\").",
+  "muscle_roles_note": "Three levels (Kiệt 15/11): primary = carries the load and produces the main force; secondary = directly assists the movement; stabilizing = holds posture and keeps joints stable. Abduction is the lateral deltoid's (ExRx target); anterior deltoid, middle/lower trapezius and serratus (upward rotation) assist. Upper trapezius and levator stabilise the girdle, cuff the humeral head, erector spinae the slight forward lean, wrist extensors the grip.",
   "reviewer": null,
   "approval_date": null,
   "production": {

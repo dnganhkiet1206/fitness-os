@@ -1,17 +1,16 @@
 {
   "tool": "pipeline/validate_motion.py",
-  "date": "2026-11-15",
+  "date": "2026-11-16",
   "exercise_id": "dumbbell_shoulder_press",
   "frames": 213,
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 18,
-      "FAIL": 1
+      "PASS": 19
     },
-    "technically_validated": false,
+    "technically_validated": true,
     "states": {
-      "technically_validated": false,
+      "technically_validated": true,
       "biomechanically_reviewed": false,
       "human_approved": false,
       "production_approved": false
@@ -198,8 +197,8 @@
       "id": "skin_stretch",
       "stage": "C",
       "title": "Skin stretch stays within limits",
-      "status": "FAIL",
-      "measured": 2.752,
+      "status": "PASS",
+      "measured": 2.547,
       "limit": 2.6,
       "where": {
         "frame": 53

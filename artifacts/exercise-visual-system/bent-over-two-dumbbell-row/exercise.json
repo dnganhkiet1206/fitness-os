@@ -27,22 +27,21 @@
   ],
   "primary_muscles": [
     "latissimus_dorsi",
-    "trapezius"
+    "trapezius_middle",
+    "trapezius_lower",
+    "rhomboids"
   ],
   "secondary_muscles": [
     "deltoid_posterior",
+    "biceps_brachii",
     "rotator_cuff_posterior",
     "forearm_muscles"
   ],
   "stabilizing_muscles": [
-    "biceps_brachii",
     "erector_spinae",
+    "trapezius_upper",
     "hamstrings",
-    "gluteus_maximus",
-    "adductors",
-    "quadriceps",
-    "rectus_abdominis",
-    "obliques"
+    "gluteus_maximus"
   ],
   "master_character_id": "master_character_003",
   "motion_source_id": "motionlab_row_v1",
@@ -206,11 +205,12 @@
   "brand_profile_id": "placeholder",
   "highlight_roles": [
     "primary",
-    "secondary"
+    "secondary",
+    "stabilizing"
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Target Back General (latissimus dorsi, middle/lower trapezius and the rhomboids under it); synergists posterior deltoid, infraspinatus/teres minor, brachioradialis (brachialis and teres major are not separate atlas groups; the sternal pectoral is left out because the atlas has one pectoral group); biceps is a dynamic stabilizer; erector spinae, hamstrings, gluteus maximus, adductor magnus, quadriceps stabilize; abdominals are antagonist stabilizers. Checked against ExRx 15/11 (Kiệt: \"nhóm cơ hoạt động đã chính xác chưa\").",
+  "muscle_roles_note": "Three levels (Kiệt 15/11): primary = carries the load and produces the main force; secondary = directly assists the movement; stabilizing = holds posture and keeps joints stable. Shoulder extension (lats) and scapular retraction (middle/lower trapezius, rhomboids) move the load: ExRx target Back, General. Posterior deltoid, infraspinatus/teres minor, biceps and brachioradialis assist the pull. Erector spinae, hamstrings and gluteus maximus hold the hinge; the upper trapezius holds the shoulder girdle against the hanging weight.",
   "production": {
     "catalogue_name": "Bent Over Two-Dumbbell Row",
     "scaffolded_from": "stiff-leg-dumbbell-deadlift",
