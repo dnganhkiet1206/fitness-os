@@ -23,7 +23,7 @@ import SwiftUI
 /// 15/11 (Kiệt): hàng là thẻ A (`ExerciseCard`: poster 3D khi có, nhóm cơ chính +
 /// dụng cụ; không còn thẻ loại động tác); đang tìm thì một danh sách phẳng xếp
 /// theo `ExerciseSearch.rank` (viết tắt, không dấu, lỗi gõ nhẹ, bài phổ biến
-/// trước); chưa tìm thì mục "Phổ biến" đứng đầu; form thêm bài có hộp "Có phải
+/// trước); chưa tìm thì bài phổ biến đứng đầu mỗi nhóm (không nhãn riêng); form thêm bài có hộp "Có phải
 /// bạn muốn…?" (`ExerciseDuplicates`).
 struct ExercisesView: View {
   let library: ExerciseLibrary
@@ -60,8 +60,14 @@ struct ExercisesView: View {
   }
 
   private var lang: MuscleGroup.Language { MuscleGroup.Language(locale: locale) }
+  /// Nhóm theo thứ tự ô nhóm cơ (Ngực, Lưng, Chân, Vai…) thay vì ABC của server
+  /// ("Bụng" từng đứng đầu); nhóm không nhận ra xuống cuối.
   private var sections: [ExerciseCatalog.Section] {
-    ExerciseCatalog.sections(library.exercises, query: debounced, muscle: group, lang: lang)
+    let raw = ExerciseCatalog.sections(library.exercises, query: debounced, muscle: group, lang: lang)
+    func rank(_ s: ExerciseCatalog.Section) -> Int {
+      s.exercises.first?.muscles.first.flatMap { MuscleGroup.tileOrder.firstIndex(of: $0) } ?? Int.max
+    }
+    return raw.enumerated().sorted { (rank($0.element), $0.offset) < (rank($1.element), $1.offset) }.map(\.element)
   }
   private var inGroup: [LibraryExercise] {
     library.exercises.filter { e in group.map { e.muscles.contains($0) } ?? true }
@@ -70,8 +76,6 @@ struct ExercisesView: View {
   /// (`ExerciseSearch.rank`, 15/11) — gộp theo nhóm sẽ đẩy bài khớp nhất xuống
   /// dưới một nhóm khác.
   private var results: [LibraryExercise] { ExerciseSearch.rank(inGroup, query: debounced) }
-  /// Chưa tìm: mục "Phổ biến" đứng đầu (bài nhiều người tập), rồi tới các nhóm.
-  private var popular: [LibraryExercise] { ExerciseSearch.popular(inGroup, limit: 8) }
 
   var body: some View {
     content
@@ -111,7 +115,7 @@ struct ExercisesView: View {
           if let onPick {
             onPick(picked)
           } else {
-            search = picked.displayName
+            search = picked.primaryName
           }
         }
       }
@@ -229,17 +233,10 @@ struct ExercisesView: View {
         message: debounced.isEmpty && group == nil ? String(localized: "ex.empty.hint") : nil)
     } else {
       List {
-        let top = popular
-        if !top.isEmpty {
-          Section {
-            ForEach(top) { e in row(e) }
-          } header: {
-            Text("ex.popular")
-          }
-        }
         ForEach(sections) { section in
           Section {
-            ForEach(section.exercises) { e in
+            // Bài phổ biến đứng đầu mỗi nhóm, không nhãn riêng (Kiệt 15/11).
+            ForEach(ExerciseSearch.popularFirst(section.exercises)) { e in
               row(e)
             }
           } header: {
@@ -436,7 +433,7 @@ struct AddExerciseSheet: View {
         Button {
           useExisting(first.exercise)
         } label: {
-          Text(String(localized: "ex.dup.use \(first.exercise.displayName)"))
+          Text(String(localized: "ex.dup.use \(first.exercise.primaryName)"))
             .font(DS.TextStyle.footnote.weight(.bold))
             .foregroundStyle(.white)
             .lineLimit(1)

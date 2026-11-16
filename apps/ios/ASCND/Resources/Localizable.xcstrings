@@ -76463,29 +76463,6 @@
         }
       }
     },
-    "ex.popular": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Popular"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Populares"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Phổ biến"
-          }
-        }
-      }
-    },
     "ex.card.has3d": {
       "extractionState": "manual",
       "localizations": {

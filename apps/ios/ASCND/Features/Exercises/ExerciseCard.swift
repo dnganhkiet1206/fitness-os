@@ -26,14 +26,14 @@ struct ExerciseCard<Accessory: View>: View {
         Self.thumbnail(poster)
       }
       VStack(alignment: .leading, spacing: 3) {
-        Text(verbatim: exercise.displayName)
+        // Tên tiếng Anh là tên chính; tên theo ngôn ngữ app nhỏ bên dưới (Kiệt 15/11).
+        Text(verbatim: exercise.primaryName)
           .font(DS.TextStyle.body.weight(.semibold))
           .foregroundStyle(DS.Color.foreground.swiftUI)
           .lineLimit(2)
           .multilineTextAlignment(.leading)
-        // Tên gốc tiếng Anh nhỏ bên dưới khi tên hiện là bản dịch (dễ đối chiếu video).
-        if exercise.displayName != exercise.name {
-          Text(verbatim: exercise.name)
+        if let local = exercise.localSubtitle {
+          Text(verbatim: local)
             .font(DS.TextStyle.caption)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             .lineLimit(1)

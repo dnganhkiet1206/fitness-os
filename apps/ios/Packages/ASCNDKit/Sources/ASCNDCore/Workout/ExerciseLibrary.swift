@@ -49,6 +49,19 @@ public struct LibraryExercise: Sendable, Hashable, Codable, Identifiable {
   /// Tên để hiện theo ngôn ngữ app; không có bản dịch thì tên gốc.
   public var displayName: String { localNames?[FoodNames.lang] ?? name }
 
+  /// Tên chính trên thẻ bài (Kiệt 15/11): tên tiếng Anh — hầu như không ai gọi
+  /// "Bench Press" hay "Overhead Press" bằng tiếng mẹ đẻ.
+  public var primaryName: String {
+    let en = localNames?["en"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return en.isEmpty ? name : en
+  }
+
+  /// Tên theo ngôn ngữ app, hiện nhỏ dưới tên chính; `nil` khi trùng tên chính.
+  public var localSubtitle: String? {
+    let local = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+    return local.isEmpty || local.lowercased() == primaryName.lowercased() ? nil : local
+  }
+
   /// Bài mẫu của app, không phải của người dùng.
   public var isBuiltIn: Bool { userId == nil }
   /// Các khoá hình cơ của bài (`muscleArtKeysFor`).

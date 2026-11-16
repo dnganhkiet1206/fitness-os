@@ -231,3 +231,30 @@ struct ExerciseDuplicatesTests {
     #expect(m.first?.exercise.name == "Dumbbell Bench Press")
   }
 }
+
+struct ExerciseNameDisplayTests {
+  /// Tên tiếng Anh là tên chính, tên theo ngôn ngữ app là dòng phụ (Kiệt 15/11).
+  @Test func englishFirst() {
+    let ohp = LibraryExercise(
+      id: "1", userId: nil, name: "Overhead Press", muscleGroup: "shoulders", equipment: "barbell", kind: nil,
+      localNames: ["vi": "Đẩy vai qua đầu", "en": "Overhead Press", "es": "Press militar"])
+    #expect(ohp.primaryName == "Overhead Press")
+    let bench = LibraryExercise(
+      id: "2", userId: nil, name: "Bench Press", muscleGroup: "chest", equipment: nil, kind: nil,
+      localNames: ["vi": "Bench Press", "en": "Bench Press"])
+    #expect(bench.localSubtitle == nil)
+    let own = LibraryExercise(id: "3", userId: "u", name: "Đẩy ngực máy", muscleGroup: "chest", equipment: nil, kind: nil)
+    #expect(own.primaryName == "Đẩy ngực máy" && own.localSubtitle == nil)
+  }
+}
+
+struct ExercisePopularFirstTests {
+  @Test func popularFirstKeepsRest() {
+    let out = ExerciseSearch.popularFirst(RealLibrary.all)
+    #expect(out.count == RealLibrary.all.count)
+    #expect(Array(out.prefix(3)).map(\.name) == ["Bench Press", "Barbell Squat", "Deadlift"])
+    // Phần không phổ biến giữ nguyên thứ tự thư viện.
+    let rest = out.filter { ExerciseSearch.popularity(of: $0) == 0 }.map(\.id)
+    #expect(rest == RealLibrary.all.filter { ExerciseSearch.popularity(of: $0) == 0 }.map(\.id))
+  }
+}

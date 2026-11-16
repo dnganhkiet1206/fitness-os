@@ -329,7 +329,17 @@ public enum ExerciseSearch {
       .map(\.e)
   }
 
-  /// Mục "Phổ biến" khi chưa gõ: bài phổ biến có trong danh sách, theo độ phổ
+  /// Chưa gõ: bài phổ biến lên đầu, phần còn lại giữ thứ tự thư viện (sắp xếp
+  /// ổn định). Không có mục / nhãn "Phổ biến" riêng — Kiệt 15/11: nhãn trên đầu
+  /// khối thẻ làm như bài nào cũng phổ biến.
+  public static func popularFirst(_ list: [LibraryExercise]) -> [LibraryExercise] {
+    list.enumerated()
+      .map { (p: popularity(of: $0.element), i: $0.offset, e: $0.element) }
+      .sorted { $0.p != $1.p ? $0.p > $1.p : $0.i < $1.i }
+      .map(\.e)
+  }
+
+  /// Bài phổ biến nhất (gợi ý của màn ghi tay khi ô trống): bài phổ biến có trong danh sách, theo độ phổ
   /// biến (+ đã dùng nhiều), cùng mức giữ thứ tự thư viện; mỗi tên một lần.
   public static func popular(
     _ list: [LibraryExercise], limit: Int = 8, usage: [String: Int] = [:]

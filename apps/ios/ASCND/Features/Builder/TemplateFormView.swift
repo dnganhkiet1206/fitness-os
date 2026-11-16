@@ -116,25 +116,11 @@ struct TemplateFormView: View {
 
   private var pickStep: some View {
     let library = flow.library
-    let visible = TemplateDraft.visible(library?.exercises ?? [], group: group, search: search)
-    // Chưa gõ: "Phổ biến" đứng đầu (15/11, mock Kiệt duyệt), rồi cả thư viện.
-    let popular = search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-      ? ExerciseSearch.popular(visible, limit: 8) : []
+    let matched = TemplateDraft.visible(library?.exercises ?? [], group: group, search: search)
+    // Chưa gõ: bài phổ biến đứng đầu danh sách, không nhãn riêng (Kiệt 15/11).
+    let visible = search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      ? ExerciseSearch.popularFirst(matched) : matched
     return ScrollView {
-      if !popular.isEmpty {
-        pickHeader(String(localized: "ex.popular"))
-        LazyVStack(alignment: .leading, spacing: 0) {
-          ForEach(popular) { ex in
-            pickRow(ex)
-            if ex.id != popular.last?.id {
-              Divider().padding(.leading, DS.Spacing.md)
-            }
-          }
-        }
-        .dsCard(radius: DS.Radius.lg)
-        .padding(.horizontal, DS.Spacing.md)
-        pickHeader(String(localized: "wb.all"))
-      }
       LazyVStack(alignment: .leading, spacing: 0) {
         if visible.isEmpty {
           emptyPick(library)
@@ -220,17 +206,6 @@ struct TemplateFormView: View {
     .background(Capsule().fill(.regularMaterial))
     .overlay(Capsule().strokeBorder(Self.rose.opacity(0.55), lineWidth: 1.5))
     .padding(.horizontal, DS.Spacing.md)
-  }
-
-  private func pickHeader(_ title: String) -> some View {
-    Text(verbatim: title.uppercased())
-      .font(DS.TextStyle.caption.weight(.semibold))
-      .tracking(0.6)
-      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      .padding(.horizontal, DS.Spacing.md + 4)
-      .padding(.top, DS.Spacing.sm)
-      .padding(.bottom, DS.Spacing.xs)
-      .accessibilityAddTraits(.isHeader)
   }
 
   /// Một bài: thẻ A (15/11) — poster 3D khi có, nhóm cơ chính + thiết bị;
