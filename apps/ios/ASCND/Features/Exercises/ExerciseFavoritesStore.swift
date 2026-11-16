@@ -1,18 +1,22 @@
 import ASCNDCore
 import Foundation
 
-/// Sao yêu thích của bài tập lưu TRÊN MÁY, theo tài khoản (`ex.favorites.<uid>`).
-/// Bảng `exercises` chưa có cột yêu thích; thêm là đổi schema, chưa được duyệt —
-/// xem sổ hạn chế (15/11). Đổi máy / cài lại app thì mất.
+/// Sao yêu thích của bài tập lưu trên máy theo tài khoản (`ex.favorites.<uid>`), đồng bộ lên
+/// `exercise_favorites` qua `AppServices.syncExerciseFavorites` (16/11). Bảng chưa deploy thì
+/// chỉ có bản trên máy; deploy xong thì lần mở tab Tập luyện sau gửi bù.
 struct DefaultsExerciseFavoriteStore: ExerciseFavoriteStore {
-  static func key(_ userId: String) -> String { "ex.favorites.\(userId.lowercased())" }
-
-  func load(userId: String) -> Set<String> {
-    Set(UserDefaults.standard.stringArray(forKey: Self.key(userId)) ?? [])
+  /// `.local` giữ khoá cũ (`ex.favorites.<uid>`) — sao đánh trước khi có đồng bộ không mất.
+  static func key(_ userId: String, _ slot: ExerciseFavoriteSlot) -> String {
+    let base = "ex.favorites.\(userId.lowercased())"
+    return slot == .local ? base : base + ".\(slot.rawValue)"
   }
 
-  func save(userId: String, _ ids: Set<String>) {
-    UserDefaults.standard.set(ids.sorted(), forKey: Self.key(userId))
+  func load(userId: String, slot: ExerciseFavoriteSlot) -> Set<String> {
+    Set(UserDefaults.standard.stringArray(forKey: Self.key(userId, slot)) ?? [])
+  }
+
+  func save(userId: String, slot: ExerciseFavoriteSlot, _ ids: Set<String>) {
+    UserDefaults.standard.set(ids.sorted(), forKey: Self.key(userId, slot))
   }
 }
 
