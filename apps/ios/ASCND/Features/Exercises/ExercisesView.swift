@@ -306,6 +306,7 @@ struct AddExerciseSheet: View {
   @State private var duplicates: [ExerciseDuplicates.Match] = []
   @FocusState private var nameFocused: Bool
   @Environment(\.locale) private var locale
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   private var canSave: Bool { !form.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !saving }
 
@@ -396,7 +397,7 @@ struct AddExerciseSheet: View {
         guard !Task.isCancelled else { return }
         let found = ExerciseDuplicates.candidates(
           name: form.name, muscleGroup: form.group.stored, equipment: form.equipment, in: library.exercises)
-        withAnimation(.smooth) { duplicates = found }
+        withAnimation(reduceMotion ? nil : .smooth) { duplicates = found }
       }
       .onChange(of: failure) { _, message in
         if let message { AccessibilityNotification.Announcement(message).post() }
