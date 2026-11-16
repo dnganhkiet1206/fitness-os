@@ -53,9 +53,28 @@ Lợi thêm: 8 bài hiện chiếm 47 MB. Sang dạng khối thì còn 1 nhân v
 3. QA vẫn chạy trên cảnh ghép trong Blender như hiện nay; chỉ khâu **xuất** đổi.
 4. Sửa nhân vật mà làm đổi cây xương (thêm xương phụ) thì vẫn phải xuất lại motion. Việc này rẻ: chỉ xuất, không render.
 
+## Kết quả làm thử (16/11, bài curl)
+
+- `export_usdz.py --split [--character-out characters/master_character_003/usdz/character_003.usdz]` xuất:
+  - `<bài>_motion.usdz`: khung xương + dụng cụ + chuyển động, thân thay bằng một tam giác 1 mm bám xương chậu để UsdSkel vẫn xuất khung xương;
+  - `<bài>_full_*.png`: texture da đủ ba vai trò;
+  - `character_003.usdz`: nhân vật ở tư thế nghỉ, không chuyển động.
+- App (`ExerciseDemo3D.Demo.motionFile`, `fullTexturePrefix`) nạp nhân vật dùng chung + file chuyển động, phát **cùng một chuyển động** trên cả hai. Hai thứ khớp nhau vì cùng tên khớp và cùng cây xương.
+- Simulator iPhone 17: curl chạy đúng, tạ nằm trong tay suốt động tác, ẩn/hiện cơ phụ chạy đúng (texture lấy từ PNG). File curl cũ 5,6 MB đã bỏ khỏi app.
+- Dung lượng:
+
+  | Phần | Dung lượng |
+  |---|---|
+  | File chuyển động curl | **340 KB** (trước 5,6 MB) |
+  | Nhân vật dùng chung | 5,3 MB, một lần cho mọi bài |
+  | Texture da đủ vai trò | 3,6 MB / bài |
+
+  Texture da đủ vai trò vẫn nặng vì normal map 2 MB/bài. Việc tiếp: một normal map nền dùng chung, mỗi bài chỉ còn màu (JPEG/HEIC). Đây là bước 2.
+- Sửa nhân vật từ nay: dựng lại chuỗi nhân vật → xuất lại `character_003.usdz` (một lệnh). Bài dạng khối không phải render lại, trừ khi cây xương đổi (thêm xương phụ). Khi đó chỉ chạy lại `--split` để xuất file chuyển động: vài giây/bài, không render cảnh.
+
 ## Lộ trình đề xuất
 
-1. **Nguyên mẫu (≈ nửa ngày):** `export_usdz.py --split` xuất `character.usdz` + `dumbbell_curl_motion.usdz` + `equipment/dumbbell.usdz`. App ghép lại và so khung hình với bản cũ trên simulator.
+1. ~~**Nguyên mẫu (≈ nửa ngày):**~~ **xong 16/11 (xem trên).** `export_usdz.py --split` xuất `character.usdz` + `dumbbell_curl_motion.usdz` + `equipment/dumbbell.usdz`. App ghép lại và so khung hình với bản cũ trên simulator.
 2. Chuyển 8 bài sang dạng khối; trình xem nạp theo khối; bỏ bản chép nhân vật trong từng USDZ.
 3. Điểm neo trang trí trong phòng + 1 gói mẫu (mock cho Kiệt duyệt trước, vì đây là thiết kế).
 4. Dấu ẩn texture (tuỳ chọn).

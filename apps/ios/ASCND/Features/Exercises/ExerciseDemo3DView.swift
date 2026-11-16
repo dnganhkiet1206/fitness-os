@@ -108,17 +108,27 @@
                     Self.makeUnlit(room, dark: scheme == .dark)
                     content.add(room)
                   }
-                  let scene = try await Entity(named: demoInfo?.usdzFile ?? "bench_press_animation", in: .main)
+                  // Bài dạng khối: nhân vật dùng chung + file chuyển động
+                  // (khung xương, dụng cụ). Bài cũ: một USDZ chứa tất cả.
+                  let motionFile = demoInfo?.motionFile
+                  let scene = try await Entity(
+                    named: motionFile == nil ? (demoInfo?.usdzFile ?? "bench_press_animation") : ExerciseDemo3D.sharedCharacterFile,
+                    in: .main)
                   content.add(scene)
-                  if let prefix = ExerciseDemo3D.demo(for: name)?.focusTexturePrefix {
-                    await bodySkins.prepare(scene: scene, prefix: prefix)
+                  let motion: Entity? = if let motionFile { try await Entity(named: motionFile, in: .main) } else { nil }
+                  if let motion { content.add(motion) }
+                  if let prefix = demoInfo?.focusTexturePrefix {
+                    await bodySkins.prepare(scene: scene, prefix: prefix, fullPrefix: demoInfo?.fullTexturePrefix)
                     // update{} không chạy lại khi texture nạp xong: gán ngay.
-                    bodySkins.apply(focus: hideSecondary)
+                    bodySkins.apply(focus: hideSecondary, force: true)
                   }
                   Self.addLights(to: content, target: cameraTarget)
-                  // Tự chạy và lặp vô hạn, không dừng ở cuối.
-                  if let animation = scene.availableAnimations.first {
+                  // Tự chạy và lặp vô hạn, không dừng ở cuối. Dạng khối: cùng
+                  // một chuyển động phát trên nhân vật và trên file chuyển động
+                  // (dụng cụ), bắt đầu cùng khung hình nên khớp nhau.
+                  if let animation = (motion ?? scene).availableAnimations.first {
                     scene.playAnimation(animation.repeat())
+                    motion?.playAnimation(animation.repeat())
                   }
                 } catch {
                   await MainActor.run { loadFailed = true }
@@ -448,7 +458,7 @@
     /// xương (`config/master_character.json` → `armature_object`).
     private static let bodyName = "MasterRig"
 
-    func prepare(scene: Entity, prefix: String) async {
+    func prepare(scene: Entity, prefix: String, fullPrefix: String? = nil) async {
       guard let body = Self.find(in: scene), let model = body.model,
         let bodyMaterial = model.materials.lazy.compactMap({ $0 as? PhysicallyBasedMaterial })
           .first(where: { $0.normal.texture != nil }),
@@ -458,6 +468,15 @@
       else { return }
       full = (bodyMaterial.baseColor.texture, bodyMaterial.emissiveColor.texture, bodyMaterial.normal.texture)
       focus = (.init(albedo), .init(emission), .init(normal))
+      // Dạng khối: nhân vật dùng chung không mang texture của bài, nên bộ
+      // "đủ vai trò" cũng nạp từ PNG.
+      if let fullPrefix,
+        let fa = await Self.texture("\(fullPrefix)_albedo", .color),
+        let fe = await Self.texture("\(fullPrefix)_emission", .color),
+        let fn = await Self.texture("\(fullPrefix)_normal", .normal)
+      {
+        full = (.init(fa), .init(fe), .init(fn))
+      }
       if let index = model.materials.firstIndex(where: {
         guard let pbr = $0 as? PhysicallyBasedMaterial else { return false }
         return pbr.normal.texture == nil && pbr.baseColor.texture != nil
@@ -469,6 +488,12 @@
         apparelIndex = index
         fullApparel = (apparel.baseColor.texture, apparel.emissiveColor.texture, nil)
         focusApparel = (.init(apparelAlbedo), .init(apparelEmission), nil)
+        if let fullPrefix,
+          let fa = await Self.texture("\(fullPrefix)_apparel_albedo", .color),
+          let fe = await Self.texture("\(fullPrefix)_apparel_emission", .color)
+        {
+          fullApparel = (.init(fa), .init(fe), nil)
+        }
       }
       self.body = body
       ready = true
@@ -482,8 +507,8 @@
     /// Gán bộ texture vào vật liệu thân (vật liệu duy nhất có normal map) và
     /// quần. Gán lại mảng vật liệu cũ thì RealityKit không vẽ lại, nên luôn
     /// dựng vật liệu mới.
-    func apply(focus on: Bool) {
-      guard ready, on != shownFocus, let body, let model = body.model else { return }
+    func apply(focus on: Bool, force: Bool = false) {
+      guard ready, force || on != shownFocus, let body, let model = body.model else { return }
       let skin = on ? focus : full
       let apparelSkin = on ? focusApparel : fullApparel
       body.model?.materials = model.materials.enumerated().map { index, material in
