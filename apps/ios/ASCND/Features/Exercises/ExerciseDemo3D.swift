@@ -35,7 +35,22 @@
       /// Tiền tố texture thân "chỉ cơ chính" (`<prefix>_albedo/_emission/_normal.png`,
       /// `pipeline/export_usdz.py`); nil = bài không có nút ẩn cơ phụ.
       var focusTexturePrefix: String?
+      /// 3D dạng khối (`docs/exercise-visual-system/MODULAR_3D_PLAN.md`, Kiệt
+      /// 16/11): chỉ khung xương + dụng cụ + chuyển động (`<bài>_motion.usdz`,
+      /// `export_usdz.py --split`). Có giá trị thì trình xem nạp nhân vật dùng
+      /// chung (`sharedCharacterFile`) và phát chuyển động này lên nó, texture
+      /// da lấy từ `fullTexturePrefix`. Sửa nhân vật = thay một file.
+      var motionFile: String?
+      /// Tiền tố texture da đủ ba vai trò (`<prefix>_albedo/_emission/_normal.png`
+      /// + `_apparel_albedo/_emission`) cho bài dạng khối.
+      var fullTexturePrefix: String?
+      /// File 3D phải có trong bundle để mở bài: file chuyển động (dạng khối)
+      /// hoặc USDZ đầy đủ (bài cũ).
+      var bundledFile: String { motionFile ?? usdzFile }
     }
+
+    /// Nhân vật dùng chung cho mọi bài dạng khối (`characters/master_character_003/usdz`).
+    static let sharedCharacterFile = "character_003"
 
     /// Một mục trong legend: chấm màu đúng màu tô sáng của vai trò trong
     /// bản render + tên cơ + vai trò, qua key i18n.
@@ -74,7 +89,8 @@
         LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.stabilizer"),
       ],
       cameraPosition: [1.628, 1.7949, 1.7825], cameraTarget: [-0.0457, 0.9334, 0.1088],
-      focusTexturePrefix: "dumbbell_curl_focus")
+      focusTexturePrefix: "dumbbell_curl_focus",
+      motionFile: "dumbbell_curl_motion", fullTexturePrefix: "dumbbell_curl_full")
 
     /// Motion Lab (14/11): tạo từ template họ "squat" (`motionlab/families/squat.py`).
     static let backSquat = Demo(
@@ -299,7 +315,7 @@
     /// bản 3D hay thiếu USDZ trong bundle.
     static func posterURL(for name: String) -> URL? {
       guard let demo = demo(for: name),
-        Bundle.main.url(forResource: demo.usdzFile, withExtension: "usdz") != nil
+        Bundle.main.url(forResource: demo.bundledFile, withExtension: "usdz") != nil
       else { return nil }
       return Bundle.main.url(forResource: demo.posterFile, withExtension: "jpg")
     }
@@ -308,7 +324,7 @@
     /// mở trình xem 3D, không phát clip này. Trả nil khi thiếu USDZ.
     static func media(for name: String, alt: String?) -> MediaState? {
       guard let demo = demo(for: name),
-        Bundle.main.url(forResource: demo.usdzFile, withExtension: "usdz") != nil,
+        Bundle.main.url(forResource: demo.bundledFile, withExtension: "usdz") != nil,
         let loop = demo.loopFile,
         let video = Bundle.main.url(forResource: loop, withExtension: "mp4"),
         let poster = Bundle.main.url(forResource: demo.posterFile, withExtension: "jpg")

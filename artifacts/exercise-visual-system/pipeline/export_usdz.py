@@ -241,12 +241,69 @@ def write_focus_textures(exercise: dict, prefix: str, out_dir: Path, colors: dic
     print(f"[evs] usdz: focus textures {prefix}_focus[_apparel]_albedo/emission + _focus_normal.png")
 
 
+USD_EXPORT = dict(selected_objects_only=True, export_armatures=True, only_deform_bones=True, export_shapekeys=False,
+                  export_materials=True, generate_preview_surface=True, export_textures_mode="NEW", relative_paths=True,
+                  convert_orientation=True, export_global_forward_selection="NEGATIVE_Z", export_global_up_selection="Y",
+                  convert_scene_units="METERS", export_lights=False, export_cameras=False, evaluation_mode="RENDER",
+                  check_existing=False)
+
+
+def export_split(args, scene, rig, body, shorts, out_dir: Path, prefix: str, tmp: list) -> None:
+    """Modular export (MODULAR_3D_PLAN.md, Kiệt 16/11): fix the character
+    once and every exercise follows, no re-render.
+
+    * ``<prefix>_motion.usdz``: the skeleton, the equipment and the animation.
+      The body is replaced by a one-triangle proxy bound to the pelvis, so the
+      skeleton and its animation still export (UsdSkel needs a bound mesh)
+      while the file carries no character mesh or skin textures.
+    * ``<prefix>_full_*.png``: the exercise's skin textures (all roles), which
+      the app puts on the shared character, like the focus textures.
+    * with ``--character-out``: the shared character (rig, body, shorts) in the
+      rest pose without animation.
+    The app plays the motion file's animation on both the motion entity
+    (equipment) and the shared character: the joint names and the hierarchy
+    match because both come from the same rig (checked on the simulator,
+    16/11: a squat clip played on the curl file's character)."""
+    for src, dst in (("_usdz_body_albedo", "full_albedo"), ("_usdz_body_emission", "full_emission"),
+                     ("_usdz_body_normal", "full_normal"), ("_usdz_apparel_albedo", "full_apparel_albedo"),
+                     ("_usdz_apparel_emission", "full_apparel_emission")):
+        p = out_dir / f"{src}.png"
+        if p.exists():
+            (out_dir / f"{prefix}_{dst}.png").write_bytes(p.read_bytes())
+    equipment = [o for o in scene.objects if o.type == "MESH" and o.get("evs_equipment")]
+    if args.character_out:
+        scene.frame_set(scene.frame_start)
+        select([rig, body, shorts])
+        bpy.ops.wm.usd_export(filepath=str(args.character_out), export_animation=False, **USD_EXPORT)
+        print(f"[evs] split: character {args.character_out} {Path(args.character_out).stat().st_size} bytes")
+    me = bpy.data.meshes.new("EVS_MotionProxy")
+    me.from_pydata([(0.0, 0.0, 0.9), (0.001, 0.0, 0.9), (0.0, 0.001, 0.9)], [], [(0, 1, 2)])
+    proxy = bpy.data.objects.new("EVS_MotionProxy", me)
+    scene.collection.objects.link(proxy)
+    proxy.parent = rig
+    mod = proxy.modifiers.new("Armature", "ARMATURE")
+    mod.object = rig
+    proxy.vertex_groups.new(name="pelvis").add([0, 1, 2], 1.0, "REPLACE")
+    select([rig, proxy, *equipment])
+    scene.frame_set(scene.frame_start)
+    motion = out_dir / f"{prefix}_motion.usdz"
+    bpy.ops.wm.usd_export(filepath=str(motion), export_animation=True, **USD_EXPORT)
+    for p in tmp:
+        p.unlink()
+    print(f"[evs] split: motion {motion.name} {motion.stat().st_size} bytes; reimport {reimport(str(motion))}")
+
+
 def main(exercise_name: str | None = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--exercise", default=exercise_name, required=exercise_name is None)
     parser.add_argument("--out-dir", default=None)
     parser.add_argument("--size", type=int, default=TEXTURE_SIZE)
     parser.add_argument("--focus-only", action="store_true", help="only rewrite the focus textures (no scene, no USDZ)")
+    parser.add_argument("--split", action="store_true",
+                        help="modular export (MODULAR_3D_PLAN.md): <prefix>_motion.usdz (skeleton + equipment + animation, "
+                             "no body) and the skin textures as PNG; the app plays it on the shared character")
+    parser.add_argument("--character-out", default=None,
+                        help="with --split: also write the shared character (rest pose, no animation) to this path")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:])
 
     exercise_path = config.exercise_dir(args.exercise)
@@ -309,6 +366,10 @@ def main(exercise_name: str | None = None) -> None:
 
     if painted:
         write_focus_textures(exercise, prefix, out_dir, colors)
+
+    if args.split:
+        export_split(args, scene, rig, body, shorts, out_dir, prefix, tmp)
+        return
 
     equipment_objects = [o for o in scene.objects if o.type == "MESH" and o.get("evs_equipment")]
     select([rig, body, shorts, *equipment_objects])

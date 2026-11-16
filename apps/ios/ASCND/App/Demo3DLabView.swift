@@ -37,7 +37,7 @@ struct Demo3DLabView: View {
   @ViewBuilder
   private func row(_ item: ExerciseDemo3D.CatalogEntry) -> some View {
     let demo = ExerciseDemo3D.demo(for: item.key)
-    let hasUSDZ = demo.flatMap { Bundle.main.url(forResource: $0.usdzFile, withExtension: "usdz") } != nil
+    let hasUSDZ = demo.flatMap { Bundle.main.url(forResource: $0.bundledFile, withExtension: "usdz") } != nil
     VStack(alignment: .leading, spacing: 8) {
       Button {
         if hasUSDZ { target = Target(key: item.key) }
