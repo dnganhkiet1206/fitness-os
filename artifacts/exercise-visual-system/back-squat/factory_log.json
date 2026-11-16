@@ -247,5 +247,38 @@
     },
     "total_seconds": 553.9,
     "qa": "{\"PASS\": 17, \"FAIL\": 1}"
+  },
+  {
+    "version": 10,
+    "when": "2026-11-15T17:50:05",
+    "template": "squat",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 6.1
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 14.6
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 4.3
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 48.9
+      },
+      "export": {
+        "ok": true,
+        "seconds": 32.3
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 4.8
+      }
+    },
+    "total_seconds": 112.6,
+    "qa": "{\"PASS\": 17, \"NOT_TESTED\": 1}"
   }
 ]

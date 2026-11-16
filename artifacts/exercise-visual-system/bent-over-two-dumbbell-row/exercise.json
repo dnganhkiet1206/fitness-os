@@ -26,17 +26,23 @@
     }
   ],
   "primary_muscles": [
-    "latissimus_dorsi"
+    "latissimus_dorsi",
+    "trapezius"
   ],
   "secondary_muscles": [
-    "trapezius",
     "deltoid_posterior",
-    "biceps_brachii"
+    "rotator_cuff_posterior",
+    "forearm_muscles"
   ],
   "stabilizing_muscles": [
+    "biceps_brachii",
     "erector_spinae",
     "hamstrings",
-    "forearm_muscles"
+    "gluteus_maximus",
+    "adductors",
+    "quadriceps",
+    "rectus_abdominis",
+    "obliques"
   ],
   "master_character_id": "master_character_003",
   "motion_source_id": "motionlab_row_v1",
@@ -97,6 +103,11 @@
       "what": "15/11 re-check after Kiệt 'sai tư thế': torso hinged ~45-55 deg and held, knees soft, neck neutral (eyes a little ahead of the feet), elbows close to the body driven back toward the hips, dumbbells to the waist",
       "source": "YouTube 'Proper Form For A Bent Over Row' (QFq5jdwWwX4, 0:30-1:15) and 'Dumbbell Bent Over Row Exercise Tutorial' (fFmwY2dA2ds, 0:35-1:20); Garage Gym Reviews, PowerliftingTechnique, Muscle & Strength, PureGym row pages",
       "license": "facts (watched only, nothing downloaded or copied)"
+    },
+    {
+      "what": "muscle roles (target -> primary, synergists -> secondary, stabilizers -> stabilizing)",
+      "source": "ExRx https://exrx.net/WeightExercises/BackGeneral/BBBentOverRow",
+      "license": "facts"
     }
   ],
   "phase_cues": {
@@ -199,7 +210,7 @@
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "The latissimus dorsi pulls the upper arm back; trapezius and posterior deltoid assist, biceps flexes the elbow; erector spinae and hamstrings hold the bent-over position (ExRx).",
+  "muscle_roles_note": "Target Back General (latissimus dorsi, middle/lower trapezius and the rhomboids under it); synergists posterior deltoid, infraspinatus/teres minor, brachioradialis (brachialis and teres major are not separate atlas groups; the sternal pectoral is left out because the atlas has one pectoral group); biceps is a dynamic stabilizer; erector spinae, hamstrings, gluteus maximus, adductor magnus, quadriceps stabilize; abdominals are antagonist stabilizers. Checked against ExRx 15/11 (Kiệt: \"nhóm cơ hoạt động đã chính xác chưa\").",
   "production": {
     "catalogue_name": "Bent Over Two-Dumbbell Row",
     "scaffolded_from": "stiff-leg-dumbbell-deadlift",

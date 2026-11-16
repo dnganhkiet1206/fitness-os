@@ -32,7 +32,8 @@
     "forearm_muscles"
   ],
   "stabilizing_muscles": [
-    "deltoid_anterior"
+    "deltoid_anterior",
+    "trapezius"
   ],
   "master_character_id": "master_character_003",
   "motion_source_id": "motionlab_curl_v1",
@@ -86,6 +87,11 @@
       "what": "reference measurements 2026-11-14 (elbow range, tempo; hammer-grip variant - see reference_notes.json) - evaluation only, not approval",
       "source": "YMove Hammer Curls video, measured with MediaPipe Pose Landmarker heavy; see dumbbell-curl/reference_measurements.json",
       "license": "YMove royalty-free commercial use, credit required (Exercise video by Your Move, ymove.app); measurements only, no footage used"
+    },
+    {
+      "what": "muscle roles (target -> primary, synergists -> secondary, stabilizers -> stabilizing)",
+      "source": "ExRx https://exrx.net/WeightExercises/Biceps/DBCurl",
+      "license": "facts"
     }
   ],
   "exercise_phases": [
@@ -282,7 +288,7 @@
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Biceps brachii is the prime mover of elbow flexion with a supinated grip; brachioradialis and forearm flexors assist (ACE).",
+  "muscle_roles_note": "Target biceps; synergists brachialis (hidden) and brachioradialis; anterior deltoid, upper/middle trapezius and wrist muscles stabilize. Checked against ExRx 15/11 (Kiệt: \"nhóm cơ hoạt động đã chính xác chưa\").",
   "agent_review": {
     "date": "2026-11-14",
     "by": "agent (not an expert review)",

@@ -81,10 +81,17 @@ def _add_bone(rig, name: str, like: str, parent: str, head_at: str | None = None
     bpy.ops.object.mode_set(mode="OBJECT")
 
 
-def _follow(rig, name: str, target: str, influence: float) -> None:
+def _follow(rig, name: str, target: str, influence: float, space: str = "LOCAL") -> None:
+    """Half-way rotation. LOCAL when the helper and the target share a parent
+    (local rotations are then comparable). WORLD when they do not: the
+    shoulder helper rides on the scapula while the upper arm hangs from the
+    clavicle, so copying the arm's clavicle-relative rotation on top of the
+    scapula would count the scapular rotation twice (PR #903 review, 15/11);
+    a WORLD copy at influence 0.5 is the true midpoint between the scapula's
+    and the arm's orientation."""
     c = rig.pose.bones[name].constraints.new("COPY_ROTATION")
     c.target, c.subtarget = rig, target
-    c.owner_space = c.target_space = "LOCAL"
+    c.owner_space = c.target_space = space
     c.mix_mode = "REPLACE"
     c.influence = influence
 
@@ -100,7 +107,7 @@ def add_helpers(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict) -> dic
                 return n.replace("{s}", side)
             name, child, parent = s(spec["name"]), s(spec["child"]), s(spec["parent_bone"])
             _add_bone(rig, name, like=child, parent=parent, length=spec.get("length_m", 0.06))
-            _follow(rig, name, child, spec.get("influence", 0.5))
+            _follow(rig, name, child, spec.get("influence", 0.5), spec.get("space", "LOCAL"))
             body.vertex_groups.new(name=name)
             w, names = _weights(body)
             idx = {n: i for i, n in enumerate(names)}
