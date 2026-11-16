@@ -14,16 +14,24 @@ import SwiftUI
 ///   chữ đã tìm;
 /// - form thêm: tên (bắt buộc), nhóm cơ (11 nhóm, mặc định Ngực), loại động
 ///   tác (mặc định CHƯA CHỌN, chạm lại để bỏ), dụng cụ (không bắt buộc);
-/// - hàng hiện loại đã khai báo (không hiện gì khi chưa khai báo) và dụng cụ;
-///   chỉ bài của mình mới có nút xoá, xoá hỏi lại trước;
+/// - chỉ bài của mình mới có nút xoá, xoá hỏi lại trước;
 /// - lỗi đọc ≠ thư viện trống (`LoadFailed`).
 ///
 /// Native behavior: bản trên máy hiện ngay, kể cả offline, nên lỗi làm mới chỉ
 /// chiếm màn khi chưa có bài nào để hiện (cùng luật với builder).
+///
+/// 15/11 (Kiệt): hàng là thẻ A (`ExerciseCard`: poster 3D khi có, nhóm cơ chính +
+/// dụng cụ; không còn thẻ loại động tác); đang tìm thì một danh sách phẳng xếp
+/// theo `ExerciseSearch.rank` (viết tắt, không dấu, lỗi gõ nhẹ, bài phổ biến
+/// trước); chưa tìm thì mục "Phổ biến" đứng đầu; form thêm bài có hộp "Có phải
+/// bạn muốn…?" (`ExerciseDuplicates`).
 struct ExercisesView: View {
   let library: ExerciseLibrary
   /// Chỉ hiện một nhóm (ô nhóm cơ của tab Tập luyện, `muscle-grid.tsx:156`).
   var only: MuscleGroup?
+  /// Hộp "Có phải bạn muốn…?" chọn bài có sẵn (15/11). Builder đưa vào: chọn bài
+  /// ấy vào buổi rồi quay lại. Không có (thư viện): đóng form, tìm tới bài ấy.
+  var onPick: ((LibraryExercise) -> Void)?
 
   @Environment(\.locale) private var locale
   @State private var search = ""
@@ -36,9 +44,13 @@ struct ExercisesView: View {
   @State private var deleteFailed = false
 
   /// - Parameter create: chữ builder đã tìm mà không thấy — mở sẵn form với tên ấy.
-  init(library: ExerciseLibrary, only: MuscleGroup? = nil, create: String? = nil) {
+  init(
+    library: ExerciseLibrary, only: MuscleGroup? = nil, create: String? = nil,
+    onPick: ((LibraryExercise) -> Void)? = nil
+  ) {
     self.library = library
     self.only = only
+    self.onPick = onPick
     _group = State(initialValue: only)
     _adding = State(initialValue: create != nil)
     _form = State(initialValue: AddForm(name: create ?? ""))
@@ -48,6 +60,15 @@ struct ExercisesView: View {
   private var sections: [ExerciseCatalog.Section] {
     ExerciseCatalog.sections(library.exercises, query: debounced, muscle: group, lang: lang)
   }
+  private var inGroup: [LibraryExercise] {
+    library.exercises.filter { e in group.map { e.muscles.contains($0) } ?? true }
+  }
+  /// Đang tìm: một danh sách phẳng xếp theo độ khớp + độ phổ biến
+  /// (`ExerciseSearch.rank`, 15/11) — gộp theo nhóm sẽ đẩy bài khớp nhất xuống
+  /// dưới một nhóm khác.
+  private var results: [LibraryExercise] { ExerciseSearch.rank(inGroup, query: debounced) }
+  /// Chưa tìm: mục "Phổ biến" đứng đầu (bài nhiều người tập), rồi tới các nhóm.
+  private var popular: [LibraryExercise] { ExerciseSearch.popular(inGroup, limit: 8) }
 
   var body: some View {
     content
@@ -81,7 +102,15 @@ struct ExercisesView: View {
       }
       .refreshable { await library.refresh() }
       .sheet(isPresented: $adding) {
-        AddExerciseSheet(library: library, form: $form) { adding = false }
+        AddExerciseSheet(library: library, form: $form, close: { adding = false }) { picked in
+          adding = false
+          form = AddForm()
+          if let onPick {
+            onPick(picked)
+          } else {
+            search = picked.displayName
+          }
+        }
       }
       .alert(
         pendingDelete.map { String(localized: "ex.delete.confirm \($0.name)") } ?? "",
@@ -171,6 +200,15 @@ struct ExercisesView: View {
       DSErrorView(message: String(localized: "history.loadFailed")) {
         Task { await library.refresh() }
       }
+    } else if !debounced.isEmpty {
+      let found = results
+      if found.isEmpty {
+        DSEmptyState(systemImage: "dumbbell", title: String(localized: "ex.empty"), message: nil)
+      } else {
+        List {
+          ForEach(found) { e in row(e) }
+        }
+      }
     } else if sections.isEmpty {
       DSEmptyState(
         // Đang tìm: "không tìm thấy" là đủ — câu đồng bộ từ web chỉ đúng khi thư viện trống.
@@ -178,6 +216,14 @@ struct ExercisesView: View {
         message: debounced.isEmpty && group == nil ? String(localized: "ex.empty.hint") : nil)
     } else {
       List {
+        let top = popular
+        if !top.isEmpty {
+          Section {
+            ForEach(top) { e in row(e) }
+          } header: {
+            Text("ex.popular")
+          }
+        }
         ForEach(sections) { section in
           Section {
             ForEach(section.exercises) { e in
@@ -191,34 +237,10 @@ struct ExercisesView: View {
     }
   }
 
+  /// Thẻ A (Kiệt duyệt 15/11): poster 3D khi có, nhóm cơ chính + dụng cụ.
   private func row(_ e: LibraryExercise) -> some View {
     let own = e.userId?.lowercased() == library.userId.lowercased()
-    return HStack(spacing: DS.Spacing.sm) {
-      // Bài thư viện: tên theo ngôn ngữ app, tên gốc tiếng Anh nhỏ bên dưới (dễ đối
-      // chiếu với video / tài liệu). Bài của mình: đúng tên đã đặt.
-      VStack(alignment: .leading, spacing: 3) {
-        Text(verbatim: e.displayName)
-          .font(DS.TextStyle.body)
-          .lineLimit(2)
-        if e.displayName != e.name {
-          Text(verbatim: e.name)
-            .font(DS.TextStyle.caption)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .lineLimit(1)
-        }
-        // Thẻ dưới tên (18/10, chủ dự án: "thẻ phân loại hơi khó nhìn"): thiết bị
-        // tô màu Tập luyện, loại bài nền xám; trùng chữ thì chỉ một thẻ ("Không tạ").
-        let gear = e.equipment.flatMap { $0.isEmpty ? nil : Equipment.label($0, lang) }
-        let kind = e.kind.flatMap(ExerciseKind.init(rawValue:)).map(AddExerciseSheet.kindName)
-        if gear != nil || kind != nil {
-          HStack(spacing: 6) {
-            if let gear { tag(gear, tinted: true) }
-            if let kind, kind != gear { tag(kind, tinted: false) }
-          }
-          .padding(.top, 2)
-        }
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
+    return ExerciseCard(exercise: e, lang: lang) {
       // Chỉ bài của mình mới xoá được (bài mẫu là của chung).
       if own {
         Button {
@@ -232,17 +254,7 @@ struct ExercisesView: View {
         .accessibilityLabel(Text(String(localized: "ex.delete.a11y \(e.name)")))
       }
     }
-    .frame(minHeight: 44)
-  }
-
-  private func tag(_ text: String, tinted: Bool) -> some View {
-    let rose = MascotRoomView.signalColor(.workout)
-    return Text(verbatim: text)
-      .font(DS.TextStyle.caption.weight(.semibold))
-      .foregroundStyle(tinted ? rose : DS.Color.foreground.swiftUI.opacity(0.75))
-      .padding(.horizontal, 8)
-      .padding(.vertical, 3)
-      .background(Capsule().fill(tinted ? rose.opacity(0.12) : DS.Color.secondary.swiftUI))
+    .padding(.vertical, 2)
   }
 
   private func delete(_ e: LibraryExercise) async {
@@ -270,10 +282,14 @@ struct AddExerciseSheet: View {
   let library: ExerciseLibrary
   @Binding var form: AddForm
   let close: () -> Void
+  /// "Dùng bài này" trong hộp chống trùng.
+  var useExisting: (LibraryExercise) -> Void = { _ in }
 
   @State private var saving = false
   @State private var failure: String?
+  @State private var duplicates: [ExerciseDuplicates.Match] = []
   @FocusState private var nameFocused: Bool
+  @Environment(\.locale) private var locale
 
   private var canSave: Bool { !form.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !saving }
 
@@ -289,6 +305,14 @@ struct AddExerciseSheet: View {
           Text("ex.name")
         } footer: {
           Text("ex.name.hint")
+        }
+
+        if !duplicates.isEmpty {
+          Section {
+            duplicateBox
+          }
+          .listRowBackground(Color.clear)
+          .listRowInsets(EdgeInsets())
         }
 
         Section {
@@ -347,11 +371,80 @@ struct AddExerciseSheet: View {
         .background(.bar)
       }
       .onAppear { nameFocused = true }
+      // Dừng gõ 0,3 giây rồi so với thư viện (mock 3, Kiệt duyệt 15/11).
+      .task(id: DupKey(name: form.name, group: form.group, gear: form.equipment)) {
+        try? await Task.sleep(for: .milliseconds(300))
+        guard !Task.isCancelled else { return }
+        let found = ExerciseDuplicates.candidates(
+          name: form.name, muscleGroup: form.group.stored, equipment: form.equipment, in: library.exercises)
+        withAnimation(.smooth) { duplicates = found }
+      }
       .onChange(of: failure) { _, message in
         if let message { AccessibilityNotification.Announcement(message).post() }
       }
     }
     .presentationDetents([.large])
+  }
+
+  private struct DupKey: Hashable {
+    let name: String
+    let group: ExerciseCatalog.PickGroup
+    let gear: String
+  }
+
+  /// "Có phải bạn muốn bài này?" — tối đa 3 bài có sẵn gần giống, thẻ A; chạm
+  /// một thẻ hay nút chính là dùng bài có sẵn, "Vẫn tạo bài mới" thì tạo.
+  private var duplicateBox: some View {
+    let rose = MascotRoomView.signalColor(.workout)
+    let lang = MuscleGroup.Language(locale: locale)
+    return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      Text("ex.dup.title")
+        .font(DS.TextStyle.headline)
+        .accessibilityAddTraits(.isHeader)
+      ForEach(duplicates, id: \.exercise.id) { m in
+        Button {
+          useExisting(m.exercise)
+        } label: {
+          ExerciseCard(exercise: m.exercise, lang: lang)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+      }
+      if let first = duplicates.first {
+        Button {
+          useExisting(first.exercise)
+        } label: {
+          Text(String(localized: "ex.dup.use \(first.exercise.displayName)"))
+            .font(DS.TextStyle.footnote.weight(.bold))
+            .foregroundStyle(.white)
+            .lineLimit(1)
+            .padding(.horizontal, DS.Spacing.md)
+            .frame(minHeight: 44)
+            .background(Capsule().fill(rose))
+        }
+        .buttonStyle(.plain)
+      }
+      Button {
+        Task { await save() }
+      } label: {
+        Text("ex.dup.createAnyway")
+          .font(DS.TextStyle.footnote.weight(.bold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .padding(.horizontal, DS.Spacing.md)
+          .frame(minHeight: 44)
+          .background(Capsule().strokeBorder(DS.Color.border.swiftUI, lineWidth: 1))
+      }
+      .buttonStyle(.plain)
+      .disabled(!canSave)
+      Text("ex.dup.why")
+        .font(DS.TextStyle.caption)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    }
+    .padding(DS.Spacing.md)
+    .background(
+      RoundedRectangle(cornerRadius: 18, style: .continuous).fill(DS.Color.card.swiftUI))
+    .overlay(
+      RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(rose.opacity(0.45), lineWidth: 1.5))
   }
 
   private func chips<T: Hashable>(

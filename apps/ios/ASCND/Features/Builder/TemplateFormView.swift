@@ -76,7 +76,13 @@ struct TemplateFormView: View {
         if let library = flow.library {
           // Builder vẫn nằm dưới: quay lại thì bài đã chọn còn nguyên, bài vừa
           // tạo đã có trong danh sách (cùng `ExerciseLibrary`).
-          ExercisesView(library: library, create: target.name)
+          ExercisesView(library: library, create: target.name) { picked in
+            // "Có phải bạn muốn…?": dùng bài có sẵn → chọn vào buổi, về builder.
+            if !draft.items.contains(where: { $0.exerciseId == picked.id }) {
+              draft.toggle(id: picked.id, name: picked.name)
+            }
+            creating = nil
+          }
         }
       }
     }
@@ -111,7 +117,24 @@ struct TemplateFormView: View {
   private var pickStep: some View {
     let library = flow.library
     let visible = TemplateDraft.visible(library?.exercises ?? [], group: group, search: search)
+    // Chưa gõ: "Phổ biến" đứng đầu (15/11, mock Kiệt duyệt), rồi cả thư viện.
+    let popular = search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      ? ExerciseSearch.popular(visible, limit: 8) : []
     return ScrollView {
+      if !popular.isEmpty {
+        pickHeader(String(localized: "ex.popular"))
+        LazyVStack(alignment: .leading, spacing: 0) {
+          ForEach(popular) { ex in
+            pickRow(ex)
+            if ex.id != popular.last?.id {
+              Divider().padding(.leading, DS.Spacing.md)
+            }
+          }
+        }
+        .dsCard(radius: DS.Radius.lg)
+        .padding(.horizontal, DS.Spacing.md)
+        pickHeader(String(localized: "wb.all"))
+      }
       LazyVStack(alignment: .leading, spacing: 0) {
         if visible.isEmpty {
           emptyPick(library)
@@ -199,34 +222,25 @@ struct TemplateFormView: View {
     .padding(.horizontal, DS.Spacing.md)
   }
 
-  /// Một bài: tên theo ngôn ngữ app (tên gốc nhỏ bên dưới), nhóm cơ + thiết bị;
+  private func pickHeader(_ title: String) -> some View {
+    Text(verbatim: title.uppercased())
+      .font(DS.TextStyle.caption.weight(.semibold))
+      .tracking(0.6)
+      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      .padding(.horizontal, DS.Spacing.md + 4)
+      .padding(.top, DS.Spacing.sm)
+      .padding(.bottom, DS.Spacing.xs)
+      .accessibilityAddTraits(.isHeader)
+  }
+
+  /// Một bài: thẻ A (15/11) — poster 3D khi có, nhóm cơ chính + thiết bị;
   /// đã chọn → vòng tô màu mang số thứ tự trong buổi.
   private func pickRow(_ ex: LibraryExercise) -> some View {
     let order = draft.items.firstIndex { $0.exerciseId == ex.id }.map { $0 + 1 }
-    let gear = ex.equipment.flatMap { $0.isEmpty ? nil : Equipment.label($0, lang) }
-    let muscles = ex.muscles.map(Self.muscleName).joined(separator: " / ")
     return Button {
       draft.toggle(id: ex.id, name: ex.name)
     } label: {
-      HStack(spacing: DS.Spacing.sm) {
-        VStack(alignment: .leading, spacing: 3) {
-          Text(verbatim: ex.displayName)
-            .font(DS.TextStyle.body)
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .lineLimit(2)
-          if ex.displayName != ex.name {
-            Text(verbatim: ex.name)
-              .font(DS.TextStyle.caption)
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .lineLimit(1)
-          }
-          HStack(spacing: 6) {
-            if !muscles.isEmpty { tag(muscles, tinted: false) }
-            if let gear { tag(gear, tinted: true) }
-          }
-          .padding(.top, 2)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+      ExerciseCard(exercise: ex, lang: lang) {
         ZStack {
           Circle()
             .fill(order != nil ? Self.rose : Color.clear)
@@ -248,16 +262,6 @@ struct TemplateFormView: View {
     }
     .buttonStyle(.plain)
     .accessibilityAddTraits(order != nil ? [.isButton, .isSelected] : .isButton)
-  }
-
-  private func tag(_ text: String, tinted: Bool) -> some View {
-    Text(verbatim: text)
-      .font(DS.TextStyle.caption.weight(.semibold))
-      .foregroundStyle(tinted ? Self.rose : DS.Color.foreground.swiftUI.opacity(0.75))
-      .lineLimit(1)
-      .padding(.horizontal, 8)
-      .padding(.vertical, 3)
-      .background(Capsule().fill(tinted ? Self.rose.opacity(0.12) : DS.Color.secondary.swiftUI))
   }
 
   @ViewBuilder private func emptyPick(_ library: ExerciseLibrary?) -> some View {
