@@ -175,22 +175,47 @@ def _swing(body, rig, spec: dict, co: np.ndarray, facts: dict) -> None:
         c = rig.pose.bones[name].constraints.new("DAMPED_TRACK")
         c.target, c.subtarget, c.track_axis, c.head_tail = rig, child, "TRACK_Y", 0.0
         body.vertex_groups.new(name=name)
+        # Twist ladder (16/11, Kiệt: "tay nhìn teo"): one jump from the swing
+        # bone (0 twist) to the arm (full twist) blends two frames 108 deg
+        # apart, and linear blend skinning shrinks the radius by cos(54 deg),
+        # 0.59: the mid upper arm lost 39 % (56 -> 34 mm). Segment bones at
+        # k/n of the twist (Copy Rotation of the swing bone, then of the arm
+        # at influence k/n) keep neighbours <= 108/n deg apart: n = 4 shrinks
+        # by cos(13.5 deg), 3 %.
+        n = int(spec.get("segments", 4))
+        ladder = [name]
+        for k in range(1, n):
+            seg = f"{name}_{k}"
+            _add_bone(rig, seg, like=bone, parent=s(spec["parent_bone"]), length=0.5 * length)
+            for tgt, inf in ((name, 1.0), (bone, k / n)):
+                c = rig.pose.bones[seg].constraints.new("COPY_ROTATION")
+                c.target, c.subtarget = rig, tgt
+                c.owner_space = c.target_space = "WORLD"
+                c.mix_mode, c.influence = "REPLACE", inf
+            body.vertex_groups.new(name=seg)
+            ladder.append(seg)
+        b = rig.data.bones[bone]
         w, names = _weights(body)
-        idx = {n: i for i, n in enumerate(names)}
+        idx = {nm: i for i, nm in enumerate(names)}
         head = np.array((rig.matrix_world @ b.head_local)[:])
         end = np.array((rig.matrix_world @ rig.data.bones[child].head_local)[:])
         t = (co - head) @ (end - head) / float(np.dot(end - head, end - head))
         t0, t1 = spec["fade_t"]
-        f = spec.get("share", 1.0) * (1.0 - smoothstep(t0, t1, t))
-        moved = np.zeros(len(co))
-        for g in spec["groups"]:
-            if s(g) in idx:
-                j = idx[s(g)]
-                m = f * w[:, j]
-                w[:, j] -= m
-                moved += m
-        w[:, idx[name]] += moved
-        touched = moved > 1e-4
+        u = np.clip((t - t0) / (t1 - t0), 0.0, 1.0) * n
+        lo = np.minimum(np.floor(u).astype(int), n - 1)
+        frac = u - lo
+        G = [idx[s(g)] for g in spec["groups"] if s(g) in idx]
+        orig = w[:, G].copy()
+        W = orig.sum(1) * spec.get("share", 1.0)
+        keep = np.where(orig.sum(1)[:, None] > 1e-9, orig / np.maximum(orig.sum(1), 1e-9)[:, None], 0.0)
+        w[:, G] -= W[:, None] * keep
+        for step in range(n + 1):
+            part = W * (np.where(lo == step, 1.0 - frac, 0.0) + np.where(lo + 1 == step, frac, 0.0))
+            if step == n:  # full twist: back onto the arm's own groups, same split
+                w[:, G] += part[:, None] * keep
+            else:
+                w[:, idx[ladder[step]]] += part
+        touched = W > 1e-4
         _write(body, w, names, touched)
         facts[name] = int(touched.sum())
 

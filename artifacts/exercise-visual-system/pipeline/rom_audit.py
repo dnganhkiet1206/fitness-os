@@ -92,7 +92,10 @@ def mute_ik(rig) -> None:
     for pb in rig.pose.bones:
         for c in pb.constraints:
             sub = getattr(c, "subtarget", "") or ""
-            if c.type != "COPY_ROTATION" or sub.startswith(("ctl_", "mch_")):
+            # Helper bones follow deform bones with Copy Rotation or, for the
+            # upper-arm swing bone, Damped Track to the elbow (PR #909 review:
+            # muting it froze the swing bone, so the audit missed the skin).
+            if c.type not in ("COPY_ROTATION", "DAMPED_TRACK") or sub.startswith(("ctl_", "mch_")):
                 c.mute = True
 
 

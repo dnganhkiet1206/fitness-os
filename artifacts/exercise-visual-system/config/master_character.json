@@ -358,7 +358,9 @@
           ],
           "share": 1.0,
           "why": "Squat 16/11: the bar grip turns the upper arm ~108 deg about its own axis (external rotation). The rig had no twist split at the shoulder, so the deltoid, chest and trapezius skin weighted to the arm took the whole twist and ballooned. Swing-only bone (Damped Track to the elbow): skin from the shoulder (t 0.05) to mid-arm (t 0.6) moves onto it, so the twist ramps from 0 at the shoulder to full at the elbow.",
-          "why_fade": "16/11 ROM: fading over t 0.05-0.6 of the arm bone only left the twist bone (t 0.25-1) at full twist, so the twist jumped mid-arm (arm across the chest 1.59 -> 2.10). Fading both groups over the whole humerus spreads the twist evenly, 0 at the shoulder to full at the elbow, like the forearm twist between the radius and ulna."
+          "why_fade": "16/11 ROM: fading over t 0.05-0.6 of the arm bone only left the twist bone (t 0.25-1) at full twist, so the twist jumped mid-arm (arm across the chest 1.59 -> 2.10). Fading both groups over the whole humerus spreads the twist evenly, 0 at the shoulder to full at the elbow, like the forearm twist between the radius and ulna.",
+          "segments": 4,
+          "why_segments": "16/11 Kiệt: \"tay nhìn teo\". A single swing-to-arm blend shrank the mid upper arm 39 % (56 -> 34 mm radius, LBS candy wrapper). A 4-step twist ladder (0, 25, 50, 75, 100 %) keeps neighbouring frames 27 deg apart."
         }
       ]
     }

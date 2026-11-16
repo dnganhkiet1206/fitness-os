@@ -38,16 +38,16 @@
   "nipple_vertices_faired": 128,
   "helper_bones": {
     "cross_side_fixed": 692,
-    "upperarm_swing_l": 702,
-    "upperarm_swing_r": 702,
+    "upperarm_swing_l": 727,
+    "upperarm_swing_r": 768,
     "hip_fold_l": 332,
     "hip_fold_r": 330,
     "knee_fold_l": 146,
     "knee_fold_r": 146,
-    "elbow_fold_l": 114,
-    "elbow_fold_r": 120,
-    "shoulder_fold_l": 234,
-    "shoulder_fold_r": 234,
+    "elbow_fold_l": 109,
+    "elbow_fold_r": 115,
+    "shoulder_fold_l": 162,
+    "shoulder_fold_r": 162,
     "thumb_fold_l": 102,
     "thumb_fold_r": 102,
     "wrist_fold_l": 131,
@@ -128,7 +128,7 @@
   "thigh_length_m": 0.4435,
   "shank_length_m": 0.4564,
   "max_left_right_asymmetry_m": 2.5e-05,
-  "deform_bone_count": 84,
+  "deform_bone_count": 90,
   "bones": {
     "Root": {
       "parent": null,
@@ -418,6 +418,33 @@
         1.42983
       ]
     },
+    "upperarm_swing_l_1": {
+      "parent": "clavicle_l",
+      "length_m": 0.13289,
+      "head_rest_m": [
+        0.215,
+        -0.01826,
+        1.42983
+      ]
+    },
+    "upperarm_swing_l_2": {
+      "parent": "clavicle_l",
+      "length_m": 0.13289,
+      "head_rest_m": [
+        0.215,
+        -0.01826,
+        1.42983
+      ]
+    },
+    "upperarm_swing_l_3": {
+      "parent": "clavicle_l",
+      "length_m": 0.13289,
+      "head_rest_m": [
+        0.215,
+        -0.01826,
+        1.42983
+      ]
+    },
     "clavicle_r": {
       "parent": "spine_03",
       "length_m": 0.1938,
@@ -655,6 +682,33 @@
     "upperarm_swing_r": {
       "parent": "clavicle_r",
       "length_m": 0.26578,
+      "head_rest_m": [
+        -0.215,
+        -0.01826,
+        1.42983
+      ]
+    },
+    "upperarm_swing_r_1": {
+      "parent": "clavicle_r",
+      "length_m": 0.13289,
+      "head_rest_m": [
+        -0.215,
+        -0.01826,
+        1.42983
+      ]
+    },
+    "upperarm_swing_r_2": {
+      "parent": "clavicle_r",
+      "length_m": 0.13289,
+      "head_rest_m": [
+        -0.215,
+        -0.01826,
+        1.42983
+      ]
+    },
+    "upperarm_swing_r_3": {
+      "parent": "clavicle_r",
+      "length_m": 0.13289,
       "head_rest_m": [
         -0.215,
         -0.01826,
@@ -902,8 +956,8 @@
   ],
   "muscle_sculpt": {
     "parts": 108,
-    "outline_points": 51360,
-    "vertices_moved": 2083,
+    "outline_points": 48978,
+    "vertices_moved": 2070,
     "max_displacement_m": 0.004,
     "geometry": {
       "amplitude_m": 0.004,
