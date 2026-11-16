@@ -1,6 +1,6 @@
 {
   "tool": "pipeline/validate_motion.py",
-  "date": "2026-11-15",
+  "date": "2026-11-16",
   "exercise_id": "barbell_back_squat",
   "frames": 225,
   "fps": 24,
@@ -58,11 +58,11 @@
       "stage": "B",
       "title": "Hands stay on the implements in every frame",
       "status": "PASS",
-      "measured": 1e-05,
+      "measured": 2e-05,
       "limit": 0.004,
       "where": {
-        "implement": "SOCKET_hand_r",
-        "frame": 32
+        "implement": "SOCKET_hand_l",
+        "frame": 128
       },
       "detail": "m wrist to grip socket"
     },
@@ -93,8 +93,8 @@
       "measured": 0.0,
       "limit": 0.003,
       "where": {
-        "joint": "wrist",
-        "frame": 201
+        "joint": "ankle",
+        "frame": 188
       },
       "detail": "m"
     },
@@ -116,11 +116,11 @@
       "stage": "C",
       "title": "Wrists stay near straight (forearm to hand)",
       "status": "PASS",
-      "measured": 18.685,
+      "measured": 20.106,
       "limit": 25.0,
       "where": {
-        "side": "r",
-        "frame": 102
+        "side": "l",
+        "frame": 0
       },
       "detail": "deg"
     },
@@ -129,11 +129,11 @@
       "stage": "C",
       "title": "Elbow flexion inside the soft-tissue limit",
       "status": "PASS",
-      "measured": 129.465,
+      "measured": 143.164,
       "limit": 145.0,
       "where": {
-        "side": "l",
-        "frame": 109
+        "side": "r",
+        "frame": 141
       },
       "detail": "deg"
     },
