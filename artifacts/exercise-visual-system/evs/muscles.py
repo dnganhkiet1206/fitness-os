@@ -171,6 +171,7 @@ def write_highlight_map(atlas_dir: Path, path: Path, primary: list[str], seconda
         phase = fibers_mod.load_phase_fields(atlas_dir)
         roles = {"primary": primary, "secondary": secondary, "stabilizing": stabilizing}
         if phase is not None:
+            roles = {k: config.expand_muscles(v) for k, v in roles.items()}
             print("[evs] highlight: fibre striations from the baked phase atlas (origin/insertion fields)")
             rgb = fibers_mod.apply_fiber_phase(rgb, phase, roles, seed=fiber_seed)
         else:

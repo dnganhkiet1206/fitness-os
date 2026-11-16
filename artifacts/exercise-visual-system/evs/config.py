@@ -58,6 +58,17 @@ def muscle_names() -> list[str]:
     return list(m["groups"]) + list(m.get("aggregates", {}))
 
 
+def expand_muscles(names: list[str]) -> list[str]:
+    """Aggregates replaced by their parts (order kept, no repeats). Masks
+    hold both, but the fibre atlases (phase, direction) are per part: each
+    part has its own fibres, so a whole muscle is drawn as its parts."""
+    aggregates = muscle_map().get("aggregates", {})
+    out: list[str] = []
+    for n in names:
+        out += list(aggregates.get(n, [n]))
+    return list(dict.fromkeys(out))
+
+
 def fiber_map() -> dict:
     return load_json(CONFIG_DIR / "fiber_map.json")
 

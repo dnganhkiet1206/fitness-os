@@ -49,6 +49,15 @@ class ConfigTests(unittest.TestCase):
             finally:
                 del os.environ["EVS_BRAND_CONFIG"]
 
+    def test_aggregates_expand_to_parts_with_fibres(self):
+        # Exercises may name a whole muscle; the fibre atlases are per part.
+        parts = config.expand_muscles(["pectoralis_major", "deltoid_anterior", "pectoralis_major_sternocostal"])
+        self.assertEqual(parts, ["pectoralis_major_clavicular", "pectoralis_major_sternocostal", "pectoralis_major_abdominal", "deltoid_anterior"])
+        fibre_groups = set(config.fiber_map()["groups"])
+        for name in config.muscle_names():
+            for part in config.expand_muscles([name]):
+                self.assertIn(part, fibre_groups, name)
+
     def test_bench_press_config_is_valid(self):
         ex = config.exercise_config("bench-press")
         problems = report.validate_exercise_config(ex, config.muscle_names(), list(config.camera_presets()["presets"]))
