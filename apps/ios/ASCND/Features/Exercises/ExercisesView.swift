@@ -32,8 +32,13 @@ struct ExercisesView: View {
   /// Hộp "Có phải bạn muốn…?" chọn bài có sẵn (15/11). Builder đưa vào: chọn bài
   /// ấy vào buổi rồi quay lại. Không có (thư viện): đóng form, tìm tới bài ấy.
   var onPick: ((LibraryExercise) -> Void)?
+  /// Lịch sử 90 ngày: số buổi đã tập mỗi bài — xếp bài quen thuộc lên trước và
+  /// bộ lọc "Quen thuộc" (15/11). `nil` = không có lịch sử (Lab).
+  var insights: InsightBook?
 
   @Environment(\.locale) private var locale
+  /// Bộ lọc riêng của người dùng (Kiệt 15/11), cộng dồn với nhóm cơ.
+  @State private var scope: ExerciseScope = .all
   @State private var search = ""
   /// Nhóm đang lọc (chip); mở từ ô nhóm cơ thì chọn sẵn nhóm ấy.
   @State private var group: MuscleGroup?
@@ -48,11 +53,12 @@ struct ExercisesView: View {
 
   /// - Parameter create: chữ builder đã tìm mà không thấy — mở sẵn form với tên ấy.
   init(
-    library: ExerciseLibrary, only: MuscleGroup? = nil, create: String? = nil,
+    library: ExerciseLibrary, only: MuscleGroup? = nil, create: String? = nil, insights: InsightBook? = nil,
     onPick: ((LibraryExercise) -> Void)? = nil
   ) {
     self.library = library
     self.only = only
+    self.insights = insights
     self.onPick = onPick
     _group = State(initialValue: only)
     _adding = State(initialValue: create != nil)
@@ -75,7 +81,20 @@ struct ExercisesView: View {
   /// Đang tìm: một danh sách phẳng xếp theo độ khớp + độ phổ biến
   /// (`ExerciseSearch.rank`, 15/11) — gộp theo nhóm sẽ đẩy bài khớp nhất xuống
   /// dưới một nhóm khác.
-  private var results: [LibraryExercise] { ExerciseSearch.rank(inGroup, query: debounced) }
+  private var results: [LibraryExercise] {
+    ExerciseSearch.rank(scoped, query: debounced, usage: usageCounts, favorites: favorites.ids)
+  }
+  private var favorites: ExerciseFavorites { ExerciseFavoritesShared.book(for: library.userId) }
+  private var usage: [String: ExerciseUsage] { ExerciseFamiliarity.usage(insights?.performances ?? []) }
+  private var usageCounts: [String: Int] { ExerciseFamiliarity.counts(usage) }
+  /// Bài trong nhóm đang chọn, qua bộ lọc Yêu thích / Quen thuộc.
+  private var scoped: [LibraryExercise] {
+    switch scope {
+    case .all: inGroup
+    case .favorites: favorites.filter(inGroup)
+    case .familiar: ExerciseFamiliarity.familiar(inGroup, usage: usage)
+    }
+  }
 
   var body: some View {
     content
@@ -139,6 +158,14 @@ struct ExercisesView: View {
       #endif
   }
 
+  private var scopeHint: String? {
+    switch scope {
+    case .all: nil
+    case .favorites: String(localized: "ex.favorites.empty")
+    case .familiar: String(localized: "ex.familiar.empty")
+    }
+  }
+
   struct DemoTarget: Identifiable {
     let name: String
     var id: String { name }
@@ -181,7 +208,18 @@ struct ExercisesView: View {
   private var groupChips: some View {
     ScrollView(.horizontal, showsIndicators: false) {
       HStack(spacing: DS.Spacing.xs) {
-        chip(String(localized: "wb.all"), on: group == nil) { group = nil }
+        chip(String(localized: "wb.all"), on: group == nil && scope == .all) {
+          group = nil
+          scope = .all
+        }
+        chip(String(localized: "ex.filter.favorites"), icon: "star.fill", on: scope == .favorites) {
+          scope = scope == .favorites ? .all : .favorites
+        }
+        if insights != nil {
+          chip(String(localized: "ex.filter.familiar"), icon: "clock.arrow.circlepath", on: scope == .familiar) {
+            scope = scope == .familiar ? .all : .familiar
+          }
+        }
         ForEach(MuscleGroup.allCases, id: \.self) { g in
           chip(g.label(lang), on: group == g) { group = group == g ? nil : g }
         }
@@ -192,10 +230,17 @@ struct ExercisesView: View {
   }
 
   /// Chip đang chọn: nền màu Tập luyện, chữ trắng; chưa chọn: nền kính + viền.
-  private func chip(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
+  private func chip(
+    _ title: String, icon: String? = nil, on: Bool, action: @escaping () -> Void
+  ) -> some View {
     let rose = MascotRoomView.signalColor(.workout)
     return Button(action: action) {
-      Text(verbatim: title)
+      Label {
+        Text(verbatim: title)
+      } icon: {
+        if let icon { Image(systemName: icon).imageScale(.small) }
+      }
+        .labelStyle(ChipLabelStyle())
         .font(DS.TextStyle.footnote.weight(on ? .bold : .medium))
         .foregroundStyle(on ? Color.white : DS.Color.foreground.swiftUI)
         .padding(.horizontal, DS.Spacing.md)
@@ -217,10 +262,15 @@ struct ExercisesView: View {
       DSErrorView(message: String(localized: "history.loadFailed")) {
         Task { await library.refresh() }
       }
-    } else if !debounced.isEmpty {
-      let found = results
+    } else if scope != .all || !debounced.isEmpty {
+      // Yêu thích / Quen thuộc / đang tìm: một danh sách phẳng.
+      let found = debounced.isEmpty
+        ? (scope == .familiar ? scoped : ExerciseSearch.personalFirst(scoped, usage: usageCounts))
+        : results
       if found.isEmpty {
-        DSEmptyState(systemImage: "dumbbell", title: String(localized: "ex.empty"), message: nil)
+        DSEmptyState(
+          systemImage: scope == .favorites ? "star" : "dumbbell", title: String(localized: "ex.empty"),
+          message: debounced.isEmpty ? scopeHint : nil)
       } else {
         List {
           ForEach(found) { e in row(e) }
@@ -235,8 +285,8 @@ struct ExercisesView: View {
       List {
         ForEach(sections) { section in
           Section {
-            // Bài phổ biến đứng đầu mỗi nhóm, không nhãn riêng (Kiệt 15/11).
-            ForEach(ExerciseSearch.popularFirst(section.exercises)) { e in
+            // Yêu thích → hay tập → phổ biến đứng đầu mỗi nhóm, không nhãn riêng (Kiệt 15/11).
+            ForEach(ExerciseSearch.personalFirst(section.exercises, usage: usageCounts, favorites: favorites.ids)) { e in
               row(e)
             }
           } header: {
@@ -252,6 +302,7 @@ struct ExercisesView: View {
     let own = e.userId?.lowercased() == library.userId.lowercased()
     let has3D = ExercisePoster.image(for: e.name) != nil
     return ExerciseCard(exercise: e, lang: lang) {
+      FavoriteStarButton(exercise: e, favorites: favorites)
       // Chỉ bài của mình mới xoá được (bài mẫu là của chung).
       if own {
         Button {

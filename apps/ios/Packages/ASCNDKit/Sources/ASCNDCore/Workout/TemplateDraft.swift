@@ -172,10 +172,19 @@ public struct TemplateDraft: Sendable, Hashable {
 
   /// `visible` (`:302`): nhóm đang chọn và chữ tìm (không phân biệt hoa
   /// thường); không cắt số lượng. Có chữ tìm thì xếp theo độ khớp (18/10).
-  public static func visible(_ library: [LibraryExercise], group: MuscleGroup?, search: String) -> [LibraryExercise] {
+  /// 15/11: `usage` (số buổi đã tập) và `favorites` (id có sao) đưa bài quen
+  /// thuộc lên trước — khi tìm (`ExerciseSearch.rank`) và khi chưa gõ
+  /// (`personalFirst` khi `personal` bật; tắt thì giữ thứ tự server như RN).
+  public static func visible(
+    _ library: [LibraryExercise], group: MuscleGroup?, search: String, usage: [String: Int] = [:],
+    favorites: Set<String> = [], personal: Bool = false
+  ) -> [LibraryExercise] {
     let q = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     let inGroup = library.filter { e in group.map { e.muscles.contains($0) } ?? true }
-    return ExerciseCatalog.ranked(inGroup, query: q)
+    guard !q.isEmpty else {
+      return personal ? ExerciseSearch.personalFirst(inGroup, usage: usage, favorites: favorites) : inGroup
+    }
+    return ExerciseSearch.rank(inGroup, query: q, usage: usage, favorites: favorites)
   }
 
   /// Nút ± của ô tạ (`workout-set-sheet.tsx:163`): bước 2.5 kg / 5 lb, kẹp
