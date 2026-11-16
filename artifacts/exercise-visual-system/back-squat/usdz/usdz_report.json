@@ -3,14 +3,14 @@
   "exercise_id": "barbell_back_squat",
   "master_character_id": "master_character_003",
   "usdz": "back_squat_animation.usdz",
-  "size_bytes": 5651705,
+  "size_bytes": 8391176,
   "zip_members": [
     "back_squat_animation.usdc",
+    "textures/_usdz_apparel_emission.png",
+    "textures/_usdz_apparel_albedo.png",
     "textures/_usdz_body_emission.png",
     "textures/_usdz_body_normal.png",
-    "textures/_usdz_body_albedo.png",
-    "textures/_usdz_apparel_emission.png",
-    "textures/_usdz_apparel_albedo.png"
+    "textures/_usdz_body_albedo.png"
   ],
   "default_camera": {
     "preset_id": "three_quarter",
@@ -22,25 +22,25 @@
     "target_m": [
       0.1091,
       0.8827,
-      -0.0397
+      -0.0396
     ],
     "distance_m": 4.135,
     "vertical_fov_deg": 41.26,
     "aspect": 0.5625
   },
   "expectations": {
-    "deform_bones": 75,
+    "deform_bones": 82,
     "animation_duration_s": 9.3333,
     "animation_frames": 225
   },
   "reimport": {
     "armatures": 1,
-    "bones": 75,
+    "bones": 82,
     "mesh_objects": 5,
     "skinned_mesh_objects": 2,
     "mesh_vertices": 22356,
     "actions": 1,
-    "last_animation_frame": 214.0,
+    "last_animation_frame": 215.0,
     "materials": 6
   }
 }

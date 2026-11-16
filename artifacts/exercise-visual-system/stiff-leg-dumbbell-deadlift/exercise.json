@@ -34,9 +34,8 @@
   ],
   "stabilizing_muscles": [
     "erector_spinae",
-    "trapezius",
-    "rectus_abdominis",
-    "obliques",
+    "trapezius_upper",
+    "rhomboids",
     "forearm_muscles"
   ],
   "master_character_id": "master_character_003",
@@ -197,11 +196,12 @@
   "brand_profile_id": "placeholder",
   "highlight_roles": [
     "primary",
-    "secondary"
+    "secondary",
+    "stabilizing"
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Target hamstrings; synergists gluteus maximus, adductor magnus; erector spinae and trapezius/rhomboids stabilize; abdominals are antagonist stabilizers; the forearm flexors hold the dumbbells. Checked against ExRx 15/11 (Kiệt: \"nhóm cơ hoạt động đã chính xác chưa\").",
+  "muscle_roles_note": "Three levels (Kiệt 15/11): primary = carries the load and produces the main force; secondary = directly assists the movement; stabilizing = holds posture and keeps joints stable. With nearly straight knees hip extension is mostly the hamstrings' (ExRx target); gluteus maximus and adductor magnus assist. Erector spinae keeps the back flat, upper trapezius and rhomboids hold the shoulders against the hanging weight, forearm flexors the grip.",
   "reviewer": null,
   "approval_date": null,
   "production": {

@@ -289,5 +289,38 @@
     },
     "total_seconds": 137.7,
     "qa": "{\"PASS\": 18}"
+  },
+  {
+    "version": 12,
+    "when": "2026-11-16T00:15:44",
+    "template": "raise_lateral",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 7.1
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 22.3
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 3.9
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 47.6
+      },
+      "export": {
+        "ok": true,
+        "seconds": 91.1
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 9.0
+      }
+    },
+    "total_seconds": 182.6,
+    "qa": "{\"PASS\": 18}"
   }
 ]

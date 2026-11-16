@@ -29,7 +29,8 @@
     @State private var showTips = false
     @State private var selectedTip: String?
     /// Ẩn vùng tô sáng của cơ phụ để tập trung vào cơ chính (Kiệt 13/11).
-    @State private var hideSecondary = false
+    /// Mặc định chỉ hiện cơ chính (Kiệt 16/11); nút "Hiện cơ phụ" bật Phụ + Ổn định.
+    @State private var hideSecondary = true
     @State private var bodySkins = BodySkins()
     @GestureState private var dragOffset: CGSize = .zero
     @GestureState private var pinch: CGFloat = 1
@@ -108,6 +109,8 @@
                   content.add(scene)
                   if let prefix = ExerciseDemo3D.demo(for: name)?.focusTexturePrefix {
                     await bodySkins.prepare(scene: scene, prefix: prefix)
+                    // update{} không chạy lại khi texture nạp xong: gán ngay.
+                    bodySkins.apply(focus: hideSecondary)
                   }
                   Self.addLights(to: content, target: cameraTarget)
                   // Tự chạy và lặp vô hạn, không dừng ở cuối.
@@ -267,6 +270,8 @@
     /// Chú thích cơ đang tô sáng (Kiệt 13/11: bắt buộc phải có, đặt dưới
     /// khung viewer gần dòng chú thích xoay): mỗi hàng là chấm màu đúng màu
     /// render + tên cơ + vai trò. Tĩnh, không tương tác.
+    static let roleOrder = ["eg.demo3d.legend.primary", "eg.demo3d.legend.secondary", "eg.demo3d.legend.stabilizer"]
+
     private func legendView(_ legend: [ExerciseDemo3D.LegendEntry]) -> some View {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         HStack {
@@ -295,31 +300,44 @@
             .accessibilityAddTraits(hideSecondary ? [.isButton, .isSelected] : .isButton)
           }
         }
-        ForEach(Array(legend.enumerated()), id: \.offset) { _, entry in
-          let tint = Color(hex: entry.hex)
-          let primary = entry.roleKey.hasSuffix(".primary")
-          let hidden = hideSecondary && !primary
-          HStack(spacing: DS.Spacing.sm) {
-            Circle()
-              .fill(tint)
-              .frame(width: 10, height: 10)
-              .shadow(color: tint.opacity(0.8), radius: 5)
-              .accessibilityHidden(true)
-            Text(LocalizedStringKey(entry.nameKey))
-              .font(DS.TextStyle.body.weight(.semibold))
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-            Spacer(minLength: DS.Spacing.sm)
-            Text(LocalizedStringKey(entry.roleKey))
-              .font(DS.TextStyle.caption.weight(.semibold))
-              .foregroundStyle(primary ? Color.white : DS.Color.metricOrange.swiftUI)
-              .padding(.horizontal, 10)
-              .padding(.vertical, 4)
-              .background {
-                Capsule().fill(primary ? tint : tint.opacity(0.14))
+        // Ba cấp (Kiệt 15/11): Chính = chịu tải, tạo lực chính; Phụ = hỗ trợ
+        // trực tiếp chuyển động; Ổn định = giữ tư thế, ổn định khớp. Mỗi cấp
+        // một hàng: nhãn màu + chip tên cơ xuống dòng tự do, để 10+ cơ vẫn
+        // gọn và không che mô hình.
+        ForEach(Self.roleOrder, id: \.self) { role in
+          let entries = legend.filter { $0.roleKey == role }
+          if let first = entries.first {
+            let tint = Color(hex: first.hex)
+            let primary = role.hasSuffix(".primary")
+            HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
+              Text(LocalizedStringKey(role))
+                .font(DS.TextStyle.caption.weight(.semibold))
+                .foregroundStyle(primary ? Color.white : tint)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background { Capsule().fill(primary ? tint : tint.opacity(0.16)) }
+                .frame(minWidth: 72, alignment: .leading)
+              FlowRows(spacing: 6, centered: false) {
+                ForEach(Array(entries.enumerated()), id: \.offset) { _, entry in
+                  HStack(spacing: 6) {
+                    Circle()
+                      .fill(tint)
+                      .frame(width: 8, height: 8)
+                      .shadow(color: tint.opacity(0.8), radius: 4)
+                      .accessibilityHidden(true)
+                    Text(LocalizedStringKey(entry.nameKey))
+                      .font(DS.TextStyle.footnote.weight(.semibold))
+                      .foregroundStyle(DS.Color.foreground.swiftUI)
+                  }
+                  .padding(.horizontal, 8)
+                  .padding(.vertical, 4)
+                  .background(DS.Color.foreground.swiftUI.opacity(0.06), in: Capsule())
+                }
               }
+            }
+            .opacity(hideSecondary && !primary ? 0.35 : 1)
+            .accessibilityElement(children: .combine)
           }
-          .opacity(hidden ? 0.35 : 1)
-          .accessibilityElement(children: .combine)
         }
       }
       .padding(DS.Spacing.md)
@@ -414,6 +432,12 @@
     @ObservationIgnored private weak var body: ModelEntity?
     @ObservationIgnored private var full: Skin = (nil, nil, nil)
     @ObservationIgnored private var focus: Skin = (nil, nil, nil)
+    /// Quần (vật liệu không có normal map) cũng tô cơ bên dưới, nên có bộ
+    /// texture "chỉ cơ chính" riêng (`<prefix>_apparel_*`, từ 16/11). Bài cũ
+    /// không có thì quần giữ nguyên.
+    @ObservationIgnored private var apparelIndex: Int?
+    @ObservationIgnored private var fullApparel: Skin = (nil, nil, nil)
+    @ObservationIgnored private var focusApparel: Skin = (nil, nil, nil)
     @ObservationIgnored private var shownFocus = false
     private(set) var ready = false
 
@@ -425,30 +449,52 @@
       guard let body = Self.find(in: scene), let model = body.model,
         let bodyMaterial = model.materials.lazy.compactMap({ $0 as? PhysicallyBasedMaterial })
           .first(where: { $0.normal.texture != nil }),
-        let albedoURL = Bundle.main.url(forResource: "\(prefix)_albedo", withExtension: "png"),
-        let emissionURL = Bundle.main.url(forResource: "\(prefix)_emission", withExtension: "png"),
-        let normalURL = Bundle.main.url(forResource: "\(prefix)_normal", withExtension: "png"),
-        let albedo = try? await TextureResource(contentsOf: albedoURL, options: .init(semantic: .color)),
-        let emission = try? await TextureResource(contentsOf: emissionURL, options: .init(semantic: .color)),
-        let normal = try? await TextureResource(contentsOf: normalURL, options: .init(semantic: .normal))
+        let albedo = await Self.texture("\(prefix)_albedo", .color),
+        let emission = await Self.texture("\(prefix)_emission", .color),
+        let normal = await Self.texture("\(prefix)_normal", .normal)
       else { return }
       full = (bodyMaterial.baseColor.texture, bodyMaterial.emissiveColor.texture, bodyMaterial.normal.texture)
       focus = (.init(albedo), .init(emission), .init(normal))
+      if let index = model.materials.firstIndex(where: {
+        guard let pbr = $0 as? PhysicallyBasedMaterial else { return false }
+        return pbr.normal.texture == nil && pbr.baseColor.texture != nil
+      }),
+        let apparel = model.materials[index] as? PhysicallyBasedMaterial,
+        let apparelAlbedo = await Self.texture("\(prefix)_apparel_albedo", .color),
+        let apparelEmission = await Self.texture("\(prefix)_apparel_emission", .color)
+      {
+        apparelIndex = index
+        fullApparel = (apparel.baseColor.texture, apparel.emissiveColor.texture, nil)
+        focusApparel = (.init(apparelAlbedo), .init(apparelEmission), nil)
+      }
       self.body = body
       ready = true
     }
 
-    /// Gán bộ texture vào vật liệu thân hiện tại (vật liệu duy nhất có normal
-    /// map — quần giữ nguyên). Gán lại mảng vật liệu cũ thì RealityKit không
-    /// vẽ lại, nên luôn dựng vật liệu mới.
+    private static func texture(_ name: String, _ semantic: TextureResource.Semantic) async -> TextureResource? {
+      guard let url = Bundle.main.url(forResource: name, withExtension: "png") else { return nil }
+      return try? await TextureResource(contentsOf: url, options: .init(semantic: semantic))
+    }
+
+    /// Gán bộ texture vào vật liệu thân (vật liệu duy nhất có normal map) và
+    /// quần. Gán lại mảng vật liệu cũ thì RealityKit không vẽ lại, nên luôn
+    /// dựng vật liệu mới.
     func apply(focus on: Bool) {
       guard ready, on != shownFocus, let body, let model = body.model else { return }
       let skin = on ? focus : full
-      body.model?.materials = model.materials.map { material in
-        guard var pbr = material as? PhysicallyBasedMaterial, pbr.normal.texture != nil else { return material }
-        pbr.baseColor.texture = skin.base
-        pbr.emissiveColor.texture = skin.emissive
-        pbr.normal.texture = skin.normal
+      let apparelSkin = on ? focusApparel : fullApparel
+      body.model?.materials = model.materials.enumerated().map { index, material in
+        guard var pbr = material as? PhysicallyBasedMaterial else { return material }
+        if pbr.normal.texture != nil {
+          pbr.baseColor.texture = skin.base
+          pbr.emissiveColor.texture = skin.emissive
+          pbr.normal.texture = skin.normal
+        } else if index == apparelIndex {
+          pbr.baseColor.texture = apparelSkin.base
+          pbr.emissiveColor.texture = apparelSkin.emissive
+        } else {
+          return material
+        }
         return pbr
       }
       shownFocus = on
