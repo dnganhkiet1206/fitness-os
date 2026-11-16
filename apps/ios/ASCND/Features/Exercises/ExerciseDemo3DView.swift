@@ -497,7 +497,9 @@
     }
 
     private static func texture(_ name: String, _ semantic: TextureResource.Semantic) async -> TextureResource? {
-      guard let url = Bundle.main.url(forResource: name, withExtension: "png") else { return nil }
+      // Bài dạng khối xuất JPEG (nhẹ hơn ~3 lần), bài cũ PNG.
+      guard let url = Bundle.main.url(forResource: name, withExtension: "jpg")
+        ?? Bundle.main.url(forResource: name, withExtension: "png") else { return nil }
       return try? await TextureResource(contentsOf: url, options: .init(semantic: semantic))
     }
 

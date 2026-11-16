@@ -75,7 +75,7 @@ Lợi thêm: 8 bài hiện chiếm 47 MB. Sang dạng khối thì còn 1 nhân v
 ## Lộ trình đề xuất
 
 1. ~~**Nguyên mẫu (≈ nửa ngày):**~~ **xong 16/11 (xem trên).** `export_usdz.py --split` xuất `character.usdz` + `dumbbell_curl_motion.usdz` + `equipment/dumbbell.usdz`. App ghép lại và so khung hình với bản cũ trên simulator.
-2. Chuyển 8 bài sang dạng khối; trình xem nạp theo khối; bỏ bản chép nhân vật trong từng USDZ.
+2. ~~Chuyển 8 bài sang dạng khối;~~ **16/11: 7 bài đã chuyển (bench chờ A/B, vẫn USDZ cũ); texture JPEG q92; thư mục 3D của app 63 → 30 MB; mở đủ 7 bài trên simulator.** trình xem nạp theo khối; bỏ bản chép nhân vật trong từng USDZ.
 3. Điểm neo trang trí trong phòng + 1 gói mẫu (mock cho Kiệt duyệt trước, vì đây là thiết kế).
 4. Dấu ẩn texture (tuỳ chọn).
 

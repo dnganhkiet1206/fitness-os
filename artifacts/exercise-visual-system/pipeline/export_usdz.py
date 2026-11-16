@@ -248,6 +248,27 @@ USD_EXPORT = dict(selected_objects_only=True, export_armatures=True, only_deform
                   check_existing=False)
 
 
+JPEG_QUALITY = 92
+
+
+def to_jpeg(out_dir: Path, prefix: str) -> None:
+    """Skin textures of a modular export as JPEG (16/11: PNG albedo 781 KB,
+    emission 869 KB, normal 2.5 MB per exercise; JPEG q92 224 / 238 / 843 KB,
+    no visible change on the simulator). ImageMagick when installed, else the
+    PNGs stay (the app reads either)."""
+    import shutil
+    import subprocess
+    magick = shutil.which("magick")
+    if magick is None:
+        print("[evs] split: ImageMagick not found, skin textures stay PNG")
+        return
+    for png in sorted(out_dir.glob(f"{prefix}_f*_*.png")):
+        if not png.stem.startswith((f"{prefix}_full", f"{prefix}_focus")):
+            continue
+        subprocess.run([magick, str(png), "-quality", str(JPEG_QUALITY), str(png.with_suffix(".jpg"))], check=True)
+        png.unlink()
+
+
 def export_split(args, scene, rig, body, shorts, out_dir: Path, prefix: str, tmp: list) -> None:
     """Modular export (MODULAR_3D_PLAN.md, Kiệt 16/11): fix the character
     once and every exercise follows, no re-render.
@@ -290,6 +311,7 @@ def export_split(args, scene, rig, body, shorts, out_dir: Path, prefix: str, tmp
     bpy.ops.wm.usd_export(filepath=str(motion), export_animation=True, **USD_EXPORT)
     for p in tmp:
         p.unlink()
+    to_jpeg(out_dir, prefix)
     print(f"[evs] split: motion {motion.name} {motion.stat().st_size} bytes; reimport {reimport(str(motion))}")
 
 
