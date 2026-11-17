@@ -69,6 +69,20 @@ def tempo(ex_dir: Path) -> dict | None:
     }
 
 
+def mistakes(ex_dir: Path) -> list[dict]:
+    out = []
+    for other in sorted(p for p in ROOT.iterdir() if (p / "exercise.json").exists()):
+        spec = json.loads((other / "exercise.json").read_text())
+        m = spec.get("mistake_demo")
+        if not m or m.get("of") != ex_dir.name:
+            continue
+        prefix = other.name.replace("-", "_")
+        if not (other / "usdz_split" / f"{prefix}_motion.usdz").exists():
+            continue
+        out.append({"id": m["id"], "motion": f"{prefix}_motion", "joints": m.get("fault_joints", [])})
+    return out
+
+
 def demo(ex_dir: Path, keys: dict, colors: dict) -> tuple[str, dict] | None:
     exercise = json.loads((ex_dir / "exercise.json").read_text())
     app = exercise.get("app_demo")
@@ -104,6 +118,9 @@ def demo(ex_dir: Path, keys: dict, colors: dict) -> tuple[str, dict] | None:
         # (filled by pipeline/tip_anchors.py). No joint = fixed point (equipment).
         "tips": [{k: t[k] for k in ("id", "anchor", "joint", "offset") if k in t} for t in app.get("tips") or []],
         "tempo": tempo(ex_dir),
+        # Common-mistake clips (C2, 17/11): sibling exercise folders whose exercise.json has
+        # mistake_demo.of == this folder. Same character, same timing; the app swaps the motion.
+        "mistakes": mistakes(ex_dir),
     }
     return prefix, d | {"catalog_order": app.get("catalog_order", 999)}
 

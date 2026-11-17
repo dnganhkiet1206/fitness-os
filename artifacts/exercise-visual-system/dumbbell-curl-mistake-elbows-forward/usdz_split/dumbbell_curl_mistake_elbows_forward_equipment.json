@@ -1,0 +1,12 @@
+{
+  "sockets": [
+    {
+      "socket": "Dumbbell_l",
+      "key": "dumbbell_12kg"
+    },
+    {
+      "socket": "Dumbbell_r",
+      "key": "dumbbell_12kg"
+    }
+  ]
+}

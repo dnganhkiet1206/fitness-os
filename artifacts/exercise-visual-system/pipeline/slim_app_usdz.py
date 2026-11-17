@@ -171,6 +171,16 @@ def a2_a3_room(app: Path) -> None:
             d_tex = sorted((d_layer.parent / "textures").glob("*"))
             if len(l_tex) != 1 or len(d_tex) != 1:
                 raise RuntimeError(f"{lp['part']}: expected one texture per look, got {l_tex} / {d_tex}")
+            # A look still on the shared file shows the texture its manifest names, not the one
+            # packed inside (that one is the light texture): after re-exporting only the light
+            # look, the dark look must keep its own baked texture (review #942).
+            for look, layer_tex in ((lp, l_tex), (dp, d_tex)):
+                if look["file"] == shared and look.get("texture"):
+                    own = next((app / f"{look['texture']}{ext}" for ext in (".jpg", ".png")
+                                if (app / f"{look['texture']}{ext}").exists()), None)
+                    if own is None:
+                        raise RuntimeError(f"{lp['part']}: manifest texture {look['texture']} is missing")
+                    layer_tex[0] = own
             # Pack to a temporary name first: after a first run one of the inputs IS the shared
             # file (one look re-exported alone with --looks), so deleting inputs must never
             # touch the output (review #939).
@@ -182,7 +192,8 @@ def a2_a3_room(app: Path) -> None:
             dp.pop("texture", None)
             if l_tex[0].read_bytes() != d_tex[0].read_bytes():
                 out_tex = app / f"gym_room_dark_{lp['part']}{d_tex[0].suffix}"
-                shutil.copyfile(d_tex[0], out_tex)
+                if d_tex[0].resolve() != out_tex.resolve():
+                    shutil.copyfile(d_tex[0], out_tex)
                 dp["texture"] = out_tex.stem
             for old_input in {lf, df}:
                 if old_input.resolve() != out.resolve() and old_input.exists():

@@ -77290,6 +77290,167 @@
           }
         }
       }
+    },
+    "eg.demo3d.mistake.show": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Common mistake"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error común"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sai thường gặp"
+          }
+        }
+      }
+    },
+    "eg.demo3d.mistake.hide": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show the right way"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver la forma correcta"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xem cách đúng"
+          }
+        }
+      }
+    },
+    "eg.demo3d.mistake.badge": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wrong form"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forma incorrecta"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Động tác sai"
+          }
+        }
+      }
+    },
+    "eg.demo3d.mistake.fixLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to fix"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo corregir"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cách sửa"
+          }
+        }
+      }
+    },
+    "eg.demo3d.mistake.elbows_forward": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elbows drifting forward"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codos hacia adelante"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khuỷu tay đưa ra trước"
+          }
+        }
+      }
+    },
+    "eg.demo3d.mistake.elbows_forward.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The upper arms swing forward as you lift. The front of the shoulder takes over part of the work, so the biceps do less."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los brazos se adelantan al subir. La parte frontal del hombro asume parte del trabajo y el bíceps trabaja menos."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cánh tay trên đánh ra trước khi nâng tạ. Cơ vai trước gánh bớt việc nên cơ nhị đầu làm ít đi."
+          }
+        }
+      }
+    },
+    "eg.demo3d.mistake.elbows_forward.fix": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep your upper arms pinned to your sides and move only your forearms. If you can't, lower the weight."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantén los brazos pegados al cuerpo y mueve solo los antebrazos. Si no puedes, baja el peso."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ép cánh tay trên sát người, chỉ cẳng tay chuyển động. Không giữ được thì giảm tạ."
+          }
+        }
+      }
     }
   }
 }
