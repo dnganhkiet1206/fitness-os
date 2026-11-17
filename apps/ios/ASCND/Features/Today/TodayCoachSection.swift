@@ -7,7 +7,7 @@ import SwiftUI
 /// (mock duyệt 21/10): tiêu đề lớn, lời giải thích, thẻ số liệu của đúng chủ đề.
 /// Có nút X để ẩn insight ấy; ghi thêm (ngủ / ăn / tập) ra insight mới thì hiện lại.
 /// Lối hỏi Koa đã rời thẻ (Kiệt 21/10: sẽ làm riêng).
-/// Chỉ khi các function AI có trên máy chủ (`AppServices.aiDeployed`).
+/// Chỉ khi `ai-smart-nudges` có trên máy chủ (`AppServices.isAIDeployed`).
 struct TodayCoachSection: View {
   let userId: String
   let today: LocalDate
@@ -42,7 +42,7 @@ struct TodayCoachSection: View {
   }
 
   var body: some View {
-    if services.aiDeployed == true {
+    if services.isAIDeployed(.smartNudges) {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         // Máy chủ chưa bật tính năng → không hiện thẻ lỗi vĩnh viễn (15/10, audit).
         if let nudges, !nudges.isNotDeployed, dismissed != dismissKey {

@@ -25,6 +25,8 @@ Bài toán production rút ra từ phân tích ngược các app fitness (Apple 
 
 ## Quy trình
 
+> Quy trình đầy đủ từng bước cho một bài (video → tìm kiếm → mô phỏng → simulator → Kiệt duyệt → mẹo): **`EXERCISE_WORKFLOW.md`**.
+
 ```
 1. Nghiên cứu   tìm nguồn kỹ thuật (NSCA/ACE/ExRx: dữ kiện) + số liệu động học (nghiên cứu)
 2. Đo           pipeline/measure_video.py trên video có giấy phép → <bài>/reference_measurements.json

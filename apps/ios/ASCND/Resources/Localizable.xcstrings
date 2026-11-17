@@ -16658,6 +16658,52 @@
         }
       }
     },
+    "rd.history.short": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health has shared less than 7 days of history, so your readiness baseline is still forming."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health mới chia sẻ chưa tới 7 ngày lịch sử, nên nền sẵn sàng vẫn đang hình thành."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud ha compartido menos de 7 días de historial, así que tu base de readiness aún se está formando."
+          }
+        }
+      }
+    },
+    "rd.history.limited": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health shares only part of your history, so trends start from when you granted access."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health chỉ chia sẻ một phần lịch sử, nên xu hướng bắt đầu từ lúc bạn cấp quyền."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud solo comparte una parte de tu historial, así que las tendencias empiezan desde que diste acceso."
+          }
+        }
+      }
+    },
     "rd.a11y %lld %@": {
       "extractionState": "manual",
       "localizations": {
@@ -16953,6 +16999,75 @@
           "stringUnit": {
             "state": "translated",
             "value": "agua"
+          }
+        }
+      }
+    },
+    "hs.part.bio": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "biometrics"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sinh trắc"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "biometría"
+          }
+        }
+      }
+    },
+    "hs.part.sleep": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sleep"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "giấc ngủ"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sueño"
+          }
+        }
+      }
+    },
+    "hs.part.workouts": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "workouts"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "buổi tập"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "entrenamientos"
           }
         }
       }
@@ -75572,19 +75687,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trapezius"
+            "value": "Middle & lower trapezius"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trapecio"
+            "value": "Trapecio medio e inferior"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cơ thang"
+            "value": "Cơ thang giữa, dưới"
           }
         }
       }
@@ -75654,6 +75769,1248 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cơ delta sau"
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_bench": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bench at 70°, back on the pad"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banco a 70°, espalda apoyada"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ghế 70°, lưng tựa đệm"
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_bench.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set the back pad to about 70°; keep your back and head on it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respaldo a unos 70°; espalda y cabeza apoyadas."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dựng lưng ghế khoảng 70°, lưng và đầu tựa đệm suốt bài."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_bench.how1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set the back pad one notch below upright (about 70–80°)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pon el respaldo una muesca por debajo de vertical (70–80°)."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hạ lưng ghế một nấc dưới thẳng đứng (khoảng 70–80°)."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_bench.how2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hips back against the pad, feet flat on the floor."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cadera pegada al respaldo, pies firmes en el suelo."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mông sát lưng ghế, bàn chân đặt chắc trên sàn."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_bench.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A slight recline keeps the shoulder in a safer position and spares the lower back."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una ligera inclinación protege el hombro y la zona lumbar."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ghế hơi ngả giúp khớp vai ở tư thế an toàn hơn và lưng dưới không phải ưỡn."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_bench.avoid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setting the bench at 90° and arching off the pad as you press."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banco a 90° y arquear la espalda al empujar."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dựng ghế thẳng 90° rồi ưỡn lưng rời khỏi đệm khi đẩy."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_shoulders": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shoulders down"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hombros abajo"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hạ vai, xa tai"
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_shoulders.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draw the shoulder blades down; don't shrug toward your ears."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baja las escápulas; no encojas los hombros."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kéo bả vai xuống, vai không nhún lên tai khi đẩy."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_shoulders.how1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before the first rep, draw the shoulders down and open the chest."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antes de empezar, baja los hombros y abre el pecho."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trước khi đẩy, hạ vai xuống và mở ngực."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_shoulders.how2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep a long neck for the whole set, even at the top."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuello largo toda la serie, también arriba."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giữ cổ dài suốt bài, kể cả ở đỉnh."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_shoulders.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low shoulders let the delts do the work and keep the neck relaxed."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hombros bajos: trabajan los deltoides y el cuello se relaja."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vai giữ thấp để cơ vai làm việc chính, cổ không bị căng."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_shoulders.avoid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shrugging up to the ears as the weights go overhead."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encoger los hombros hacia las orejas al subir."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhún vai lên tai khi tạ lên cao."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_elbows": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elbows under wrists"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codos bajo las muñecas"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khuỷu dưới cổ tay"
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_elbows.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forearms vertical, elbows slightly in front, not flared out."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Antebrazos verticales, codos algo adelante, no abiertos."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cẳng tay thẳng đứng, khuỷu hơi khép ra trước, không bè ngang."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_elbows.how1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elbows about 30–45° in front of the body, palms turned slightly in."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codos 30–45° por delante del cuerpo, palmas algo giradas hacia dentro."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khuỷu ra trước thân khoảng 30–45°, lòng bàn tay hơi xoay vào trong."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_elbows.how2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press straight up over the shoulders; the dumbbells come close but don't touch at the top."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empuja recto sobre los hombros; arriba las mancuernas se acercan sin tocarse."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đẩy thẳng lên trên vai; ở đỉnh hai tạ gần nhau nhưng không chạm."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_elbows.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Force goes straight through the forearm, so elbow and shoulder stay stable."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La fuerza pasa recta por el antebrazo; codo y hombro más estables."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lực đi thẳng qua cẳng tay nên khuỷu và vai vững hơn."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_elbows.avoid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pressing in a V or flaring the elbows straight out to the sides."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empujar en V o abrir los codos hacia los lados."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đẩy theo hình chữ V hoặc bè khuỷu thẳng ra hai bên."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_depth": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lower to chin level"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baja hasta la barbilla"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hạ sâu tới ngang cằm"
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_depth.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lower the dumbbells to chin level, close to the shoulders, then press."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baja las mancuernas a la altura de la barbilla, cerca de los hombros."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hạ tạ tới ngang cằm, gần chạm vai, rồi mới đẩy lên."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_depth.how1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lower slowly, about 2 seconds, under control."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baja despacio, unos 2 segundos, con control."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hạ chậm khoảng 2 giây, có kiểm soát."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_depth.how2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop when the upper arms are below shoulder level, then press up."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Para cuando los brazos estén por debajo de los hombros y empuja."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dừng khi cánh tay trên xuống dưới ngang vai, rồi đẩy lên."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_depth.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A full range works the shoulders through their whole range."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El recorrido completo trabaja todo el hombro."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biên độ đầy đủ giúp cơ vai làm việc trọn vẹn."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_depth.avoid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Half reps that stop at ear height."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medias repeticiones a la altura de las orejas."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chỉ nhấp nửa chừng ở tầm tai."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_core": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brace, hips on the seat"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abdomen firme, cadera en el asiento"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siết bụng, hông sát ghế"
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_core.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brace the abs and keep the hips and lower back on the bench."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activa el abdomen; cadera y zona lumbar en el banco."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siết bụng nhẹ, hông và lưng dưới không rời ghế."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_core.how1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Take a breath and brace before each press; breathe out as you press."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respira y activa el abdomen antes de empujar; suelta el aire al subir."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hít vào và siết bụng trước mỗi lần đẩy, thở ra khi đẩy lên."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_core.how2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feet flat and wider than the hips, knees about 90°."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pies planos y más abiertos que la cadera, rodillas a unos 90°."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bàn chân đặt phẳng, rộng hơn hông, gối khoảng 90°."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_core.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A braced trunk keeps the body still, so the shoulders do the work."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El tronco firme mantiene el cuerpo quieto y trabajan los hombros."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thân giữ chắc thì người không lắc, cơ vai làm việc chính."
+          }
+        }
+      }
+    },
+    "eg.demo3d.tip.press_core.avoid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arching the lower back or pushing with the legs to lift the weight."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arquear la zona lumbar o empujar con las piernas."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ưỡn lưng dưới hoặc dùng chân đẩy người để nâng tạ."
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.serratusAnterior": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serratus anterior"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serrato anterior"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cơ răng trước"
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.calves": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calves"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gemelos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cơ bắp chân"
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.rotatorCuffPosterior": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Infraspinatus, teres minor"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Infraespinoso, redondo menor"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cơ dưới gai, tròn bé"
+          }
+        }
+      }
+    },
+    "wh.templatesHistory": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Templates & history"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plantillas e historial"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mẫu buổi tập & lịch sử"
+          }
+        }
+      }
+    },
+    "wh.templatesCount %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld templates"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld plantillas"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld mẫu"
+          }
+        }
+      }
+    },
+    "ex.card.has3d": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Has a 3D demo"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiene demo en 3D"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Có minh hoạ 3D"
+          }
+        }
+      }
+    },
+    "ex.dup.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Did you mean this one?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Querías decir este?"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Có phải bạn muốn bài này?"
+          }
+        }
+      }
+    },
+    "ex.dup.use %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usar %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dùng %@"
+          }
+        }
+      }
+    },
+    "ex.dup.createAnyway": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create new anyway"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crear uno nuevo igualmente"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vẫn tạo bài mới"
+          }
+        }
+      }
+    },
+    "ex.dup.why": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This name is close to an exercise you already have. Using it keeps your history and records in one place."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este nombre se parece a un ejercicio que ya tienes. Usarlo mantiene tu historial y tus récords juntos."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tên này gần giống một bài đã có. Dùng bài có sẵn để lịch sử và kỷ lục không bị tách đôi."
+          }
+        }
+      }
+    },
+    "ex.filter.favorites": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favorites"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favoritos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yêu thích"
+          }
+        }
+      }
+    },
+    "ex.filter.familiar": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Familiar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habituales"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quen thuộc"
+          }
+        }
+      }
+    },
+    "ex.favorite.add": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add to favorites"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Añadir a favoritos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thêm vào yêu thích"
+          }
+        }
+      }
+    },
+    "ex.favorite.remove": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove from favorites"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitar de favoritos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bỏ yêu thích"
+          }
+        }
+      }
+    },
+    "ex.favorites.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap ☆ on an exercise to add it to your favorites."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca ☆ en un ejercicio para añadirlo a favoritos."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chạm ☆ trên thẻ bài để thêm vào yêu thích."
+          }
+        }
+      }
+    },
+    "ex.familiar.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exercises you've done most in the last 90 days show up here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aquí aparecen los ejercicios que más has hecho en los últimos 90 días."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bài bạn tập nhiều nhất trong 90 ngày qua sẽ hiện ở đây."
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.stabilizer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stabilizer"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estabilizador"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ổn định"
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.trapeziusUpper": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upper trapezius"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trapecio superior"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cơ thang trên"
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.rhomboids": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rhomboids"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Romboides"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cơ trám"
+          }
+        }
+      }
+    },
+    "eg.demo3d.legend.rectusAbdominis": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abs"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recto abdominal"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cơ bụng thẳng"
+          }
+        }
+      }
+    },
+    "eg.demo3d.collapseLegend": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapse muscle legend"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contraer leyenda de músculos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thu gọn chú thích cơ"
+          }
+        }
+      }
+    },
+    "eg.demo3d.expandLegend": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand muscle legend"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar leyenda de músculos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở chú thích cơ"
+          }
+        }
+      }
+    },
+    "eg.demo3d.collapseZoom": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide zoom bar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocultar barra de zoom"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ẩn thanh zoom"
+          }
+        }
+      }
+    },
+    "eg.demo3d.expandZoom": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show zoom bar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar barra de zoom"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện thanh zoom"
           }
         }
       }

@@ -1,0 +1,93 @@
+{
+  "id": "stiff_leg_dumbbell_deadlift",
+  "title": "Stiff-Legged Dumbbell Deadlift",
+  "family_label": "hinge",
+  "aliases": [
+    "stiff-legged dumbbell deadlift",
+    "stiff-leg dumbbell deadlift",
+    "dumbbell stiff-legged deadlift"
+  ],
+  "usdz": "stiff_leg_dumbbell_deadlift_animation",
+  "loop": null,
+  "poster": "stiff_leg_dumbbell_deadlift_poster",
+  "duration_s": 9.7,
+  "camera": {
+    "position": [
+      1.3615,
+      1.7978,
+      -1.8009
+    ],
+    "target": [
+      -0.013,
+      0.9256,
+      0.162
+    ]
+  },
+  "legend": [
+    {
+      "hex": "#E8552B",
+      "name_key": "eg.demo3d.legend.hamstrings",
+      "role_key": "eg.demo3d.legend.primary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.gluteusMaximus",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.adductors",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.erectorSpinae",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.trapeziusUpper",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.rhomboids",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.forearms",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    }
+  ],
+  "roles": {
+    "primary": [
+      "hamstrings"
+    ],
+    "secondary": [
+      "gluteus_maximus",
+      "adductors"
+    ],
+    "stabilizing": [
+      "erector_spinae",
+      "trapezius_upper",
+      "rhomboids",
+      "forearm_muscles"
+    ]
+  },
+  "focus_prefix": "stiff_leg_dumbbell_deadlift_focus",
+  "motion": "stiff_leg_dumbbell_deadlift_motion",
+  "full_prefix": "stiff_leg_dumbbell_deadlift_full",
+  "review": {
+    "date": "16/11",
+    "checked": [
+      "QA tự động 18/18: xương, tay bám dụng cụ, chân không trượt, dụng cụ không xuyên da, dáng toàn thân, khớp nhịp tempo.json",
+      "Tờ soi xoay vòng 8 góc × 3 khung (đầu, giữa, cuối pha)",
+      "Tờ soi tầm mắt người đứng nhìn (1,6 m) 5 góc: gập hông, lưng thẳng, gối mềm, hông lùi ra sau, tạ sát chân xuống giữa cẳng chân, trọng tâm trên bàn chân",
+      "Mở trong trình xem 3D của app (simulator iPhone 17), chú thích cơ đúng",
+      "Render lại 16/11 trên nhân vật 3.3: bản đồ cơ 48 phần, thớ cơ theo từng phần, tô 3 cấp Chính / Phụ / Ổn định (vai trò theo ExRx)"
+    ],
+    "remaining": []
+  },
+  "note": null
+}

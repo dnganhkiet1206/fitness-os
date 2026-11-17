@@ -30,10 +30,14 @@
   ],
   "secondary_muscles": [
     "deltoid_anterior",
-    "trapezius"
+    "trapezius_middle",
+    "trapezius_lower",
+    "serratus_anterior"
   ],
   "stabilizing_muscles": [
+    "trapezius_upper",
     "rotator_cuff_posterior",
+    "erector_spinae",
     "forearm_muscles"
   ],
   "master_character_id": "master_character_003",
@@ -84,6 +88,11 @@
     {
       "what": "tempo shape",
       "source": "minimum-jerk model, Flash and Hogan 1985",
+      "license": "facts"
+    },
+    {
+      "what": "muscle roles (target -> primary, synergists -> secondary, stabilizers -> stabilizing)",
+      "source": "ExRx https://exrx.net/WeightExercises/DeltoidLateral/DBLateralRaise",
       "license": "facts"
     }
   ],
@@ -185,11 +194,12 @@
   "brand_profile_id": "placeholder",
   "highlight_roles": [
     "primary",
-    "secondary"
+    "secondary",
+    "stabilizing"
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "The lateral deltoid abducts the arm; the anterior deltoid and the trapezius assist, the rotator cuff keeps the shoulder centred (ExRx).",
+  "muscle_roles_note": "Three levels (Kiệt 15/11): primary = carries the load and produces the main force; secondary = directly assists the movement; stabilizing = holds posture and keeps joints stable. Abduction is the lateral deltoid's (ExRx target); anterior deltoid, middle/lower trapezius and serratus (upward rotation) assist. Upper trapezius and levator stabilise the girdle, cuff the humeral head, erector spinae the slight forward lean, wrist extensors the grip.",
   "reviewer": null,
   "approval_date": null,
   "production": {
@@ -303,5 +313,17 @@
     "note": "Agent self-check only; status stays DRAFT until a qualified reviewer approves.",
     "owner_feedback": "Kiệt 14/11: not right. Redone against the ExRx photos: start in front of the thighs with a slight forward lean, elbows at shoulder height directly lateral at the top, handle level, shoulder girdle follows. Awaiting re-check.",
     "status": "reopened"
+  },
+  "app_demo": {
+    "title": "Side Lateral Raise",
+    "family_label": "raise_lateral",
+    "note": "Kiệt 14/11: chưa đúng. Đã sửa theo ảnh ExRx: bắt đầu tạ trước đùi, thân hơi cúi, gối hơi gập; ở đỉnh khuỷu ngang vai ngay bên vai, cẳng tay chếch trước; tay cầm nằm ngang (trước bị xoay nghiêng ~45°); vai nâng theo tay. QA 18/18. Chờ Kiệt xem lại",
+    "review": null,
+    "aliases": [
+      "side lateral raise",
+      "lateral raise",
+      "dumbbell lateral raise"
+    ],
+    "catalog_order": 4
   }
 }

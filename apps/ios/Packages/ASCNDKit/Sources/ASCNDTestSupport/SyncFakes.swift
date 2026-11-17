@@ -152,11 +152,25 @@ public actor FakeServer: RemoteWriter {
 public actor InMemoryOutboxStore: OutboxPersistence {
   public private(set) var pending: [OutboxEntry] = []
   public private(set) var dead: [DeadEntry] = []
+  /// Hàng "không giải mã được" mà `undecodableCount()` báo — test đặt để thử
+  /// đường báo sự cố của worker (R2-SYNC-02); chúng không có trong `load()`.
+  private var undecodable = 0
+  /// Số lần worker gọi `pruneDead` — lần nạp đầu gọi một lần (R2-SYNC-03).
+  public private(set) var pruneCalls = 0
   private var failures = 0
   private var holding = false
   private var parkedLoads: [CheckedContinuation<Void, Never>] = []
 
   public init(_ entries: [OutboxEntry] = []) { pending = entries }
+
+  public func setUndecodable(_ n: Int) { undecodable = n }
+
+  public func undecodableCount() -> Int { undecodable }
+
+  public func pruneDead(now: EpochMillis) -> Int {
+    pruneCalls += 1
+    return 0
+  }
 
   public func failNext(_ n: Int = 1) { failures = n }
   /// Giữ `load` lại SAU khi đã chụp đĩa — dựng đúng cảnh worker đọc xong rồi
@@ -192,6 +206,10 @@ public actor InMemoryOutboxStore: OutboxPersistence {
     for e in outbox.pending {
       if let i = pending.firstIndex(where: { $0.id == e.id }) { pending[i] = e } else { pending.append(e) }
     }
+    // Gửi lại (AUD-62): bản ghi đã về hàng chờ thì rời khỏi `dead` — như
+    // `OutboxStore.persist` xoá hàng `outbox_dead` của nó.
+    let queued = Set(outbox.pending.map(\.id))
+    dead.removeAll { queued.contains($0.entry.id) }
     if outbox.dead.count > dead.count { dead += outbox.dead.dropFirst(dead.count) }
   }
 

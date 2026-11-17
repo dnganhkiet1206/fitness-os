@@ -135,6 +135,10 @@ extension InMemoryWorkoutStore: OutboxPersistence {
     for e in snapshot.pending {
       if let i = outbox.firstIndex(where: { $0.id == e.id }) { outbox[i] = e } else { outbox.append(e) }
     }
+    // Gửi lại (AUD-62): bản ghi đã về hàng chờ thì rời khỏi `dead` — như
+    // `OutboxStore.persist` xoá hàng `outbox_dead` của nó.
+    let queued = Set(snapshot.pending.map(\.id))
+    deadEntries.removeAll { queued.contains($0.entry.id) }
     if snapshot.dead.count > deadEntries.count { deadEntries += snapshot.dead.dropFirst(deadEntries.count) }
   }
 

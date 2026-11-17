@@ -83,7 +83,11 @@ def _band(patch: dict, frame: LimbFrame, points: np.ndarray, feather: float) -> 
     r = patch.get("radius", 0.05)
     d_angle = np.radians(half - delta) * r if patch["half_width"] < 180 else np.full_like(s, 1.0)
     d_along = np.minimum(s - s0, s1 - s) * frame.length
-    mask = smoothstep(0.0, feather, np.minimum(d_angle, d_along))
+    # Side edges fade centred on the border, like the trunk polygons, so two
+    # neighbouring heads meet instead of leaving a grey seam of one feather
+    # width each (15/11: hamstrings showed 1.5-2 cm gaps). The ends still
+    # fade inside the band.
+    mask = smoothstep(-0.5 * feather, 0.5 * feather, d_angle) * smoothstep(0.0, feather, d_along)
     if "max_radius" in patch:
         mask = mask * (1.0 - smoothstep(patch["max_radius"] - 0.01, patch["max_radius"], radius))
     return mask
@@ -125,7 +129,19 @@ def evaluate_groups(muscle_map: dict, joints: dict, points: np.ndarray, normals:
         for patch in group["patches"]:
             chart = patch["chart"]
             feather = patch.get("feather", default_feather)
-            if "polygon" in patch:
+            if "polygon" in patch and chart in frames:
+                # Limb polygon (15/11, Kiệt: every muscle split into its real
+                # parts, e.g. sartorius runs diagonally across the thigh):
+                # vertices are (angle around the bone in degrees, relative to
+                # ``angle_center``; position along the bone, 0..1). Distances
+                # are measured in metres: angle x patch radius, s x bone length.
+                s_along, ang, _r = frames[chart].coords(points)
+                rel = (ang - patch.get("angle_center", 0.0) + 180.0) % 360.0 - 180.0
+                scale = np.array([np.radians(1.0) * patch.get("radius", 0.05), frames[chart].length])
+                pts = np.stack([rel, s_along], axis=1) * scale
+                poly = np.asarray(patch["polygon"], dtype=np.float64) * scale
+                mask = smoothstep(-0.5 * feather, 0.5 * feather, polygon_signed_distance(pts, poly)) * gates[chart]
+            elif "polygon" in patch:
                 poly = np.asarray(patch["polygon"], dtype=np.float64)
                 if chart == "torso_around":
                     scale = np.radians(1.0) * TORSO_RADIUS  # degrees to metres of arc

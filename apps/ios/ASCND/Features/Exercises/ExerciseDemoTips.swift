@@ -37,8 +37,30 @@
                   anchor: [0.30, 0.04, 0.80]),
     ]
 
+    /// Dumbbell Shoulder Press (Kiệt duyệt động tác 15/11). Nội dung từ các
+    /// video và trang đã đối chiếu (`dumbbell-shoulder-press/exercise.json`,
+    /// `motion_provenance`). Điểm neo đo từ xương ở khung 0 của
+    /// `dumbbell_shoulder_press_master.blend`, đổi sang Y-up (x, z, -y), đẩy
+    /// ra bề mặt: mép trên đệm lưng sau đầu, đỉnh vai trái, mặt trước vai phải,
+    /// cằm, bụng. Chỉ chọn vùng không di chuyển khi đẩy và không bị bảng cơ
+    /// che (bàn chân nằm dưới bảng cơ nên mẹo chân gộp vào mẹo bụng).
+    static let shoulderPress: [ExerciseTip] = [
+      ExerciseTip(id: "press_bench", titleKey: "eg.demo3d.tip.press_bench", bodyKey: "eg.demo3d.tip.press_bench.body",
+                  anchor: [0.12, 1.20, -0.38]),
+      ExerciseTip(id: "press_shoulders", titleKey: "eg.demo3d.tip.press_shoulders", bodyKey: "eg.demo3d.tip.press_shoulders.body",
+                  anchor: [0.14, 1.07, -0.12]),
+      ExerciseTip(id: "press_elbows", titleKey: "eg.demo3d.tip.press_elbows", bodyKey: "eg.demo3d.tip.press_elbows.body",
+                  anchor: [-0.21, 0.98, -0.04]),
+      ExerciseTip(id: "press_depth", titleKey: "eg.demo3d.tip.press_depth", bodyKey: "eg.demo3d.tip.press_depth.body",
+                  anchor: [0.0, 1.12, -0.05]),
+      ExerciseTip(id: "press_core", titleKey: "eg.demo3d.tip.press_core", bodyKey: "eg.demo3d.tip.press_core.body",
+                  anchor: [0.0, 0.70, 0.10]),
+    ]
+
     static func tips(for exerciseKey: String) -> [ExerciseTip] {
-      ["bench press", "barbell bench press", "barbell bench press - medium grip"].contains(exerciseKey) ? benchPress : []
+      if ["bench press", "barbell bench press", "barbell bench press - medium grip"].contains(exerciseKey) { return benchPress }
+      if ["dumbbell shoulder press", "seated dumbbell shoulder press", "seated dumbbell press"].contains(exerciseKey) { return shoulderPress }
+      return []
     }
   }
 

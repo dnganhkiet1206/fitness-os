@@ -12,7 +12,7 @@
   enum ExerciseDemo3D {
     struct Demo {
       /// USDZ hoạt hình (`Resources/ExerciseDemos`), không đuôi file.
-      let usdzFile: String
+      var usdzFile: String
       /// Clip vòng lặp của góc 45°: chỉ làm nền cho tấm ảnh đại diện ở đầu
       /// trang, trình xem không phát clip này mà mở USDZ.
       let loopFile: String?
@@ -35,7 +35,28 @@
       /// Tiền tố texture thân "chỉ cơ chính" (`<prefix>_albedo/_emission/_normal.png`,
       /// `pipeline/export_usdz.py`); nil = bài không có nút ẩn cơ phụ.
       var focusTexturePrefix: String?
+      /// 3D dạng khối (`docs/exercise-visual-system/MODULAR_3D_PLAN.md`, Kiệt
+      /// 16/11): chỉ khung xương + dụng cụ + chuyển động (`<bài>_motion.usdz`,
+      /// `export_usdz.py --split`). Có giá trị thì trình xem nạp nhân vật dùng
+      /// chung (`sharedCharacterFile`) và phát chuyển động này lên nó, texture
+      /// da lấy từ `fullTexturePrefix`. Sửa nhân vật = thay một file.
+      var motionFile: String?
+      /// Tiền tố texture da đủ ba vai trò (`<prefix>_albedo/_emission/_normal.png`
+      /// + `_apparel_albedo/_emission`) cho bài dạng khối.
+      var fullTexturePrefix: String?
+      /// Mã cơ theo vai trò (`primary` / `secondary` / `stabilizing`) cho shader tô cơ lúc chạy
+      /// (`MuscleShader`, 17/11). Rỗng = bài dùng texture nướng sẵn.
+      var roles: [String: [String]] = [:]
+      /// File 3D phải có trong bundle để mở bài: file chuyển động (dạng khối)
+      /// hoặc USDZ đầy đủ (bài cũ).
+      var bundledFile: String { motionFile ?? usdzFile }
     }
+
+    /// Nhân vật dùng chung cho mọi bài dạng khối (`characters/master_character_003/usdz`).
+    static let sharedCharacterFile = "character_003"
+    /// Quần áo dùng chung (khung xương + quần, tư thế nghỉ), Kiệt 16/11: đổi
+    /// đồ không đụng thân hay bài nào.
+    static let sharedApparelFile = "apparel_shorts"
 
     /// Một mục trong legend: chấm màu đúng màu tô sáng của vai trò trong
     /// bản render + tên cơ + vai trò, qua key i18n.
@@ -49,110 +70,67 @@
       let roleKey: String
     }
 
-    static let benchPress = Demo(
-      usdzFile: "bench_press_animation", loopFile: "bench_press_45_loop", posterFile: "bench_press_45_poster",
-      durationS: 8.5,
-      legend: [
-        LegendEntry(
-          hex: "#E8552B", nameKey: "eg.demo3d.legend.pectoralisMajor", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(
-          hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.secondary"),
-        LegendEntry(
-          hex: "#F2A33A", nameKey: "eg.demo3d.legend.tricepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
-      ],
-      focusTexturePrefix: "bench_press_focus")
+    /// Dữ liệu từng bài nằm trong `<bài>_demo.json` + `demo3d_index.json`
+    /// (Kiệt 16/11, `artifacts/exercise-visual-system/pipeline/export_app_demos.py`
+    /// sinh từ `exercise.json`): thêm hay sửa bài không đụng code app.
+    private struct DemoFile: Decodable {
+      struct Legend: Decodable { let hex: String; let name_key: String; let role_key: String }
+      struct Camera: Decodable { let position: [Float]?; let target: [Float]? }
+      struct ReviewFile: Decodable { let date: String; let checked: [String]; let remaining: [String] }
+      let id: String
+      let title: String
+      let family_label: String
+      let aliases: [String]
+      let usdz: String
+      let loop: String?
+      let poster: String
+      let duration_s: Double
+      let camera: Camera
+      let legend: [Legend]
+      let focus_prefix: String?
+      let motion: String?
+      let full_prefix: String?
+      let roles: [String: [String]]?
+      let review: ReviewFile?
+      let note: String?
+    }
 
-    /// Motion Lab (14/11): tạo từ template họ "curl" (`motionlab/families/curl.py`).
-    static let dumbbellCurl = Demo(
-      usdzFile: "dumbbell_curl_animation", loopFile: nil, posterFile: "dumbbell_curl_poster",
-      durationS: 9.8,
-      legend: [
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.secondary"),
-      ],
-      cameraPosition: [1.6631, 1.7949, 1.7473], cameraTarget: [-0.0249, 0.926, 0.0593],
-      focusTexturePrefix: "dumbbell_curl_focus")
+    private struct Index: Decodable { let demos: [String] }
 
-    /// Motion Lab (14/11): tạo từ template họ "squat" (`motionlab/families/squat.py`).
-    static let backSquat = Demo(
-      usdzFile: "back_squat_animation", loopFile: nil, posterFile: "back_squat_poster",
-      durationS: 9.3,
-      legend: [
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.quadriceps", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.adductors", roleKey: "eg.demo3d.legend.secondary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.secondary"),
-      ],
-      cameraPosition: [2.8529, 2.2835, 2.7084], cameraTarget: [0.1056, 0.8694, -0.039],
-      focusTexturePrefix: "back_squat_focus")
+    private static func vector(_ v: [Float]?) -> SIMD3<Float>? {
+      guard let v, v.count == 3 else { return nil }
+      return SIMD3(v[0], v[1], v[2])
+    }
 
-    /// Motion Lab (14/11, P1): họ "curl", tay cầm trung tính.
-    static let hammerCurl = Demo(
-      usdzFile: "hammer_curl_animation", loopFile: nil, posterFile: "hammer_curl_poster",
-      durationS: 9.8,
-      legend: [
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.primary"),
-      ],
-      cameraPosition: [1.6303, 1.7949, 1.7803], cameraTarget: [-0.0105, 0.9503, 0.1396],
-      focusTexturePrefix: "hammer_curl_focus")
+    /// Nạp một lần từ bundle; thiếu tệp nào thì bỏ bài đó (không crash).
+    private static let loaded: [DemoFile] = {
+      func read<T: Decodable>(_ name: String, _ type: T.Type) -> T? {
+        guard let url = Bundle.main.url(forResource: name, withExtension: "json"),
+          let data = try? Data(contentsOf: url)
+        else { return nil }
+        return try? JSONDecoder().decode(type, from: data)
+      }
+      guard let index = read("demo3d_index", Index.self) else { return [] }
+      return index.demos.compactMap { read("\($0)_demo", DemoFile.self) }
+    }()
 
-    /// Motion Lab (14/11, P1): họ "raise_lateral" (`motionlab/families/raise_lateral.py`).
-    static let sideLateralRaise = Demo(
-      usdzFile: "side_lateral_raise_animation", loopFile: nil, posterFile: "side_lateral_raise_poster",
-      durationS: 9.0,
-      legend: [
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidLateral", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.secondary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
-      ],
-      cameraPosition: [2.4272, 2.1371, 2.4476], cameraTarget: [0.0779, 0.9279, 0.0983],
-      focusTexturePrefix: "side_lateral_raise_focus")
-
-    /// Motion Lab (14/11, P1): họ "hinge" (`motionlab/families/hinge.py`).
-    static let stiffLegDeadlift = Demo(
-      usdzFile: "stiff_leg_dumbbell_deadlift_animation", loopFile: nil, posterFile: "stiff_leg_dumbbell_deadlift_poster",
-      durationS: 9.7,
-      legend: [
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.hamstrings", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.gluteusMaximus", roleKey: "eg.demo3d.legend.secondary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.erectorSpinae", roleKey: "eg.demo3d.legend.secondary"),
-      ],
-      // Góc mặc định từ phía sau (14/11): cơ chính ở mặt sau thân.
-      cameraPosition: [1.3624, 1.7978, -1.8002], cameraTarget: [-0.0119, 0.9257, 0.1624],
-      focusTexturePrefix: "stiff_leg_dumbbell_deadlift_focus")
-
-    /// Motion Lab (14/11, P1 lô 2): họ "row" (`motionlab/families/row.py`).
-    static let bentOverRow = Demo(
-      usdzFile: "bent_over_two_dumbbell_row_animation", loopFile: nil, posterFile: "bent_over_two_dumbbell_row_poster",
-      durationS: 8.2,
-      legend: [
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.latissimusDorsi", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.deltoidPosterior", roleKey: "eg.demo3d.legend.secondary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
-      ],
-      // Góc mặc định từ phía sau (14/11): cơ lưng xô ở mặt sau thân.
-      cameraPosition: [1.0343, 1.294, -1.4504], cameraTarget: [-0.0586, 0.6005, 0.1104],
-      focusTexturePrefix: "bent_over_two_dumbbell_row_focus")
-
-    /// Motion Lab (14/11, P1 lô 2): họ "press_vertical", ngồi ghế tựa, bả vai theo tay.
-    static let dumbbellShoulderPress = Demo(
-      usdzFile: "dumbbell_shoulder_press_animation", loopFile: nil, posterFile: "dumbbell_shoulder_press_poster",
-      durationS: 8.8,
-      legend: [
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidAnterior", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#E8552B", nameKey: "eg.demo3d.legend.deltoidLateral", roleKey: "eg.demo3d.legend.primary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.tricepsBrachii", roleKey: "eg.demo3d.legend.secondary"),
-        LegendEntry(hex: "#F2A33A", nameKey: "eg.demo3d.legend.trapezius", roleKey: "eg.demo3d.legend.secondary"),
-      ],
-      cameraPosition: [1.7982, 1.6958, 1.9101], cameraTarget: [0.015, 0.7779, 0.1269],
-      focusTexturePrefix: "dumbbell_shoulder_press_focus")
+    private static func makeDemo(_ f: DemoFile) -> Demo {
+      var d = Demo(
+        usdzFile: f.usdz, loopFile: f.loop, posterFile: f.poster, durationS: f.duration_s,
+        legend: f.legend.map { LegendEntry(hex: $0.hex, nameKey: $0.name_key, roleKey: $0.role_key) })
+      if let p = vector(f.camera.position) { d.cameraPosition = p }
+      if let t = vector(f.camera.target) { d.cameraTarget = t }
+      d.focusTexturePrefix = f.focus_prefix
+      d.motionFile = f.motion
+      d.fullTexturePrefix = f.full_prefix
+      d.roles = f.roles ?? [:]
+      return d
+    }
 
     /// Kết quả agent tự kiểm một bài (Kiệt 14/11: bài đã kiểm đầy đủ có dấu
     /// tích xanh kèm ghi chú đã kiểm những gì). KHÔNG phải duyệt chuyên môn:
     /// chuyển động vẫn "chưa duyệt" cho tới khi có người có chuyên môn xem.
-    /// Nguồn: `agent_review` trong `<bài>/exercise.json` của Motion Lab.
+    /// Nguồn: `app_demo.review` trong `<bài>/exercise.json` của Motion Lab.
     struct Review {
       let date: String
       /// Những gì đã kiểm và đạt.
@@ -170,89 +148,24 @@
       var note: String?
     }
 
-    private static func fullCheck(qa: String, technique: String, extra: [String] = []) -> [String] {
-      [
-        "QA tự động \(qa): xương, tay bám dụng cụ, chân không trượt, dụng cụ không xuyên da, dáng toàn thân, khớp nhịp tempo.json",
-        "Tờ soi xoay vòng 8 góc × 3 khung (đầu, giữa, cuối pha)",
-        "Tờ soi tầm mắt người đứng nhìn (1,6 m) 5 góc: \(technique)",
-        "Mở trong trình xem 3D của app (simulator iPhone 17), chú thích cơ đúng",
-      ] + extra
+    /// Danh sách các bài đã có bản 3D, mỗi dòng một bài (màn Lab "3D", Kiệt
+    /// 14/11), theo thứ tự trong `demo3d_index.json`.
+    static let catalog: [CatalogEntry] = loaded.map { f in
+      CatalogEntry(
+        title: f.title, key: f.aliases.first ?? f.id, family: f.family_label,
+        review: f.review.map { Review(date: $0.date, checked: $0.checked, remaining: $0.remaining) },
+        note: f.note)
     }
 
-    private static let groinStretch = "Giãn da vùng háng trước khi gập hông sâu (giới hạn lưới nhân vật 003, chung cho mọi bài gập hông ≥ 90°)"
-
-    /// Danh sách các bài đã có bản 3D, mỗi bài một dòng (màn Lab "3D", Kiệt
-    /// 14/11): tên hiện + tên tra trong `demos` + họ động tác của Motion Lab
-    /// + kết quả tự kiểm.
-    static let catalog: [CatalogEntry] = [
-      CatalogEntry(
-        title: "Barbell Bench Press", key: "bench press", family: "press_horizontal (script riêng)", review: nil,
-        note: "Chưa kiểm lại: bản trong app là bản cũ; dựng lại trên nhân vật 003 đang chờ chọn phương án đáy A/B"),
-      CatalogEntry(
-        title: "Barbell Back Squat", key: "back squat", family: "squat",
-        review: Review(
-          date: "14/11",
-          checked: fullCheck(qa: "16/17", technique: "đáy ngang song song, thân đổ ~40°, thanh trên giữa bàn chân, gối theo mũi chân, gót chạm sàn"),
-          remaining: [groinStretch + ": 3,28 / ngưỡng 2,6"])),
-      CatalogEntry(
-        title: "Dumbbell Biceps Curl", key: "dumbbell curl", family: "curl",
-        review: Review(
-          date: "14/11",
-          checked: fullCheck(qa: "18/18", technique: "cánh tay trên sát thân, khuỷu gập ~138°, lòng bàn tay ngửa, thân đứng yên"),
-          remaining: [])),
-      CatalogEntry(
-        title: "Hammer Curl", key: "hammer curl", family: "curl",
-        review: Review(
-          date: "14/11",
-          checked: fullCheck(qa: "18/18", technique: "tay cầm trung tính (ngón cái hướng lên) suốt đường đi, khuỷu sát thân"),
-          remaining: [])),
-      CatalogEntry(
-        title: "Side Lateral Raise", key: "side lateral raise", family: "raise_lateral", review: nil,
-        note: "Kiệt 14/11: chưa đúng. Đã sửa theo ảnh ExRx: bắt đầu tạ trước đùi, thân hơi cúi, gối hơi gập; ở đỉnh khuỷu ngang vai ngay bên vai, cẳng tay chếch trước; tay cầm nằm ngang (trước bị xoay nghiêng ~45°); vai nâng theo tay. QA 18/18. Chờ Kiệt xem lại"),
-      CatalogEntry(
-        title: "Stiff-Legged Dumbbell Deadlift", key: "stiff-legged dumbbell deadlift", family: "hinge",
-        review: Review(
-          date: "14/11",
-          checked: fullCheck(qa: "16/17", technique: "gập hông, lưng thẳng, gối mềm, hông lùi ra sau, tạ sát chân xuống giữa cẳng chân, trọng tâm trên bàn chân"),
-          remaining: [groinStretch + ": 2,80 / ngưỡng 2,6"])),
-      CatalogEntry(
-        title: "Bent Over Two-Dumbbell Row", key: "bent over two-dumbbell row", family: "row", review: nil,
-        note: "Kiệt 14/11: sai tư thế. Đã sửa: gối gập 31° (cẳng chân thẳng đứng, hông đẩy ra sau), lưng thẳng hơi ưỡn ngực, đầu ngẩng thẳng hàng cột sống, bả vai kéo về sau ở đỉnh. Chờ Kiệt xem lại; còn giãn da háng 2,98"),
-      CatalogEntry(
-        title: "Dumbbell Shoulder Press", key: "dumbbell shoulder press", family: "press_vertical (ngồi)", review: nil,
-        note: "Kiệt 14–15/11: sai hoàn toàn, rồi ghi chú thêm. Soi lại 3 video YouTube người thật + ACE + ExRx: ghế 70°, lưng và đầu tựa đệm (đệm dài 82 cm); vai hạ; khuỷu khép ~35° ra trước; hạ sâu tới tạ gần chạm vai (cánh tay trên 37° so với thân, Kiệt 15/11: thấp thêm); lòng bàn tay xoay vào ~20°; cẳng tay thẳng đứng, đẩy thẳng lên, hai tạ không chạm nhau. QA 18/19 (còn giãn da háng). Chờ Kiệt xem lại"),
-    ]
-
     /// Tên bài (đã gập như `PersonalRecords.exerciseKey`) → bản minh hoạ.
-    static let demos: [String: Demo] = [
-      "bench press": benchPress,
-      "barbell bench press": benchPress,
-      "barbell bench press - medium grip": benchPress,
-      "squat": backSquat,
-      "back squat": backSquat,
-      "barbell back squat": backSquat,
-      "barbell squat": backSquat,
-      "bicep curl": dumbbellCurl,
-      "biceps curl": dumbbellCurl,
-      "dumbbell curl": dumbbellCurl,
-      "dumbbell bicep curl": dumbbellCurl,
-      "dumbbell biceps curl": dumbbellCurl,
-      "hammer curls": hammerCurl,
-      "hammer curl": hammerCurl,
-      "dumbbell hammer curl": hammerCurl,
-      "side lateral raise": sideLateralRaise,
-      "lateral raise": sideLateralRaise,
-      "dumbbell lateral raise": sideLateralRaise,
-      "stiff-legged dumbbell deadlift": stiffLegDeadlift,
-      "stiff-leg dumbbell deadlift": stiffLegDeadlift,
-      "dumbbell stiff-legged deadlift": stiffLegDeadlift,
-      "bent over two-dumbbell row": bentOverRow,
-      "bent over dumbbell row": bentOverRow,
-      "dumbbell bent over row": bentOverRow,
-      "dumbbell shoulder press": dumbbellShoulderPress,
-      "seated dumbbell shoulder press": dumbbellShoulderPress,
-      "seated dumbbell press": dumbbellShoulderPress,
-    ]
+    static let demos: [String: Demo] = {
+      var out: [String: Demo] = [:]
+      for f in loaded {
+        let d = makeDemo(f)
+        for a in f.aliases { out[PersonalRecords.exerciseKey(a)] = d }
+      }
+      return out
+    }()
 
     static func demo(for name: String) -> Demo? {
       demos[PersonalRecords.exerciseKey(name)]
@@ -262,7 +175,7 @@
     /// bản 3D hay thiếu USDZ trong bundle.
     static func posterURL(for name: String) -> URL? {
       guard let demo = demo(for: name),
-        Bundle.main.url(forResource: demo.usdzFile, withExtension: "usdz") != nil
+        Bundle.main.url(forResource: demo.bundledFile, withExtension: "usdz") != nil
       else { return nil }
       return Bundle.main.url(forResource: demo.posterFile, withExtension: "jpg")
     }
@@ -271,7 +184,7 @@
     /// mở trình xem 3D, không phát clip này. Trả nil khi thiếu USDZ.
     static func media(for name: String, alt: String?) -> MediaState? {
       guard let demo = demo(for: name),
-        Bundle.main.url(forResource: demo.usdzFile, withExtension: "usdz") != nil,
+        Bundle.main.url(forResource: demo.bundledFile, withExtension: "usdz") != nil,
         let loop = demo.loopFile,
         let video = Bundle.main.url(forResource: loop, withExtension: "mp4"),
         let poster = Bundle.main.url(forResource: demo.posterFile, withExtension: "jpg")

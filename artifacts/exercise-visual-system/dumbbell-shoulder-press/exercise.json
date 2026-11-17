@@ -46,12 +46,14 @@
   ],
   "secondary_muscles": [
     "triceps_brachii",
-    "trapezius"
+    "trapezius_middle",
+    "trapezius_lower",
+    "serratus_anterior"
   ],
   "stabilizing_muscles": [
-    "serratus_anterior",
+    "trapezius_upper",
     "rotator_cuff_posterior",
-    "rectus_abdominis"
+    "biceps_brachii"
   ],
   "master_character_id": "master_character_003",
   "motion_source_id": "motionlab_press_vertical_v1",
@@ -117,6 +119,11 @@
       "what": "full re-check (15/11, Kiệt asked): bench marked 70 deg on screen; bottom with the dumbbells at the top of the shoulders; elbows slightly forward and under the wrists; shoulder blades pulled down (arrow overlay); handles turned slightly in; dumbbells close together at the top without touching; head and back on the pad; feet flat and wide",
       "source": "YouTube shorts 'The PERFECT Dumbbell Shoulder Press (DO THIS!)' (k6tzKisR3NY, frames 1/2.5/4/5.5/7/8.3 s), 'Seated Dumbbell Shoulder Press' (FghebqCF_o8, frames at 1/30/50/70 %), 'Seated Dumbbell Shoulder Press Correct Movement Path' (hOTABpGvhBc, description: press up and slightly back, elbows stacked under the wrists); a CGI short (ueKPnQ49gNE) was skipped as a reference",
       "license": "facts (watched only, nothing downloaded or copied)"
+    },
+    {
+      "what": "muscle roles (target -> primary, synergists -> secondary, stabilizers -> stabilizing)",
+      "source": "ExRx https://exrx.net/WeightExercises/DeltoidAnterior/DBShoulderPress",
+      "license": "facts"
     }
   ],
   "phase_cues": {
@@ -217,11 +224,12 @@
   "brand_profile_id": "placeholder",
   "highlight_roles": [
     "primary",
-    "secondary"
+    "secondary",
+    "stabilizing"
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Anterior and lateral deltoid raise the arm overhead; triceps straightens the elbow; trapezius and serratus anterior turn the shoulder blade upward (ExRx).",
+  "muscle_roles_note": "Three levels (Kiệt 15/11): primary = carries the load and produces the main force; secondary = directly assists the movement; stabilizing = holds posture and keeps joints stable. The press is shoulder flexion/abduction in the scapular plane: anterior and lateral deltoid carry it (ExRx target anterior deltoid; EMG of the seated dumbbell press shows the lateral deltoid close to the anterior, Saeterbakken & Fimland 2013). Triceps extends the elbow, middle/lower trapezius and serratus rotate the scapula upward. Upper trapezius, cuff and biceps (long head) stabilise; the bench supports the trunk.",
   "production": {
     "catalogue_name": "Dumbbell Shoulder Press",
     "scaffolded_from": "side-lateral-raise",
@@ -336,7 +344,37 @@
       "giãn da háng trước (giới hạn lưới nhân vật 003) 3,08/2,6"
     ],
     "note": "Agent self-check only; status stays DRAFT until a qualified reviewer approves.",
-    "owner_feedback": "Kiệt 14/11: completely wrong (V-shaped path, dumbbells clashing). Redone against the ExRx photo: upright bench as part of the exercise, elbows under wrists, forearms vertical, straight press to lockout over the shoulders. Awaiting re-check.",
-    "status": "reopened"
+    "owner_feedback": "Kiệt 15/11: approved the motion (70 deg bench, deep bottom at chin level, elbows under wrists, shoulders down). Tips added to the 3D viewer.",
+    "status": "owner_approved_motion"
+  },
+  "owner_approval": {
+    "motion": "approved",
+    "by": "Kiệt",
+    "date": "2026-11-15"
+  },
+  "app_demo": {
+    "title": "Dumbbell Shoulder Press",
+    "family_label": "press_vertical (ngồi)",
+    "note": "Kiệt duyệt động tác 15/11. Bấm nút Mẹo (bóng đèn) trong trình xem để xem 5 mẹo kỹ thuật",
+    "review": {
+      "date": "16/11",
+      "checked": [
+        "QA tự động 19/19: xương, tay bám dụng cụ, chân không trượt, dụng cụ không xuyên da, dáng toàn thân, khớp nhịp tempo.json",
+        "Tờ soi xoay vòng 8 góc × 3 khung (đầu, giữa, cuối pha)",
+        "Tờ soi tầm mắt người đứng nhìn (1,6 m) 5 góc: ghế 70°, lưng và đầu tựa đệm, vai hạ, khuỷu dưới cổ tay ~35° ra trước, hạ tới ngang cằm, đẩy thẳng lên, hai tạ không chạm",
+        "Mở trong trình xem 3D của app (simulator iPhone 17), chú thích cơ đúng",
+        "Render lại 16/11 trên nhân vật 3.3: bản đồ cơ 48 phần, thớ cơ theo từng phần, tô 3 cấp Chính / Phụ / Ổn định (vai trò theo ExRx)",
+        "Đối chiếu 3 video YouTube người thật + ACE, Muscle & Strength, ExRx",
+        "Kiệt duyệt động tác 15/11",
+        "Mẹo: 5 ô (ghế, vai, khuỷu, độ sâu, bụng)"
+      ],
+      "remaining": []
+    },
+    "aliases": [
+      "dumbbell shoulder press",
+      "seated dumbbell shoulder press",
+      "seated dumbbell press"
+    ],
+    "catalog_order": 7
   }
 }

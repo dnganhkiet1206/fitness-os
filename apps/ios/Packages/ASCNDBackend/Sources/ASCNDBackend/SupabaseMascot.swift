@@ -198,10 +198,6 @@ public struct SupabaseMascotEconomy: MascotEconomy {
     let p_reason: String
   }
 
-  struct FreezeParams: Encodable, Sendable {
-    let p_request_id: String
-  }
-
   public func claimReward(refKey: String, reason: String) async throws -> Int {
     do {
       return try await client.rpc("claim_quest_reward", params: ClaimParams(p_ref_key: refKey, p_reason: reason))
@@ -219,17 +215,6 @@ public struct SupabaseMascotEconomy: MascotEconomy {
   public func cleanKoaRoom(day: String) async throws -> Int {
     do {
       return try await client.rpc("clean_koa_room", params: CleanParams(p_day: day)).execute().value
-    } catch {
-      throw Self.failure(error)
-    }
-  }
-
-  public func buyStreakFreeze(requestId: UUID) async throws -> Int {
-    do {
-      return try await client.rpc(
-        "buy_streak_freeze", params: FreezeParams(p_request_id: requestId.uuidString.lowercased())
-      )
-      .execute().value
     } catch {
       throw Self.failure(error)
     }

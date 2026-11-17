@@ -2,22 +2,29 @@
 import Foundation
 import Testing
 
-/// `daily_logs` (#266) so với CHÍNH `recomputeDailyLog` của RN @ fac9ac2:
-/// `daily-log-golden.json` là đầu ra của mã RN biên dịch, chạy trên một
-/// Supabase giả ở sáu múi giờ (`apps/ios/tools/daily-log-golden`). Swift chạy
-/// CÙNG dữ liệu qua `DailyLog.recompute` và phải:
-/// - hỏi đúng bảng, cột, cửa sổ thời gian, thứ tự, giới hạn RN đã hỏi;
-/// - ghi đúng một hàng như RN (insert hay update có điều kiện), từng cột,
-///   từng bit — không dung sai;
-/// - đọc lỗi thì không ghi gì.
+/// Bất biến native của `recompute` (`daily_logs`, #266) — KHÔNG so với RN.
+/// Theo chỉ thị 17/11/2026, RN đã bỏ và parity RN↔native đã bỏ: kiểm
+/// golden-vector cũ (`everyCaseMatchesRN`, so từng truy vấn và từng cột với
+/// đầu ra RN) được thay bằng các bất biến suy từ mã native, trên bảng tự
+/// dựng trong file này — không đọc fixture golden nào:
+/// - đúng tập truy vấn: token đọc một mình trước, rồi đúng 12 nguồn, mỗi
+///   nguồn một lần; thứ tự 12 nguồn không cố định vì đọc song song;
+/// - đúng một lệnh ghi, đúng loại (insert khi chưa có hàng, update có điều
+///   kiện theo token khi đã có), số cộng từ các nguồn;
+/// - đọc lỗi thì không ghi gì; hồ sơ thiếu vẫn ghi.
+/// Tên struct giữ nguyên vì `HealthSyncTests` dùng chung `TableStore`.
 struct DailyLogGoldenTests {
-  /// Bảng giả: thực thi `RowQuery` như stub của bộ sinh golden (cột thời điểm
-  /// so theo thời điểm, không theo chuỗi).
+  /// Bảng giả trong bộ nhớ: thực thi `RowQuery` trên bảng tự dựng (cột thời
+  /// điểm so theo thời điểm, không theo chuỗi).
   final class TableStore: RowStore, @unchecked Sendable {
     var tables: [String: [JSONValue]]
     var fail: Set<String>
     var reads: [RowQuery] = []
     var writes: [(kind: String, row: [String: JSONValue], filters: [RowQuery.Filter])] = []
+    /// `readSources` đọc 12 nguồn SONG SONG trên cùng một kho: mọi chạm vào
+    /// `tables` / `reads` / `writes` đều qua khoá này — không thì 12 chuyến
+    /// cùng ghi sẽ làm hỏng bộ nhớ (CI #929 vỡ SIGSEGV/SIGABRT ở `select`).
+    private let lock = NSLock()
 
     init(tables: [String: [JSONValue]], fail: Set<String> = []) {
       self.tables = tables
@@ -44,10 +51,22 @@ struct DailyLogGoldenTests {
       }
     }
 
+    /// Đồng bộ bảng từ kho ngoài (`HealthSyncTests.Store`): gán dưới khoá để
+    /// không đua với ảnh chụp trong `select`.
+    func syncTables(_ t: [String: [JSONValue]]) {
+      lock.withLock { tables = t }
+    }
+
     func select(_ q: RowQuery) async throws(RowStoreError) -> [JSONValue] {
-      reads.append(q)
-      if fail.contains(q.table) { throw RowStoreError(code: nil, message: "boom") }
-      var out = (tables[q.table] ?? []).filter { Self.matches($0, q.filters) }
+      // Ghi truy vấn + chụp bảng dưới MỘT lần khoá: 12 chuyến song song của
+      // `readSources` không được chen nhau giữa chừng. Lọc/sắp xếp chạy trên
+      // ảnh chụp, ngoài khoá — vẫn song song.
+      let snapshot: (rows: [JSONValue], failed: Bool) = lock.withLock {
+        reads.append(q)
+        return (tables[q.table] ?? [], fail.contains(q.table))
+      }
+      if snapshot.failed { throw RowStoreError(code: nil, message: "boom") }
+      var out = snapshot.rows.filter { Self.matches($0, q.filters) }
       if let o = q.order {
         // Ổn định như `Array.prototype.sort`.
         out = out.enumerated().sorted {
@@ -61,140 +80,132 @@ struct DailyLogGoldenTests {
     }
 
     func insert(_ table: String, _ row: [String: JSONValue]) async throws(RowStoreError) {
-      writes.append(("insert", row, []))
-      tables[table, default: []].append(.object(row))
+      lock.withLock {
+        writes.append(("insert", row, []))
+        tables[table, default: []].append(.object(row))
+      }
     }
 
     func update(_ table: String, _ row: [String: JSONValue], where filters: [RowQuery.Filter]) async throws(RowStoreError) -> Int {
-      writes.append(("update", row, filters))
-      var n = 0
-      for (i, r) in (tables[table] ?? []).enumerated() where Self.matches(r, filters) {
-        guard case .object(var o) = r else { continue }
-        for (k, v) in row { o[k] = v }
-        tables[table]![i] = .object(o)
-        n += 1
-      }
-      return n
-    }
-  }
-
-  static func filterJSON(_ f: RowQuery.Filter) -> JSONValue {
-    switch f {
-    case .eq(let c, let v): .object(["op": .string("eq"), "col": .string(c), "val": v])
-    case .gte(let c, let v): .object(["op": .string("gte"), "col": .string(c), "val": v])
-    case .lt(let c, let v): .object(["op": .string("lt"), "col": .string(c), "val": v])
-    case .lte(let c, let v): .object(["op": .string("lte"), "col": .string(c), "val": v])
-    case .or(let f): .object(["op": .string("or"), "val": .string(f)])
-    }
-  }
-
-  /// Truy vấn Swift dưới dạng RN ghi trong golden.
-  static func readJSON(_ q: RowQuery) -> JSONValue {
-    let mode: String =
-      switch q.mode {
-      case .many: "many"
-      case .single: "single"
-      case .maybeSingle: "maybe"
-      }
-    return .object([
-      "table": .string(q.table), "columns": .string(q.columns), "filters": .array(q.filters.map(filterJSON)),
-      "order": q.order.map { JSONValue.object(["col": .string($0.column), "asc": .bool($0.ascending)]) } ?? .null,
-      "limit": q.limit.map { JSONValue.number(Double($0)) } ?? .null, "mode": .string(mode),
-    ])
-  }
-
-  static func root() throws -> JSONValue {
-    let url = try #require(Bundle.module.url(forResource: "daily-log-golden", withExtension: "json", subdirectory: "Fixtures"))
-    return try JSONDecoder().decode(JSONValue.self, from: Data(contentsOf: url))
-  }
-
-  @Test func everyCaseMatchesRN() async throws {
-    let root = try Self.root()
-    let now = try #require(root["now"]?.stringValue.flatMap { EpochMillis(iso8601: $0) })
-    let user = try #require(root["userId"]?.stringValue)
-    guard case .object(let scenarios)? = root["scenarios"], case .array(let cases)? = root["cases"] else {
-      Issue.record("golden hỏng")
-      return
-    }
-    #expect(cases.count >= 400)
-    var checked = 0
-    for c in cases {
-      let name = "\(c["scenario"]?.stringValue ?? "?") · \(c["tz"]?.stringValue ?? "?") · \(c["date"]?.stringValue ?? "?")"
-      let tz = try #require(TimeZone(identifier: c["tz"]?.stringValue ?? ""), "\(name)")
-      let date = try #require(LocalDate(c["date"]?.stringValue ?? ""))
-      guard case .object(let t)? = scenarios[c["scenario"]?.stringValue ?? ""] else {
-        Issue.record("\(name): thiếu bảng")
-        continue
-      }
-      var tables: [String: [JSONValue]] = [:]
-      for (k, v) in t {
-        if case .array(let a) = v { tables[k] = a }
-      }
-      if let existing = c["existing"], existing != JSONValue.null { tables["daily_logs"] = [existing] }
-      let fail: Set<String> = c["scenario"]?.stringValue == "read-fails" ? ["sleep_logs"] : []
-      let store = TableStore(tables: tables, fail: fail)
-
-      var threw = false
-      do {
-        try await DailyLog.recompute(userId: user, date: date, store: store, now: now, in: tz)
-      } catch {
-        threw = true
-      }
-      #expect(threw == (c["error"] != JSONValue.null), "\(name): lỗi")
-
-      // Truy vấn: đúng RN. RN gửi 12 nguồn song song rồi mới xét lỗi; Swift
-      // dừng ở nguồn hỏng đầu tiên — khi ấy so phần đầu.
-      guard case .array(let rnReads)? = c["reads"] else { continue }
-      let mine = store.reads.map(Self.readJSON)
-      if threw {
-        #expect(mine.count <= rnReads.count && Array(rnReads.prefix(mine.count)) == mine, "\(name): truy vấn")
-      } else {
-        #expect(mine == rnReads, "\(name): truy vấn")
-      }
-
-      guard case .array(let rnWrites)? = c["write"] else { continue }
-      #expect(store.writes.count == rnWrites.count, "\(name): số lệnh ghi")
-      for (w, rn) in zip(store.writes, rnWrites) {
-        #expect(JSONValue.string(w.kind) == rn["kind"], "\(name): insert/update")
-        // Điểm sẵn sàng CỐ Ý khác RN từ 24/10 (nền theo ngày, mức nền = 75, HRV ln,
-        // đau cơ không còn là chấn thương) — `ReadinessBaselineTests`. Mọi cột khác
-        // vẫn phải khớp RN từng bit.
-        #expect(
-          JSONValue.object(w.row.filter { !Self.nativeReadiness.contains($0.key) }) == Self.withoutReadiness(rn["row"]),
-          "\(name): hàng\n swift \(w.row)\n rn    \(rn["row"] ?? .null)")
-        if w.kind == "update" {
-          #expect(JSONValue.array(w.filters.map(Self.filterJSON)) == rn["filters"], "\(name): điều kiện update")
+      return lock.withLock {
+        writes.append(("update", row, filters))
+        var n = 0
+        for (i, r) in (tables[table] ?? []).enumerated() where Self.matches(r, filters) {
+          guard case .object(var o) = r else { continue }
+          for (k, v) in row { o[k] = v }
+          tables[table]![i] = .object(o)
+          n += 1
         }
+        return n
       }
-      checked += 1
     }
-    #expect(checked == cases.count)
   }
 
-  static let nativeReadiness: Set<String> = [
-    "readiness_score", "readiness_status", "readiness_explain", "readiness_recommendation",
-  ]
+  static let utc = TimeZone(identifier: "UTC")!
+  static let now = EpochMillis(iso8601: "2026-10-05T10:00:00.000Z")!
+  static let today = LocalDate("2026-10-05")!
 
-  static func withoutReadiness(_ row: JSONValue?) -> JSONValue? {
-    guard case .object(let o)? = row else { return row }
-    return .object(o.filter { !nativeReadiness.contains($0.key) })
+  /// Bảng nhỏ tự dựng: một bữa 100 kcal, một buổi 500 volume, một giấc ngủ,
+  /// một hồ sơ, 250 ml nước — đủ để `recompute` ghi một hàng có số kiểm được.
+  static func tables(existing: JSONValue? = nil) -> [String: [JSONValue]] {
+    var t: [String: [JSONValue]] = [
+      "meal_entries": [
+        .object([
+          "user_id": .string("u1"), "date_time": .string("2026-10-05T08:00:00.000Z"),
+          "total_kcal": .number(100), "total_protein_g": .number(10), "total_carbs_g": .number(20),
+          "total_fat_g": .number(5), "total_fiber_g": .number(2),
+        ]),
+      ],
+      "workout_sessions": [
+        .object([
+          "user_id": .string("u1"), "date_time": .string("2026-10-05T09:00:00.000Z"),
+          "volume_load": .number(500), "session_rpe": .number(7), "sets": .array([]),
+        ]),
+      ],
+      "sleep_logs": [
+        .object([
+          "user_id": .string("u1"), "bedtime": .string("2026-10-04T22:00:00.000Z"),
+          "waketime": .string("2026-10-05T06:00:00.000Z"), "quality": .number(4),
+          "light_min": .number(200), "deep_min": .number(100), "rem_min": .number(100),
+          "asleep_min": .number(400),
+        ]),
+      ],
+      "profiles": [
+        .object(["user_id": .string("u1"), "sleep_target_hours": .number(8)]),
+      ],
+      "water_logs": [
+        .object([
+          "user_id": .string("u1"), "date": .string("2026-10-05"), "amount_ml": .number(250),
+        ]),
+      ],
+    ]
+    if let existing { t["daily_logs"] = [existing] }
+    return t
   }
 
-  /// Golden phủ đủ các nhánh khuyến nghị tới được (`listen` không tới được:
-  /// mọi điểm đều rơi vào xanh / vàng / đỏ) và cả hai đường ghi.
-  @Test func goldenCoversEveryReachableBranch() throws {
-    guard case .array(let cases)? = try Self.root()["cases"] else { return }
-    var keys = Set<String>(), kinds = Set<String>()
-    for c in cases {
-      guard case .array(let w)? = c["write"], let first = w.first else { continue }
-      kinds.insert(first["kind"]?.stringValue ?? "")
-      keys.insert(first["row"]?["readiness_recommendation"]?.stringValue ?? "")
+  /// Chưa có hàng: token đọc một mình trước, 12 nguồn bay song song (thứ tự
+  /// ghi nhận không cố định — so TẬP truy vấn, không so danh sách), rồi đúng
+  /// một lệnh insert mang số cộng từ các nguồn.
+  @Test func recomputeIssuesEveryReadOnceAndInsertsOneRow() async throws {
+    let store = TableStore(tables: Self.tables())
+    try await DailyLog.recompute(userId: "u1", date: Self.today, store: store, now: Self.now, in: Self.utc)
+    let reads = DailyLog.queries(userId: "u1", date: Self.today, in: Self.utc)
+    #expect(store.reads.first == reads.existing)
+    #expect(store.reads.count == 13)
+    #expect(Set(store.reads) == Set([reads.existing] + reads.sources))
+    #expect(store.writes.count == 1)
+    #expect(store.writes.first?.kind == "insert")
+    let row = store.writes.first?.row
+    #expect(row?["user_id"] == .string("u1"))
+    #expect(row?["date"] == .string("2026-10-05"))
+    #expect(row?["kcal"] == .number(100))
+    #expect(row?["water_ml"] == .number(250))
+    #expect(row?["workout_count"] == .number(1))
+    #expect(row?["volume_load"] == .number(500))
+  }
+
+  /// Đã có hàng: đúng một lệnh update, điều kiện là token đã đọc trước.
+  @Test func recomputeWithAnExistingRowUpdatesOnceWithTheReadToken() async throws {
+    let existing = JSONValue.object([
+      "id": .string("dl-1"), "updated_at": .string("t0"),
+      "user_id": .string("u1"), "date": .string("2026-10-05"),
+    ])
+    let store = TableStore(tables: Self.tables(existing: existing))
+    try await DailyLog.recompute(userId: "u1", date: Self.today, store: store, now: Self.now, in: Self.utc)
+    let reads = DailyLog.queries(userId: "u1", date: Self.today, in: Self.utc)
+    #expect(store.reads.count == 13)
+    #expect(Set(store.reads) == Set([reads.existing] + reads.sources))
+    #expect(store.writes.count == 1)
+    #expect(store.writes.first?.kind == "update")
+    let expectedFilters: [RowQuery.Filter] = [.eq("id", .string("dl-1")), .eq("updated_at", .string("t0"))]
+    #expect(store.writes.first?.filters == expectedFilters)
+    #expect(store.writes.first?.row["kcal"] == .number(100))
+  }
+
+  /// Một nguồn đọc lỗi: KHÔNG ghi gì — nhưng cả 12 nguồn vẫn bay hết (chờ
+  /// hết rồi mới xét lỗi, AUD-50), mỗi nguồn đúng một lần.
+  @Test func failedSourceWritesNothingButStillIssuesEveryRead() async {
+    let store = TableStore(tables: Self.tables(), fail: ["sleep_logs"])
+    var threw = false
+    do {
+      try await DailyLog.recompute(userId: "u1", date: Self.today, store: store, now: Self.now, in: Self.utc)
+    } catch {
+      threw = true
     }
-    #expect(kinds == ["insert", "update"])
-    #expect(
-      keys.isSuperset(of: [
-        "", "green_no_load", "green_optimal", "green_watch", "yellow_sleep", "yellow_reduce", "red_rest", "red_recover",
-        "red_load_only",
-      ]))
+    #expect(threw)
+    #expect(store.writes.isEmpty)
+    let reads = DailyLog.queries(userId: "u1", date: Self.today, in: Self.utc)
+    #expect(store.reads.count == 13)
+    #expect(Set(store.reads) == Set([reads.existing] + reads.sources))
+  }
+
+  /// Hồ sơ thiếu không phải lỗi: vẫn ghi một hàng.
+  @Test func missingProfileStillInserts() async throws {
+    var t = Self.tables()
+    t["profiles"] = []
+    let store = TableStore(tables: t)
+    try await DailyLog.recompute(userId: "u1", date: Self.today, store: store, now: Self.now, in: Self.utc)
+    #expect(store.writes.count == 1)
+    #expect(store.writes.first?.kind == "insert")
   }
 }

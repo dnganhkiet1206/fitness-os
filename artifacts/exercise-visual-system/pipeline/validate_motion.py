@@ -151,6 +151,12 @@ def main() -> None:
                 bm.free()
             for ia in range(len(trees)):
                 for ib in range(ia + 1, len(trees)):
+                    # Plates sit on their own bar by design (15/11: the squat
+                    # failed on Barbell|Barbell_Plate_L1); only separate
+                    # implements may not overlap.
+                    a_name, b_name = trees[ia][0], trees[ib][0]
+                    if b_name.startswith(a_name + "_Plate") or a_name.startswith(b_name + "_Plate"):
+                        continue  # a bar and its own plate (plate against plate is still checked)
                     key = f"{trees[ia][0]}|{trees[ib][0]}"
                     overlaps.setdefault(key, []).append(len(trees[ia][1].overlap(trees[ib][1])))
     tempo_file = path / "tempo.json"

@@ -22,6 +22,16 @@ struct CoachMappingTests {
     #expect(sent == body)
   }
 
+  /// Luồng SSE có hết giờ idle tường minh (AUD-67): dài hơn 25 giây của REST
+  /// vì byte đầu của AI hợp lệ có thể chậm (R2-OPS-04).
+  @Test func requestCarriesStreamIdleTimeout() throws {
+    let url = URL(string: "https://x.supabase.co/functions/v1/ai-coach")!
+    let req = try SupabaseCoachStream.request(url: url, anonKey: "anon", token: "tok", body: .object([:]))
+    #expect(req.timeoutInterval == SupabaseCoachStream.idleTimeout)
+    #expect(SupabaseCoachStream.idleTimeout == 90)
+    #expect(SupabaseCoachStream.idleTimeout > StallRecovery.requestTimeout)
+  }
+
   @Test func statusAndErrors() {
     #expect(SupabaseCoachStream.failure(status: 200) == nil)
     #expect(SupabaseCoachStream.failure(status: 404) == .notDeployed)

@@ -1,0 +1,63 @@
+{
+  "id": "bench_press",
+  "title": "Barbell Bench Press",
+  "family_label": "press_horizontal (script riêng)",
+  "aliases": [
+    "bench press",
+    "barbell bench press",
+    "barbell bench press - medium grip"
+  ],
+  "usdz": "bench_press_animation",
+  "loop": "bench_press_45_loop",
+  "poster": "bench_press_45_poster",
+  "duration_s": 8.5,
+  "camera": {
+    "position": [
+      3.5378,
+      2.3302,
+      3.3852
+    ],
+    "target": [
+      0.1817,
+      0.6027,
+      0.0291
+    ]
+  },
+  "legend": [
+    {
+      "hex": "#E8552B",
+      "name_key": "eg.demo3d.legend.pectoralisMajor",
+      "role_key": "eg.demo3d.legend.primary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.deltoidAnterior",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.tricepsBrachii",
+      "role_key": "eg.demo3d.legend.secondary"
+    }
+  ],
+  "roles": {
+    "primary": [
+      "pectoralis_major"
+    ],
+    "secondary": [
+      "deltoid_anterior",
+      "triceps_brachii"
+    ],
+    "stabilizing": [
+      "biceps_brachii",
+      "latissimus_dorsi",
+      "deltoid_posterior",
+      "rotator_cuff_posterior"
+    ]
+  },
+  "focus_prefix": "bench_press_focus",
+  "motion": null,
+  "full_prefix": null,
+  "review": null,
+  "note": "Chưa kiểm lại: bản trong app là bản cũ; dựng lại trên nhân vật 003 đang chờ chọn phương án đáy A/B"
+}

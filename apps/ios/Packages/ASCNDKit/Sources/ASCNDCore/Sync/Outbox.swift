@@ -36,8 +36,10 @@ public struct OutboxEntry: Sendable, Hashable, Codable, Identifiable {
   }
 }
 
-/// Bản ghi đã rời hàng đợi mà không tới được server. Chỉ trên máy, không gửi
-/// lại — để chẩn đoán (ADR-0003 §7; baseline vứt đi).
+/// Bản ghi đã rời hàng đợi mà không tới được server. Chỉ trên máy, để chẩn
+/// đoán (ADR-0003 §7; baseline vứt đi) — và để gửi lại bằng tay qua
+/// `Outbox.retryDead` (AUD-62): lỗi từng làm nó bỏ cuộc có thể đã hết (server
+/// sửa, dữ liệu sửa), và bản ghi vẫn còn nguyên trên đĩa.
 public struct DeadEntry: Sendable, Hashable, Codable {
   public enum Reason: String, Sendable, Hashable, Codable {
     /// Server hoặc dữ liệu từ chối; hỏi lại không đổi được gì.
@@ -87,6 +89,17 @@ extension WriteFailure: Codable {
 /// Giá trị thuần: không I/O, không giờ hệ thống. `ASCNDStore` lưu nó, worker
 /// gửi hỏi nó `next(...)` rồi báo lại `succeeded` / `failed`.
 public struct Outbox: Sendable, Hashable, Codable {
+  /// Trần số bản ghi `dead` giữ trong bộ nhớ — và trên đĩa sau lượt cắt lúc
+  /// nạp (`OutboxStore.pruneDead`, R2-SYNC-03). `dead` chỉ là chẩn đoán: giữ
+  /// mãi là bộ nhớ và tệp SQLite phình không giới hạn theo số lần gửi hỏng.
+  /// Quá trần thì bản ghi cũ nhất rời đi trong lặng lẽ lúc có bản ghi mới bỏ
+  /// cuộc; hàng chờ gửi không bao giờ bị cắt. Giá trị ghi ở
+  /// `docs/CONSTRAINTS_AND_DEFERRED.md` §5 (17/11/2026).
+  public static let maxDeadEntries = 100
+  /// Tuổi tối đa của một bản ghi `dead` trên đĩa (30 ngày, R2-SYNC-03) —
+  /// `OutboxStore.pruneDead` bỏ bản ghi cũ hơn lúc nạp hàng đợi.
+  public static let deadMaxAgeMillis: Int64 = 30 * 24 * 3_600_000
+
   public private(set) var pending: [OutboxEntry] = []
   public private(set) var dead: [DeadEntry] = []
   /// Bản ghi đang được gửi. Không lưu xuống đĩa: app chết giữa chừng thì lần
@@ -167,8 +180,38 @@ public struct Outbox: Sendable, Hashable, Codable {
       pending.remove(at: i)
       let reason: DeadEntry.Reason = failure == .wrongAccount ? .wrongAccount : (permanent ? .refused : .exhausted)
       dead.append(DeadEntry(entry: entry, reason: reason, failure: failure, at: now))
+      // Trần chẩn đoán (R2-SYNC-03): quá `maxDeadEntries` thì bản ghi cũ nhất
+      // rời đi — `dead` là chẩn đoán, không phải dữ liệu người dùng.
+      if dead.count > Self.maxDeadEntries { dead.removeFirst(dead.count - Self.maxDeadEntries) }
       return .dead(reason)
     }
+  }
+
+  /// Gửi lại một bản ghi đã bỏ cuộc (AUD-62): về lại hàng chờ với ngân sách
+  /// thử lại MỚI (`FailureHistory` trắng, không hạn chờ, không chờ mạng) và
+  /// GIỮ NGUYÊN `id` — idempotency key, server bỏ trùng nên gửi lại vô hại
+  /// (`RemoteWriter`). Không cần nhập lại bằng tay: bản ghi vẫn còn nguyên.
+  ///
+  /// Về ĐẦU làn của chủ nó: bản ghi này tạo trước mọi hàng đang chờ của cùng
+  /// người (nó rời làn trước chúng), nên gửi trước chúng — giữ thứ tự tạo của
+  /// làn tuần tự (`next`). Trả về `false` khi không có bản ghi `dead` nào
+  /// mang `id` ấy.
+  @discardableResult
+  public mutating func retryDead(id: String) -> Bool {
+    guard let i = dead.firstIndex(where: { $0.entry.id == id }) else { return false }
+    var entry = dead.remove(at: i).entry
+    // Đã có trong hàng chờ (đĩa lệch): chỉ cần bỏ bản sao `dead`, không xếp
+    // trùng — `enqueue` cũng bỏ trùng theo id.
+    guard !pending.contains(where: { $0.id == id }) else { return true }
+    entry.history = FailureHistory()
+    entry.notBefore = nil
+    entry.needsNetwork = false
+    if let j = pending.firstIndex(where: { $0.userId == entry.userId }) {
+      pending.insert(entry, at: j)
+    } else {
+      pending.append(entry)
+    }
+    return true
   }
 
   /// Bản ghi chờ gửi của MỘT tài khoản (màn hình chỉ được thấy của người đang

@@ -111,7 +111,9 @@ def main() -> None:
     joints = muscles.rest_joints(rig)
     masks = muscles.load_masks(atlas)
     masks.pop("_side_left", None)
-    groups = list(masks.keys())
+    # Parts only: the whole-muscle unions in masks.npz (muscle_map v2
+    # "aggregates") are not regions of their own.
+    groups = [g for g in masks.keys() if g in muscle_map["groups"]]
     res = next(iter(masks.values())).shape[0]
 
     # Texel positions on the rest surface.

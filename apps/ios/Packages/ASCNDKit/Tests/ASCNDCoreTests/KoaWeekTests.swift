@@ -57,7 +57,6 @@ struct KoaWeekTests {
       claims.append(refKey)
       return KoaWeek.rewardCoins
     }
-    func buyStreakFreeze(requestId: UUID) async throws -> Int { 0 }
   }
 
   static func complete() -> KoaWeek.State {

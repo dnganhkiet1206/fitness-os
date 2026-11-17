@@ -247,6 +247,55 @@ def bake(obj, size, path, samples):
             obj.data.uv_layers.remove(layer)
 
 
+USD_ROOM = dict(selected_objects_only=True, export_animation=False, export_materials=True,
+                generate_preview_surface=True, export_textures_mode="NEW", relative_paths=True,
+                convert_orientation=True, export_global_forward_selection="NEGATIVE_Z", export_global_up_selection="Y",
+                convert_scene_units="METERS", export_lights=False, export_cameras=False, evaluation_mode="RENDER",
+                check_existing=False)
+
+
+def export_parts(look_name: str, objs, out_dir: str, center: Vector, view: Vector) -> None:
+    """Room as blocks (MODULAR_3D_PLAN.md, Kiệt 16/11): one USDZ per part so a
+    floor, the racks or the logo sign can change alone, and a manifest with
+    the parts and the anchor points that decor packs hang on. Anchors are in
+    RealityKit metres (Y up), derived from the logo sign on the back wall."""
+    import json
+    parts = []
+    for o in objs:
+        key = "logo" if o.name == "Logo" else o.name.removeprefix("Room_")
+        bpy.ops.object.select_all(action="DESELECT")
+        o.select_set(True)
+        path = os.path.join(out_dir, f"gym_room_{look_name}_{key}.usdz")
+        bpy.ops.wm.usd_export(filepath=path, **USD_ROOM)
+        parts.append({"part": key, "file": f"gym_room_{look_name}_{key}", "logo": key == "logo"})
+        print(f"[evs] room part {look_name} {key}: {os.path.getsize(path)} bytes")
+    side = view.cross(Vector((0, 0, 1))).normalized()
+    logo = bpy.data.objects["Logo"].matrix_world.translation.copy()
+    floor = Vector((logo.x, logo.y, 0.0))
+
+    def rk(v: Vector) -> list:
+        return [round(v.x, 3), round(v.z, 3), round(-v.y, 3)]
+
+    anchors = {
+        "logo": rk(logo),
+        "ceiling_l": rk(logo + side * 1.5 - view * 0.6 + Vector((0, 0, HEIGHT - logo.z))),
+        "ceiling_r": rk(logo - side * 1.5 - view * 0.6 + Vector((0, 0, HEIGHT - logo.z))),
+        "wall_l": rk(logo + side * 1.6 - view * 0.06),
+        "wall_r": rk(logo - side * 1.6 - view * 0.06),
+        "floor_l": rk(floor + side * 3.2 - view * 0.9),
+        "floor_r": rk(floor - side * 3.2 - view * 0.9),
+        "string_a": rk(logo + side * 5.4 - view * 0.15 + Vector((0, 0, 3.05 - logo.z))),
+        "string_b": rk(logo - side * 5.4 - view * 0.15 + Vector((0, 0, 3.05 - logo.z))),
+    }
+    manifest = {"look": look_name, "parts": parts, "anchors": anchors,
+                "facing": {"into_room": rk(-view), "along_wall": rk(side)},
+                "room": {"half_width_m": HALF, "height_m": HEIGHT, "center": rk(center)}}
+    path = os.path.join(out_dir, f"room_manifest_{look_name}.json")
+    with open(path, "w") as fh:
+        json.dump(manifest, fh, indent=2)
+    print(f"[evs] room manifest {path}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--exercise", default="bench-press")
@@ -257,6 +306,12 @@ def main() -> None:
     parser.add_argument("--looks", default="light,dark")
     parser.add_argument("--samples", type=int, default=128)
     parser.add_argument("--scale", type=float, default=1.0, help="texture size factor, 0.5 for a quick test")
+    parser.add_argument("--parts", action="store_true",
+                        help="also write every part (floor, walls, ceiling, slats, racks, leds, logo) as its own USDZ "
+                             "plus room_manifest_<look>.json with the parts and the decor anchors (Kiệt 16/11)")
+    parser.add_argument("--empty", action="store_true",
+                        help="bake the room without the exercise (16/11: the room is shared by every exercise; "
+                             "the bench and the lifter baked their shadows into the floor of all of them)")
     args = bl_util.script_args(parser)
     os.makedirs(args.out, exist_ok=True)
     exercise_path = config.exercise_dir(args.exercise)
@@ -270,6 +325,11 @@ def main() -> None:
         scene.frame_set(scene.frame_start)
         for o in list(scene.objects):
             if o.type in ("CAMERA", "LIGHT") or o.name.startswith(("EVS_Floor", "EVS_LightRig")) or o.type == "EMPTY" and o.name == "EVS_LightRig":
+                bpy.data.objects.remove(o, do_unlink=True)
+        if args.empty:
+            # Same room placement (from --exercise's default camera), nothing
+            # in it: the floor bake carries no exercise shadow.
+            for o in list(scene.objects):
                 bpy.data.objects.remove(o, do_unlink=True)
         scene.render.engine = "CYCLES"
         scene.cycles.device = "GPU"
@@ -324,6 +384,8 @@ def main() -> None:
             convert_scene_units="METERS", export_lights=False, export_cameras=False, evaluation_mode="RENDER",
             check_existing=False)
         print(f"[evs] room {look_name}: {usdz} {os.path.getsize(usdz)} bytes")
+        if args.parts:
+            export_parts(look_name, baked + [bpy.data.objects["Logo"]], args.out, center, view)
 
 
 if __name__ == "__main__":

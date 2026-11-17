@@ -1,0 +1,12 @@
+{
+  "demos": [
+    "bench_press",
+    "back_squat",
+    "dumbbell_curl",
+    "hammer_curl",
+    "side_lateral_raise",
+    "stiff_leg_dumbbell_deadlift",
+    "bent_over_two_dumbbell_row",
+    "dumbbell_shoulder_press"
+  ]
+}

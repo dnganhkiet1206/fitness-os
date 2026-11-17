@@ -26,17 +26,22 @@
     }
   ],
   "primary_muscles": [
-    "latissimus_dorsi"
+    "latissimus_dorsi",
+    "trapezius_middle",
+    "trapezius_lower",
+    "rhomboids"
   ],
   "secondary_muscles": [
-    "trapezius",
     "deltoid_posterior",
-    "biceps_brachii"
+    "biceps_brachii",
+    "rotator_cuff_posterior",
+    "forearm_muscles"
   ],
   "stabilizing_muscles": [
     "erector_spinae",
+    "trapezius_upper",
     "hamstrings",
-    "forearm_muscles"
+    "gluteus_maximus"
   ],
   "master_character_id": "master_character_003",
   "motion_source_id": "motionlab_row_v1",
@@ -91,6 +96,16 @@
     {
       "what": "tempo shape",
       "source": "minimum-jerk model, Flash and Hogan 1985",
+      "license": "facts"
+    },
+    {
+      "what": "15/11 re-check after Kiệt 'sai tư thế': torso hinged ~45-55 deg and held, knees soft, neck neutral (eyes a little ahead of the feet), elbows close to the body driven back toward the hips, dumbbells to the waist",
+      "source": "YouTube 'Proper Form For A Bent Over Row' (QFq5jdwWwX4, 0:30-1:15) and 'Dumbbell Bent Over Row Exercise Tutorial' (fFmwY2dA2ds, 0:35-1:20); Garage Gym Reviews, PowerliftingTechnique, Muscle & Strength, PureGym row pages",
+      "license": "facts (watched only, nothing downloaded or copied)"
+    },
+    {
+      "what": "muscle roles (target -> primary, synergists -> secondary, stabilizers -> stabilizing)",
+      "source": "ExRx https://exrx.net/WeightExercises/BackGeneral/BBBentOverRow",
       "license": "facts"
     }
   ],
@@ -190,11 +205,12 @@
   "brand_profile_id": "placeholder",
   "highlight_roles": [
     "primary",
-    "secondary"
+    "secondary",
+    "stabilizing"
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "The latissimus dorsi pulls the upper arm back; trapezius and posterior deltoid assist, biceps flexes the elbow; erector spinae and hamstrings hold the bent-over position (ExRx).",
+  "muscle_roles_note": "Three levels (Kiệt 15/11): primary = carries the load and produces the main force; secondary = directly assists the movement; stabilizing = holds posture and keeps joints stable. Shoulder extension (lats) and scapular retraction (middle/lower trapezius, rhomboids) move the load: ExRx target Back, General. Posterior deltoid, infraspinatus/teres minor, biceps and brachioradialis assist the pull. Erector spinae, hamstrings and gluteus maximus hold the hinge; the upper trapezius holds the shoulder girdle against the hanging weight.",
   "production": {
     "catalogue_name": "Bent Over Two-Dumbbell Row",
     "scaffolded_from": "stiff-leg-dumbbell-deadlift",
@@ -313,5 +329,17 @@
     "note": "Agent self-check only; status stays DRAFT until a qualified reviewer approves.",
     "owner_feedback": "Kiệt 14/11: wrong posture; fixed knees 31 deg (shins vertical, hips back), flat back with chest up, head in line, scapular retraction at the top. Awaiting Kiệt's re-check.",
     "status": "reopened"
+  },
+  "app_demo": {
+    "title": "Bent Over Two-Dumbbell Row",
+    "family_label": "row",
+    "note": "Kiệt 14–15/11: sai tư thế. Làm lại theo 2 video YouTube người thật + Garage Gym Reviews, PowerliftingTechnique, Muscle & Strength: thân gập ~52° và giữ nguyên, gối hơi gập, lưng thẳng, cổ trung tính; khuỷu sát thân kéo về phía hông, tạ lên ngang eo. QA 17/17. Chờ Kiệt xem lại",
+    "review": null,
+    "aliases": [
+      "bent over two-dumbbell row",
+      "bent over dumbbell row",
+      "dumbbell bent over row"
+    ],
+    "catalog_order": 6
   }
 }
