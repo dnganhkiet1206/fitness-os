@@ -127,7 +127,10 @@
                     in: .main)
                   content.add(scene)
                   let motion: Entity? = if let motionFile { try await Entity(named: motionFile, in: .main) } else { nil }
-                  if let motion { content.add(motion) }
+                  if let motion, let motionFile {
+                    content.add(motion)
+                    await Self.mountEquipment(on: motion, manifest: motionFile.replacingOccurrences(of: "_motion", with: "_equipment"))
+                  }
                   if let prefix = demoInfo?.focusTexturePrefix {
                     await bodySkins.prepare(scene: scene, prefix: prefix, fullPrefix: demoInfo?.fullTexturePrefix)
                     // update{} không chạy lại khi texture nạp xong: gán ngay.
@@ -544,6 +547,39 @@
         PerspectiveCameraComponent(near: 0.1, far: 100, fieldOfViewInDegrees: verticalFOV))
       camera.look(at: cameraTarget, from: cameraPosition, relativeTo: nil)
       return camera
+    }
+
+    private struct EquipmentManifest: Decodable {
+      struct Socket: Decodable { let socket: String; let key: String }
+      let sockets: [Socket]
+    }
+
+    /// Dụng cụ dạng khối (Kiệt 16/11): file chuyển động chỉ có "ổ cắm" (vật
+    /// trống cùng tên, vẫn chuyển động); mẫu dụng cụ nằm ở
+    /// `equipment_<key>.usdz`, dùng chung mọi bài. Đổi mẫu tạ = thay một file.
+    /// Bài không có `<bài>_equipment.json` thì dụng cụ đã nằm sẵn trong file.
+    private static func mountEquipment(on motion: Entity, manifest name: String) async {
+      guard let url = Bundle.main.url(forResource: name, withExtension: "json"),
+        let data = try? Data(contentsOf: url),
+        let manifest = try? JSONDecoder().decode(EquipmentManifest.self, from: data)
+      else { return }
+      var models: [String: Entity] = [:]
+      for s in manifest.sockets {
+        guard let socket = motion.findEntity(named: s.socket) else { continue }
+        var model = models[s.key]
+        if model == nil, let file = try? await Entity(named: "equipment_\(s.key)", in: .main),
+          let root = file.findEntity(named: "EQ_\(s.key)")
+        {
+          root.removeFromParent()
+          models[s.key] = root
+          model = root
+        }
+        guard let model else { continue }
+        // Cùng khung toạ độ với ổ cắm: mẫu xuất ở gốc, ổ cắm mang vị trí.
+        let instance = model.clone(recursive: true)
+        instance.transform = .identity
+        socket.addChild(instance)
+      }
     }
 
     /// Bóng tiếp xúc mềm trên sàn (y = 0) dưới khung bao của nhân vật và

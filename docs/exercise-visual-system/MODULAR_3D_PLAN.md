@@ -74,6 +74,8 @@ Lợi thêm: 8 bài hiện chiếm 47 MB. Sang dạng khối thì còn 1 nhân v
 
 **16/11 — Đổi phòng thực tế:** vệt bóng ghế bench nướng cứng vào sàn → dựng lại phòng trống (`build_gym_room.py --empty`), thay 2 file, mọi bài đổi theo; bóng tiếp xúc do app vẽ lúc chạy (`contactShadow`).
 
+**16/11 — Dụng cụ tách khối (Kiệt):** `export_usdz.py --split --equipment-out equipment` xuất mỗi dụng cụ một lần thành `equipment_<khoá>.usdz` (khoá = loại + khối lượng, ví dụ `dumbbell_12kg`, `barbell_60kg` kèm bánh; không có khối lượng thì loại + hash hình học). File chuyển động chỉ giữ "ổ cắm" (vật cùng tên, vẫn chuyển động, lưới 1 mm); `<bài>_equipment.json` ghi ổ cắm → khoá; app nạp mẫu và gắn vào ổ cắm. `equipment/equipment_registry.json` giữ khoá → hash hình học: hai mẫu khác nhau trùng khoá thì pipeline báo lỗi. Kho hiện có 4 mẫu (tạ đơn 12 kg, đòn 60 kg, đệm ghế, khung ghế). **Đổi mẫu tạ** = sửa mẫu trong cảnh → chạy lại `--split` một bài (hoặc thay file `equipment_dumbbell_12kg.usdz`) → mọi bài dùng mẫu mới.
+
 ## Lộ trình đề xuất
 
 1. ~~**Nguyên mẫu (≈ nửa ngày):**~~ **xong 16/11 (xem trên).** `export_usdz.py --split` xuất `character.usdz` + `dumbbell_curl_motion.usdz` + `equipment/dumbbell.usdz`. App ghép lại và so khung hình với bản cũ trên simulator.
