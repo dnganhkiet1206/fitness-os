@@ -23,6 +23,17 @@
     func phase(at ms: Double) -> Phase? {
       phases.first { ms >= $0.startMs && ms < $0.endMs }
     }
+
+    /// Pha dài hơn ngưỡng này mới đổi chữ trên dải (Kiệt 17/11: chữ nháy nhanh quá, đọc không kịp).
+    static let minimumLabelMs: Double = 700
+
+    /// Pha hiện trên dải: các pha ngắn (giữ 0,3–0,4 s, chuẩn bị 0,6 s) giữ nguyên chữ của pha dài
+    /// vừa qua (đầu clip: pha dài sắp tới), nên chữ chỉ đổi giữa Nâng và Hạ.
+    func labelPhase(at ms: Double) -> Phase? {
+      let long = phases.filter { $0.endMs - $0.startMs >= Self.minimumLabelMs }
+      if let p = phase(at: ms), p.endMs - p.startMs >= Self.minimumLabelMs { return p }
+      return long.last { $0.startMs <= ms } ?? long.first
+    }
   }
 
   /// Bộ điều khiển phát của nhân vật, file chuyển động và quần (cùng một clip): đọc thời điểm
@@ -80,8 +91,10 @@
       }
     }
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
-      let phase = ms.flatMap { tempo.phase(at: $0) }
+      let phase = ms.flatMap { tempo.labelPhase(at: $0) }
       // Đoạn nghỉ giữa / sau các rep: giữ rep vừa xong.
       let rep = phase?.rep ?? ms.flatMap { m in tempo.phases.last { $0.startMs <= m }?.rep } ?? 1
       let repPhases = tempo.phases.filter { $0.rep == rep }
@@ -96,6 +109,9 @@
               .font(DS.TextStyle.footnote.weight(.bold))
               .textCase(.uppercase)
               .foregroundStyle(phase.map { tint($0.kind) } ?? DS.Color.foreground.swiftUI)
+              .contentTransition(.opacity)
+              // Chữ mờ dần sang pha mới thay vì nhảy; Giảm chuyển động thì đổi ngay.
+              .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: phase?.kind)
             if let key = breath(phase?.breath) {
               Text(verbatim: "·").foregroundStyle(DS.Color.mutedForeground.swiftUI)
               Text(key)
