@@ -130,7 +130,7 @@ struct MyReportRow: View {
 
   static func typeText(_ r: MyReport) -> String {
     if r.isUserReport { return String(localized: "community.myreports.user") }
-    switch r.targetType {
+    return switch r.targetType {
     case .comment: String(localized: "community.mod.target.comment")
     default: String(localized: "community.mod.target.post")
     }
