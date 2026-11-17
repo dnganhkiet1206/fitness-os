@@ -3,11 +3,15 @@
  *
  * ── the primary question this chain started from ──
  *
- * Can a request authenticated as B delete A? **No**, and the reason is stronger
- * than a check: `delete-account` never calls `req.json()` at all. There is no
- * body to trust. Driven through the real handler as B with `userId`, `user_id`,
- * `id`, `sub`, `account`, `target` and `email` all naming A — eight bodies —
- * every one deletes **B** and leaves A's account and files untouched.
+ * Can a request authenticated as B delete A? **No**. The handler reads the
+ * body for exactly two fields — `apple_refresh_token` and
+ * `apple_authorization_code`, the token material Apple revocation needs —
+ * and Rule F below allows no other field to be read off it, so there is
+ * still no body field that can name an account. Driven through the real
+ * handler as B with `userId`, `user_id`, `id`, `sub`, `account`, `target`
+ * and `email` all naming A, plus the two token fields carrying A's id —
+ * twelve bodies — every one deletes **B** and leaves A's account and files
+ * untouched.
  *
  * The auth matrix is the other half: no token, a garbage token and the
  * **publishable anon key** all return 401 having performed **zero** privileged
@@ -129,6 +133,18 @@ try {
                delete world.files[id];
                return { error: null };
              },
+             /* Every account here is Apple-linked, so the revocation
+                preamble — including the body read — runs on every
+                authenticated call, and Rule A below is not vacuous. */
+             async getUserById(id) {
+               await wait(world.latency);
+               world.log.push({ op: 'getUserById', id, isAdmin });
+               if (world.fail.getUserById) return { data: { user: null }, error: { message: world.fail.getUserById } };
+               if (!world.users.has(id)) {
+                 return { error: Object.assign(new Error('User not found'), { status: 404, code: 'user_not_found' }) };
+               }
+               return { data: { user: { identities: [{ provider: 'apple' }] } }, error: null };
+             },
            },
          },
          storage: {
@@ -189,7 +205,7 @@ try {
      function reset(over) {
        W.users = new Set([A, B]);
        W.files = { [A]: ['a1.jpg', 'a2.jpg'], [B]: ['b1.jpg'] };
-       W.log = []; W.fail = {}; W.latency = 0; W.throwDeleteUser = null; W.throwRemove = null;
+       W.log = []; W.fail = {}; W.latency = 0; W.throwDeleteUser = null; W.throwRemove = null; W.bodyReads = 0;
        W.tokens = { tokA: { sub: A, role: 'authenticated', aud: 'authenticated' }, tokB: { sub: B, role: 'authenticated', aud: 'authenticated' },
                     anonTok: { role: 'anon' } };
        Object.assign(W, over || {});
@@ -201,7 +217,8 @@ try {
        const h = new Map();
        if (token) h.set('authorization', 'Bearer ' + token);
        const res = await ss.__handler()({ method: 'POST',
-         headers: { get: (k) => h.get(k.toLowerCase()) ?? null }, json: async () => body || {} });
+         headers: { get: (k) => h.get(k.toLowerCase()) ?? null },
+         json: async () => { W.bodyReads++; return body || {}; } });
        return { status: res.status, body: JSON.parse(await res.text()) };
      }
 
@@ -209,11 +226,18 @@ try {
        quiet();
        const o = {};
 
-       /* ── A. the body can never choose the account ── */
+       /* ── A. the body can never choose the account ──
+          The last four bodies carry the two Apple token fields — the only
+          fields Rule F allows the handler to read — naming A, alone and
+          combined with the identity fields. A token field carrying
+          somebody else's id must still delete B. */
        o.cross = [];
        for (const body of [{ userId: A }, { user_id: A }, { id: A }, { sub: A },
                            { account: A }, { target: A }, { email: 'alpha@x' },
-                           { userId: A, user_id: A, id: A, sub: A }]) {
+                           { userId: A, user_id: A, id: A, sub: A },
+                           { apple_refresh_token: A }, { apple_authorization_code: A },
+                           { apple_refresh_token: A, apple_authorization_code: A },
+                           { userId: A, user_id: A, apple_refresh_token: A, apple_authorization_code: A }]) {
          reset();
          const r = await call('tokB', body);
          o.cross.push({
@@ -221,6 +245,7 @@ try {
            deleted: W.log.filter((l) => l.op === 'deleteUser').map((l) => l.id),
            aAlive: W.users.has(A),
            aFiles: (W.files[A] || []).length,
+           bodyReads: W.bodyReads,
          });
        }
 
@@ -267,6 +292,16 @@ try {
        const [c1, c2] = await Promise.all([call('tokA', {}), call('tokA', {})]);
        o.concurrent = { statuses: [c1.status, c2.status].sort(), bAlive: W.users.has(B), aAlive: W.users.has(A) };
 
+       /* ── E. revocation is best-effort: it never blocks the deletion ──
+          With token fields supplied, and with the identities lookup
+          failing outright, the deletion still converges to 200. */
+       reset({ fail: { getUserById: 'boom' } });
+       const e1 = await call('tokA', { apple_refresh_token: 'rt', apple_authorization_code: 'code' });
+       o.apple = { lookupFails: { status: e1.status, aAlive: W.users.has(A), bodyReads: W.bodyReads } };
+       reset();
+       const e2 = await call('tokA', { apple_refresh_token: 'rt', apple_authorization_code: 'code' });
+       o.apple.lookupOk = { status: e2.status, aAlive: W.users.has(A), bodyReads: W.bodyReads };
+
        console.log = real;
        console.log(JSON.stringify(o));
      })();\n`,
@@ -284,12 +319,17 @@ try {
     r.cross.every((c) => c.deleted.length === 1 && c.deleted[0] === B_ID),
     'thân yêu cầu CHỌN ĐƯỢC tài khoản bị xoá: ' +
       JSON.stringify(r.cross.map((c) => c.deleted)) +
-      ' — gọi với tư cách B kèm userId/user_id/id/sub/account/target/email của A. ' +
+      ' — gọi với tư cách B kèm userId/user_id/id/sub/account/target/email và hai trường token Apple của A. ' +
       'Đây là hàm duy nhất trong dự án mà làm sai chỗ này là KHÔNG THỂ CỨU cho người bị',
   );
   want(
     r.cross.every((c) => c.aAlive && c.aFiles === 2),
     `tài khoản hoặc ảnh của A bị đụng tới: ${JSON.stringify(r.cross.map((c) => [c.aAlive, c.aFiles]))}`,
+  );
+  want(
+    r.cross.every((c) => c.bodyReads === 1),
+    `luật A có lần gọi không đọc thân yêu cầu (bodyReads=${JSON.stringify(r.cross.map((c) => c.bodyReads))}) — ` +
+      'các thân mang trường Apple khi đó không chứng minh được gì, vì hàm chưa từng nhìn thấy chúng',
   );
 
   /* ── B ── */
@@ -343,6 +383,18 @@ try {
   want(
     r.concurrent.statuses.join(',') === '200,200' && !r.concurrent.aAlive && r.concurrent.bAlive,
     `hai lời gọi xoá đồng thời ra ${JSON.stringify(r.concurrent)}`,
+  );
+
+  /* ── E ── */
+  want(
+    r.apple.lookupOk.status === 200 && !r.apple.lookupOk.aAlive && r.apple.lookupOk.bodyReads === 1,
+    `xoá tài khoản có liên kết Apple, kèm hai trường token, ra ${JSON.stringify(r.apple.lookupOk)} — ` +
+      'việc thu hồi phải chạy (thân được đọc) và việc xoá vẫn phải xong',
+  );
+  want(
+    r.apple.lookupFails.status === 200 && !r.apple.lookupFails.aAlive,
+    `không liệt kê được identities mà việc xoá không xong: ${JSON.stringify(r.apple.lookupFails)} — ` +
+      'thu hồi Apple là việc làm thêm, hỏng ở đó không được chặn việc xoá tài khoản',
   );
 } finally {
   rmSync(out, { recursive: true, force: true });
@@ -419,14 +471,65 @@ try {
     );
   }
 
-  /* And the function must still be the kind of function that can rely on it. */
+  /*
+    And the function must still be the kind of function that can rely on it —
+    and the kind whose body cannot choose the account.
+
+    The body used to be unreadable by rule: this function's strength was
+    having no body to trust. Apple revocation changed that — the token to
+    revoke can only arrive in the body — so the rule changed with it, from
+    "no body" to "no body field but the two token fields". That is the
+    prescription this rule has carried since it was written: identity
+    still only from the JWT, and Rule A extended to the new fields.
+    Every field read off the parsed body must be `apple_refresh_token`
+    or `apple_authorization_code`, however the parsed value is named or
+    aliased; a new field fails here until Rule A grows a body for it.
+  */
   const fn = readFileSync(path.join(REPO, 'supabase/functions/delete-account/index.ts'), 'utf8')
     .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-  if (/req\.json\(\)/.test(fn)) {
-    problems.push(
-      'delete-account đã bắt đầu đọc thân yêu cầu — sức mạnh của hàm này là KHÔNG CÓ thân nào để tin. ' +
-        'Nếu nay cần một trường thì danh tính vẫn phải chỉ đến từ JWT, và luật A ở trên phải được mở rộng',
-    );
+  const BODY_FIELDS = new Set(['apple_refresh_token', 'apple_authorization_code']);
+  /* Variables holding the parsed body: whatever `req.json()` is assigned
+     to, plus anything assigned from one of those — renaming the variable
+     must not rename the rule away. */
+  const bodyVars = new Set();
+  for (const m of fn.matchAll(/(?:const|let|var)\s+(\w+)(?:\s*:[^=]+)?\s*=\s*await req\.json\(\)/g)) {
+    bodyVars.add(m[1]);
+  }
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const m of fn.matchAll(/\b(\w+)\s*=\s*(\w+)(?![\w$.?[])[^;\n]*;/g)) {
+      if (bodyVars.has(m[2]) && !bodyVars.has(m[1])) {
+        bodyVars.add(m[1]);
+        changed = true;
+      }
+    }
+  }
+  if (bodyVars.size) {
+    const names = [...bodyVars].join('|');
+    const readFields = new Set();
+    for (const m of fn.matchAll(new RegExp(`\\b(?:${names})(?:\\?\\.|\\.)(\\w+)|\\b(?:${names})\\[\\s*["']([^"']+)["']\\s*\\]`, 'g'))) {
+      readFields.add(m[1] ?? m[2]);
+    }
+    for (const m of fn.matchAll(new RegExp(`const\\s*\\{([^}]*)\\}\\s*=\\s*(?:${names}|await req\\.json\\(\\))`, 'g'))) {
+      for (const part of m[1].split(',')) {
+        const name = part.split(':')[0].trim().replace(/^\.\.\./, '');
+        if (name) readFields.add(name);
+      }
+    }
+    for (const f of [...readFields].sort()) {
+      if (!BODY_FIELDS.has(f)) {
+        problems.push(
+          `delete-account đọc trường "${f}" từ thân yêu cầu — thân chỉ được mang hai trường token của Apple ` +
+            '(apple_refresh_token, apple_authorization_code). Danh tính chỉ đến từ JWT (requireUser); ' +
+            'một trường mới phải được thêm vào luật A trước khi được đọc ở đây',
+        );
+      }
+    }
+    if (new RegExp(`\\.\\.\\.\\s*(?:${names})\\b`).test(fn)) {
+      problems.push(
+        'delete-account trải (spread) thân yêu cầu — mọi trường trong thân khi đó đều đi tiếp mà luật A không thấy',
+      );
+    }
   }
   if (!/requireUser\(req\)/.test(fn)) {
     problems.push('delete-account không còn lấy danh tính từ requireUser — JWT là nguồn duy nhất được phép');
@@ -440,9 +543,10 @@ if (problems.length) {
 }
 
 console.log(
-  'xoá tài khoản OK — CHẠY THẬT handler delete-account. Tám thân yêu cầu khác nhau đặt tên A ' +
-    '(userId/user_id/id/sub/account/target/email) gọi với tư cách B: lần nào cũng xoá ĐÚNG B, tài khoản và ' +
-    'ảnh của A nguyên vẹn — hàm này không hề gọi req.json(), nên không có thân nào để tin. Không token / ' +
+  'xoá tài khoản OK — CHẠY THẬT handler delete-account. Mười hai thân yêu cầu khác nhau đặt tên A ' +
+    '(userId/user_id/id/sub/account/target/email, cộng hai trường token Apple mang id của A) gọi với tư cách B: ' +
+    'lần nào cũng xoá ĐÚNG B, tài khoản và ảnh của A nguyên vẹn — thân yêu cầu chỉ được đọc hai trường token ' +
+    '(apple_refresh_token, apple_authorization_code), danh tính vẫn chỉ đến từ JWT. Không token / ' +
     'token rác / KHOÁ ANON đều 401 với KHÔNG một hành động service-role nào. Mọi lối thoát lỗi nói đúng sự ' +
     'thật về việc đã phá gì: hỏng khi liệt kê → partial=false, hỏng khi xoá tệp → partial=true, và hỏng ở ' +
     'deleteUser — dù API TRẢ VỀ lỗi hay NÉM lỗi — đều partial=true sau khi ảnh đã mất (bản đã ship để lối ' +
@@ -450,7 +554,8 @@ console.log(
     'ảnh đã mất vĩnh viễn), và không phản hồi nào trả câu lỗi nội bộ ra ngoài. Thử lại sau một lần hỏng dở ' +
     'dang hội tụ về 200; gọi xoá hai lần ra 200/200 và hai lời gọi đồng thời cũng vậy (bản đã ship trả 500 ' +
     'partial:false cho lần thứ hai — phản hồi này là thứ dễ mất nhất trong app, và token vẫn hợp lệ sau khi ' +
-    'tài khoản đã mất). Và mọi bảng mang user_id đều có khoá ngoại ON DELETE CASCADE tới auth.users — khai ' +
+    'tài khoản đã mất). Việc thu hồi Apple có hỏng — kể cả không liệt kê được identities — cũng không chặn ' +
+    'việc xoá. Và mọi bảng mang user_id đều có khoá ngoại ON DELETE CASCADE tới auth.users — khai ' +
     'ngay trong CREATE TABLE, thêm bằng ALTER TABLE về sau, hoặc đi qua một bảng cha mà chính nó đã được ' +
     'chứng minh cascade (các bảng community_* qua community_profiles)',
 );
