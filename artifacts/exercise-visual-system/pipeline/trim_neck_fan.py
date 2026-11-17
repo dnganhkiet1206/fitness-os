@@ -101,6 +101,23 @@ def main() -> None:
     covered[rows, cols] = True
 
     facts = config.load_json(atlas_dir / "atlas_facts.json")
+    # Once per configuration (review #938): the masks on disk already carry the cut, so a
+    # second pass would multiply the soft edge again (179 -> 126). Same config = nothing to do;
+    # a changed config needs the uncut masks, i.e. a full bake (bake_muscle_atlas.py, which
+    # applies neck_fan itself) instead of this patch.
+    applied = facts.get("neck_fan_applied", {})
+    todo = {}
+    for name, fan in fans.items():
+        if name not in applied:
+            todo[name] = fan
+        elif applied[name] != fan:
+            raise SystemExit(f"[evs] {name}: neck_fan changed since it was applied to these masks; "
+                             "re-bake the atlas (bake_muscle_atlas.py) instead of trimming twice")
+        else:
+            print(f"[evs] {name}: neck_fan already applied, skipped")
+    if not todo:
+        return
+    fans = todo
     for name, fan in fans.items():
         factor = np.ones((res, res), dtype=np.float64)
         f = muscle_eval.neck_fan(fan, points)
@@ -120,6 +137,7 @@ def main() -> None:
     if args.dry_run:
         return
     np.savez_compressed(atlas_dir / "masks.npz", **masks)
+    facts["neck_fan_applied"] = {**applied, **fans}
     config.save_json(atlas_dir / "atlas_facts.json", facts)
     print(f"[evs] wrote {atlas_dir / 'masks.npz'}")
 
