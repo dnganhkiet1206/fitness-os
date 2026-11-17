@@ -105,5 +105,61 @@
   "full_prefix": "bent_over_two_dumbbell_row_full",
   "review": null,
   "note": "Kiệt 14–15/11: sai tư thế. Làm lại theo 2 video YouTube người thật + Garage Gym Reviews, PowerliftingTechnique, Muscle & Strength: thân gập ~52° và giữ nguyên, gối hơi gập, lưng thẳng, cổ trung tính; khuỷu sát thân kéo về phía hông, tạ lên ngang eo. QA 17/17. Chờ Kiệt xem lại",
-  "tips": []
+  "tips": [],
+  "tempo": {
+    "duration_ms": 8200,
+    "notation": "1.8-0.4-1.2-0.4",
+    "reps": 2,
+    "phases": [
+      {
+        "rep": 1,
+        "kind": "concentric",
+        "start_ms": 600,
+        "end_ms": 1800,
+        "breath": "exhale"
+      },
+      {
+        "rep": 1,
+        "kind": "top_hold",
+        "start_ms": 1800,
+        "end_ms": 2200,
+        "breath": "hold"
+      },
+      {
+        "rep": 1,
+        "kind": "eccentric",
+        "start_ms": 2200,
+        "end_ms": 4000,
+        "breath": "inhale"
+      },
+      {
+        "rep": 1,
+        "kind": "bottom_hold",
+        "start_ms": 4000,
+        "end_ms": 4400,
+        "breath": "hold"
+      },
+      {
+        "rep": 2,
+        "kind": "concentric",
+        "start_ms": 4400,
+        "end_ms": 5600,
+        "breath": "exhale"
+      },
+      {
+        "rep": 2,
+        "kind": "top_hold",
+        "start_ms": 5600,
+        "end_ms": 6000,
+        "breath": "hold"
+      },
+      {
+        "rep": 2,
+        "kind": "eccentric",
+        "start_ms": 6000,
+        "end_ms": 7800,
+        "breath": "inhale"
+      }
+    ]
+  }
 }
