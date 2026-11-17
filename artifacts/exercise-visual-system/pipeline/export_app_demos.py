@@ -79,6 +79,10 @@ def demo(ex_dir: Path, keys: dict, colors: dict) -> tuple[str, dict] | None:
         "full_prefix": f"{prefix}_full" if modular else None,
         "review": app.get("review"),
         "note": app.get("note"),
+        # Technique tips (B1, 17/11): id (i18n keys eg.demo3d.tip.<id>*), anchor on the skin in
+        # the first frame, and the joint + offset the leader line follows while the clip plays
+        # (filled by pipeline/tip_anchors.py). No joint = fixed point (equipment).
+        "tips": [{k: t[k] for k in ("id", "anchor", "joint", "offset") if k in t} for t in app.get("tips") or []],
     }
     return prefix, d | {"catalog_order": app.get("catalog_order", 999)}
 

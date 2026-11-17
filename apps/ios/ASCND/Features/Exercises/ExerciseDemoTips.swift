@@ -1,66 +1,68 @@
 #if DEBUG
   import ASCNDDesignSystem
   import SwiftUI
+  import RealityKit
   import simd
 
   /// Mẹo kỹ thuật trong trình xem 3D (Kiệt 13/11): nút "Mẹo" ở góc phải bật
-  /// các ô chữ, mỗi ô có đường chỉ tới đúng vùng cơ thể trên mô hình. Điểm
-  /// neo là toạ độ 3D (hệ Y-up của USDZ) ở vùng không chuyển động trong lần
-  /// đẩy; mỗi khung hình được chiếu lại theo máy quay hiện tại, nên quay
-  /// hướng nào đường chỉ cũng bám đúng chỗ. Ô chữ dạt về mép màn gần điểm neo.
-  /// Nội dung lấy từ các cue của `bench-press/exercise.json`; chuyển động vẫn
-  /// UNVERIFIED nên mẹo cũng chỉ ở bản Debug.
+  /// các ô chữ, mỗi ô có đường chỉ tới đúng vùng cơ thể trên mô hình.
+  /// Từ 17/11 (B1) mẹo là dữ liệu: `app_demo.tips` trong `exercise.json` →
+  /// `<bài>_demo.json` (`pipeline/export_app_demos.py`); chữ vẫn trong
+  /// Localizable.xcstrings (`eg.demo3d.tip.<id>*`). Điểm neo bám theo một khớp
+  /// (`joint` + `offset`, `pipeline/tip_anchors.py`) nên đường chỉ đi theo người
+  /// khi động tác chạy; không có khớp = điểm cố định (dụng cụ đứng yên).
+  /// Chuyển động vẫn UNVERIFIED nên mẹo cũng chỉ ở bản Debug.
   struct ExerciseTip: Identifiable {
     let id: String
-    let titleKey: String
-    let bodyKey: String
+    var titleKey: String { "eg.demo3d.tip.\(id)" }
+    var bodyKey: String { "eg.demo3d.tip.\(id).body" }
     /// Chi tiết khi chạm nhãn: các bước, lý do, lỗi cần tránh (khoá i18n).
     var howKeys: [String] { ["eg.demo3d.tip.\(id).how1", "eg.demo3d.tip.\(id).how2"] }
     var whyKey: String { "eg.demo3d.tip.\(id).why" }
     var avoidKey: String { "eg.demo3d.tip.\(id).avoid" }
-    /// Điểm trên bề mặt cơ thể, mét, hệ Y-up (khớp `bench_press_animation.usdz`).
+    /// Điểm trên bề mặt cơ thể ở khung đầu, mét, hệ Y-up.
     let anchor: SIMD3<Float>
+    /// Khớp mà điểm neo đi theo (tên đầy đủ trong khung xương USD) + độ lệch tới da.
+    var joint: String?
+    var offset: SIMD3<Float>?
   }
 
-  enum ExerciseTips {
-    /// Toạ độ đo từ khớp xương của tư thế nằm ghế
-    /// (`bench-press/motion_metadata.json` / bản lấy mẫu kiểm định), đẩy ra
-    /// bề mặt da: vai trái, bụng, điểm thanh chạm ngực, bàn chân trái.
-    static let benchPress: [ExerciseTip] = [
-      ExerciseTip(id: "shoulders", titleKey: "eg.demo3d.tip.shoulders", bodyKey: "eg.demo3d.tip.shoulders.body",
-                  anchor: [0.24, 0.62, -0.10]),
-      ExerciseTip(id: "core", titleKey: "eg.demo3d.tip.core", bodyKey: "eg.demo3d.tip.core.body",
-                  anchor: [0.0, 0.66, 0.27]),
-      ExerciseTip(id: "chest", titleKey: "eg.demo3d.tip.chest", bodyKey: "eg.demo3d.tip.chest.body",
-                  anchor: [0.0, 0.69, 0.03]),
-      ExerciseTip(id: "feet", titleKey: "eg.demo3d.tip.feet", bodyKey: "eg.demo3d.tip.feet.body",
-                  anchor: [0.30, 0.04, 0.80]),
-    ]
+  /// Vị trí khớp của nhân vật đang chạy (mỗi khung), để điểm neo mẹo đi theo cơ thể.
+  @MainActor final class TipAnchors {
+    weak var body: ModelEntity?
+    private var parents: [Int?] = []
+    private var lookup: [String: Int] = [:]
 
-    /// Dumbbell Shoulder Press (Kiệt duyệt động tác 15/11). Nội dung từ các
-    /// video và trang đã đối chiếu (`dumbbell-shoulder-press/exercise.json`,
-    /// `motion_provenance`). Điểm neo đo từ xương ở khung 0 của
-    /// `dumbbell_shoulder_press_master.blend`, đổi sang Y-up (x, z, -y), đẩy
-    /// ra bề mặt: mép trên đệm lưng sau đầu, đỉnh vai trái, mặt trước vai phải,
-    /// cằm, bụng. Chỉ chọn vùng không di chuyển khi đẩy và không bị bảng cơ
-    /// che (bàn chân nằm dưới bảng cơ nên mẹo chân gộp vào mẹo bụng).
-    static let shoulderPress: [ExerciseTip] = [
-      ExerciseTip(id: "press_bench", titleKey: "eg.demo3d.tip.press_bench", bodyKey: "eg.demo3d.tip.press_bench.body",
-                  anchor: [0.12, 1.20, -0.38]),
-      ExerciseTip(id: "press_shoulders", titleKey: "eg.demo3d.tip.press_shoulders", bodyKey: "eg.demo3d.tip.press_shoulders.body",
-                  anchor: [0.14, 1.07, -0.12]),
-      ExerciseTip(id: "press_elbows", titleKey: "eg.demo3d.tip.press_elbows", bodyKey: "eg.demo3d.tip.press_elbows.body",
-                  anchor: [-0.21, 0.98, -0.04]),
-      ExerciseTip(id: "press_depth", titleKey: "eg.demo3d.tip.press_depth", bodyKey: "eg.demo3d.tip.press_depth.body",
-                  anchor: [0.0, 1.12, -0.05]),
-      ExerciseTip(id: "press_core", titleKey: "eg.demo3d.tip.press_core", bodyKey: "eg.demo3d.tip.press_core.body",
-                  anchor: [0.0, 0.70, 0.10]),
-    ]
+    func attach(_ body: ModelEntity) {
+      self.body = body
+      let names = body.jointNames
+      var index: [String: Int] = [:]
+      for (i, n) in names.enumerated() { index[n] = i }
+      parents = names.map { n in
+        guard let slash = n.lastIndex(of: "/") else { return nil }
+        return index[String(n[..<slash])]
+      }
+      lookup = index
+      for (i, n) in names.enumerated() where lookup[String(n.split(separator: "/").last ?? "")] == nil {
+        lookup[String(n.split(separator: "/").last ?? "")] = i
+      }
+    }
 
-    static func tips(for exerciseKey: String) -> [ExerciseTip] {
-      if ["bench press", "barbell bench press", "barbell bench press - medium grip"].contains(exerciseKey) { return benchPress }
-      if ["dumbbell shoulder press", "seated dumbbell shoulder press", "seated dumbbell press"].contains(exerciseKey) { return shoulderPress }
-      return []
+    /// Điểm neo hiện tại: khớp (đang chuyển động) + độ lệch; không có khớp thì điểm cố định.
+    func position(of tip: ExerciseTip) -> SIMD3<Float> {
+      guard let body, let joint = tip.joint, let offset = tip.offset,
+        let i = lookup[joint] ?? lookup[String(joint.split(separator: "/").last ?? "")]
+      else { return tip.anchor }
+      let local = body.jointTransforms
+      guard i < local.count else { return tip.anchor }
+      var m = matrix_identity_float4x4
+      var j: Int? = i
+      while let k = j, k < local.count {
+        m = local[k].matrix * m
+        j = k < parents.count ? parents[k] : nil
+      }
+      let world = body.transformMatrix(relativeTo: nil) * m
+      return SIMD3(world.columns.3.x, world.columns.3.y, world.columns.3.z) + offset
     }
   }
 
@@ -95,6 +97,8 @@
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     let tips: [ExerciseTip]
     let camera: PinholeCamera
+    /// Vị trí 3D hiện tại của điểm neo (đi theo khớp khi động tác chạy).
+    var anchorOf: (ExerciseTip) -> SIMD3<Float> = { $0.anchor }
     /// Mép trên của hàng nhãn đầu (dưới nút đóng / nút mẹo).
     let topLimit: CGFloat
     @Binding var selected: String?
@@ -145,7 +149,7 @@
     private func layout() -> [Placed] {
       let w = camera.size.width
       let projected: [Placed] = tips.enumerated().compactMap { n, tip in
-        guard let a = camera.project(tip.anchor) else { return nil }
+        guard let a = camera.project(anchorOf(tip)) else { return nil }
         let pw = width(tip)
         return Placed(tip: tip, number: n + 1, anchor: a, x: min(max(a.x, margin + pw / 2), w - margin - pw / 2), row: 0, width: pw)
       }
