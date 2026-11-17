@@ -879,6 +879,16 @@ final class AppServices {
   @ObservationIgnored var koaStoreOverride: (any RowStore)?
   @ObservationIgnored var onKoaPausePushFailure: ((String) -> Void)?
 
+  /// Đường đồng bộ tạm nghỉ dùng sự thật trên máy (UserDefaults) và đẩy thật.
+  /// Chế độ UI test tắt đường này (máy chủ giả làm chủ trạng thái) — TRỪ khi
+  /// test đã gắn `koaStoreOverride`: lúc đó test làm chủ cả kho ghi lẫn sự
+  /// thật trên máy, nên đường đẩy thật phải chạy thì mới kiểm được lỗi đẩy
+  /// (R2-SYNC-05). Lược đồ test của ASCNDTests luôn bật `-uiTestFakeBackend`
+  /// (`project.yml`), nên không có ngoại lệ này thì seam kiểm không bao giờ
+  /// chạy. Ngoài test, override luôn `nil` nên hành vi UI test / bản thật
+  /// không đổi.
+  private var koaLocalSyncEnabled: Bool { koaStoreOverride != nil || !Self.uiTest }
+
   private var koaStore: (any RowStore)? {
     if let override = koaStoreOverride { return override }
     return rows
@@ -895,7 +905,7 @@ final class AppServices {
   /// đồng bộ với bảng `koa_pauses`.
   func koaPause(userId: String, today: LocalDate) -> KoaPause? {
     _ = koaPauseRevision
-    guard let data = Self.uiTest ? uiTestPauses[userId] : UserDefaults.standard.data(forKey: "koa.pause.\(userId)"),
+    guard let data = koaLocalSyncEnabled ? UserDefaults.standard.data(forKey: "koa.pause.\(userId)") : uiTestPauses[userId],
       let p = try? JSONDecoder().decode(KoaPause.self, from: data), p.active(on: today)
     else { return nil }
     return p
@@ -917,7 +927,7 @@ final class AppServices {
     storeKoaPause(pause, userId: userId)
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     storePauseLog(koaPauseLog(userId: userId, today: today).setting(pause, today: today), "koa.pauselog.\(userId)", userId: userId)
-    guard !Self.uiTest else { return }
+    guard koaLocalSyncEnabled else { return }
     // lưu trên máy trước; đẩy lên server sau, mất mạng thì để cờ chờ lần đọc sau
     UserDefaults.standard.set(true, forKey: "koa.pause.pending.\(userId)")
     Task {
@@ -929,7 +939,7 @@ final class AppServices {
   @ObservationIgnored private var uiTestPauseLogs: [String: KoaPauseLog] = [:]
 
   private func loadPauseLog(_ key: String, userId: String) -> KoaPauseLog {
-    if Self.uiTest { return uiTestPauseLogs[key] ?? KoaPauseLog() }
+    if !koaLocalSyncEnabled { return uiTestPauseLogs[key] ?? KoaPauseLog() }
     guard let data = UserDefaults.standard.data(forKey: key),
       let log = try? JSONDecoder().decode(KoaPauseLog.self, from: data)
     else { return KoaPauseLog() }
@@ -937,7 +947,7 @@ final class AppServices {
   }
 
   private func storePauseLog(_ log: KoaPauseLog, _ key: String, userId: String) {
-    if Self.uiTest {
+    if !koaLocalSyncEnabled {
       uiTestPauseLogs[key] = log
     } else if let data = try? JSONEncoder().encode(log) {
       UserDefaults.standard.set(data, forKey: key)
@@ -948,7 +958,7 @@ final class AppServices {
   /// Gửi phần sổ server chưa có: so với bản đã gửi được lần cuối (`koa.pauselog.synced`), nên
   /// mất mạng hay bảng chưa deploy thì lần sau gửi bù, kể cả đợt đã huỷ.
   private func pushKoaPauseLog(userId: String) async {
-    guard !Self.uiTest, let rows = koaStore else { return }
+    guard koaLocalSyncEnabled, let rows = koaStore else { return }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     let local = koaPauseLog(userId: userId, today: today)
     let synced = loadPauseLog("koa.pauselog.synced.\(userId)", userId: userId)
@@ -969,7 +979,7 @@ final class AppServices {
   /// `true` khi sổ trên máy vừa đổi theo server.
   @discardableResult
   func syncKoaPauseLog(userId: String) async -> Bool {
-    guard !Self.uiTest, let rows = koaStore else { return false }
+    guard koaLocalSyncEnabled, let rows = koaStore else { return false }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     await pushKoaPauseLog(userId: userId)
     let local = koaPauseLog(userId: userId, today: today)
@@ -1027,7 +1037,7 @@ final class AppServices {
 
   private func storeKoaPause(_ pause: KoaPause?, userId: String) {
     let key = "koa.pause.\(userId)"
-    if Self.uiTest {
+    if !koaLocalSyncEnabled {
       uiTestPauses[userId] = pause.flatMap { try? JSONEncoder().encode($0) }
     } else if let pause, let data = try? JSONEncoder().encode(pause) {
       UserDefaults.standard.set(data, forKey: key)
@@ -1056,7 +1066,7 @@ final class AppServices {
   /// `true` khi đợt nghỉ trên máy vừa đổi theo server (bên gọi dựng lại việc chính).
   @discardableResult
   func syncKoaPause(userId: String) async -> Bool {
-    guard !Self.uiTest, let rows = koaStore else { return false }
+    guard koaLocalSyncEnabled, let rows = koaStore else { return false }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     if UserDefaults.standard.bool(forKey: "koa.pause.pending.\(userId)") {
       await pushKoaPause(koaPause(userId: userId, today: today), userId: userId)

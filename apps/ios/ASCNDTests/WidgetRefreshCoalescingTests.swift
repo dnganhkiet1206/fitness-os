@@ -18,9 +18,13 @@ import Testing
     let data = WidgetDataStore(suite: suite)
     let refresher = WidgetRefresher(store: store, data: data, reloadTimelines: { reloads.bump() })
 
-    // `setUser` làm mới một lần qua Task: đợi nó xong rồi đếm.
+    // `setUser` làm mới một lần qua Task: đợi nó xong rồi đếm. `Task.yield()`
+    // không đủ tin cậy trên simulator (lượt làm mới cần 4 lần gọi actor, test
+    // kịp kiểm trước khi Task xong) nên chờ bằng giấc ngủ thật, tối đa 2 giây.
+    // `reloadTimelines` chạy sau cả 4 select và sau khi ghi, nên đếm nó là tín
+    // hiệu hoàn thành đúng — các khẳng định sau vẫn chính xác tuyệt đối.
     refresher.setUser("u1")
-    for _ in 0..<200 where reloads.count < 1 { await Task.yield() }
+    for _ in 0..<200 where reloads.count < 1 { try? await Task.sleep(for: .milliseconds(10)) }
     #expect(reloads.count == 1)
     #expect(await store.selects == 4)
     #expect(data.todayWorkout() != nil)
