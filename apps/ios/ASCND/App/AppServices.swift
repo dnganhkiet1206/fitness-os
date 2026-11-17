@@ -938,7 +938,8 @@ final class AppServices {
   // MARK: - Bài tập: sao yêu thích + độ phổ biến (Kiệt 16/11)
 
   /// Đẩy sao chưa gửi lên `exercise_favorites` rồi lấy bản server (sao đánh ở máy khác). Bảng
-  /// chưa deploy (migration 20261116120000) hay mất mạng thì giữ bản trên máy, lần sau gửi bù.
+  /// lỗi (mất mạng; trước khi migration 20261116120000 được deploy 16/11) thì giữ bản trên máy,
+  /// lần sau gửi bù.
   func syncExerciseFavorites(userId: String) async {
     guard !Self.uiTest, let rows, session.session?.userId == userId else { return }
     await ExerciseFavoritesShared.book(for: userId).sync(rows: rows)

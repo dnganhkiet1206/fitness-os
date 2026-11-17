@@ -2,8 +2,8 @@ import ASCNDCore
 import Foundation
 
 /// Sao yêu thích của bài tập lưu trên máy theo tài khoản (`ex.favorites.<uid>`), đồng bộ lên
-/// `exercise_favorites` qua `AppServices.syncExerciseFavorites` (16/11). Bảng chưa deploy thì
-/// chỉ có bản trên máy; deploy xong thì lần mở tab Tập luyện sau gửi bù.
+/// `exercise_favorites` qua `AppServices.syncExerciseFavorites` (bảng deploy 16/11). Mất mạng
+/// thì chỉ có bản trên máy; lần mở tab Tập luyện / bấm sao sau gửi bù.
 struct DefaultsExerciseFavoriteStore: ExerciseFavoriteStore {
   /// `.local` giữ khoá cũ (`ex.favorites.<uid>`) — sao đánh trước khi có đồng bộ không mất.
   static func key(_ userId: String, _ slot: ExerciseFavoriteSlot) -> String {
