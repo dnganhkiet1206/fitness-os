@@ -51,6 +51,9 @@ struct CommunityFeedView: View {
   @Environment(AppServices.self) private var services
   /// Tin nhắn (15/10) — `nil` khi chưa có nguồn (server chưa có nhắn tin).
   @State private var messages: DMInboxBook?
+  /// Bảng kiểm duyệt (#915) — chỉ hỏi vai trò; nút khiên chỉ hiện khi là
+  /// moderator/admin, người thường không thấy gì.
+  @State private var moderation: ModerationBook?
   @State private var challengeRoute: ChallengeRoute?
   @State private var openAllChallenges = false
   @Environment(\.weightUnit) private var unit
@@ -167,6 +170,20 @@ struct CommunityFeedView: View {
         await m.load()
       }
     }
+    .task {
+      // Chỉ hỏi vai trò (#915) — người thường thì dừng ở đây, không một lời
+      // gọi dữ liệu quản trị nào rời máy.
+      if moderation == nil, let m = services.makeModeration(userId: book.userId) {
+        moderation = m
+        await m.loadRole()
+      }
+    }
+    .onChange(of: services.session.session?.userId) { _, id in
+      if id != book.userId {
+        moderation?.close()
+        moderation = nil
+      }
+    }
     .task { if challenges?.phase == .loading { await loadChallenges() } }
     .navigationDestination(item: $challengeRoute) { route in
       if let challenges { CommunityChallengeView(book: challenges, id: route.id, fromAll: route.fromAll) }
@@ -262,6 +279,14 @@ struct CommunityFeedView: View {
         .minimumScaleFactor(0.7)
         .accessibilityAddTraits(.isHeader)
       Spacer(minLength: 0)
+      // Bảng kiểm duyệt (#915): chỉ nhân viên mới thấy nút khiên.
+      if let moderation, moderation.role?.isStaff == true {
+        NavigationLink { ModerationDashboardScreen(book: moderation) } label: {
+          roundIcon("shield", dot: false)
+        }
+        .buttonStyle(TodayPressStyle())
+        .accessibilityLabel(Text("community.mod.title"))
+      }
       // Chỉ khi hộp thư đọc được (server có nhắn tin) — không thì một nút dẫn tới màn lỗi.
       if let messages, messages.phase == .ready {
         NavigationLink { MessagesInboxView(book: messages) } label: {
