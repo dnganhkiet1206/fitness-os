@@ -428,6 +428,28 @@ struct CommunityModerationDashboardBookTests {
     #expect(b.dashboard?.pendingReports == 1)
   }
 
+  /// Đổi bộ lọc rồi đọc hỏng: KHÔNG giữ danh sách cũ dưới nhãn bộ lọc mới
+  /// (Devin #916) — màn hiện lỗi, danh sách đã xoá. Khác với đọc lại bình
+  /// thường ở trên (giữ dữ liệu cũ là đúng, vì bộ lọc không đổi).
+  @Test func filterChangeFailureShowsErrorNotStaleList() async {
+    let r = Remote()
+    r.reportRows = [.object(["target_type": .string("post"), "target_id": .string("p1")])]
+    r.appealRows = [.object([
+      "id": .string("a1"), "status": .string("open"),
+      "target_type": .string("post"), "target_id": .string("p2"),
+    ])]
+    let b = ModerationBook(userId: "me", remote: r)
+    await b.load()
+    #expect(b.phase == .ready && b.reports.count == 1 && b.appeals.count == 1)
+    r.readFailure = ModerationFailure.offline
+    await b.selectReports(.dismissed)
+    #expect(b.phase == .failed && b.failure == .offline)
+    #expect(b.reports.isEmpty)
+    await b.selectAppeals(.upheld)
+    #expect(b.phase == .failed && b.failure == .offline)
+    #expect(b.appeals.isEmpty)
+  }
+
   @Test func firstLoadFailureIsFailedWithNamedError() async {
     let r = Remote()
     r.readFailure = ModerationFailure.forbidden

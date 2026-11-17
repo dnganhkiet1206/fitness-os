@@ -78004,6 +78004,29 @@
         }
       }
     },
+    "community.mod.target.viewPost": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View original post"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver publicación original"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xem bài gốc"
+          }
+        }
+      }
+    },
     "community.mod.action.hide": {
       "extractionState": "manual",
       "localizations": {
