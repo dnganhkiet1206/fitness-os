@@ -77199,29 +77199,6 @@
         }
       }
     },
-    "eg.demo3d.tempo.rep %lld %lld": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rep %1$lld/%2$lld"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rep %1$lld/%2$lld"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rep %1$lld/%2$lld"
-          }
-        }
-      }
-    },
     "eg.demo3d.tempo.slow": {
       "extractionState": "manual",
       "localizations": {
@@ -77448,6 +77425,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ép cánh tay trên sát người, chỉ cẳng tay chuyển động. Không giữ được thì giảm tạ."
+          }
+        }
+      }
+    },
+    "eg.demo3d.mistake.short": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wrong"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mal"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sai"
           }
         }
       }
