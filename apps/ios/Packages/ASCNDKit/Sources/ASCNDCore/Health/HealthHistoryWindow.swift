@@ -1,4 +1,4 @@
-import Foundation
+public import Foundation
 
 /// Cửa sổ lịch sử Apple Health mà iOS cho app đọc (iOS 27).
 ///

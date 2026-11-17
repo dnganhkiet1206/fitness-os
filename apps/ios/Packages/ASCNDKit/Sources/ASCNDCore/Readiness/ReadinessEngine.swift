@@ -70,7 +70,24 @@ public struct ReadinessResult: Sendable, Hashable {
   /// tim nghỉ chưa đủ ngày vì hệ thống không cho đọc thêm — không phải vì
   /// người dùng không đeo đồng hồ. Mặc định `false` để code cũ dựng kết quả
   /// trực tiếp (test, Daily Plan) không đổi hành vi.
-  public let limitedHistory: Bool = false
+  public let limitedHistory: Bool
+
+  /// Init tường minh như `ReadinessInput`: init memberwise tổng hợp không
+  /// nhận tham số `limitedHistory` (CI báo `extra argument`), nên phải khai
+  /// rõ — `limitedHistory` mặc định `false` để code cũ không đổi.
+  public init(
+    score: Double, status: Status, explainToken: String, recommendationKey: String, subscores: [String: Double],
+    acwr: Double?, confidence: Confidence, limitedHistory: Bool = false
+  ) {
+    self.score = score
+    self.status = status
+    self.explainToken = explainToken
+    self.recommendationKey = recommendationKey
+    self.subscores = subscores
+    self.acwr = acwr
+    self.confidence = confidence
+    self.limitedHistory = limitedHistory
+  }
 }
 
 public enum ReadinessEngine {
