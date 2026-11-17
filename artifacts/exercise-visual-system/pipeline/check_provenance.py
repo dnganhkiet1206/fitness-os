@@ -38,13 +38,16 @@ import sys
 from pathlib import Path
 
 # (mẫu, tên): mẫu quét trên nội dung file văn bản (không phân biệt hoa thường)
-# và trên tên file. "cmu" và "mocap" bắt theo ranh giới từ để không khớp giữa
-# chừng một từ khác; "mixamo" và "carnegie mellon" không nằm trong từ nào khác.
+# và trên tên file. "cmu" và "mocap" chỉ bắt khi không đứng giữa chữ / số khác,
+# để không khớp giữa chừng một từ; "mixamo" và "carnegie mellon" không nằm trong
+# từ nào khác. Không dùng \b: nó coi "_" là chữ nên `cmu_mocap.blend` lọt qua
+# (review #889).
+_EDGE_L, _EDGE_R = r"(?<![a-z0-9])", r"(?![a-z0-9])"
 BANNED_PATTERNS = (
     (re.compile(r"mixamo", re.IGNORECASE), "mixamo"),
-    (re.compile(r"\bcmu\b", re.IGNORECASE), "cmu"),
+    (re.compile(_EDGE_L + r"cmu" + _EDGE_R, re.IGNORECASE), "cmu"),
     (re.compile(r"carnegie mellon", re.IGNORECASE), "carnegie-mellon"),
-    (re.compile(r"\bmocap\b", re.IGNORECASE), "mocap"),
+    (re.compile(_EDGE_L + r"mocap" + _EDGE_R, re.IGNORECASE), "mocap"),
 )
 
 # Định dạng file mang dữ liệu chuyển động của bên thứ ba: cấm xuất hiện trong

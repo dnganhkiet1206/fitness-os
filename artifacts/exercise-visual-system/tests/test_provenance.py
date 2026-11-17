@@ -110,6 +110,22 @@ class ProvenanceTests(unittest.TestCase):
             violations = check_provenance.check(_make_kit(Path(tmp), exercise))
             self.assertTrue(any("cmu" in v or "mocap" in v for v in violations))
 
+    def test_banned_token_next_to_underscore_fails(self):
+        # Review #889: \b treated "_" as a word character, so these slipped through.
+        for name in ("cmu_mocap.blend", "walk_CMU_01.txt", "MOCAP_take.py"):
+            with tempfile.TemporaryDirectory() as tmp:
+                kit = _make_kit(Path(tmp))
+                (kit / "test-exercise" / name).write_text("x\n", encoding="utf-8")
+                violations = check_provenance.check(kit)
+                self.assertTrue(any("cmu" in v or "mocap" in v for v in violations), name)
+
+    def test_token_inside_word_passes(self):
+        # Still no false positive inside another word ("documocap", "acmuse").
+        with tempfile.TemporaryDirectory() as tmp:
+            kit = _make_kit(Path(tmp))
+            (kit / "notes.txt").write_text("documocap acmuse\n", encoding="utf-8")
+            self.assertEqual(check_provenance.check(kit), [])
+
     def test_banned_motion_format_fails(self):
         with tempfile.TemporaryDirectory() as tmp:
             kit = _make_kit(Path(tmp))
