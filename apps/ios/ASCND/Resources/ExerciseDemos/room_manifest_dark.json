@@ -3,38 +3,44 @@
   "parts": [
     {
       "part": "floor",
-      "file": "gym_room_dark_floor",
-      "logo": false
+      "file": "gym_room_floor",
+      "logo": false,
+      "texture": "gym_room_dark_floor"
     },
     {
       "part": "ceiling",
-      "file": "gym_room_dark_ceiling",
-      "logo": false
+      "file": "gym_room_ceiling",
+      "logo": false,
+      "texture": "gym_room_dark_ceiling"
     },
     {
       "part": "walls",
-      "file": "gym_room_dark_walls",
-      "logo": false
+      "file": "gym_room_walls",
+      "logo": false,
+      "texture": "gym_room_dark_walls"
     },
     {
       "part": "slats",
-      "file": "gym_room_dark_slats",
-      "logo": false
+      "file": "gym_room_slats",
+      "logo": false,
+      "texture": "gym_room_dark_slats"
     },
     {
       "part": "racks",
-      "file": "gym_room_dark_racks",
-      "logo": false
+      "file": "gym_room_racks",
+      "logo": false,
+      "texture": "gym_room_dark_racks"
     },
     {
       "part": "leds",
-      "file": "gym_room_dark_leds",
+      "file": "gym_room_leds",
       "logo": false
     },
     {
       "part": "logo",
-      "file": "gym_room_dark_logo",
-      "logo": true
+      "file": "gym_room_logo",
+      "logo": true,
+      "texture": "gym_room_dark_logo"
     }
   ],
   "anchors": {

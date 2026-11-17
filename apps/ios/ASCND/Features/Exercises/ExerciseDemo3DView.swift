@@ -566,7 +566,9 @@
     /// USDZ, cùng các điểm neo cho đồ trang trí. Đổi một phần = thay một file.
     /// Không có manifest thì dùng file phòng gộp như trước.
     private struct RoomManifest: Decodable {
-      struct Part: Decodable { let part: String; let file: String }
+      /// `texture`: ảnh ánh sáng nướng của bản này thay cho ảnh trong file dùng chung (17/11:
+      /// hai bản sáng / tối dùng chung hình học, chỉ khác ảnh, `pipeline/slim_app_usdz.py`).
+      struct Part: Decodable { let part: String; let file: String; let texture: String? }
       let parts: [Part]
       let anchors: [String: [Float]]
     }
@@ -579,9 +581,32 @@
       let room = Entity()
       room.name = "GymRoom"
       for part in manifest.parts {
-        if let e = try? await Entity(named: part.file, in: .main) { room.addChild(e) }
+        guard let e = try? await Entity(named: part.file, in: .main) else { continue }
+        if let name = part.texture, let texture = await bakedTexture(name) { retexture(e, with: texture) }
+        room.addChild(e)
       }
       return room
+    }
+
+    private static func bakedTexture(_ name: String) async -> TextureResource? {
+      guard let url = Bundle.main.url(forResource: name, withExtension: "jpg")
+        ?? Bundle.main.url(forResource: name, withExtension: "png")
+      else { return nil }
+      return try? await TextureResource(contentsOf: url, options: .init(semantic: .color))
+    }
+
+    /// Đặt ảnh màu cho mọi vật liệu PBR của một phần phòng; `makeUnlit` đổi sang vật liệu không
+    /// chiếu sáng ngay sau đó.
+    private static func retexture(_ entity: Entity, with texture: TextureResource) {
+      if var model = entity.components[ModelComponent.self] {
+        model.materials = model.materials.map { material in
+          guard var pbr = material as? PhysicallyBasedMaterial else { return material }
+          pbr.baseColor.texture = .init(texture)
+          return pbr
+        }
+        entity.components.set(model)
+      }
+      for child in entity.children { retexture(child, with: texture) }
     }
 
     private struct EquipmentManifest: Decodable {

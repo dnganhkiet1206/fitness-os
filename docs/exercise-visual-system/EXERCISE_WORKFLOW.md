@@ -61,10 +61,13 @@ Mỗi bước có **điều kiện xong**. Chưa đạt thì không sang bước
 
 ## 6. Đưa vào app
 
-- Chép `usdz/<id>_animation.usdz`, `_poster.jpg` và `_focus_*.png` vào `apps/ios/ASCND/Resources/ExerciseDemos/`.
-- Trong `ExerciseDemo3D.swift`:
-  - lấy `cameraPosition` và `cameraTarget` từ `usdz/usdz_report.json` → `default_camera`;
-  - sửa `CatalogEntry`: `review: nil` và `note` ghi "chờ Kiệt xem lại".
+Dạng khối (từ 16–17/11, chi tiết ở `MODULAR_3D_PLAN.md`):
+
+- Xuất chuyển động: `export_usdz.py --split` → `<id>_motion.usdz` + `<id>_equipment.json`. Chép vào `apps/ios/ASCND/Resources/ExerciseDemos/` cùng `_poster.jpg`.
+- Dữ liệu bài (tên, góc máy, vai trò cơ, ghi chú Lab): sửa `exercise.json` rồi chạy `python3 pipeline/export_app_demos.py`. Không sửa Swift.
+- Bản đồ cơ đổi thì chạy `python3 pipeline/export_muscle_shader_maps.py`.
+- **Cuối cùng, sau mọi lần xuất vào app:** `Blender -b --factory-startup --python pipeline/slim_app_usdz.py`. Lệnh này bỏ texture thừa, cho phòng dùng chung hình học, bỏ pháp tuyến của phòng, lọc khung chuyển động (lệch tối đa 0,25°). Chạy lại nhiều lần không sao: file đã rút gọn thì bỏ qua.
+- Lab: ghi chú "chờ Kiệt xem lại" trong `exercise.json` (`app_demo`).
 
 ## 7. Kiểm trên simulator
 
