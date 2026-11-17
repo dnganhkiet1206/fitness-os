@@ -524,6 +524,30 @@ struct CommunityModerationDashboardBookTests {
     #expect(r.restrictionCalls == 1)
   }
 
+  /// Sổ mới (từ trang người dùng/nhật ký — Devin #924): `loadTarget` hỏi vai
+  /// trò trước, để quyết định sau đó chạy được thay vì `.ignored` im lặng.
+  @Test func freshBookLoadTargetInitializesRoleBeforeDeciding() async {
+    let r = Remote()
+    r.targetRow = Self.targetRow()
+    let b = ModerationBook(userId: "me", remote: r)
+    #expect(b.role == nil)
+    await b.loadTarget(type: .post, id: "p1")
+    #expect(b.targetPhase == .ready && b.role == .moderator)
+    #expect(r.roleCalls == 1)
+    #expect(await b.decide(.hide, type: .post, id: "p1", reason: "spam") == .done)
+    #expect(r.decided.count == 1)
+  }
+
+  /// Sổ mới mà là người thường: dừng ở `.notStaff`, không gọi RPC đích.
+  @Test func freshBookLoadTargetStopsNonStaffWithoutTargetCall() async {
+    let r = Remote()
+    r.role = "user"
+    let b = ModerationBook(userId: "me", remote: r)
+    await b.loadTarget(type: .post, id: "p1")
+    #expect(b.targetPhase == .notStaff && b.role == .user)
+    #expect(r.targetCalls == 0)
+  }
+
   @Test func targetGoneIsNamed() async {
     let r = Remote()
     r.readFailure = ModerationFailure.gone

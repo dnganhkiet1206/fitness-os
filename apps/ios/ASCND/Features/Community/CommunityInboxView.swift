@@ -342,59 +342,72 @@ struct CommunityInboxView: View {
   }
 
   /// Dòng kiểm duyệt: không có người gây ra nên vẽ riêng — khiên + kết quả +
-  /// lý do (nếu có). Chạm vào vẫn mở bài qua `target()` (thông báo kiểm duyệt
-  /// luôn kèm `post_id` của bài gốc / bài chứa bình luận).
-  private func moderationRow(_ x: CommunityInbox.Item, _ notice: CommunityInbox.ModerationNotice) -> some View {
+  /// lý do (nếu có). Chỉ mở bài khi người nhận chắc chắn đọc được nó: tác
+  /// giả + nội dung đã hiện lại (`restored` / `appeal_approved`). Người báo
+  /// cáo không mở được bài mình đã báo (bài tự ẩn khỏi họ — chạm vào chỉ ra
+  /// màn không tìm thấy bài), và bài ẩn/gỡ/kháng nghị bị bác cũng không mở
+  /// được; kết quả + lý do inline đã đủ (Devin #924).
+  @ViewBuilder private func moderationRow(_ x: CommunityInbox.Item, _ notice: CommunityInbox.ModerationNotice) -> some View {
     let when = PostHeaderView.agoText(x.at)
     let isNew = book.isNew(x)
     let title = Self.moderationTitle(notice)
-    return Button {
-      switch CommunityInbox.target(x) {
-      case .user(let id): openUser?(id)
-      case .post(let id): openPost = CommunityPostRoute(id: id)
-      case .challenge(let id): openChallenge = ChallengeRoute(id: id)
-      case nil: break
-      }
-    } label: {
-      HStack(spacing: DS.Spacing.sm) {
-        Image(systemName: "shield.fill")
-          .font(.system(size: 15, weight: .semibold))
-          .foregroundStyle(DS.Color.primary.swiftUI)
-          .frame(width: Self.iconSize, height: Self.iconSize)
-          .background(DS.Color.primary.swiftUI.opacity(0.14), in: Circle())
-          .accessibilityHidden(true)
-        VStack(alignment: .leading, spacing: 2) {
-          Text(verbatim: title)
-            .font(Self.textFont)
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-            .lineLimit(2)
-            .multilineTextAlignment(.leading)
-          if !notice.reason.isEmpty {
-            Text(verbatim: notice.reason)
-              .font(Self.timeFont)
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .lineLimit(2)
-          }
-          Text(verbatim: when)
+    let label = Text(
+      verbatim: title + (notice.reason.isEmpty ? "" : ", \(notice.reason)") + ", \(when)"
+        + (isNew ? ", \(String(localized: "community.inbox.unread"))" : ""))
+    let content = HStack(spacing: DS.Spacing.sm) {
+      Image(systemName: "shield.fill")
+        .font(.system(size: 15, weight: .semibold))
+        .foregroundStyle(DS.Color.primary.swiftUI)
+        .frame(width: Self.iconSize, height: Self.iconSize)
+        .background(DS.Color.primary.swiftUI.opacity(0.14), in: Circle())
+        .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(verbatim: title)
+          .font(Self.textFont)
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .lineLimit(2)
+          .multilineTextAlignment(.leading)
+        if !notice.reason.isEmpty {
+          Text(verbatim: notice.reason)
             .font(Self.timeFont)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(2)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        if isNew {
-          Circle().fill(DS.Color.primary.swiftUI).frame(width: 8, height: 8)
-        }
+        Text(verbatim: when)
+          .font(Self.timeFont)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
-      .padding(.vertical, 10)
-      .frame(minHeight: 52)
-      .contentShape(Rectangle())
+      .frame(maxWidth: .infinity, alignment: .leading)
+      if isNew {
+        Circle().fill(DS.Color.primary.swiftUI).frame(width: 8, height: 8)
+      }
     }
-    .buttonStyle(.plain)
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(
-      Text(
-        verbatim: title + (notice.reason.isEmpty ? "" : ", \(notice.reason)") + ", \(when)"
-          + (isNew ? ", \(String(localized: "community.inbox.unread"))" : "")))
-    .accessibilityAddTraits(.isButton)
+    .padding(.vertical, 10)
+    .frame(minHeight: 52)
+    .contentShape(Rectangle())
+    if Self.canOpenPost(notice) {
+      Button {
+        switch CommunityInbox.target(x) {
+        case .user(let id): openUser?(id)
+        case .post(let id): openPost = CommunityPostRoute(id: id)
+        case .challenge(let id): openChallenge = ChallengeRoute(id: id)
+        case nil: break
+        }
+      } label: { content }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(.isButton)
+    } else {
+      content
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+    }
+  }
+
+  /// Chỉ tác giả + nội dung đã hiện lại mới mở được bài (xem `moderationRow`).
+  static func canOpenPost(_ n: CommunityInbox.ModerationNotice) -> Bool {
+    n.outcome == "restored" || n.outcome == "appeal_approved"
   }
 
   /// Câu kết quả theo `outcome` của payload — kết quả lạ thì câu chung

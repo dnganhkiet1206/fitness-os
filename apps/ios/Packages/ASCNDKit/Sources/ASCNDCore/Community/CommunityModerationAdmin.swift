@@ -347,29 +347,43 @@ public final class AdminBook {
 
   /// Tìm người dùng: chỉ đọc lại danh sách (màn chờ người gõ dừng 300ms rồi
   /// mới gọi, như RN — mỗi phím một lượt quét `auth.users` là phí).
+  /// Xoá kết quả cũ + về `.loading` trước khi đọc (như `selectReports`,
+  /// Devin #924): đọc hỏng thì màn hiện lỗi thay vì hiện kết quả cũ dưới
+  /// truy vấn mới.
   public func searchUsers(_ query: String) async {
     let q = query.trimmingCharacters(in: .whitespaces)
     guard q != usersQuery else { return }
     usersQuery = q
     guard role == .admin, !closed else { return }
+    users = []
+    phase = .loading
     do {
       users = try await remote.adminUsers(query: q).compactMap(AdminUserRow.init(row:))
+      failure = nil
+      phase = .ready
     } catch {
       guard !closed else { return }
       failure = ModerationBook.map(error)
+      phase = .failed
     }
   }
 
-  /// Lọc nhật ký theo hành động: chỉ đọc lại nhật ký.
+  /// Lọc nhật ký theo hành động: chỉ đọc lại nhật ký. Xoá nhật ký cũ +
+  /// về `.loading` trước khi đọc (như `selectReports`, Devin #924).
   public func selectAuditAction(_ action: String?) async {
     guard action != auditAction else { return }
     auditAction = action
     guard role == .admin, !closed else { return }
+    audit = []
+    phase = .loading
     do {
       audit = try await remote.adminAudit(action: action).map(ModAuditRow.init(row:))
+      failure = nil
+      phase = .ready
     } catch {
       guard !closed else { return }
       failure = ModerationBook.map(error)
+      phase = .failed
     }
   }
 

@@ -336,6 +336,28 @@ struct CommunityModerationAdminBookTests {
     #expect(r.auditCalls == 3 && r.lastAuditAction == nil)
   }
 
+  /// Đổi bộ lọc/truy vấn rồi đọc hỏng: KHÔNG giữ danh sách cũ dưới nhãn mới
+  /// (Devin #924) — màn hiện lỗi, danh sách đã xoá.
+  @Test func filterChangeFailureShowsErrorNotStaleList() async {
+    let r = Remote()
+    r.userRows = [CommunityModerationAdminParseTests.userRow()]
+    r.auditRows = [.object([
+      "id": .number(1), "action": .string("HIDE_POST"), "target_type": .string("post"),
+      "target_id": .string("p1"), "reason": .string("spam"), "actor_role": .string("moderator"),
+      "created_at": .string("2026-11-16T10:00:00Z"), "actor": .null,
+    ])]
+    let b = AdminBook(userId: "me", remote: r)
+    await b.load()
+    #expect(b.phase == .ready && b.users.count == 1 && b.audit.count == 1)
+    r.readFailure = ModerationFailure.offline
+    await b.searchUsers("kiet")
+    #expect(b.phase == .failed && b.failure == .offline)
+    #expect(b.users.isEmpty)
+    await b.selectAuditAction("HIDE_POST")
+    #expect(b.phase == .failed && b.failure == .offline)
+    #expect(b.audit.isEmpty)
+  }
+
   @Test func setRoleRefusesSelfAndEmptyReason() async {
     let r = Remote()
     let b = AdminBook(userId: "me", remote: r)

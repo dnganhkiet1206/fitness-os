@@ -623,6 +623,25 @@ public final class ModerationBook {
     detail = nil
     restriction = nil
     restrictionKnown = false
+    // Vai trò chưa biết (sổ mới từ trang người dùng/nhật ký — Devin #924):
+    // hỏi vai trò trước khi đọc đích, để các quyết định sau đó không bị chặn
+    // im lặng ở `role?.isStaff`. Chỉ thêm một RPC khi chưa biết — luồng
+    // hàng đợi bình thường (vai trò đã có) không đổi.
+    if role == nil {
+      do {
+        let role = try await checkRole()
+        guard !closed, currentTarget?.0 == type, currentTarget?.1 == id else { return }
+        guard role.isStaff else {
+          targetPhase = .notStaff
+          return
+        }
+      } catch {
+        guard !closed, currentTarget?.0 == type, currentTarget?.1 == id else { return }
+        targetPhase = .failed
+        targetFailure = Self.map(error)
+        return
+      }
+    }
     do {
       let row = try await remote.target(type: type, id: id)
       guard !closed, currentTarget?.0 == type, currentTarget?.1 == id else { return }

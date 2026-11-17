@@ -3,11 +3,12 @@
 \set B '''bbbbbbbb-0000-0000-0000-000000000002'''
 \set C '''cccccccc-0000-0000-0000-000000000003'''
 \set D '''dddddddd-0000-0000-0000-000000000004'''
-INSERT INTO auth.users VALUES (:A),(:B),(:C),(:D);
+\set E '''eeeeeeee-0000-0000-0000-00000000000e'''
+INSERT INTO auth.users VALUES (:A),(:B),(:C),(:D),(:E);
 -- Người dùng của bộ này là tài khoản hoạt động: một buổi tập gần đây là
 -- "đóng góp" theo luật báo cáo đáng tin (20261007220000), nên báo cáo của
 -- họ được tính vào ngưỡng tự ẩn như trước.
-INSERT INTO workout_sessions (user_id) VALUES (:A),(:B),(:C),(:D);
+INSERT INTO workout_sessions (user_id) VALUES (:A),(:B),(:C),(:D),(:E);
 -- thư viện: một bài chung, một bài tự tạo của A
 INSERT INTO exercises (id, user_id, name) VALUES ('11111111-0000-0000-0000-000000000001', NULL, 'Incline DB Press'), ('22222222-0000-0000-0000-000000000002', :A, 'My Custom Press');
 INSERT INTO workout_sessions (id, user_id, template_name, volume_load, pr_detected, sets) VALUES
@@ -108,8 +109,14 @@ RESET ROLE;
 DELETE FROM community_reports WHERE reported_user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
 SELECT pg_temp.who(:D); SET ROLE authenticated; INSERT INTO community_reports (post_id, reason) VALUES (:'post_a', 'spam'); RESET ROLE;
 DO $$ BEGIN ASSERT (SELECT hidden FROM community_posts WHERE id = (SELECT post_a FROM ids)) = false, '28 hai báo cáo đã ẩn — ngưỡng là ba'; END $$;
--- B bị A chặn nhưng vẫn báo cáo được bài (id đã biết); đây là người thứ ba
-SELECT pg_temp.who(:B); SET ROLE authenticated; INSERT INTO community_reports (post_id, reason) VALUES (:'post_a', 'spam'); RESET ROLE;
+-- Từ 20261117170000: người bị chặn KHÔNG báo cáo được bài của người chặn
+-- (không đọc được thì không báo cáo — nếu không, biết ID là đọc được trích
+-- đoạn qua `community_my_reports()`). B bị A chặn nên báo cáo bị từ chối.
+SELECT pg_temp.who(:B); SET ROLE authenticated;
+DO $$ BEGIN ASSERT pg_temp.errcode($q$INSERT INTO community_reports (post_id, reason) VALUES ((SELECT post_a FROM ids), 'spam')$q$) = '42501', '29b người bị chặn vẫn báo cáo được bài của người chặn'; END $$;
+RESET ROLE;
+-- Người thứ ba cho ngưỡng tự ẩn là E (đọc được bài, đủ điều kiện).
+SELECT pg_temp.who(:E); SET ROLE authenticated; INSERT INTO community_reports (post_id, reason) VALUES (:'post_a', 'spam'); RESET ROLE;
 DO $$ BEGIN ASSERT (SELECT hidden FROM community_posts WHERE id = (SELECT post_a FROM ids)), '29 ba người báo cáo mà chưa ẩn'; END $$;
 SELECT pg_temp.who(:C); SET ROLE authenticated;
 -- C là người báo cáo, nên từ 20261007220000 bài cũng bị ẩn RIÊNG với C. Gỡ dòng
