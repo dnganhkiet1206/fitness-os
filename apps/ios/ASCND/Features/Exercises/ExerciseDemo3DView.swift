@@ -239,7 +239,8 @@
             .transition(.opacity)
           }
           if let id = mistakeID, let m = (demoInfo?.mistakes ?? []).first(where: { $0.id == id }) {
-            TimelineView(.animation) { _ in
+            // Vòng đỏ đi theo khớp; Giảm chuyển động: 4 lần/giây.
+            TimelineView(.animation(minimumInterval: reduceMotion ? 0.25 : nil)) { _ in
               GeometryReader { geo in
                 let cam = PinholeCamera(
                   position: cameraPosition, target: cameraTarget, verticalFOVDegrees: Self.verticalFOV, size: geo.size)
