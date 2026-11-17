@@ -7,7 +7,7 @@ import Observation
 /// trên Linux).
 @MainActor
 @Observable
-final class PurchaseController {
+public final class PurchaseController {
   /// Trạng thái tải product. Gói hiện tại nằm riêng ở `tier` để hàng Cài đặt
   /// vẫn hiện được gói ngay cả khi cửa hàng chưa mở bán.
   enum State: Equatable {
