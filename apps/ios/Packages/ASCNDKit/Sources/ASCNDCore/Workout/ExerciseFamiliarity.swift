@@ -7,8 +7,8 @@ public import Observation
 //   lần gần nhất để phân thứ hạng khi bằng số buổi. Khoá là
 //   `PersonalRecords.exerciseKey(tên)` — cùng khoá với lịch sử, kỷ lục.
 // - Yêu thích: ngôi sao trên thẻ bài. Lưu trên máy theo tài khoản (`ExerciseFavoriteStore`)
-//   và đồng bộ lên bảng `exercise_favorites` (16/11, migration 20261116120000 — CHƯA DEPLOY:
-//   lỗi bảng chưa có thì giữ bản trên máy, lần sau gửi bù), `ExerciseFavoritesSync`.
+//   và đồng bộ lên bảng `exercise_favorites` (migration 20261116120000, deploy 16/11
+//   khi Kiệt duyệt; mất mạng thì giữ bản trên máy, lần sau gửi bù), `ExerciseFavoritesSync`.
 
 /// Mức quen thuộc của một bài với người dùng.
 public struct ExerciseUsage: Sendable, Hashable {
@@ -154,7 +154,7 @@ extension ExerciseSearch {
   }
 }
 
-/// Bảng `exercise_favorites` (migration 20261116120000, CHƯA DEPLOY): một cờ tuyệt đối mỗi
+/// Bảng `exercise_favorites` (migration 20261116120000, deploy 16/11): một cờ tuyệt đối mỗi
 /// (người, bài), chỉ upsert, không xoá — bỏ sao là `is_favorite = false`.
 public enum ExerciseFavoritesSync {
   public static let table = "exercise_favorites"

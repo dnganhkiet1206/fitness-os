@@ -1,7 +1,7 @@
 public import Foundation
 
 /// Độ phổ biến bài tập từ số liệu thật (Kiệt 16/11): hàm `exercise_popularity()` của server
-/// (migration 20261116120000, CHƯA DEPLOY) trả số buổi + số người tập mỗi bài trong 90 ngày,
+/// (migration 20261116120000, deploy 16/11) trả số buổi + số người tập mỗi bài trong 90 ngày,
 /// chỉ bài có ≥ 5 người. App trộn nó với danh sách soạn tay (`ExerciseSearch.popularity`).
 public enum ExercisePopularity {
   /// Một dòng của `exercise_popularity()`.
