@@ -129,7 +129,15 @@
               .animation(reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.4), value: rep)
             // Chữ pha cuộn lên khi đổi (chữ cũ trôi lên và mờ, chữ mới trồi lên) theo lò xo nhẹ;
             // Giảm chuyển động: chỉ mờ dần.
+            // Giữ chỗ bằng chữ dài nhất (Kiệt 17/11: "thi thoảng nút bị nảy ra xa"): dải không đổi bề
+            // rộng khi đổi pha, nên viên tốc độ / viên Sai bên cạnh đứng yên.
             ZStack {
+              ForEach(["concentric", "eccentric", "top_hold", "bottom_hold", "ready"], id: \.self) { k in
+                Text(label(k))
+                  .font(DS.TextStyle.footnote.weight(.bold))
+                  .textCase(.uppercase)
+                  .hidden()
+              }
               Text(phase.map { label($0.kind) } ?? "eg.demo3d.tempo.ready")
                 .font(DS.TextStyle.footnote.weight(.bold))
                 .textCase(.uppercase)
@@ -147,7 +155,10 @@
                 .frame(width: 9, height: 9)
                 .scaleEffect(reduceMotion ? 0.8 : (ms.map { tempo.breathScale(at: $0) } ?? 0.55))
                 .accessibilityHidden(true)
-              ZStack {
+              ZStack(alignment: .leading) {
+                ForEach(["exhale", "inhale", "hold"], id: \.self) { b in
+                  if let k = breath(b) { Text(k).font(DS.TextStyle.caption).hidden() }
+                }
                 Text(key)
                   .font(DS.TextStyle.caption)
                   .foregroundStyle(DS.Color.foreground.swiftUI)
