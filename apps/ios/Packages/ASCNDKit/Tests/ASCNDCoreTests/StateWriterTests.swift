@@ -1,4 +1,5 @@
 @testable import ASCNDCore
+import Foundation
 import Testing
 
 /// Lớp Trạng thái #161 — đúng các ca vế 3 của `tools/offline-class.mjs` RN:
@@ -61,6 +62,28 @@ private func make(_ env: Env) -> StateWriter {
 @MainActor
 private func drain() async {
   for _ in 0..<20 { await Task.yield() }
+}
+
+/// Nơi lưu ý giả cho test của `StateWriter` và các sổ nhận lại
+/// (`GroceryTests`…): giữ ảnh trong bộ nhớ, có thể cho hỏng để kiểm đường lỗi.
+/// Không `private` để test khác trong cùng target dùng chung được.
+final class FakeStateIntentPersistence: StateIntentPersistence, @unchecked Sendable {
+  private let lock = NSLock()
+  private var stored: [StateIntent] = []
+  /// `true` thì `load` / `save` đều ném — đĩa hỏng.
+  var fail = false
+
+  var snapshot: [StateIntent] { lock.withLock { stored } }
+
+  func load() throws -> [StateIntent] {
+    if fail { throw Boom() }
+    return lock.withLock { stored }
+  }
+
+  func save(_ intents: [StateIntent]) throws {
+    if fail { throw Boom() }
+    lock.withLock { stored = intents }
+  }
 }
 
 @MainActor
@@ -146,5 +169,117 @@ struct StateWriterTests {
     w.clear()
     #expect(w.size == 0)
     #expect(w.version != v)
+  }
+
+  // MARK: - Lưu bền (AUD-29)
+
+  @Test func restoredIntentsFlushAfterAdopt() async {
+    let env = Env(), server = FakeServer(), store = FakeStateIntentPersistence()
+    let w1 = make(env)
+    w1.attachPersistence(store)
+    env.online = false
+    w1.set(key: "s:1", value: true, server: false, send: server.send)
+    #expect(store.snapshot == [StateIntent(key: "s:1", desired: true, server: false)])
+    // Mở app lại: ý về từ đĩa, chưa có `send`, flush không gửi được.
+    let w2 = make(env)
+    w2.attachPersistence(store)
+    #expect(w2.pending("s:1") == true)
+    #expect(w2.size == 1)
+    env.online = true
+    w2.flush()
+    await drain()
+    #expect(server.sent.isEmpty)
+    // Chủ nó nhận lại: gửi ngay vì đang có mạng; xong thì đĩa cũng sạch.
+    #expect(w2.adopt(key: "s:1", server: false, send: server.send))
+    await drain()
+    #expect(server.sent == [true])
+    #expect(w2.size == 0)
+    #expect(store.snapshot.isEmpty)
+  }
+
+  @Test func clearDropsPersistedIntentsToo() {
+    let env = Env(), server = FakeServer(), store = FakeStateIntentPersistence()
+    let w = make(env)
+    w.attachPersistence(store)
+    env.online = false
+    w.set(key: "a", value: true, server: false, send: server.send)
+    w.set(key: "b", value: true, server: false, send: server.send)
+    w.clear()
+    #expect(store.snapshot.isEmpty)
+    let w2 = make(env)
+    w2.attachPersistence(store)
+    #expect(w2.size == 0)
+  }
+
+  @Test func adoptDropsWhenServerAlreadyMatches() {
+    let env = Env(), server = FakeServer(), store = FakeStateIntentPersistence()
+    let w1 = make(env)
+    w1.attachPersistence(store)
+    env.online = false
+    w1.set(key: "s:1", value: true, server: false, send: server.send)
+    let w2 = make(env)
+    w2.attachPersistence(store)
+    #expect(w2.adopt(key: "s:1", server: true, send: server.send))
+    #expect(w2.size == 0)
+    #expect(store.snapshot.isEmpty)
+    // Không có ý thì không nhận được gì, và không tạo ý mới.
+    #expect(!w2.adopt(key: "nope", server: false, send: server.send))
+    #expect(w2.size == 0)
+  }
+
+  @Test func adoptDoesNotStealLiveSenders() {
+    let env = Env(), server = FakeServer(), store = FakeStateIntentPersistence()
+    let w = make(env)
+    w.attachPersistence(store)
+    env.online = false
+    w.set(key: "s:1", value: true, server: false, send: server.send)
+    #expect(!w.adopt(key: "s:1", server: false, send: server.send))
+    #expect(w.pending("s:1") == true)
+  }
+
+  @Test func restoreKeepsLiveEntries() async throws {
+    let env = Env(), server = FakeServer(), store = FakeStateIntentPersistence()
+    try store.save([StateIntent(key: "k", desired: false, server: false)])
+    let w = make(env)
+    env.online = false
+    w.set(key: "k", value: true, server: false, send: server.send)
+    w.attachPersistence(store)
+    // Ý đang sống thắng ý trên đĩa; `send` vẫn còn nên flush gửi được.
+    #expect(w.pending("k") == true)
+    #expect(store.snapshot == [StateIntent(key: "k", desired: true, server: false)])
+    env.online = true
+    w.flush()
+    await drain()
+    #expect(server.sent == [true])
+  }
+
+  @Test func persistenceFailureKeepsInMemoryBehavior() async {
+    let env = Env(), server = FakeServer(), store = FakeStateIntentPersistence()
+    store.fail = true
+    let w = make(env)
+    w.attachPersistence(store)
+    #expect(w.persistenceFailed)
+    w.set(key: "s:1", value: true, server: false, send: server.send)
+    await drain()
+    #expect(server.sent == [true])
+    #expect(w.persistenceFailed)
+    store.fail = false
+    env.online = false
+    w.set(key: "s:2", value: true, server: false, send: server.send)
+    #expect(!w.persistenceFailed)
+    #expect(store.snapshot == [StateIntent(key: "s:2", desired: true, server: false)])
+  }
+
+  @Test func removeDropsOneKeyAndPersists() {
+    let env = Env(), server = FakeServer(), store = FakeStateIntentPersistence()
+    let w = make(env)
+    w.attachPersistence(store)
+    env.online = false
+    w.set(key: "a", value: true, server: false, send: server.send)
+    w.set(key: "b", value: true, server: false, send: server.send)
+    #expect(w.remove(key: "a"))
+    #expect(!w.remove(key: "a"))
+    #expect(w.pendingKeys == ["b"])
+    #expect(store.snapshot.map(\.key) == ["b"])
   }
 }

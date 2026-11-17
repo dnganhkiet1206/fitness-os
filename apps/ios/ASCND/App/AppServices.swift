@@ -152,8 +152,9 @@ final class AppServices {
   /// thử thách vừa xong — gốc Hôm nay hiện từng cái một; đăng xuất thì bỏ hết.
   let celebrations = CelebrationQueue()
   /// Lớp Trạng thái (#161, `state-write.ts`): cờ "chỉ giá trị cuối có nghĩa"
-  /// — "đã uống hôm nay" của thực phẩm bổ sung. Chỉ trong phiên (chủ dự án
-  /// chọn), đăng xuất thì bỏ; có mạng lại thì gửi các ý còn chờ.
+  /// — "đã uống hôm nay" của thực phẩm bổ sung. Ý chờ gửi lưu xuống đĩa
+  /// (AUD-29): mở app lại thì ý vẫn còn, màn của chủ nó nhận lại rồi gửi khi
+  /// có mạng; đăng xuất thì bỏ cả trên đĩa.
   let stateWriter = StateWriter(environment: .init(online: { false }, isOffline: { NetworkFailure.isOffline($0) }))
   /// Đường mạng + phép dò internet của NetInfo (#530) — nuôi `net` và vòng sync.
   @ObservationIgnored private(set) var network: NetworkObserver!
@@ -161,6 +162,8 @@ final class AppServices {
   /// Hàng đợi trên đĩa — vòng sync gửi từ đây; lệnh sửa kế hoạch (#401) ghi
   /// vào đây và Today đọc lại phần chưa gửi.
   @ObservationIgnored let outbox: OutboxStore
+  /// Ý chờ gửi của lớp Trạng thái trên đĩa (AUD-29) — `stateWriter` ghi qua đây.
+  @ObservationIgnored let stateIntents: StateIntentStore
   /// Kế hoạch tuần + template thật, local-first (#270).
   @ObservationIgnored let templates: TodayRepository
   @ObservationIgnored let history: any TrainingHistory
@@ -235,6 +238,11 @@ final class AppServices {
     workouts = GRDBWorkoutStore(database)
     let outboxStore = OutboxStore(database)
     outbox = outboxStore
+    let stateIntentStore = StateIntentStore(database)
+    stateIntents = stateIntentStore
+    // Chốt tài khoản còn đóng lúc này nên chưa nạp được ý nào — ý của phiên
+    // nạp ở `forgetOtherAccounts`, sau khi chốt mở cho đúng người.
+    stateWriter.attachPersistence(stateIntentStore)
     let templateCache = GRDBTemplateCache(database)
     templates = TodayRepository(
       source: backend.map { SupabaseTemplateSource(backend: $0) as any TemplateSource } ?? UnconfiguredTemplates(),
@@ -319,7 +327,8 @@ final class AppServices {
       self?.forgetKoaSession()
       // Pháo hoa của người vừa rời đi không hiện cho người sau (`onUserScopedReset`).
       celebrations.clear()
-      // Ý "đã uống" chưa gửi thuộc về người vừa rời đi (`onUserScopedReset`).
+      // Ý "đã uống" chưa gửi thuộc về người vừa rời đi (`onUserScopedReset`) —
+      // bỏ cả trong bộ nhớ lẫn trên đĩa, trước khi chốt đóng.
       stateWriter.clear()
       // Người của phiên mới khi đổi thẳng tài khoản; `nil` khi đăng xuất.
       let next = session?.session?.userId
@@ -438,6 +447,10 @@ final class AppServices {
   func forgetOtherAccounts(keeping userId: String) async {
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     await lifecycle.sessionStarted(userId: userId, today: today)
+    // Chốt đã mở cho người này: nạp các ý chờ gửi còn lại từ lần mở app
+    // trước (AUD-29). Ý nạp về chưa có `send` — màn của chủ nó nhận lại khi
+    // mở (`reattach`), rồi `flush()` gửi khi có mạng lại.
+    stateWriter.restore()
   }
 
   /// Việc dọn thêm khi phiên kết thúc, của những thứ không do AppServices

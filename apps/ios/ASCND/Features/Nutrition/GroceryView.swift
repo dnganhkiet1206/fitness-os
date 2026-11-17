@@ -41,7 +41,11 @@ struct GroceryView: View {
     .navigationTitle(Text(String(localized: "grocery.title")))
     .ascndPage()
     .refreshable { await book.refresh() }
-    .task { await book.refresh() }
+    .task {
+      await book.refresh()
+      // Ý tick khôi phục từ đĩa (AUD-29): danh sách đã đọc thì nhận lại, gửi khi có mạng.
+      book.reattach(writer: services.stateWriter)
+    }
     .onChange(of: services.stateWriter.notice) { _, notice in
       switch notice {
       case .gone: message = String(localized: "state.gone")
