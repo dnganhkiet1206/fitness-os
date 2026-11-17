@@ -124,6 +124,8 @@
                   // Phòng tập 3D, ánh sáng đã nướng sẵn: vẽ không cần đèn.
                   if let room = await Self.loadRoom(look: scheme == .dark ? "dark" : "light") {
                     Self.makeUnlit(room, dark: scheme == .dark)
+                    // Sau makeUnlit: tạ trên kệ giữ vật liệu PBR, được đèn chiếu như dụng cụ của bài.
+                    await Self.mountRackItems(in: room, look: scheme == .dark ? "dark" : "light")
                     content.add(room)
                   }
                   // Bài dạng khối: nhân vật dùng chung + file chuyển động
@@ -663,9 +665,15 @@
       struct Part: Decodable { let part: String; let file: String; let texture: String? }
       /// Đèn chiếu nhân vật (B2, 17/11): `from` là độ lệch từ điểm máy quay nhìn tới.
       struct Light: Decodable { let color: String?; let intensity: Float; let from: [Float] }
+      /// Dụng cụ trên kệ (Kiệt 17/11): mẫu dùng chung `equipment_<key>.usdz`, đặt theo tâm / trục /
+      /// cỡ, nên đổi mẫu tạ là phòng đổi theo cùng các bài tập.
+      struct RackItem: Decodable { let key: String; let position: [Float]; let axis: [Float]; let radius_m: Float; let length_m: Float }
       let parts: [Part]
       let anchors: [String: [Float]]
       let lights: [Light]?
+      let rack_items: [RackItem]?
+      /// Độ sáng của dụng cụ trên kệ (phòng là ảnh nướng; tạ được đèn chiếu nên phòng tối cần dịu đi).
+      let rack_item_brightness: Float?
     }
 
     private static func roomManifest(look: String) -> RoomManifest? {
@@ -686,6 +694,47 @@
         room.addChild(e)
       }
       return room
+    }
+
+    /// Mẫu tạ trong kho dụng cụ (`equipment_dumbbell_12kg.usdz`): tay cầm dọc trục X, dài 0,30 m,
+    /// đầu tạ bán kính 0,0675 m. Gắn mỗi món trên kệ theo manifest, co giãn theo cỡ của món.
+    private static let equipmentLength: Float = 0.30
+    private static let equipmentHeadRadius: Float = 0.0675
+
+    private static func mountRackItems(in room: Entity, look: String) async {
+      guard let items = roomManifest(look: look)?.rack_items, !items.isEmpty else { return }
+      let holder = Entity()
+      holder.name = "RackItems"
+      var models: [String: Entity] = [:]
+      for item in items where item.position.count == 3 && item.axis.count == 3 {
+        if models[item.key] == nil, let file = try? await Entity(named: "equipment_\(item.key)", in: .main) {
+          models[item.key] = file
+        }
+        guard let model = models[item.key] else { continue }
+        let e = model.clone(recursive: true)
+        let axis = SIMD3(item.axis[0], item.axis[1], item.axis[2])
+        e.orientation = simd_quatf(angle: atan2(-axis.z, axis.x), axis: [0, 1, 0])
+        let r = item.radius_m / equipmentHeadRadius
+        e.scale = [item.length_m / equipmentLength, r, r]
+        e.position = SIMD3(item.position[0], item.position[1], item.position[2])
+        holder.addChild(e)
+      }
+      if let k = roomManifest(look: look)?.rack_item_brightness, k < 0.999 { dim(holder, by: CGFloat(k)) }
+      room.addChild(holder)
+    }
+
+    private static func dim(_ entity: Entity, by k: CGFloat) {
+      if var model = entity.components[ModelComponent.self] {
+        model.materials = model.materials.map { material in
+          guard var pbr = material as? PhysicallyBasedMaterial else { return material }
+          var (r, g, b, a): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+          pbr.baseColor.tint.getRed(&r, green: &g, blue: &b, alpha: &a)
+          pbr.baseColor.tint = UIColor(red: r * k, green: g * k, blue: b * k, alpha: a)
+          return pbr
+        }
+        entity.components.set(model)
+      }
+      for child in entity.children { dim(child, by: k) }
     }
 
     private static func bakedTexture(_ name: String) async -> TextureResource? {
