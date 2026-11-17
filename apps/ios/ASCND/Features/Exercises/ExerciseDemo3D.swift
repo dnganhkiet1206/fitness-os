@@ -107,7 +107,8 @@
         LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.trapeziusUpper", roleKey: "eg.demo3d.legend.stabilizer"),
       ],
       cameraPosition: [2.8566, 2.297, 2.7079], cameraTarget: [0.1091, 0.8827, -0.0397],
-      focusTexturePrefix: "back_squat_focus")
+      focusTexturePrefix: "back_squat_focus",
+      motionFile: "back_squat_motion", fullTexturePrefix: "back_squat_full")
 
     /// Motion Lab (14/11, P1): họ "curl", tay cầm trung tính.
     static let hammerCurl = Demo(
@@ -120,7 +121,8 @@
         LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.trapeziusUpper", roleKey: "eg.demo3d.legend.stabilizer"),
       ],
       cameraPosition: [1.6303, 1.7949, 1.7803], cameraTarget: [-0.0145, 0.9483, 0.1356],
-      focusTexturePrefix: "hammer_curl_focus")
+      focusTexturePrefix: "hammer_curl_focus",
+      motionFile: "hammer_curl_motion", fullTexturePrefix: "hammer_curl_full")
 
     /// Motion Lab (14/11, P1): họ "raise_lateral" (`motionlab/families/raise_lateral.py`).
     static let sideLateralRaise = Demo(
@@ -137,7 +139,8 @@
         LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.forearms", roleKey: "eg.demo3d.legend.stabilizer"),
       ],
       cameraPosition: [2.4272, 2.1371, 2.4476], cameraTarget: [0.0783, 0.9281, 0.0987],
-      focusTexturePrefix: "side_lateral_raise_focus")
+      focusTexturePrefix: "side_lateral_raise_focus",
+      motionFile: "side_lateral_raise_motion", fullTexturePrefix: "side_lateral_raise_full")
 
     /// Motion Lab (14/11, P1): họ "hinge" (`motionlab/families/hinge.py`).
     static let stiffLegDeadlift = Demo(
@@ -154,7 +157,8 @@
       ],
       // Góc mặc định từ phía sau (14/11): cơ chính ở mặt sau thân.
       cameraPosition: [1.3615, 1.7978, -1.8009], cameraTarget: [-0.013, 0.9256, 0.162],
-      focusTexturePrefix: "stiff_leg_dumbbell_deadlift_focus")
+      focusTexturePrefix: "stiff_leg_dumbbell_deadlift_focus",
+      motionFile: "stiff_leg_dumbbell_deadlift_motion", fullTexturePrefix: "stiff_leg_dumbbell_deadlift_full")
 
     /// Motion Lab (14/11, P1 lô 2): họ "row" (`motionlab/families/row.py`).
     static let bentOverRow = Demo(
@@ -175,7 +179,8 @@
       ],
       // Góc mặc định từ phía sau (14/11): cơ lưng xô ở mặt sau thân.
       cameraPosition: [1.0558, 1.4568, -1.514], cameraTarget: [-0.0757, 0.7388, 0.1019],
-      focusTexturePrefix: "bent_over_two_dumbbell_row_focus")
+      focusTexturePrefix: "bent_over_two_dumbbell_row_focus",
+      motionFile: "bent_over_two_dumbbell_row_motion", fullTexturePrefix: "bent_over_two_dumbbell_row_full")
 
     /// Motion Lab (14/11, P1 lô 2): họ "press_vertical", ngồi ghế tựa, bả vai theo tay.
     static let dumbbellShoulderPress = Demo(
@@ -192,7 +197,8 @@
         LegendEntry(hex: "#6FA7C9", nameKey: "eg.demo3d.legend.bicepsBrachii", roleKey: "eg.demo3d.legend.stabilizer"),
       ],
       cameraPosition: [1.7982, 1.6958, 1.9101], cameraTarget: [0.0105, 0.7756, 0.1224],
-      focusTexturePrefix: "dumbbell_shoulder_press_focus")
+      focusTexturePrefix: "dumbbell_shoulder_press_focus",
+      motionFile: "dumbbell_shoulder_press_motion", fullTexturePrefix: "dumbbell_shoulder_press_full")
 
     /// Kết quả agent tự kiểm một bài (Kiệt 14/11: bài đã kiểm đầy đủ có dấu
     /// tích xanh kèm ghi chú đã kiểm những gì). KHÔNG phải duyệt chuyên môn:

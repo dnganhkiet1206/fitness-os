@@ -32,6 +32,17 @@
     /// Mặc định chỉ hiện cơ chính (Kiệt 16/11); nút "Hiện cơ phụ" bật Phụ + Ổn định.
     @State private var hideSecondary = true
     @State private var bodySkins = BodySkins()
+    /// Thu gọn thẻ chú thích / thanh zoom (Kiệt 16/11), nhớ cho lần mở sau.
+    /// Lưu bằng AppStorage, nhưng vẽ theo @State: thay đổi AppStorage không
+    /// nằm trong transaction của withAnimation nên thẻ / thanh nhảy cái một
+    /// (Kiệt 16/11: "cho mượt").
+    @AppStorage("demo3d.legendCollapsed") private var legendCollapsedStored = false
+    @AppStorage("demo3d.zoomCollapsed") private var zoomCollapsedStored = false
+    @State private var legendCollapsed = false
+    @State private var zoomCollapsed = false
+    @Namespace private var zoomMorph
+    /// Lò xo nhẹ cho thu gọn / mở (Kiệt 16/11: "cho mượt"); tắt khi Giảm chuyển động.
+    private var collapseAnimation: Animation? { reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.86) }
     @GestureState private var dragOffset: CGSize = .zero
     @GestureState private var pinch: CGFloat = 1
 
@@ -123,6 +134,11 @@
                     bodySkins.apply(focus: hideSecondary, force: true)
                   }
                   Self.addLights(to: content, target: cameraTarget)
+                  // Phòng nướng sẵn không còn bóng của bài nào (dùng chung,
+                  // 16/11): bóng tiếp xúc mềm dưới nhân vật + dụng cụ.
+                  if let shadow = Self.contactShadow(under: [scene] + (motion.map { [$0] } ?? [])) {
+                    content.add(shadow)
+                  }
                   // Tự chạy và lặp vô hạn, không dừng ở cuối. Dạng khối: cùng
                   // một chuyển động phát trên nhân vật và trên file chuyển động
                   // (dụng cụ), bắt đầu cùng khung hình nên khớp nhau.
@@ -201,6 +217,7 @@
               legendView(legend)
                 .padding(.horizontal, DS.Spacing.md)
                 .padding(.bottom, DS.Spacing.sm)
+                .animation(collapseAnimation, value: legendCollapsed)
             }
           }
         }
@@ -209,7 +226,14 @@
           zoomSlider
             .padding(.trailing, DS.Spacing.sm)
             .offset(y: -60)
+            .animation(collapseAnimation, value: zoomCollapsed)
         }
+        .onAppear {
+          legendCollapsed = legendCollapsedStored
+          zoomCollapsed = zoomCollapsedStored
+        }
+        .onChange(of: legendCollapsed) { _, v in legendCollapsedStored = v }
+        .onChange(of: zoomCollapsed) { _, v in zoomCollapsedStored = v }
         // Màu tường / sàn của phòng, thấy trong lúc phòng 3D đang tải.
         .background { GymStage() }
         .toolbar {
@@ -262,7 +286,49 @@
 
     /// Thanh zoom dọc ở mép phải (Kiệt 13/11): kéo lên để lại gần soi sợi cơ.
     private var zoomSlider: some View {
+      Group {
+        if zoomCollapsed {
+          // Thu gọn: một nút kính lúp; chụm hai ngón vẫn zoom được.
+          Button {
+            withAnimation(collapseAnimation) { zoomCollapsed = false }
+          } label: {
+            Image(systemName: "plus.magnifyingglass")
+              .font(.system(size: 15, weight: .semibold))
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+              .frame(width: 44, height: 44)
+              .background { zoomShell }
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel(Text("eg.demo3d.expandZoom"))
+          .transition(.opacity)
+        } else {
+          zoomBar.transition(.opacity)
+        }
+      }
+    }
+
+    /// Vỏ kính chung của thanh zoom và nút thu gọn: hai trạng thái cùng một
+    /// hình (matchedGeometryEffect), nên thanh co lại thành nút tròn liền mạch.
+    private var zoomShell: some View {
+      RoundedRectangle(cornerRadius: 22, style: .continuous)
+        .fill(.ultraThinMaterial)
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
+        .matchedGeometryEffect(id: "zoomShell", in: zoomMorph)
+    }
+
+    private var zoomBar: some View {
       VStack(spacing: DS.Spacing.sm) {
+        Button {
+          withAnimation(collapseAnimation) { zoomCollapsed = true }
+        } label: {
+          Image(systemName: "chevron.right")
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(width: 30, height: 28)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("eg.demo3d.collapseZoom"))
         Image(systemName: "plus.magnifyingglass")
         Slider(value: zoom, in: 0...1)
           .tint(Color(red: 0.91, green: 0.33, blue: 0.17))
@@ -276,8 +342,7 @@
       .foregroundStyle(DS.Color.foreground.swiftUI)
       .padding(.vertical, DS.Spacing.sm + 2)
       .padding(.horizontal, 6)
-      .background(.ultraThinMaterial, in: Capsule())
-      .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
+      .background { zoomShell }
     }
 
     /// Chú thích cơ đang tô sáng (Kiệt 13/11: bắt buộc phải có, đặt dưới
@@ -287,15 +352,23 @@
 
     private func legendView(_ legend: [ExerciseDemo3D.LegendEntry]) -> some View {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        HStack {
-          Text("eg.demo3d.legend.title")
-            .font(DS.TextStyle.caption.weight(.semibold))
-            .textCase(.uppercase)
-            .tracking(0.8)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .accessibilityAddTraits(.isHeader)
+        HStack(spacing: DS.Spacing.sm) {
+          if legendCollapsed {
+            // Thu gọn (Kiệt 16/11: "nhìn hơi kì"): một hàng như hàng Chính của
+            // thẻ đầy đủ: nhãn vai trò + chip cơ chính, nút mở ở cuối.
+            collapsedPrimary(legend)
+              .transition(.opacity)
+          } else {
+            Text("eg.demo3d.legend.title")
+              .font(DS.TextStyle.caption.weight(.semibold))
+              .textCase(.uppercase)
+              .tracking(0.8)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .accessibilityAddTraits(.isHeader)
+              .transition(.opacity)
+          }
           Spacer(minLength: DS.Spacing.sm)
-          if bodySkins.ready, legend.contains(where: { !$0.roleKey.hasSuffix(".primary") }) {
+          if bodySkins.ready, !legendCollapsed, legend.contains(where: { !$0.roleKey.hasSuffix(".primary") }) {
             Button {
               withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { hideSecondary.toggle() }
             } label: {
@@ -312,7 +385,64 @@
             .buttonStyle(.plain)
             .accessibilityAddTraits(hideSecondary ? [.isButton, .isSelected] : .isButton)
           }
+          Button {
+            withAnimation(collapseAnimation) { legendCollapsed.toggle() }
+          } label: {
+            Image(systemName: "chevron.down")
+              .rotationEffect(.degrees(legendCollapsed ? 180 : 0))
+              .font(.system(size: 13, weight: .bold))
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+              .frame(width: 30, height: 30)
+              .background(DS.Color.foreground.swiftUI.opacity(0.08), in: Circle())
+              .frame(minWidth: 44, minHeight: 44)
+              .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel(Text(legendCollapsed ? "eg.demo3d.expandLegend" : "eg.demo3d.collapseLegend"))
         }
+        if !legendCollapsed {
+          VStack(alignment: .leading, spacing: DS.Spacing.sm) { legendRows(legend) }
+            .transition(.opacity.combined(with: .offset(y: 14)))
+        }
+      }
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.vertical, legendCollapsed ? DS.Spacing.sm : DS.Spacing.md)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .todayCard()
+      .clipped()
+    }
+
+    /// Hàng thu gọn: nhãn "Chính" + chip cơ chính (chấm màu), một dòng, cắt
+    /// bằng dấu … khi quá dài.
+    private func collapsedPrimary(_ legend: [ExerciseDemo3D.LegendEntry]) -> some View {
+      let primary = legend.filter { $0.roleKey.hasSuffix(".primary") }
+      let tint = Color(hex: primary.first?.hex ?? "#E8552B")
+      return HStack(spacing: DS.Spacing.sm) {
+        Text(LocalizedStringKey(Self.roleOrder[0]))
+          .font(DS.TextStyle.caption.weight(.semibold))
+          .foregroundStyle(Color.white)
+          .padding(.horizontal, 10)
+          .padding(.vertical, 4)
+          .background { Capsule().fill(tint) }
+        HStack(spacing: 6) {
+          Circle().fill(tint).frame(width: 8, height: 8)
+            .shadow(color: tint.opacity(0.8), radius: 4)
+            .accessibilityHidden(true)
+          Text(primary.map { String(localized: String.LocalizationValue($0.nameKey)) }.joined(separator: " · "))
+            .font(DS.TextStyle.footnote.weight(.semibold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .lineLimit(1)
+            .truncationMode(.tail)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(DS.Color.foreground.swiftUI.opacity(0.06), in: Capsule())
+      }
+      .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private func legendRows(_ legend: [ExerciseDemo3D.LegendEntry]) -> some View {
         // Ba cấp (Kiệt 15/11): Chính = chịu tải, tạo lực chính; Phụ = hỗ trợ
         // trực tiếp chuyển động; Ổn định = giữ tư thế, ổn định khớp. Mỗi cấp
         // một hàng: nhãn màu + chip tên cơ xuống dòng tự do, để 10+ cơ vẫn
@@ -352,10 +482,6 @@
             .accessibilityElement(children: .combine)
           }
         }
-      }
-      .padding(DS.Spacing.md)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .todayCard()
     }
 
     /// USDZ không nạp được thì nói thẳng, kèm poster của bài.
@@ -418,6 +544,51 @@
         PerspectiveCameraComponent(near: 0.1, far: 100, fieldOfViewInDegrees: verticalFOV))
       camera.look(at: cameraTarget, from: cameraPosition, relativeTo: nil)
       return camera
+    }
+
+    /// Bóng tiếp xúc mềm trên sàn (y = 0) dưới khung bao của nhân vật và
+    /// dụng cụ: mặt phẳng không chiếu sáng, texture dải mờ tròn sinh lúc chạy.
+    /// Thay cho bóng nướng vào sàn phòng, vốn chỉ đúng với một bài.
+    private static func contactShadow(under entities: [Entity]) -> Entity? {
+      var bounds: BoundingBox?
+      for e in entities {
+        let b = e.visualBounds(relativeTo: nil)
+        guard b.isEmpty == false else { continue }
+        bounds = bounds.map { $0.union(b) } ?? b
+      }
+      guard let bounds, let texture = shadowTexture() else { return nil }
+      let w = max(bounds.extents.x * 1.15, 0.9), d = max(bounds.extents.z * 1.15, 0.9)
+      var material = UnlitMaterial()
+      // Texture đen có kênh alpha = độ đậm của bóng.
+      material.color = .init(tint: .white, texture: .init(texture))
+      material.blending = .transparent(opacity: .init(floatLiteral: 1.0))
+      let plane = ModelEntity(mesh: .generatePlane(width: w, depth: d), materials: [material])
+      plane.position = [bounds.center.x, 0.003, bounds.center.z]
+      plane.name = "ContactShadow"
+      return plane
+    }
+
+    /// Bóng đen, alpha 55 % ở tâm, tắt dần ra mép (smoothstep), alpha nhân sẵn.
+    private static func shadowTexture() -> TextureResource? {
+      let n = 128
+      var px = [UInt8](repeating: 0, count: n * n * 4)
+      for y in 0..<n {
+        for x in 0..<n {
+          let dx = (Double(x) + 0.5) / Double(n) * 2 - 1, dy = (Double(y) + 0.5) / Double(n) * 2 - 1
+          let r = min((dx * dx + dy * dy).squareRoot(), 1)
+          let t = 1 - r
+          let a = 0.55 * t * t * (3 - 2 * t)
+          px[(y * n + x) * 4 + 3] = UInt8(a * 255)  // RGB 0 = đen (nhân sẵn)
+        }
+      }
+      guard let provider = CGDataProvider(data: Data(px) as CFData),
+        let image = CGImage(
+          width: n, height: n, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: n * 4,
+          space: CGColorSpaceCreateDeviceRGB(),
+          bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+          provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent)
+      else { return nil }
+      return try? TextureResource(image: image, options: .init(semantic: .color))
     }
 
     /// USDZ không kèm đèn: một đèn chính + một đèn phụ, đủ thấy khối cơ và
@@ -500,7 +671,9 @@
     }
 
     private static func texture(_ name: String, _ semantic: TextureResource.Semantic) async -> TextureResource? {
-      guard let url = Bundle.main.url(forResource: name, withExtension: "png") else { return nil }
+      // Bài dạng khối xuất JPEG (nhẹ hơn ~3 lần), bài cũ PNG.
+      guard let url = Bundle.main.url(forResource: name, withExtension: "jpg")
+        ?? Bundle.main.url(forResource: name, withExtension: "png") else { return nil }
       return try? await TextureResource(contentsOf: url, options: .init(semantic: semantic))
     }
 
