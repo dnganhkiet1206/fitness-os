@@ -114,14 +114,22 @@ struct GRDBWorkoutStoreTests {
     #expect(day?.progress.done == ["a": true])
   }
 
-  /// Đăng xuất: ngày đã chốt của người trước không còn khoá người sau.
-  @Test func clearAllDropsEveryDayIncludingLocks() async throws {
+  /// Xoá tài khoản: chỉ ngày của tài khoản ấy đi, kể cả ngày đã chốt; ngày
+  /// của người khác ở lại, và khoá của người ấy không còn chặn ai (R3-DATA-01).
+  @Test func purgeDropsOnlyThatUsersDaysIncludingLocks() async throws {
     let db = try ASCNDDatabase()
     let store = GRDBWorkoutStore(db)
+    db.accounts.signIn("u1")
     try await store.commitFinish("k", DayState(loggedSessionId: "s1"), entry("s1"))
     try await store.saveDay("k2", ticked("a"), userId: "u1")
-    #expect(try await store.clearAll() == 2)
+    db.accounts.signIn("u2")
+    try await store.saveDay("k", ticked("b"), userId: "u2")
+    #expect(try await store.purge(userId: "U1") == 2, "so không phân biệt hoa thường, như chốt")
+    db.accounts.signIn("u2")
+    #expect(try await store.loadDay("k")?.progress.done == ["b": true], "ngày của u2 ở lại")
+    db.accounts.signIn("u1")
     #expect(try await store.loadDay("k") == nil)
+    #expect(try await store.loadDay("k2") == nil)
     try await store.commitFinish("k", DayState(loggedSessionId: "s2"), entry("s2"))
     #expect(try await store.loadDay("k")?.loggedSessionId == "s2")
   }

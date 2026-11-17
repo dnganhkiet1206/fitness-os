@@ -326,9 +326,10 @@ final class AppServices {
       // Đóng chốt TRƯỚC khi dọn: lượt làm mới / lượt ghi muộn của người vừa
       // rời đi về sau đó không ghi lại được gì lên đĩa (#431, #454). Rồi ĐỖ
       // hàng đợi chưa gửi — không xoá (round 3, AUD-06; #241 (b)): bản ghi chỉ
-      // gửi khi chính chủ đăng nhập lại, không ai khác thấy. Rồi dọn điểm quay lại
-      // `routine-day:*` (`clearUserScopedStorage`) và read model — trừ của
-      // người mới, có thể đã ghi trong lúc lượt dọn này nhường (#455).
+      // gửi khi chính chủ đăng nhập lại, không ai khác thấy. Điểm quay lại
+      // `routine-day:*` cũng đỗ lại theo chủ như thế (R3-DATA-01): chính chủ
+      // quay lại thì tập tiếp được; chỉ read model bị dọn — trừ của người
+      // mới, có thể đã ghi trong lúc lượt dọn này nhường (#455).
       await lifecycle.sessionEnded(next: next) { @MainActor in
         _ = await sync.signOut()
       }
@@ -438,6 +439,13 @@ final class AppServices {
   func forgetOtherAccounts(keeping userId: String) async {
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     await lifecycle.sessionStarted(userId: userId, today: today)
+  }
+
+  /// Tài khoản đã xoá trên server: bỏ ngày tập của nó khỏi máy, đi cùng
+  /// `sync.purge` bỏ hàng đợi của nó. Kết thúc phiên thường thì giữ ngày lại
+  /// cho lần đăng nhập sau (R3-DATA-01).
+  func purgeWorkoutDays(userId: String) async {
+    await lifecycle.accountDeleted(userId: userId)
   }
 
   /// Việc dọn thêm khi phiên kết thúc, của những thứ không do AppServices

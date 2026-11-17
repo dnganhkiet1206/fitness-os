@@ -146,7 +146,8 @@ struct AccountLifecycleTests {
   }
 
   /// Đăng xuất: chốt đóng TRƯỚC bước dọn đầu tiên — lượt ghi của A chạy trong
-  /// `between` (lúc hàng đợi đang bị bỏ) đã bị từ chối; sau đó không còn gì.
+  /// `between` (lúc hàng đợi đang bị đỗ) đã bị từ chối; ngày của A đỗ lại
+  /// theo chủ (R3-DATA-01), chỉ read model bị dọn.
   @Test func signOutClosesTheScopeBeforeCleanup() async throws {
     let d = try Device()
     await d.life.sessionStarted(userId: "a", today: today)
@@ -160,9 +161,9 @@ struct AccountLifecycleTests {
         try await store.saveDay(dayKey, DayState(), userId: "a")
       }
     }
-    #expect(try d.owners().isEmpty && d.readCacheUsers().isEmpty)
+    #expect(try d.owners() == ["a"] && d.readCacheUsers().isEmpty)
     #expect(await !a.toggle("b2"), "controller cũ của A không ghi lại được")
-    #expect(try d.owners().isEmpty)
+    #expect(try d.owners() == ["a"])
   }
 
   /// Lượt ghi muộn của controller A (tick + chốt buổi) được thả ở MỌI điểm
@@ -249,15 +250,17 @@ struct AccountLifecycleTests {
     #expect(await b.toggle("b1"), "B vẫn ghi được sau lượt dọn của A")
   }
 
-  /// Thứ tự thường (dọn của A xong rồi B mới mở phiên): như trên.
+  /// Thứ tự thường (dọn của A xong rồi B mới mở phiên): như trên. Ngày của A
+  /// đỗ lại sau khi phiên A kết thúc (R3-DATA-01) và chỉ đi khi B mở phiên.
   @Test func nextAccountStartingAfterCleanup() async throws {
     let d = try Device()
     await d.life.sessionStarted(userId: "a", today: today)
     #expect(await d.controller("a").toggle("b1"))
     await d.life.sessionEnded(next: "b")
     #expect(d.db.accounts.current == .signedOut, "B chưa mở phiên: chốt đóng")
-    #expect(try d.owners().isEmpty)
+    #expect(try d.owners() == ["a"], "ngày của A đỗ lại tới khi B mở phiên")
     await d.life.sessionStarted(userId: "b", today: today)
+    #expect(try d.owners().isEmpty, "B mở phiên dọn ngày của A")
     let b = await d.controller("b")
     #expect(b.progress.done.isEmpty)
     #expect(await b.toggle("b2"))
@@ -297,8 +300,9 @@ struct AccountLifecycleTests {
   }
 
   /// A → B → A: mỗi lần đổi thẳng; A quay lại không thấy gì của B, không thấy
-  /// ngày cũ của chính mình (đã dọn khi phiên kết thúc — #241, không đổi), và
-  /// chốt được cùng khoá ngày mà B đã chốt.
+  /// ngày cũ của chính mình (đã dọn khi B mở phiên — lượt dọn của người kế
+  /// tiếp, không phải khi phiên kết thúc, R3-DATA-01), và chốt được cùng khoá
+  /// ngày mà B đã chốt.
   @Test func aThenBThenA() async throws {
     let d = try Device()
     await d.life.sessionStarted(userId: "a", today: today)
@@ -345,16 +349,52 @@ struct AccountLifecycleTests {
   }
 
   /// #469: khởi động với phiên đã hết hạn — `SessionStore` báo hết phiên ngay
-  /// lúc đọc: dọn hết, chốt vẫn đóng, không có lượt dọn ngày cũ nào chạy.
-  @Test func expiredSessionAtStartupClearsAndStaysClosed() async throws {
+  /// lúc đọc: chốt vẫn đóng, không có lượt dọn ngày cũ nào chạy, và ngày của
+  /// A đỗ lại cho lần đăng nhập sau thay vì bị xoá (R3-DATA-01).
+  @Test func expiredSessionAtStartupParksDaysAndStaysClosed() async throws {
     let d = try Device()
     d.db.accounts.signIn("a")
     try await d.store.saveDay(dayKey, DayState(), userId: "a")
     try d.launch()
     await d.life.sessionEnded(next: nil)
     #expect(d.db.accounts.current == .signedOut)
-    #expect(try d.owners().isEmpty)
+    #expect(try d.owners() == ["a"])
     await #expect(throws: AccountScopeClosed.self) { try await d.store.pruneDays(today: today) }
+    await d.life.sessionStarted(userId: "a", today: today)
+    #expect(try await d.store.loadDay(dayKey) != nil, "A đăng nhập lại thấy ngày cũ")
+  }
+
+  /// R3-DATA-01: đăng xuất rồi đăng nhập lại bằng cùng tài khoản — buổi đang
+  /// tập dở còn nguyên, tập tiếp và chốt được. Trước đây `sessionEnded` xoá
+  /// cả bảng `workout_day` nên buổi dở mất hẳn.
+  @Test func signOutAndBackInResumesTheInProgressDay() async throws {
+    let d = try Device()
+    await d.life.sessionStarted(userId: "a", today: today)
+    let a1 = await d.controller("a")
+    #expect(await a1.toggle("b1"))
+    await d.life.sessionEnded(next: nil)
+    #expect(try d.owners() == ["a"], "đăng xuất không xoá ngày đang dở")
+    await d.life.sessionStarted(userId: "a", today: today)
+    let a2 = await d.controller("a")
+    #expect(a2.progress.done == ["b1": true], "A quay lại thấy đúng buổi đang dở")
+    #expect(await a2.toggle("b2"))
+    let summary = try await a2.finish()
+    #expect(summary.sessionId.hasPrefix("a-"))
+    #expect(try d.owners() == ["a"])
+  }
+
+  /// Xoá tài khoản: chỉ ngày của tài khoản ấy bị bỏ; ngày của người khác ở
+  /// lại, và lần đăng nhập sau của họ vẫn thấy đúng của mình.
+  @Test func accountDeletionPurgesOnlyThatUsersDays() async throws {
+    let d = try Device()
+    for user in ["a", "b"] {
+      d.db.accounts.signIn(user)
+      try await d.store.saveDay(dayKey, DayState(), userId: user)
+    }
+    await d.life.accountDeleted(userId: "A")
+    #expect(try d.owners() == ["b"])
+    await d.life.sessionStarted(userId: "b", today: today)
+    #expect(try await d.store.loadDay(dayKey) != nil)
   }
 }
 
