@@ -13,6 +13,12 @@ struct ModerationTargetScreen: View {
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var sheet: Sheet?
+  /// Bài gốc của bình luận đang xét (mở bằng sheet bình luận như ở feed).
+  @State private var parentPost: ParentPost?
+
+  private struct ParentPost: Identifiable {
+    let id: String
+  }
 
   /// Hộp báo UIKit, hiện ngay khi gán (xem `ConfirmAlert`): màn này có thể nằm
   /// trong sheet chồng sheet, nơi `.alert` đặt sau khi chờ server không hiện.
@@ -44,6 +50,7 @@ struct ModerationTargetScreen: View {
       .refreshable { await book.loadTarget(type: type, id: id) }
       .task { await book.loadTarget(type: type, id: id) }
       .sheet(item: $sheet) { s in reasonSheet(s) }
+      .sheet(item: $parentPost) { p in CommunityCommentsSheet(postId: p.id, showsPost: true) }
   }
 
   @ViewBuilder private var content: some View {
@@ -106,6 +113,14 @@ struct ModerationTargetScreen: View {
           Text(verbatim: d.target.excerpt)
             .font(DS.TextStyle.body)
             .foregroundStyle(DS.Color.foreground.swiftUI)
+        }
+        // Bình luận cần ngữ cảnh bài gốc (Devin #916): mở bằng sheet bình
+        // luận như ở feed — không đẩy thêm màn chi tiết kiểm duyệt, vì sổ
+        // chi tiết dùng chung chỉ giữ một đích.
+        if d.type == .comment, let postId = d.target.postId {
+          DSButton(String(localized: "community.mod.target.viewPost"), style: .secondary) {
+            parentPost = ParentPost(id: postId)
+          }
         }
         HStack(spacing: DS.Spacing.sm) {
           if let kind = d.target.kind {
@@ -239,8 +254,12 @@ struct ModerationTargetScreen: View {
           } else {
             DSButton(String(localized: "community.mod.action.hide"), style: .secondary) { sheet = .decide(.hide) }
               .disabled(busy)
-            DSButton(String(localized: "community.mod.action.dismiss"), style: .secondary) { sheet = .decide(.dismiss) }
-              .disabled(busy)
+            // `mod_dismiss` từ chối khi không có báo cáo mở (lỗi 'no open
+            // reports') — không bày nút không bấm được (Devin #916).
+            if d.reports.contains(where: { $0.status == .open }) {
+              DSButton(String(localized: "community.mod.action.dismiss"), style: .secondary) { sheet = .decide(.dismiss) }
+                .disabled(busy)
+            }
           }
           if busy { ProgressView().frame(maxWidth: .infinity) }
         }

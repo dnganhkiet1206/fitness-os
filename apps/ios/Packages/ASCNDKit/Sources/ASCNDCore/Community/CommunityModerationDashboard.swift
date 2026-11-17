@@ -512,15 +512,21 @@ public final class ModerationBook {
   }
 
   /// Đổi bộ lọc báo cáo / kháng nghị: đọc lại tất cả (đơn giản, luôn khớp).
+  /// Xoá danh sách cũ + về `.loading` TRƯỚC khi đọc: đọc hỏng thì màn hiện
+  /// lỗi thay vì gắn nhãn bộ lọc mới cho danh sách cũ (Devin #916).
   public func selectReports(_ status: ModReportStatus) async {
     guard status != reportStatus else { return }
     reportStatus = status
+    reports = []
+    phase = .loading
     await load()
   }
 
   public func selectAppeals(_ status: ModAppealStatus) async {
     guard status != appealStatus else { return }
     appealStatus = status
+    appeals = []
+    phase = .loading
     await load()
   }
 

@@ -147,6 +147,9 @@ struct CommunityFeedView: View {
     .refreshable {
       await book.load()
       await loadChallenges()
+      // Vai trò chưa biết (lỗi mạng lúc mở feed): hỏi lại để nút khiên trở
+      // lại. Chỉ hỏi `my_app_role`, không gọi dữ liệu quản trị (Devin #916).
+      if moderation?.role == nil { await moderation?.loadRole() }
     }
     .navigationDestination(isPresented: $findPeople) { CommunitySearchScreen() }
     .environment(\.openCommunityComments) { commentsFor = OpenPost(id: $0.id) }
