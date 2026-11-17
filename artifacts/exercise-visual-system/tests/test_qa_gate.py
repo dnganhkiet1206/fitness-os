@@ -14,6 +14,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 _spec = importlib.util.spec_from_file_location(
@@ -27,6 +28,10 @@ _spec.loader.exec_module(check_qa_gate)
 def _report(*checks: tuple[str, str]) -> dict:
     return {"checks": [{"id": check_id, "status": status,
                         "measured": 1, "limit": 2} for check_id, status in checks]}
+
+
+# Danh sách lỗi đã biết thật đang trống (17/11); các test cơ chế dùng một mục mẫu.
+_SAMPLE_KNOWN = {("back-squat", "skin_stretch"): "mục mẫu cho test"}
 
 
 def _make_kit(tmp: Path, reports: dict[str, dict | None]) -> Path:
@@ -49,8 +54,9 @@ class QaGateTests(unittest.TestCase):
             violations, _ = check_qa_gate.check(kit)
             self.assertEqual(violations, [])
 
+    @mock.patch.dict(check_qa_gate.KNOWN_FAILURES, _SAMPLE_KNOWN)
     def test_known_failure_passes_with_no_violation(self):
-        # The real known failure (back-squat skin_stretch) must not block.
+        # A listed known failure must not block.
         with tempfile.TemporaryDirectory() as tmp:
             kit = _make_kit(Path(tmp), {
                 "back-squat": _report(("skin_stretch", "FAIL")),
@@ -71,6 +77,7 @@ class QaGateTests(unittest.TestCase):
             self.assertIn("dumbbell-curl", violations[0])
             self.assertIn("joint_speed", violations[0])
 
+    @mock.patch.dict(check_qa_gate.KNOWN_FAILURES, _SAMPLE_KNOWN)
     def test_known_failure_on_another_exercise_fails(self):
         # The allowlist is per exercise: skin_stretch failing on curl is new.
         with tempfile.TemporaryDirectory() as tmp:
@@ -81,6 +88,7 @@ class QaGateTests(unittest.TestCase):
             violations, _ = check_qa_gate.check(kit)
             self.assertEqual(len(violations), 1)
 
+    @mock.patch.dict(check_qa_gate.KNOWN_FAILURES, _SAMPLE_KNOWN)
     def test_fixed_known_failure_warns_but_passes(self):
         with tempfile.TemporaryDirectory() as tmp:
             kit = _make_kit(Path(tmp), {

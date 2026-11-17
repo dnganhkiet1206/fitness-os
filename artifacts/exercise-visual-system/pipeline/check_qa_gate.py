@@ -36,13 +36,9 @@ from pathlib import Path
 DEFAULT_EXERCISES = ("back-squat", "dumbbell-curl")
 
 # (bài, id kiểm tra) -> lý do. Số đo lấy từ lần chạy 14/11/2026, Blender 5.2.0.
-KNOWN_FAILURES = {
-    ("back-squat", "skin_stretch"): (
-        "p99.9 edge stretch 3.284 so với giới hạn 2.6 ở khung 56: da giãn khi "
-        "hông gập sâu, cùng loại với skin_deformation của bench press. Sửa "
-        "bằng việc nhân vật/rig, không nới ngưỡng."
-    ),
-}
+# 17/11: back-squat/skin_stretch (p99.9 3.284 > 2.6 ở khung 56) đã hết FAIL sau
+# khi làm lại squat + nhân vật 3.3.0 (16/11); đo lại 18/18 PASS nên xoá khỏi đây.
+KNOWN_FAILURES: dict[tuple[str, str], str] = {}
 
 
 def check_report(report_path: Path, exercise: str) -> tuple[list[str], list[str]]:

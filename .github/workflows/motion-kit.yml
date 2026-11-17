@@ -110,11 +110,20 @@ jobs:
       # đã tải 13/11. Upstream đổi file thì bước này đỏ to, không lặng lẽ
       # chạy một bản Blender khác. `curl --fail`: 404 cũng đỏ, không tải
       # trang lỗi về rồi giải nén hỏng ở bước sau.
+      #
+      # 17/11: download.blender.org trả 403 cho curl (cả từ runner lẫn máy
+      # dev), nên thử lần lượt các mirror chính thức của blender.org. Hash
+      # vẫn ghim: mirror nào trả file khác thì bước kiểm SHA-256 đỏ.
       - name: Tải Blender 5.2.0 LTS
         if: steps.blender-cache.outputs.cache-hit != 'true'
         run: |
           cd "$HOME"
-          curl --fail --retry 3 -L -o blender-5.2.0.tar.xz "https://download.blender.org/release/Blender5.2/blender-5.2.0-linux-x64.tar.xz"
+          path=release/Blender5.2/blender-5.2.0-linux-x64.tar.xz
+          for base in https://download.blender.org https://mirrors.ocf.berkeley.edu/blender \
+                      https://ftp.halifax.rwth-aachen.de/blender https://mirror.clarkson.edu/blender; do
+            if curl --fail --retry 3 -L -o blender-5.2.0.tar.xz "$base/$path"; then echo "tải từ $base"; break; fi
+            rm -f blender-5.2.0.tar.xz
+          done
           echo "96f6c181a30f4950607839dc84d42a354b250d8a0231b098b59b7bc69c351c48  blender-5.2.0.tar.xz" | sha256sum --check --strict
           tar -xf blender-5.2.0.tar.xz
           rm blender-5.2.0.tar.xz
