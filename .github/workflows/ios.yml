@@ -98,6 +98,10 @@ jobs:
           latest=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
           sudo xcode-select -s "$latest"
           xcodebuild -version
+      # Tô cơ 3D dùng shader Metal (MuscleSurface.metal); Xcode 26 tách Metal Toolchain
+      # thành gói tải riêng. Ảnh runner thiếu thì tải (~700 MB), có rồi thì bỏ qua.
+      - name: Metal Toolchain
+        run: xcrun -f metal >/dev/null 2>&1 || xcodebuild -downloadComponent MetalToolchain
 
       # Cache build giữa các lượt (Kiệt 28/10: tăng tốc CI). `irgaly/xcode-cache`
       # giữ DerivedData + gói SPM VÀ khôi phục mtime của mã nguồn, nên Xcode build

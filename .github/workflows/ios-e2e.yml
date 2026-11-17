@@ -56,6 +56,10 @@ jobs:
           latest=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
           sudo xcode-select -s "$latest"
           xcodebuild -version
+      # Tô cơ 3D dùng shader Metal (MuscleSurface.metal); Xcode 26 tách Metal Toolchain
+      # thành gói tải riêng. Ảnh runner thiếu thì tải (~700 MB), có rồi thì bỏ qua.
+      - name: Metal Toolchain
+        run: xcrun -f metal >/dev/null 2>&1 || xcodebuild -downloadComponent MetalToolchain
 
       - name: XcodeGen
         working-directory: apps/ios
@@ -223,6 +227,10 @@ jobs:
         run: |
           latest=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
           sudo xcode-select -s "$latest"
+      # Tô cơ 3D dùng shader Metal (MuscleSurface.metal); Xcode 26 tách Metal Toolchain
+      # thành gói tải riêng. Ảnh runner thiếu thì tải (~700 MB), có rồi thì bỏ qua.
+      - name: Metal Toolchain
+        run: xcrun -f metal >/dev/null 2>&1 || xcodebuild -downloadComponent MetalToolchain
 
       - name: Cổng nguồn (chế độ UI test chỉ ở #if DEBUG)
         run: |

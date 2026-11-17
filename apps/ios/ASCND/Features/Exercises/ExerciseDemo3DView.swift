@@ -751,6 +751,12 @@
     /// lùi về texture nướng sẵn.
     func prepareShader(scene: Entity, apparel: Entity?, roles: [String: [String]]) async -> Bool {
       guard let body = Self.find(in: scene), body.model != nil else { return false }
+      var gpuAllowed = true
+      #if DEBUG
+        // So hai đường: chạy với biến môi trường ASCND_MUSCLE_CPU=1 để ép đường CPU.
+        gpuAllowed = ProcessInfo.processInfo.environment["ASCND_MUSCLE_CPU"] == nil
+      #endif
+      if gpuAllowed, await prepareGPU(body: body, apparel: apparel, roles: roles) { return true }
       let skins = await Task.detached(priority: .userInitiated) { () -> MuscleShader.Skins? in
         let start = Date()
         guard let shared = MuscleShader.shared() else { return nil }
@@ -789,6 +795,69 @@
       return true
     }
 
+    /// Tô cơ trên GPU (17/11, `MuscleMaterial`): vật liệu gốc giữ lại, mỗi lần đổi chỉ dựng
+    /// `CustomMaterial` với bảng màu đủ / chỉ cơ chính. false = không dựng được (lùi về đường CPU).
+    private struct GPUSkin {
+      let textures: MuscleMaterial.Textures
+      let full: TextureResource
+      let focus: TextureResource
+      let bodyIndex: Int
+      let bodyOriginal: PhysicallyBasedMaterial
+      let apparelOriginal: PhysicallyBasedMaterial?
+    }
+    @ObservationIgnored private var gpu: GPUSkin?
+
+    private func prepareGPU(body: ModelEntity, apparel: Entity?, roles: [String: [String]]) async -> Bool {
+      let start = Date()
+      let built = await Task.detached(priority: .userInitiated) { () -> (MuscleShader.Shared, MuscleMaterial.Images)? in
+        guard let shared = MuscleShader.shared(), let images = MuscleMaterial.images(shared) else { return nil }
+        return (shared, images)
+      }.value
+      guard let (shared, images) = built, let textures = MuscleMaterial.textures(images),
+        let full = MuscleMaterial.palette(roles: roles, shared: shared, primaryOnly: false),
+        let focus = MuscleMaterial.palette(roles: roles, shared: shared, primaryOnly: true),
+        let materials = body.model?.materials,
+        let bodyIndex = materials.firstIndex(where: { ($0 as? PhysicallyBasedMaterial)?.normal.texture != nil }),
+        let bodyOriginal = materials[bodyIndex] as? PhysicallyBasedMaterial,
+        MuscleMaterial.material(replacing: bodyOriginal, body: true, textures: textures, palette: full) != nil
+      else { return false }
+      let apparelModel = apparel.flatMap { Self.find(in: $0) } ?? body
+      var apparelOriginal: PhysicallyBasedMaterial?
+      if let index = apparelModel.model?.materials.firstIndex(where: {
+        guard let pbr = $0 as? PhysicallyBasedMaterial else { return false }
+        return pbr.normal.texture == nil && pbr.baseColor.texture != nil
+      }) {
+        apparelIndex = index
+        apparelBody = apparelModel
+        apparelOriginal = apparelModel.model?.materials[index] as? PhysicallyBasedMaterial
+      }
+      gpu = GPUSkin(
+        textures: textures, full: full, focus: focus, bodyIndex: bodyIndex, bodyOriginal: bodyOriginal,
+        apparelOriginal: apparelOriginal)
+      #if DEBUG
+        print("[muscle] GPU material ready in \(Int(Date().timeIntervalSince(start) * 1000)) ms")
+      #endif
+      self.body = body
+      ready = true
+      return true
+    }
+
+    private func applyGPU(_ g: GPUSkin, focus on: Bool, body: ModelEntity) {
+      let palette = on ? g.focus : g.full
+      func swap(_ entity: ModelEntity, _ index: Int, _ original: PhysicallyBasedMaterial, isBody: Bool) {
+        guard var materials = entity.model?.materials, index < materials.count,
+          let m = MuscleMaterial.material(replacing: original, body: isBody, textures: g.textures, palette: palette)
+        else { return }
+        materials[index] = m
+        entity.model?.materials = materials
+      }
+      swap(body, g.bodyIndex, g.bodyOriginal, isBody: true)
+      if let apparelBody, let apparelIndex, let original = g.apparelOriginal {
+        swap(apparelBody, apparelIndex, original, isBody: false)
+      }
+      shownFocus = on
+    }
+
     private static func texture(_ name: String, _ semantic: TextureResource.Semantic) async -> TextureResource? {
       // Bài dạng khối xuất JPEG (nhẹ hơn ~3 lần), bài cũ PNG.
       guard let url = Bundle.main.url(forResource: name, withExtension: "jpg")
@@ -801,6 +870,7 @@
     /// dựng vật liệu mới.
     func apply(focus on: Bool, force: Bool = false) {
       guard ready, force || on != shownFocus, let body else { return }
+      if let gpu { return applyGPU(gpu, focus: on, body: body) }
       let skin = on ? focus : full
       let apparelSkin = on ? focusApparel : fullApparel
       Self.retexture(body) { index, pbr in
