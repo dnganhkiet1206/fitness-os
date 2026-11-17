@@ -291,8 +291,8 @@
           }
           if let tempo = demoInfo?.tempo {
             ToolbarItem(placement: .principal) {
-              // Vẽ lại mỗi khung để theo kịp chuyển động.
-              TimelineView(.animation) { _ in
+              // Vẽ lại mỗi khung để theo kịp chuyển động; Giảm chuyển động: 4 lần/giây.
+              TimelineView(.animation(minimumInterval: reduceMotion ? 0.25 : nil)) { _ in
                 ExerciseTempoStrip(
                   tempo: tempo,
                   ms: playback.time.map { $0 / max(playback.duration, 0.001) * tempo.durationMs },
