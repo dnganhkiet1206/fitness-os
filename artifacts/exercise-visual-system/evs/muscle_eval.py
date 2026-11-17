@@ -93,6 +93,29 @@ def _band(patch: dict, frame: LimbFrame, points: np.ndarray, feather: float) -> 
     return mask
 
 
+def neck_fan(fan: dict, points: np.ndarray) -> np.ndarray:
+    """Factor (0..1) that keeps a neck muscle on the back of the neck (``neck_fan`` of a group
+    in muscle_map.json, 17/11): angle around the neck axis, 0 = straight back, must stay under
+    a half angle that grows from the skull down to the base of the neck. Points below the
+    lowest height of the table are not touched. ``points`` may be mirrored (x >= 0): only
+    |x| is used."""
+    a, b = (np.asarray(v, dtype=np.float64) for v in fan["axis"])
+    axis = (b - a) / np.linalg.norm(b - a)
+    q = points - a
+    radial = q - np.outer(q @ axis, axis)
+    angle = np.degrees(np.arctan2(np.abs(radial[:, 0]), radial[:, 1]))
+    table = np.asarray(fan["half_angle_deg"], dtype=np.float64)
+    half = np.interp(points[:, 2], table[:, 0], table[:, 1])
+    f = 0.5 * fan.get("feather_deg", 8.0)
+    keep = 1.0 - smoothstep(half - f, half + f, angle)
+    # Only on the neck itself: the slope of the shoulder (top of the trapezius, out to the
+    # acromion) lies far from the axis and keeps its colour.
+    if "max_radius_m" in fan:
+        r0 = fan["max_radius_m"]
+        keep = np.maximum(keep, smoothstep(r0, r0 + fan.get("radius_feather_m", 0.03), np.linalg.norm(radial, axis=1)))
+    return np.where(points[:, 2] < table[0, 0], 1.0, keep)
+
+
 def evaluate_groups(muscle_map: dict, joints: dict, points: np.ndarray, normals: np.ndarray, weights: np.ndarray) -> dict[str, np.ndarray]:
     """Mask value (0..1) of every group at every point.
 
@@ -155,6 +178,8 @@ def evaluate_groups(muscle_map: dict, joints: dict, points: np.ndarray, normals:
             else:
                 mask = _band(patch, frames[chart], points, feather) * gates[chart]
             total = np.maximum(total, mask)
+        if "neck_fan" in group:
+            total = total * neck_fan(group["neck_fan"], points)
         raw[name] = total
 
     out: dict[str, np.ndarray] = {}

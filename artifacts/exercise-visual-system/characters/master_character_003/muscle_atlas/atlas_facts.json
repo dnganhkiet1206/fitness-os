@@ -76,7 +76,7 @@
       "label": "Latissimus dorsi"
     },
     "trapezius_upper": {
-      "texels": 161040,
+      "texels": 109698,
       "label": "Trapezius, upper"
     },
     "trapezius_middle": {
@@ -205,7 +205,7 @@
       ]
     },
     "trapezius": {
-      "texels": 187338,
+      "texels": 135996,
       "label": "trapezius",
       "parts": [
         "trapezius_upper",

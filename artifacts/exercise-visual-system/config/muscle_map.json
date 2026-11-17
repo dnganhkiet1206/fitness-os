@@ -583,7 +583,25 @@
         "deltoid_posterior",
         "deltoid_lateral"
       ],
-      "anatomy": "External occipital protuberance, superior nuchal line and ligamentum nuchae down to C7, inserting on the lateral third of the clavicle and the acromion (Gray 1918). Runs up the back and side of the neck toward the ear; 15/11 Kiệt: the old region stopped at the base of the neck, under the new trapezius volume. Covers the top of the shoulder to the acromion (15/11: a grey strip was left between it and the deltoid)."
+      "anatomy": "External occipital protuberance, superior nuchal line and ligamentum nuchae down to C7, inserting on the lateral third of the clavicle and the acromion (Gray 1918). Runs up the back and side of the neck toward the ear; 15/11 Kiệt: the old region stopped at the base of the neck, under the new trapezius volume. Covers the top of the shoulder to the acromion (15/11: a grey strip was left between it and the deltoid).",
+      "neck_fan": {
+        "axis": [
+          [0.0, -0.0118, 1.5341],
+          [0.0, -0.0476, 1.6332]
+        ],
+        "half_angle_deg": [
+          [1.48, 105],
+          [1.5, 100],
+          [1.52, 88],
+          [1.56, 65],
+          [1.6, 48],
+          [1.62, 45]
+        ],
+        "feather_deg": 8,
+        "max_radius_m": 0.09,
+        "radius_feather_m": 0.03,
+        "note": "17/11: on the neck the upper trapezius covers only the back: medial third of the superior nuchal line (about ±45° around the neck axis from the back midline) fanning out to the lateral third of the clavicle at the base (about ±100°). The old region coloured the whole side of the neck up under the ear (±90° at z 1.58-1.60), over splenius / levator scapulae / sternocleidomastoid. Axis = neck_01 bone of master_character_003; angle 0 = straight back. Only applies above min z of the table and within max_radius_m of the axis (fading out over radius_feather_m), so the slope of the shoulder out to the acromion keeps its colour."
+      }
     },
     "trapezius_middle": {
       "label": "Trapezius, middle",
