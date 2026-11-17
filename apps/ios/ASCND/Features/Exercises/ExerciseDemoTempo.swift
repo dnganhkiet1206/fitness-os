@@ -1,29 +1,11 @@
 #if DEBUG
+  import ASCNDCore
   import ASCNDDesignSystem
   import RealityKit
   import SwiftUI
 
-  /// Nhịp từng rep trong trình xem 3D (C1, Kiệt 17/11): pha đang chạy (Nâng / Giữ / Hạ), nhịp thở,
-  /// số rep và thanh tiến độ của rep, đồng bộ với chuyển động. Dữ liệu từ `tempo.json` của Motion
-  /// Lab (`<bài>_demo.json` → `tempo`, `pipeline/export_app_demos.py`), cùng dòng thời gian với
-  /// clip. Chạm dải để xem chậm 0,5×.
-  struct ExerciseTempo {
-    struct Phase {
-      let rep: Int
-      let kind: String
-      let startMs: Double
-      let endMs: Double
-      let breath: String?
-    }
-    let durationMs: Double
-    let reps: Int
-    let phases: [Phase]
-
-    /// Pha tại thời điểm `ms` của clip; nil = đoạn chuẩn bị đầu / cuối clip.
-    func phase(at ms: Double) -> Phase? {
-      phases.first { ms >= $0.startMs && ms < $0.endMs }
-    }
-  }
+  /// Nhịp từng rep trong trình xem 3D (C1, Kiệt 17/11): dữ liệu và logic chọn pha là
+  /// `ASCNDCore.ExerciseTempo` (có test); tệp này chỉ phát và vẽ.
 
   /// Bộ điều khiển phát của nhân vật, file chuyển động và quần (cùng một clip): đọc thời điểm
   /// hiện tại và đổi tốc độ cho cả ba.
@@ -80,10 +62,12 @@
       }
     }
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
-      let phase = ms.flatMap { tempo.phase(at: $0) }
+      let phase = ms.flatMap { tempo.labelPhase(at: $0) }
       // Đoạn nghỉ giữa / sau các rep: giữ rep vừa xong.
-      let rep = phase?.rep ?? ms.flatMap { m in tempo.phases.last { $0.startMs <= m }?.rep } ?? 1
+      let rep = ms.map { tempo.rep(at: $0) } ?? 1
       let repPhases = tempo.phases.filter { $0.rep == rep }
       Button(action: onToggleSpeed) {
         VStack(spacing: 4) {
@@ -96,6 +80,9 @@
               .font(DS.TextStyle.footnote.weight(.bold))
               .textCase(.uppercase)
               .foregroundStyle(phase.map { tint($0.kind) } ?? DS.Color.foreground.swiftUI)
+              .contentTransition(.opacity)
+              // Chữ mờ dần sang pha mới thay vì nhảy; Giảm chuyển động thì đổi ngay.
+              .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: phase?.kind)
             if let key = breath(phase?.breath) {
               Text(verbatim: "·").foregroundStyle(DS.Color.mutedForeground.swiftUI)
               Text(key)
