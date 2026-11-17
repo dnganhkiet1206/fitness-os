@@ -9,7 +9,8 @@
 //   custom            = muscle_ids: R = phần cơ + 1, G = độ phủ, B = viền
 //   emissive_color    = bảng 64×2: hàng 0 rgb = màu vai trò (tuyến tính), hàng 1 r = hạng vai trò / 3
 //                       (0 = không tô). Không dùng kênh alpha: ảnh có alpha bị nhân sẵn khi nạp.
-//   base_color        = R = shade (thớ cơ, 1 = không đổi), G = phần cơ thứ hai nằm dưới (muscle_ids2)
+//   base_color        = shade (thớ cơ, 1 = không đổi)
+//   roughness         = muscle_ids2: phần cơ thứ hai nằm dưới (độ nhám lấy từ hằng số, không từ ô này)
 //   normal            = normal khối cơ
 //   ambient_occlusion = normal có thớ của mọi phần cơ
 //   custom_parameter  = (nền tuyến tính rgb, hệ số độ phủ)
@@ -37,7 +38,7 @@ Paint paint(realitykit::surface_parameters params, float2 uv)
     uint2 px = min(uint2(uv * float2(size)), size - 1);
     half4 id = ids.read(px);
     uint first = min(uint(round(float(id.r) * 255.0)), 63u);
-    uint second = min(uint(round(float(tex.base_color().read(px).g) * 255.0)), 63u);
+    uint second = min(uint(round(float(tex.roughness().read(px).r) * 255.0)), 63u);
     texture2d<half> palette = tex.emissive_color();
     half r1 = palette.read(uint2(first, 1)).r;
     half r2 = palette.read(uint2(second, 1)).r;
