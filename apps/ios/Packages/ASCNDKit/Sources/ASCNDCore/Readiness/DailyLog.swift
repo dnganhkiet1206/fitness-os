@@ -1,14 +1,15 @@
 public import Foundation
 
-/// Dựng lại một hàng `daily_logs` — `recomputeDailyLog` của
-/// `lib/daily-log-service.ts` @ fac9ac2 (#266).
+/// Dựng lại một hàng `daily_logs` (#266; gốc từ `recomputeDailyLog` của
+/// `lib/daily-log-service.ts` @ fac9ac2, RN đã bỏ 17/11/2026).
 ///
-/// Server không có RPC / trigger làm việc này: đó là logic phía client, và hai
-/// app phải ghi CÙNG một hàng cho cùng một ngày. Mọi truy vấn (bảng, cột, cửa
-/// sổ) và mọi phép tính ở đây khoá bằng golden sinh từ chính mã RN chạy trên
-/// một Supabase giả, ở sáu múi giờ (`DailyLogGoldenTests`).
+/// Server không có RPC / trigger làm việc này: đó là logic phía client.
+/// Các truy vấn (bảng, cột, cửa sổ) và phép tính ở đây được giữ bằng bất
+/// biến native trong `DailyLogGoldenTests` — đúng tập truy vấn, đúng một
+/// lệnh ghi có điều kiện, đọc lỗi thì không ghi — trên bảng tự dựng,
+/// không so với RN.
 ///
-/// Luật RN giữ nguyên:
+/// Luật giữ nguyên:
 /// - cửa sổ thuộc về NGÀY, không về lúc dựng (BUG-106, Model B): 7 / 28 ngày
 ///   địa phương KẾT THÚC ở chính ngày ấy, hai đầu đóng — không hàng nào sau
 ///   ngày ấy lọt vào;
@@ -356,7 +357,7 @@ public enum DailyLog {
 // MARK: - Truy vấn chung
 
 /// Một truy vấn PostgREST dạng dữ liệu — để Core quyết ĐỌC GÌ, còn Backend chỉ
-/// thực thi; test thực thi cùng truy vấn trên bảng giả và so với RN.
+/// thực thi; test thực thi cùng truy vấn trên bảng giả và kiểm bất biến native.
 public struct RowQuery: Sendable, Hashable {
   public enum Filter: Sendable, Hashable {
     case eq(String, JSONValue)
