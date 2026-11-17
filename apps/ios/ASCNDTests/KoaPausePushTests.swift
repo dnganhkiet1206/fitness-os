@@ -42,7 +42,7 @@ import Testing
     #expect(reported == ["pause"], "Lần thử lại thành không báo thêm lỗi")
   }
 
-  @Test func failedPauseLogPushKeepsSyncedSnapshotReportsAndRetries() async {
+  @Test func failedPauseLogPushKeepsSyncedSnapshotReportsAndRetries() async throws {
     let user = "ascnd-test-koa-push-log"
     let d = UserDefaults.standard
     let logKey = "koa.pauselog.\(user)"
@@ -56,7 +56,7 @@ import Testing
     // Sổ trên máy có một đợt quanh hôm nay để `pruned` không cắt.
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     let log = KoaPauseLog([KoaPause(start: today.adding(days: -2), last: today.adding(days: 1))])
-    d.set(try! JSONEncoder().encode(log), forKey: logKey)
+    d.set(try JSONEncoder().encode(log), forKey: logKey)
 
     let s = AppServices()
     let store = FakeKoaStore()

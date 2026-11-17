@@ -500,8 +500,16 @@ extension DailyLog {
         group.addTask {
           do {
             return (index, .success(try await store.select(query)))
+          } catch let rowError as RowStoreError {
+            // `catch` trần trong closure của TaskGroup suy `error` thành
+            // `any Error` (Swift 6.1) — ràng kiểu tường minh để giữ nguyên
+            // `RowStoreError` gốc, đúng lỗi bản tuần tự cũ ném.
+            return (index, .failure(rowError))
           } catch {
-            return (index, .failure(error))
+            // Không tới được: `select` khai `throws(RowStoreError)` nên mọi
+            // lỗi đều khớp nhánh trên. Kêu to thay vì bọc lỗi lạ thành
+            // `RowStoreError` sai nghĩa.
+            preconditionFailure("RowStore.select ném lỗi ngoài RowStoreError: \(error)")
           }
         }
       }
