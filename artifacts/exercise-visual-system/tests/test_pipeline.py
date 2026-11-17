@@ -101,9 +101,11 @@ class ApprovalGateTests(unittest.TestCase):
         recs = report.approval_records(ex)
         status = {r["id"]: r["status"] for r in recs}
         self.assertEqual(status["biomechanical_correctness"], "UNVERIFIED")
-        self.assertEqual(status["expert_approval"], "REQUIRES_MANUAL_REVIEW")
+        self.assertEqual(status["reference_comparison_approval"], "REQUIRES_MANUAL_REVIEW")
         summary = report.summarize(recs, ex)
         self.assertEqual(summary["publication_status"], "BLOCKED")
+        self.assertEqual(summary["reference_comparison_approval"], "PENDING")
+        self.assertEqual(summary["recommended_exercise_status"], "REFERENCE_REVIEW_PENDING")
 
     def test_technical_pass_is_not_approval(self):
         ex = config.exercise_config("bench-press")
@@ -117,6 +119,7 @@ class ApprovalGateTests(unittest.TestCase):
         ex.update(status="APPROVED", reviewer="Test Reviewer", approval_date="2026-01-01")
         summary = report.summarize(report.approval_records(ex), ex)
         self.assertEqual(summary["publication_status"], "PUBLISHABLE")
+        self.assertEqual(summary["reference_comparison_approval"], "APPROVED")
 
     def test_illegal_status_rejected(self):
         with self.assertRaises(ValueError):
