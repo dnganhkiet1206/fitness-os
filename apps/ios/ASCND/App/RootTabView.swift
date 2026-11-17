@@ -72,7 +72,7 @@ struct RootTabView: View {
     .modifier(QuickLogBar(
       hidden: quickLog.hidden,
       // Chỉ khi các function AI có trên máy chủ (`probeAI`), như mọi lối vào AI khác.
-      askCoach: services.aiDeployed == true
+      askCoach: services.isAIDeployed(.coach)
         ? {
           openCoachFromHere()
         } : nil
@@ -85,7 +85,7 @@ struct RootTabView: View {
     // "Ghi món khác" trên thông báo nhắc bữa (Kiệt 01/11): mở màn ghi bữa như Ghi nhanh.
     .onChange(of: services.mealLogRequest) { _, _ in linked = .logMeal(date: nil, meal: nil) }
     .onChange(of: services.coachRequest) { _, _ in
-      guard services.aiDeployed == true else { return }
+      guard services.isAIDeployed(.coach) else { return }
       openCoachFromHere()
     }
     // Tự đổi tab khi chat đang mở → không còn "về lại" nữa.

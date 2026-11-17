@@ -514,7 +514,7 @@ struct TodayExtras<Plan: View>: View {
   /// HIỂU — ở tab Tiến bộ. GĐ3 (Kiệt 21/10): thực phẩm bổ sung chỉ còn ở
   /// Dinh dưỡng › Thêm.
   /// Thẻ "Hỏi Koa" chỉ khi Koa Coach có trên máy chủ.
-  private var askKoa: Bool { services.aiDeployed == true }
+  private var askKoa: Bool { services.isAIDeployed(.coach) }
 
   private var moreRows: [TodayMore.Row] {
     var rows: [TodayMore.Row] = []
