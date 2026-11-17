@@ -32,9 +32,12 @@
     @State private var tipAnchors = TipAnchors()
     /// Bộ điều khiển phát (nhịp từng rep, xem chậm 0,5×; C1, 17/11).
     @State private var playback = DemoPlayback()
-    @State private var slowMotion = false
+    /// Kiệt 17/11: mặc định xem chậm 0,5× (chạm dải nhịp để về 1×).
+    @State private var slowMotion = true
     /// Clip lỗi sai đang xem (C2, 17/11); nil = động tác đúng.
     @State private var mistakeID: String?
+    /// Gợi ý "Kéo để xoay" chỉ hiện lúc đầu (Kiệt 17/11: đáy có 3 hàng, gọn lại).
+    @State private var showRotateHint = true
     @State private var rig = DemoRig()
     /// Ẩn vùng tô sáng của cơ phụ để tập trung vào cơ chính (Kiệt 13/11).
     /// Mặc định chỉ hiện cơ chính (Kiệt 16/11); nút "Hiện cơ phụ" bật Phụ + Ổn định.
@@ -196,6 +199,7 @@
               .gesture(
                 DragGesture()
                   .updating($dragOffset) { value, state, _ in state = value.translation }
+                  .onChanged { _ in if showRotateHint { showRotateHint = false } }
                   .onEnded { value in
                     yaw -= Double(value.translation.width) * Self.dragScale
                     pitch = min(max(pitch + Double(value.translation.height) * Self.dragScale, Self.pitchRange.lowerBound),
@@ -255,27 +259,21 @@
           }
           VStack(spacing: DS.Spacing.sm) {
             Spacer()
-            Label("eg.demo3d.rotateHint", systemImage: "hand.draw")
-              .font(DS.TextStyle.caption.weight(.medium))
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .padding(.horizontal, DS.Spacing.sm)
-              .padding(.vertical, 6)
-              .background(.ultraThinMaterial, in: Capsule())
+            if showRotateHint {
+              Label("eg.demo3d.rotateHint", systemImage: "hand.draw")
+                .font(DS.TextStyle.caption.weight(.medium))
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                .padding(.horizontal, DS.Spacing.sm)
+                .padding(.vertical, 6)
+                .background(.ultraThinMaterial, in: Capsule())
+                .transition(.opacity)
+                .task {
+                  try? await Task.sleep(for: .seconds(3))
+                  withAnimation(.easeOut(duration: 0.4)) { showRotateHint = false }  // reduce-motion: chỉ mờ dần
+                }
+            }
             let tips = demoInfo?.tips ?? []
             let mistakes = demoInfo?.mistakes ?? []
-            if let first = mistakes.first, mistakeID == nil, !(showTips && selectedTip != nil) {
-              Button {
-                showMistake(first.id)
-              } label: {
-                Label("eg.demo3d.mistake.show", systemImage: "exclamationmark.triangle")
-                  .font(DS.TextStyle.footnote.weight(.semibold))
-                  .foregroundStyle(DS.Color.foreground.swiftUI)
-                  .padding(.horizontal, DS.Spacing.md)
-                  .frame(minHeight: 36)
-                  .background(.ultraThinMaterial, in: Capsule())
-              }
-              .buttonStyle(.plain)
-            }
             if let id = mistakeID, let m = mistakes.first(where: { $0.id == id }) {
               ExerciseMistakeCard(mistake: m) { showMistake(nil) }
                 .padding(.horizontal, DS.Spacing.md)
@@ -344,11 +342,15 @@
                 ExerciseTempoStrip(
                   tempo: tempo,
                   ms: playback.time.map { $0 / max(playback.duration, 0.001) * tempo.durationMs },
-                  slow: slowMotion
-                ) {
-                  slowMotion.toggle()
-                  playback.setSpeed(slowMotion ? 0.5 : 1)
-                }
+                  slow: slowMotion,
+                  mistake: mistakeID != nil,
+                  hasMistake: !(demoInfo?.mistakes ?? []).isEmpty,
+                  onShowMistake: { if let m = demoInfo?.mistakes.first { showMistake(m.id) } },
+                  onToggleSpeed: {
+                    slowMotion.toggle()
+                    playback.setSpeed(slowMotion ? 0.5 : 1)
+                  },
+                  onExitMistake: { showMistake(nil) })
               }
             }
           }
@@ -498,8 +500,10 @@
       .padding(.horizontal, DS.Spacing.md)
       .padding(.vertical, legendCollapsed ? DS.Spacing.sm : DS.Spacing.md)
       .frame(maxWidth: .infinity, alignment: .leading)
+      // Cắt nội dung (khi thu gọn / mở) theo đúng hình thẻ, TRƯỚC khi vẽ thẻ: `.clipped()` sau
+      // thẻ cắt vuông cả bóng đổ, lộ góc tối vuông ngoài viền bo (Kiệt 17/11).
+      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
       .todayCard()
-      .clipped()
     }
 
     /// Hàng thu gọn: nhãn "Chính" + chip cơ chính (chấm màu), một dòng, cắt
