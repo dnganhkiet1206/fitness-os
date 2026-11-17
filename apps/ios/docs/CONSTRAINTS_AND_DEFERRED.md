@@ -51,6 +51,7 @@ Hệ quả cho người làm:
 
 - **Chưa có ai ngoài đội dùng app.** Dữ liệu trong app là dữ liệu test (agent được sửa khi kiểm thử; không xoá vĩnh viễn).
 - **Đo lường đã cài, nhưng chưa có dữ liệu thật:** sự kiện PostHog của vòng Koa, phòng Koa (01/11), onboarding, buổi đầu. Mọi "chỉ số" trong tài liệu là mục tiêu thiết kế, chưa phải số đo.
+- **17/11/2026 — vì sao đo lường chưa từng báo gì (mục 4, #527):** (1) Ba secret khoá client (`ASCND_SENTRY_DSN`, `ASCND_POSTHOG_KEY`, `ASCND_POSTHOG_HOST`) đã có từ 16/10 nhưng không workflow nào dùng — bản build CI nào cũng tắt đo lường; PR này nối chúng vào job `app-macos` của `ios.yml` và thêm cảnh báo build Release khi thiếu khoá. (2) Scheduled CI chưa từng chạy lần nào (0 lượt `schedule` trên cả 9 workflow): nhánh mặc định là `main` và `main` không có thư mục `.github/workflows` — GitHub chỉ chạy `schedule` từ nhánh mặc định. Đổi nhánh mặc định sang `native/ios-rewrite` là việc của Kiệt (cài đặt repo). (3) Bot kiểm hệ thống luôn bỏ qua phần Sentry/PostHog/Supabase vì ba secret `SENTRY_AUTH_TOKEN`, `POSTHOG_PERSONAL_API_KEY`, `SUPABASE_ACCESS_TOKEN` chưa có trong repo — Kiệt thêm thì bot mới nhìn thấy lỗi thật.
 - **Mục tiêu bằng số** (D7 / D28, kích hoạt…) chỉ chốt sau khi có baseline từ nhóm TestFlight đầu tiên.
 - **Tính năng cần người dùng thì ẩn hoặc hoãn**, không mặc định hiện ra trống:
   - bảng tin cộng đồng;

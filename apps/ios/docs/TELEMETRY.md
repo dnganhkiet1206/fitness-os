@@ -16,8 +16,7 @@ ASCND_POSTHOG_KEY = phc_…
 ASCND_POSTHOG_HOST = us.i.posthog.com
 ```
 
-Build lại là chạy. Trên CI / bản phát hành: đặt ba biến này qua cấu hình build bí mật
-của CI, không ghi vào repo. Mỗi sự kiện mang `build` = `debug` / `release` để lọc.
+Build lại là chạy. Trên CI: workflow `ios.yml` (job `app-macos`, bước "Khoá đo lường cho bản build CI") ghi ba secret `ASCND_SENTRY_DSN` / `ASCND_POSTHOG_KEY` / `ASCND_POSTHOG_HOST` của repo vào `Config/Backend.local.xcconfig` trên runner (17/11, #527 mục 4) — trước đó không workflow nào dùng ba secret này nên mọi bản build CI đều tắt đo lường. Bản phát hành Archive trên máy: điền ba biến vào `Backend.local.xcconfig` trên máy đó. Mỗi sự kiện mang `build` = `debug` / `release` để lọc.
 
 ### Kiểm tra cấu hình Sentry
 
