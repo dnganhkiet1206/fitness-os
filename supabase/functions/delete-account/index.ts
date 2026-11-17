@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import { revokeAppleTokens } from "../_shared/apple-signin.ts";
+import { revokeAppleGrantIfLinked } from "../_shared/apple-signin.ts";
 import { corsHeaders, json, requireUser } from "../_shared/guard.ts";
 
 /**
@@ -99,36 +99,36 @@ serve(async (req) => {
     /*
       Revoke the Sign in with Apple grant, if this account has one — before
       anything is destroyed, and fenced off so it can never fail the
-      deletion. The identity check is what keeps this quiet for the
-      ordinary (email/Google) deletion: only an `apple` identity reaches
-      the revocation call, and only there do the missing-secret / missing-
-      token warnings fire. The token itself can only come from the client
-      (see `_shared/apple-signin.ts`); the body is read best-effort, and a
-      body that is absent or not JSON simply means no token was supplied.
-      The identity still comes from the Authorization header, never from
-      the body — the body fields below name a token to revoke, not a user.
+      deletion. The body is read best-effort for exactly two fields, the
+      token material revocation needs (`apple_refresh_token`,
+      `apple_authorization_code`); a body that is absent or not JSON simply
+      means no token was supplied. The identity still comes from the
+      Authorization header, never from the body — the body fields name a
+      token to revoke, not a user — and the delete-account gate allows no
+      other field to be read off it. Whether the account is Apple-linked,
+      and every failure of the lookup or the revocation, is decided inside
+      `revokeAppleGrantIfLinked`, which never throws and never changes the
+      response; the `try` below is the second fence, not the first. That is
+      what keeps this quiet for the ordinary (email/Google) deletion: only
+      an `apple` identity reaches the revocation call, and only there do
+      the missing-secret / missing-token warnings fire.
     */
+    let body: Record<string, unknown> = {};
     try {
-      const { data: adminUser, error: identitiesErr } = await admin.auth.admin.getUserById(userId);
-      if (identitiesErr) {
-        console.error("apple-signin-revoke: could not list identities", identitiesErr.message);
-      } else if ((adminUser.user?.identities ?? []).some((i) => i.provider === "apple")) {
-        let body: Record<string, unknown> = {};
-        try {
-          const parsed: unknown = await req.json();
-          if (parsed && typeof parsed === "object") body = parsed as Record<string, unknown>;
-        } catch {
-          /* No body / not JSON: no Apple token supplied. */
-        }
-        await revokeAppleTokens({
-          refreshToken: typeof body.apple_refresh_token === "string"
-            ? body.apple_refresh_token
-            : undefined,
-          authorizationCode: typeof body.apple_authorization_code === "string"
-            ? body.apple_authorization_code
-            : undefined,
-        });
-      }
+      const parsed: unknown = await req.json();
+      if (parsed && typeof parsed === "object") body = parsed as Record<string, unknown>;
+    } catch {
+      /* No body / not JSON: no Apple token supplied. */
+    }
+    try {
+      await revokeAppleGrantIfLinked(admin, userId, {
+        refreshToken: typeof body.apple_refresh_token === "string"
+          ? body.apple_refresh_token
+          : undefined,
+        authorizationCode: typeof body.apple_authorization_code === "string"
+          ? body.apple_authorization_code
+          : undefined,
+      });
     } catch (e) {
       /* Revocation must never fail a deletion. Logged, then forgotten. */
       console.error("apple-signin-revoke: skipped after an error", e);

@@ -193,8 +193,7 @@ async function exchangeAuthorizationCode(
 export async function revokeAppleTokens(
   input: { refreshToken?: string; authorizationCode?: string },
   deps: { config?: AppleSignInConfig | null; fetchImpl?: typeof fetch } = {},
-): Promise<AppleRevokeOutcome> {
-  const cfg = deps.config === undefined ? appleSignInConfig() : deps.config;
+): Promise<AppleRevokeOutcome> {  const cfg = deps.config === undefined ? appleSignInConfig() : deps.config;
   const doFetch = deps.fetchImpl ?? fetch;
   try {
     if (!cfg) {
@@ -247,4 +246,65 @@ export async function revokeAppleTokens(
     console.error("apple-signin-revoke: threw, deletion continues", e);
     return { status: "failed", detail: "thrown" };
   }
+}
+
+/**
+ * The smallest slice of the Supabase admin client this helper needs: the
+ * one call that lists a user's identities. Kept structural so tests can
+ * pass a stub and the handler can pass its real client.
+ */
+export interface AppleIdentityAdmin {
+  auth: {
+    admin: {
+      getUserById(userId: string): Promise<{
+        data: { user: { identities?: Array<{ provider?: string }> | null } | null };
+        error: { message: string } | null;
+      }>;
+    };
+  };
+}
+
+/**
+ * Revoke the Apple grant for one deletion, if the account has one — and
+ * never fail the deletion for it.
+ *
+ * The two stages are separated on purpose, because they fail differently:
+ *
+ *   1. Listing identities. A failure here means "unknown", and "unknown"
+ *      is treated as "no Apple identity": logged, no revocation
+ *      attempted, deletion continues. Returning an error to the caller
+ *      would block the deletion over a lookup the deletion does not
+ *      need, and the account is the thing the person asked to lose.
+ *   2. Revocation itself, for Apple-linked accounts only. Handled inside
+ *      `revokeAppleTokens`, which never throws and reports every outcome.
+ *
+ * This lives here, not in `delete-account`, because the deployable gate
+ * requires every `error` branch in the handler to answer 4xx/5xx — the
+ * right rule for a deletion step, the wrong answer for a best-effort
+ * preamble whose failure must never change the response. The fence is
+ * structural: this function returns `void` and cannot throw, so the
+ * handler has no error branch here to get wrong. `deps` exists for
+ * tests, as on `revokeAppleTokens`.
+ */
+export async function revokeAppleGrantIfLinked(
+  admin: AppleIdentityAdmin,
+  userId: string,
+  input: { refreshToken?: string; authorizationCode?: string },
+  deps: { config?: AppleSignInConfig | null; fetchImpl?: typeof fetch } = {},
+): Promise<void> {
+  let identities: Array<{ provider?: string }> | null | undefined;
+  try {
+    const { data, error } = await admin.auth.admin.getUserById(userId);
+    if (error) {
+      console.error("apple-signin-revoke: could not list identities", error.message);
+      return;
+    }
+    identities = data.user?.identities;
+  } catch (e) {
+    /* Revocation must never fail a deletion. Logged, then forgotten. */
+    console.error("apple-signin-revoke: skipped after an error", e);
+    return;
+  }
+  if (!(identities ?? []).some((i) => i.provider === "apple")) return;
+  await revokeAppleTokens(input, deps);
 }

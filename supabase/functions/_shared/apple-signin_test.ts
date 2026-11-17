@@ -1,6 +1,8 @@
 import { assert, assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
 import {
+  type AppleIdentityAdmin,
   type AppleSignInConfig,
+  revokeAppleGrantIfLinked,
   revokeAppleTokens,
 } from "./apple-signin.ts";
 
@@ -160,4 +162,64 @@ Deno.test("network failure: failed, no throw", async () => {
     },
   );
   assertEquals(out, { status: "failed", detail: "thrown" });
+});
+
+function stubAdmin(
+  getUserById: AppleIdentityAdmin["auth"]["admin"]["getUserById"],
+): AppleIdentityAdmin {
+  return { auth: { admin: { getUserById } } };
+}
+
+Deno.test("no Apple identity: Apple never called, no throw", async () => {
+  const seen: SeenCall[] = [];
+  await revokeAppleGrantIfLinked(
+    stubAdmin(async () => ({
+      data: { user: { identities: [{ provider: "google" }] } },
+      error: null,
+    })),
+    "user-1",
+    { refreshToken: "rt" },
+    { config: await testConfig(), fetchImpl: stubFetch(() => new Response(null, { status: 200 }), seen) },
+  );
+  assertEquals(seen.length, 0);
+});
+
+Deno.test("Apple identity: the token is revoked", async () => {
+  const seen: SeenCall[] = [];
+  await revokeAppleGrantIfLinked(
+    stubAdmin(async () => ({
+      data: { user: { identities: [{ provider: "email" }, { provider: "apple" }] } },
+      error: null,
+    })),
+    "user-1",
+    { refreshToken: "rt-secret" },
+    { config: await testConfig(), fetchImpl: stubFetch(() => new Response(null, { status: 200 }), seen) },
+  );
+  assertEquals(seen.length, 1);
+  assertEquals(seen[0].url, "https://appleid.apple.com/auth/revoke");
+  assertEquals(seen[0].form.get("token"), "rt-secret");
+});
+
+Deno.test("identity lookup fails: no revoke attempted, no throw", async () => {
+  const seen: SeenCall[] = [];
+  await revokeAppleGrantIfLinked(
+    stubAdmin(async () => ({ data: { user: null }, error: { message: "boom" } })),
+    "user-1",
+    { refreshToken: "rt" },
+    { config: await testConfig(), fetchImpl: stubFetch(() => new Response(null, { status: 200 }), seen) },
+  );
+  assertEquals(seen.length, 0);
+});
+
+Deno.test("identity lookup throws: no revoke attempted, no throw", async () => {
+  const seen: SeenCall[] = [];
+  await revokeAppleGrantIfLinked(
+    stubAdmin(async () => {
+      throw new Error("network dropped");
+    }),
+    "user-1",
+    { refreshToken: "rt" },
+    { config: await testConfig(), fetchImpl: stubFetch(() => new Response(null, { status: 200 }), seen) },
+  );
+  assertEquals(seen.length, 0);
 });
