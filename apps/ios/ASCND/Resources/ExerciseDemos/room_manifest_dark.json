@@ -90,6 +90,28 @@
       -0.234
     ]
   },
+  "lights": [
+    {
+      "name": "key",
+      "color": "#FFFFFF",
+      "intensity": 1200,
+      "from": [
+        2.0,
+        4.0,
+        2.0
+      ]
+    },
+    {
+      "name": "fill",
+      "color": "#FFFFFF",
+      "intensity": 400,
+      "from": [
+        -3.0,
+        1.0,
+        -2.0
+      ]
+    }
+  ],
   "facing": {
     "into_room": [
       0.707,

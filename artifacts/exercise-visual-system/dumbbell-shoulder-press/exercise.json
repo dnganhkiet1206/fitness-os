@@ -375,6 +375,73 @@
       "seated dumbbell shoulder press",
       "seated dumbbell press"
     ],
-    "catalog_order": 7
+    "catalog_order": 7,
+    "tips": [
+      {
+        "id": "press_bench",
+        "anchor": [
+          0.12,
+          1.2,
+          -0.38
+        ],
+        "fixed": true
+      },
+      {
+        "id": "press_shoulders",
+        "anchor": [
+          0.14,
+          1.07,
+          -0.12
+        ],
+        "joint": "Root/pelvis/spine_01/spine_02/spine_03/clavicle_l/scapula_l",
+        "offset": [
+          0.0165,
+          0.0423,
+          0.0008
+        ]
+      },
+      {
+        "id": "press_elbows",
+        "anchor": [
+          -0.21,
+          0.98,
+          -0.04
+        ],
+        "joint": "Root/pelvis/spine_01/spine_02/spine_03/clavicle_r/upperarm_swing_r",
+        "offset": [
+          0.0016,
+          0.0031,
+          0.069
+        ]
+      },
+      {
+        "id": "press_depth",
+        "anchor": [
+          0.0,
+          1.12,
+          -0.05
+        ],
+        "joint": "Root/pelvis/spine_01/spine_02/spine_03/neck_01",
+        "offset": [
+          0.0,
+          0.03,
+          0.1048
+        ]
+      },
+      {
+        "id": "press_core",
+        "anchor": [
+          0.0,
+          0.7,
+          0.1
+        ],
+        "joint": "Root/pelvis/spine_01/spine_02",
+        "offset": [
+          0.0,
+          0.0121,
+          0.1524
+        ]
+      }
+    ]
   }
 }

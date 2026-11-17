@@ -47,6 +47,8 @@
       /// Mã cơ theo vai trò (`primary` / `secondary` / `stabilizing`) cho shader tô cơ lúc chạy
       /// (`MuscleShader`, 17/11). Rỗng = bài dùng texture nướng sẵn.
       var roles: [String: [String]] = [:]
+      /// Mẹo kỹ thuật (nút bóng đèn), từ `app_demo.tips` của `exercise.json` (B1, 17/11).
+      var tips: [ExerciseTip] = []
       /// File 3D phải có trong bundle để mở bài: file chuyển động (dạng khối)
       /// hoặc USDZ đầy đủ (bài cũ).
       var bundledFile: String { motionFile ?? usdzFile }
@@ -77,6 +79,7 @@
       struct Legend: Decodable { let hex: String; let name_key: String; let role_key: String }
       struct Camera: Decodable { let position: [Float]?; let target: [Float]? }
       struct ReviewFile: Decodable { let date: String; let checked: [String]; let remaining: [String] }
+      struct TipFile: Decodable { let id: String; let anchor: [Float]; let joint: String?; let offset: [Float]? }
       let id: String
       let title: String
       let family_label: String
@@ -93,6 +96,7 @@
       let roles: [String: [String]]?
       let review: ReviewFile?
       let note: String?
+      let tips: [TipFile]?
     }
 
     private struct Index: Decodable { let demos: [String] }
@@ -124,6 +128,10 @@
       d.motionFile = f.motion
       d.fullTexturePrefix = f.full_prefix
       d.roles = f.roles ?? [:]
+      d.tips = (f.tips ?? []).compactMap { t in
+        guard let anchor = vector(t.anchor) else { return nil }
+        return ExerciseTip(id: t.id, anchor: anchor, joint: t.joint, offset: vector(t.offset))
+      }
       return d
     }
 

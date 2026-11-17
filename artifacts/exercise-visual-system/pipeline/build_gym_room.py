@@ -288,12 +288,22 @@ def export_parts(look_name: str, objs, out_dir: str, center: Vector, view: Vecto
         "string_b": rk(logo - side * 5.4 - view * 0.15 + Vector((0, 0, 3.05 - logo.z))),
     }
     manifest = {"look": look_name, "parts": parts, "anchors": anchors,
+                # Lights on the character (the room itself is baked + unlit), B2 17/11: the app
+                # reads them here instead of hard-coding them. ``from`` is an offset from the
+                # camera target the light points at; intensity in lux, like RealityKit.
+                "lights": DEFAULT_LIGHTS,
                 "facing": {"into_room": rk(-view), "along_wall": rk(side)},
                 "room": {"half_width_m": HALF, "height_m": HEIGHT, "center": rk(center)}}
     path = os.path.join(out_dir, f"room_manifest_{look_name}.json")
     with open(path, "w") as fh:
         json.dump(manifest, fh, indent=2)
     print(f"[evs] room manifest {path}")
+
+
+DEFAULT_LIGHTS = [
+    {"name": "key", "color": "#FFFFFF", "intensity": 1200, "from": [2.0, 4.0, 2.0]},
+    {"name": "fill", "color": "#FFFFFF", "intensity": 400, "from": [-3.0, 1.0, -2.0]},
+]
 
 
 def main() -> None:

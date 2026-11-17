@@ -28,6 +28,8 @@
     @State private var loadFailed = false
     @State private var showTips = false
     @State private var selectedTip: String?
+    /// Điểm neo mẹo đi theo khớp của nhân vật khi động tác chạy (B1, 17/11).
+    @State private var tipAnchors = TipAnchors()
     /// Ẩn vùng tô sáng của cơ phụ để tập trung vào cơ chính (Kiệt 13/11).
     /// Mặc định chỉ hiện cơ chính (Kiệt 16/11); nút "Hiện cơ phụ" bật Phụ + Ổn định.
     @State private var hideSecondary = true
@@ -125,6 +127,7 @@
                     named: motionFile == nil ? (demoInfo?.usdzFile ?? "bench_press_animation") : ExerciseDemo3D.sharedCharacterFile,
                     in: .main)
                   content.add(scene)
+                  if let body = Self.skinnedBody(in: scene) { tipAnchors.attach(body) }
                   let motion: Entity? = if let motionFile { try await Entity(named: motionFile, in: .main) } else { nil }
                   // Quần áo là khối riêng (Kiệt 16/11); bản nhân vật cũ còn quần
                   // trong thân thì không có file này.
@@ -147,7 +150,7 @@
                     // update{} không chạy lại khi texture nạp xong: gán ngay.
                     bodySkins.apply(focus: hideSecondary, force: true)
                   }
-                  Self.addLights(to: content, target: cameraTarget)
+                  Self.addLights(to: content, target: cameraTarget, look: scheme == .dark ? "dark" : "light")
                   // Phòng nướng sẵn không còn bóng của bài nào (dùng chung,
                   // 16/11): bóng tiếp xúc mềm dưới nhân vật + dụng cụ.
                   if let shadow = Self.contactShadow(under: [scene] + [motion, apparel].compactMap { $0 }) {
@@ -197,17 +200,22 @@
               }
           }
           if showTips {
+            // Vẽ lại mỗi khung: điểm neo đi theo khớp khi động tác chạy. Bật Giảm chuyển động thì
+            // chỉ cập nhật 4 lần/giây (nhãn nhảy theo bước, không trượt).
+            TimelineView(.animation(minimumInterval: reduceMotion ? 0.25 : nil)) { _ in
             GeometryReader { geo in
               ExerciseTipsOverlay(
-                tips: ExerciseTips.tips(for: PersonalRecords.exerciseKey(name)),
+                tips: demoInfo?.tips ?? [],
                 camera: PinholeCamera(
                   position: cameraPosition, target: cameraTarget, verticalFOVDegrees: Self.verticalFOV,
                   size: geo.size),
+                anchorOf: { tipAnchors.position(of: $0) },
                 // Lớp này tràn qua vùng an toàn (lề = 0): đặt hàng nhãn dưới
                 // thanh nút (đảo Dynamic Island + nút đóng / mẹo).
                 topLimit: (UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }
                   .first?.safeAreaInsets.top ?? 59) + 58,
                 selected: $selectedTip)
+            }
             }
             .ignoresSafeArea()
             .transition(.opacity)
@@ -220,7 +228,7 @@
               .padding(.horizontal, DS.Spacing.sm)
               .padding(.vertical, 6)
               .background(.ultraThinMaterial, in: Capsule())
-            let tips = ExerciseTips.tips(for: PersonalRecords.exerciseKey(name))
+            let tips = demoInfo?.tips ?? []
             if showTips, let id = selectedTip, let n = tips.firstIndex(where: { $0.id == id }) {
               ExerciseTipDetail(tip: tips[n], number: n + 1) {
                 withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) { selectedTip = nil }
@@ -263,7 +271,7 @@
             }
           }
           ToolbarItem(placement: .primaryAction) {
-            if !ExerciseTips.tips(for: PersonalRecords.exerciseKey(name)).isEmpty {
+            if !(demoInfo?.tips ?? []).isEmpty {
               Button {
                 withAnimation(reduceMotion ? nil : .smooth) {
                   showTips.toggle()
@@ -552,6 +560,15 @@
       visit(root, insideLogo: false)
     }
 
+    /// Lưới có khung xương của nhân vật (RealityKit gộp thân vào thực thể của khung xương).
+    private static func skinnedBody(in entity: Entity) -> ModelEntity? {
+      if let model = entity as? ModelEntity, !model.jointNames.isEmpty { return model }
+      for child in entity.children {
+        if let hit = skinnedBody(in: child) { return hit }
+      }
+      return nil
+    }
+
     private static func makeCamera(position cameraPosition: SIMD3<Float>, target cameraTarget: SIMD3<Float>) -> Entity {
       var camera = Entity()
       camera.name = cameraName
@@ -569,14 +586,22 @@
       /// `texture`: ảnh ánh sáng nướng của bản này thay cho ảnh trong file dùng chung (17/11:
       /// hai bản sáng / tối dùng chung hình học, chỉ khác ảnh, `pipeline/slim_app_usdz.py`).
       struct Part: Decodable { let part: String; let file: String; let texture: String? }
+      /// Đèn chiếu nhân vật (B2, 17/11): `from` là độ lệch từ điểm máy quay nhìn tới.
+      struct Light: Decodable { let color: String?; let intensity: Float; let from: [Float] }
       let parts: [Part]
       let anchors: [String: [Float]]
+      let lights: [Light]?
+    }
+
+    private static func roomManifest(look: String) -> RoomManifest? {
+      guard let url = Bundle.main.url(forResource: "room_manifest_\(look)", withExtension: "json"),
+        let data = try? Data(contentsOf: url)
+      else { return nil }
+      return try? JSONDecoder().decode(RoomManifest.self, from: data)
     }
 
     private static func loadRoom(look: String) async -> Entity? {
-      guard let url = Bundle.main.url(forResource: "room_manifest_\(look)", withExtension: "json"),
-        let data = try? Data(contentsOf: url),
-        let manifest = try? JSONDecoder().decode(RoomManifest.self, from: data)
+      guard let manifest = roomManifest(look: look)
       else { return try? await Entity(named: "gym_room_\(look)", in: .main) }
       let room = Entity()
       room.name = "GymRoom"
@@ -687,17 +712,29 @@
       return try? TextureResource(image: image, options: .init(semantic: .color))
     }
 
-    /// USDZ không kèm đèn: một đèn chính + một đèn phụ, đủ thấy khối cơ và
-    /// sợi cơ phát sáng mà không cần ảnh môi trường.
-    private static func addLights(to content: RealityViewCameraContent, target cameraTarget: SIMD3<Float>) {
-      var key = Entity()
-      key.components.set(DirectionalLightComponent(color: .white, intensity: 1200))
-      key.look(at: cameraTarget, from: cameraTarget + [2, 4, 2], relativeTo: nil)
-      content.add(key)
-      var fill = Entity()
-      fill.components.set(DirectionalLightComponent(color: .white, intensity: 400))
-      fill.look(at: cameraTarget, from: cameraTarget + [-3, 1, -2], relativeTo: nil)
-      content.add(fill)
+    /// USDZ không kèm đèn: đèn định hướng chiếu nhân vật, đọc từ `room_manifest_<look>.json`
+    /// (B2, 17/11: đổi ánh sáng theo phòng hay theo mùa không sửa code). Thiếu thì dùng một
+    /// đèn chính + một đèn phụ như trước, đủ thấy khối cơ và sợi cơ phát sáng.
+    private static func addLights(to content: RealityViewCameraContent, target cameraTarget: SIMD3<Float>, look: String) {
+      let fallback: [(UIColor, Float, SIMD3<Float>)] = [(.white, 1200, [2, 4, 2]), (.white, 400, [-3, 1, -2])]
+      let lights: [(UIColor, Float, SIMD3<Float>)] =
+        roomManifest(look: look)?.lights?.compactMap { l in
+          guard l.from.count == 3 else { return nil }
+          return (l.color.flatMap(color(hex:)) ?? .white, l.intensity, SIMD3(l.from[0], l.from[1], l.from[2]))
+        } ?? fallback
+      for (color, intensity, from) in lights {
+        let light = Entity()
+        light.components.set(DirectionalLightComponent(color: color, intensity: intensity))
+        light.look(at: cameraTarget, from: cameraTarget + from, relativeTo: nil)
+        content.add(light)
+      }
+    }
+
+    private static func color(hex: String) -> UIColor? {
+      guard let v = UInt32(hex.trimmingCharacters(in: CharacterSet(charactersIn: "#")), radix: 16) else { return nil }
+      return UIColor(
+        red: CGFloat((v >> 16) & 0xFF) / 255, green: CGFloat((v >> 8) & 0xFF) / 255, blue: CGFloat(v & 0xFF) / 255,
+        alpha: 1)
     }
   }
 
