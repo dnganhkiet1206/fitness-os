@@ -33,6 +33,9 @@
     /// Bộ điều khiển phát (nhịp từng rep, xem chậm 0,5×; C1, 17/11).
     @State private var playback = DemoPlayback()
     @State private var slowMotion = false
+    /// Clip lỗi sai đang xem (C2, 17/11); nil = động tác đúng.
+    @State private var mistakeID: String?
+    @State private var rig = DemoRig()
     /// Ẩn vùng tô sáng của cơ phụ để tập trung vào cơ chính (Kiệt 13/11).
     /// Mặc định chỉ hiện cơ chính (Kiệt 16/11); nút "Hiện cơ phụ" bật Phụ + Ổn định.
     @State private var hideSecondary = true
@@ -168,6 +171,17 @@
                     playback.controllers = controllers
                     playback.setSpeed(slowMotion ? 0.5 : 1)
                   }
+                  // Clip lỗi sai: nạp sẵn, tắt; nút "Sai thường gặp" đổi sang (C2, 17/11).
+                  rig.character = scene
+                  rig.apparel = apparel
+                  if let motion { rig.motions[""] = motion }
+                  for m in demoInfo?.mistakes ?? [] {
+                    guard let e = try? await Entity(named: m.motionFile, in: .main) else { continue }
+                    e.isEnabled = false
+                    content.add(e)
+                    await Self.mountEquipment(on: e, manifest: m.motionFile.replacingOccurrences(of: "_motion", with: "_equipment"))
+                    rig.motions[m.id] = e
+                  }
                 } catch {
                   await MainActor.run { loadFailed = true }
                 }
@@ -223,6 +237,18 @@
             .ignoresSafeArea()
             .transition(.opacity)
           }
+          if let id = mistakeID, let m = (demoInfo?.mistakes ?? []).first(where: { $0.id == id }) {
+            TimelineView(.animation) { _ in
+              GeometryReader { geo in
+                let cam = PinholeCamera(
+                  position: cameraPosition, target: cameraTarget, verticalFOVDegrees: Self.verticalFOV, size: geo.size)
+                ExerciseMistakeMarkers(points: m.joints.compactMap { j in
+                  cam.project(tipAnchors.position(of: ExerciseTip(id: j, anchor: .zero, joint: j, offset: .zero)))
+                })
+              }
+            }
+            .ignoresSafeArea()
+          }
           VStack(spacing: DS.Spacing.sm) {
             Spacer()
             Label("eg.demo3d.rotateHint", systemImage: "hand.draw")
@@ -232,7 +258,26 @@
               .padding(.vertical, 6)
               .background(.ultraThinMaterial, in: Capsule())
             let tips = demoInfo?.tips ?? []
-            if showTips, let id = selectedTip, let n = tips.firstIndex(where: { $0.id == id }) {
+            let mistakes = demoInfo?.mistakes ?? []
+            if let first = mistakes.first, mistakeID == nil, !(showTips && selectedTip != nil) {
+              Button {
+                showMistake(first.id)
+              } label: {
+                Label("eg.demo3d.mistake.show", systemImage: "exclamationmark.triangle")
+                  .font(DS.TextStyle.footnote.weight(.semibold))
+                  .foregroundStyle(DS.Color.foreground.swiftUI)
+                  .padding(.horizontal, DS.Spacing.md)
+                  .frame(minHeight: 36)
+                  .background(.ultraThinMaterial, in: Capsule())
+              }
+              .buttonStyle(.plain)
+            }
+            if let id = mistakeID, let m = mistakes.first(where: { $0.id == id }) {
+              ExerciseMistakeCard(mistake: m) { showMistake(nil) }
+                .padding(.horizontal, DS.Spacing.md)
+                .padding(.bottom, DS.Spacing.sm)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else if showTips, let id = selectedTip, let n = tips.firstIndex(where: { $0.id == id }) {
               ExerciseTipDetail(tip: tips[n], number: n + 1) {
                 withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) { selectedTip = nil }
               }
@@ -576,6 +621,16 @@
         for child in entity.children { visit(child, insideLogo: isLogo) }
       }
       visit(root, insideLogo: false)
+    }
+
+    /// Đổi giữa động tác đúng (nil) và một clip lỗi sai, tại chỗ (C2, 17/11).
+    private func showMistake(_ id: String?) {
+      withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) {
+        mistakeID = id
+        showTips = false
+        selectedTip = nil
+      }
+      rig.play(id ?? "", playback: playback, speed: slowMotion ? 0.5 : 1)
     }
 
     /// Lưới có khung xương của nhân vật (RealityKit gộp thân vào thực thể của khung xương).

@@ -137,5 +137,15 @@
         "breath": "inhale"
       }
     ]
-  }
+  },
+  "mistakes": [
+    {
+      "id": "elbows_forward",
+      "motion": "dumbbell_curl_mistake_elbows_forward_motion",
+      "joints": [
+        "lowerarm_l",
+        "lowerarm_r"
+      ]
+    }
+  ]
 }

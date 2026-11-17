@@ -51,6 +51,8 @@
       var tips: [ExerciseTip] = []
       /// Nhịp từng rep (C1, 17/11), nil = bài chưa có `tempo.json`.
       var tempo: ExerciseTempo?
+      /// Clip lỗi sai thường gặp (C2, 17/11).
+      var mistakes: [ExerciseMistake] = []
       /// File 3D phải có trong bundle để mở bài: file chuyển động (dạng khối)
       /// hoặc USDZ đầy đủ (bài cũ).
       var bundledFile: String { motionFile ?? usdzFile }
@@ -106,6 +108,8 @@
       let note: String?
       let tips: [TipFile]?
       let tempo: TempoFile?
+      struct MistakeFile: Decodable { let id: String; let motion: String; let joints: [String] }
+      let mistakes: [MistakeFile]?
     }
 
     private struct Index: Decodable { let demos: [String] }
@@ -148,6 +152,7 @@
             .init(rep: $0.rep, kind: $0.kind, startMs: $0.start_ms, endMs: $0.end_ms, breath: $0.breath)
           })
       }
+      d.mistakes = (f.mistakes ?? []).map { ExerciseMistake(id: $0.id, motionFile: $0.motion, joints: $0.joints) }
       return d
     }
 
