@@ -16,7 +16,9 @@ struct HealthSyncTests {
     let golden = DailyLogGoldenTests.TableStore(tables: [:])
 
     func select(_ q: RowQuery) async throws(RowStoreError) -> [JSONValue] {
-      golden.tables = tables
+      // Gán dưới khoá của `golden`: 12 chuyến song song của `readSources`
+      // cùng gán `tables` sẽ đua với ảnh chụp trong `select` của nó.
+      golden.syncTables(tables)
       return try await golden.select(q)
     }
     func insert(_ table: String, _ row: [String: JSONValue]) async throws(RowStoreError) {
