@@ -1,4 +1,4 @@
-import Foundation
+public import Foundation
 
 /// Điều phối mua hàng: StoreKit chỉ bán, server mới quyết định quyền lợi.
 ///

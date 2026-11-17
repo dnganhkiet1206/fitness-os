@@ -1,4 +1,4 @@
-import Foundation
+public import Foundation
 
 /// Một sản phẩm App Store đã đọc được. Tên và giá đều do StoreKit trả về —
 /// app không bao giờ hardcode giá, tên gói hay chu kỳ: những thứ ấy Kiệt đặt
