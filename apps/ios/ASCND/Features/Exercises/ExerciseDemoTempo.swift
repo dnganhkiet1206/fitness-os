@@ -1,54 +1,11 @@
 #if DEBUG
+  import ASCNDCore
   import ASCNDDesignSystem
   import RealityKit
   import SwiftUI
 
-  /// Nhịp từng rep trong trình xem 3D (C1, Kiệt 17/11): pha đang chạy (Nâng / Giữ / Hạ), nhịp thở,
-  /// số rep và thanh tiến độ của rep, đồng bộ với chuyển động. Dữ liệu từ `tempo.json` của Motion
-  /// Lab (`<bài>_demo.json` → `tempo`, `pipeline/export_app_demos.py`), cùng dòng thời gian với
-  /// clip. Chạm dải để xem chậm 0,5×.
-  struct ExerciseTempo {
-    struct Phase {
-      let rep: Int
-      let kind: String
-      let startMs: Double
-      let endMs: Double
-      let breath: String?
-    }
-    let durationMs: Double
-    let reps: Int
-    let phases: [Phase]
-
-    /// Pha tại thời điểm `ms` của clip; nil = đoạn chuẩn bị đầu / cuối clip.
-    func phase(at ms: Double) -> Phase? {
-      phases.first { ms >= $0.startMs && ms < $0.endMs }
-    }
-
-    /// Cỡ chấm thở (0,55 = xẹp, 1 = phồng) tại `ms`: hít vào (pha Hạ) phồng dần, thở ra (pha Nâng)
-    /// xẹp dần, pha giữ đứng yên ở cỡ cuối pha trước. Tính liền theo thời gian nên luôn mượt.
-    func breathScale(at ms: Double) -> Double {
-      let low = 0.55
-      func eased(_ t: Double) -> Double { t * t * (3 - 2 * t) }
-      guard let p = phase(at: ms) else { return low }
-      let t = eased(min(max((ms - p.startMs) / max(p.endMs - p.startMs, 1), 0), 1))
-      switch p.breath {
-      case "inhale": return low + (1 - low) * t
-      case "exhale": return 1 - (1 - low) * t
-      default: return p.kind == "bottom_hold" ? 1 : low
-      }
-    }
-
-    /// Pha dài hơn ngưỡng này mới đổi chữ trên dải (Kiệt 17/11: chữ nháy nhanh quá, đọc không kịp).
-    static let minimumLabelMs: Double = 700
-
-    /// Pha hiện trên dải: các pha ngắn (giữ 0,3–0,4 s, chuẩn bị 0,6 s) giữ nguyên chữ của pha dài
-    /// vừa qua (đầu clip: pha dài sắp tới), nên chữ chỉ đổi giữa Nâng và Hạ.
-    func labelPhase(at ms: Double) -> Phase? {
-      let long = phases.filter { $0.endMs - $0.startMs >= Self.minimumLabelMs }
-      if let p = phase(at: ms), p.endMs - p.startMs >= Self.minimumLabelMs { return p }
-      return long.last { $0.startMs <= ms } ?? long.first
-    }
-  }
+  /// Nhịp từng rep trong trình xem 3D (C1, Kiệt 17/11): dữ liệu và logic chọn pha là
+  /// `ASCNDCore.ExerciseTempo` (có test); tệp này chỉ phát và vẽ.
 
   /// Bộ điều khiển phát của nhân vật, file chuyển động và quần (cùng một clip): đọc thời điểm
   /// hiện tại và đổi tốc độ cho cả ba.
@@ -115,21 +72,14 @@
 
     var body: some View {
       let phase = ms.flatMap { tempo.labelPhase(at: $0) }
-      // Đoạn nghỉ giữa / sau các rep: giữ rep vừa xong.
-      let rep = phase?.rep ?? ms.flatMap { m in tempo.phases.last { $0.startMs <= m }?.rep } ?? 1
+      // Thanh tiến độ: các pha của lượt đang chạy (đoạn nghỉ giữ lượt vừa xong).
+      let rep = ms.map { tempo.rep(at: $0) } ?? 1
       let repPhases = tempo.phases.filter { $0.rep == rep }
       let phaseTint = phase.map { tint($0.kind) }
       let strip =
         VStack(spacing: 4) {
           HStack(spacing: 6) {
-            Text("eg.demo3d.tempo.rep \(rep) \(tempo.reps)")
-              .font(DS.TextStyle.caption.weight(.bold))
-              // Kiệt 17/11: chữ rep màu chính (trắng ở chế độ tối) cho dễ đọc trên kính.
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-              .monospacedDigit()
-              // Số rep cuộn khi đổi; Giảm chuyển động thì chỉ mờ dần.
-              .contentTransition(reduceMotion ? .opacity : .numericText())
-              .animation(reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.4), value: rep)
+            // Kiệt 17/11: bỏ chữ "Rep" — đây là xem 3D, không phải đang tập.
             // Chữ pha cuộn lên khi đổi (chữ cũ trôi lên và mờ, chữ mới trồi lên) theo lò xo nhẹ;
             // Giảm chuyển động: chỉ mờ dần.
             // Giữ chỗ bằng chữ dài nhất (Kiệt 17/11: "thi thoảng nút bị nảy ra xa"): dải không đổi bề
@@ -178,8 +128,9 @@
         }
         .padding(.horizontal, 14)
       ExerciseTempoIsland(
-        strip: strip, phaseTint: phaseTint, slow: slow, mistake: mistake, hasMistake: hasMistake,
-        reduceMotion: reduceMotion, stripLabel: accessibilityText(phase: phase, rep: rep),
+        strip: strip, phaseKey: phase?.kind ?? "ready", phaseTint: phaseTint, slow: slow, mistake: mistake,
+        hasMistake: hasMistake,
+        reduceMotion: reduceMotion, stripLabel: accessibilityText(phase: phase),
         onToggleSpeed: onToggleSpeed, onShowMistake: onShowMistake, onExitMistake: onExitMistake)
     }
 
@@ -201,9 +152,8 @@
       }
     }
 
-    private func accessibilityText(phase: ExerciseTempo.Phase?, rep: Int) -> Text {
-      var t = Text("eg.demo3d.tempo.rep \(rep) \(tempo.reps)") + Text(verbatim: ", ")
-        + Text(phase.map { label($0.kind) } ?? "eg.demo3d.tempo.ready")
+    private func accessibilityText(phase: ExerciseTempo.Phase?) -> Text {
+      var t = Text(phase.map { label($0.kind) } ?? "eg.demo3d.tempo.ready")
       if let key = breath(phase?.breath) { t = t + Text(verbatim: ", ") + Text(key) }
       return t
     }
@@ -219,6 +169,8 @@
   /// `glassEffectUnion`, hiệu ứng giọt nước); máy cũ hơn: nền mờ, chỉ đổi khoảng cách.
   struct ExerciseTempoIsland<Strip: View>: View {
     let strip: Strip
+    /// Pha đang hiện: mỗi lần đổi, viên phồng ngang rồi co về (co giãn như Dynamic Island).
+    let phaseKey: String
     let phaseTint: Color?
     let slow: Bool
     let mistake: Bool
@@ -244,7 +196,7 @@
           Text("eg.demo3d.tempo.slow")
             .font(DS.TextStyle.footnote.weight(.bold))
             .monospacedDigit()
-            .transition(.opacity)
+            .transition(reduceMotion ? .opacity : .scale(scale: 0.6, anchor: .leading).combined(with: .opacity))
         }
       }
       .foregroundStyle(slow ? Color.white : DS.Color.mutedForeground.swiftUI)
@@ -266,7 +218,7 @@
         if mistake {
           Text("eg.demo3d.mistake.short")
             .font(DS.TextStyle.footnote.weight(.bold))
-            .transition(.opacity)
+            .transition(reduceMotion ? .opacity : .scale(scale: 0.6, anchor: .leading).combined(with: .opacity))
         }
       }
       .foregroundStyle(mistake ? Color.white : DS.Color.mutedForeground.swiftUI)
@@ -280,14 +232,46 @@
       }
     }
 
+    /// Tách / dính: lò xo đàn hồi như Dynamic Island (vươn quá một chút rồi về).
     private var motion: Animation? {
-      reduceMotion ? nil : .spring(duration: 0.45, bounce: 0.08)
+      reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.68)
+    }
+
+    /// Nhịp phồng ngang của viên khi đổi pha: 0 → 1 → 0.
+    @State private var pulse: CGFloat = 0
+
+    private enum Chip: Hashable { case mistake, speed }
+
+    private func on(_ c: Chip) -> Bool { c == .mistake ? mistake : slow }
+
+    /// Khối đang tắt nằm sát dải (dính), khối đang bật ra ngoài cùng (tách) — để vùng kính gộp
+    /// không bao giờ phủ lên một khối đang tách (Kiệt 17/11: viên "Sai" bị kẹp giữa dải và rùa).
+    private var order: [Chip] {
+      let chips: [Chip] = hasMistake ? [.mistake, .speed] : [.speed]
+      return chips.filter { !on($0) } + chips.filter { on($0) }
+    }
+
+    @ViewBuilder private func chipButton(_ c: Chip) -> some View {
+      switch c {
+      case .mistake:
+        Button(action: mistake ? onExitMistake : onShowMistake) { mistakeChip }
+          .buttonStyle(.plain)
+          .mistakeAccessibility(mistake)
+      case .speed:
+        Button(action: onToggleSpeed) { speedChip }
+          .buttonStyle(.plain)
+          .accessibilityHidden(true)
+      }
+    }
+
+    private func tint(_ c: Chip) -> Color? {
+      guard on(c) else { return nil }
+      return c == .mistake ? red : orange
     }
 
     var body: some View {
       Group {
         if #available(iOS 26.0, *) {
-          // Thứ tự: dải, ⚠︎, rùa. Khối nào đang bật thì tách khỏi dải; khối tắt dính vào dải.
           GlassEffectContainer(spacing: gap) {
             HStack(spacing: 0) {
               Button(action: onToggleSpeed) { strip.frame(height: height) }
@@ -296,48 +280,42 @@
                 .glassEffectID("strip", in: glass)
                 .glassEffectUnion(id: "island", namespace: glass)
                 .stripAccessibility(stripLabel: stripLabel, slow: slow, toggle: onToggleSpeed)
-              if hasMistake {
-                Button(action: mistake ? onExitMistake : onShowMistake) { mistakeChip }
-                  .buttonStyle(.plain)
-                  .glassEffect(.regular.tint(mistake ? red.opacity(0.9) : nil).interactive(), in: Capsule())
-                  .glassEffectID("mistake", in: glass)
-                  .glassEffectUnion(id: mistake ? nil : "island", namespace: glass)
-                  .padding(.leading, mistake ? gap : 0)
-                  .mistakeAccessibility(mistake)
+              ForEach(order, id: \.self) { c in
+                chipButton(c)
+                  .glassEffect(.regular.tint(tint(c)?.opacity(0.9)).interactive(), in: Capsule())
+                  .glassEffectID(c == .mistake ? "mistake" : "speed", in: glass)
+                  .glassEffectUnion(id: on(c) ? nil : "island", namespace: glass)
+                  .padding(.leading, on(c) ? gap : 0)
               }
-              Button(action: onToggleSpeed) { speedChip }
-                .buttonStyle(.plain)
-                .glassEffect(.regular.tint(slow ? orange.opacity(0.9) : nil).interactive(), in: Capsule())
-                .glassEffectID("speed", in: glass)
-                .glassEffectUnion(id: slow ? nil : "island", namespace: glass)
-                .padding(.leading, slow || mistake ? gap : 0)
-                .accessibilityHidden(true)
             }
           }
         } else {
           HStack(spacing: 0) {
-            Button(action: onToggleSpeed) { strip.frame(height: height) }
-              .buttonStyle(.plain)
-              .stripAccessibility(stripLabel: stripLabel, slow: slow, toggle: onToggleSpeed)
-            if hasMistake {
-              Button(action: mistake ? onExitMistake : onShowMistake) { mistakeChip }
+            HStack(spacing: 0) {
+              Button(action: onToggleSpeed) { strip.frame(height: height) }
                 .buttonStyle(.plain)
-                .background(Capsule().fill(mistake ? AnyShapeStyle(red) : AnyShapeStyle(Color.clear)))
-                .padding(.leading, mistake ? gap : 0)
-                .mistakeAccessibility(mistake)
+                .stripAccessibility(stripLabel: stripLabel, slow: slow, toggle: onToggleSpeed)
+              ForEach(order.filter { !on($0) }, id: \.self) { chipButton($0) }
             }
-            Button(action: onToggleSpeed) { speedChip }
-              .buttonStyle(.plain)
-              .background(Capsule().fill(slow ? AnyShapeStyle(orange) : AnyShapeStyle(Color.clear)))
-              .padding(.leading, slow ? gap : 0)
-              .accessibilityHidden(true)
+            .background(Capsule().fill(.ultraThinMaterial))
+            ForEach(order.filter { on($0) }, id: \.self) { c in
+              chipButton(c)
+                .background(Capsule().fill(tint(c) ?? .clear))
+                .padding(.leading, gap)
+            }
           }
-          .background(Capsule().fill(.ultraThinMaterial))
         }
       }
-      // Lò xo êm, gần như không nảy; Giảm chuyển động: đổi ngay.
+      // Co giãn như Dynamic Island: đổi pha thì cả viên phồng ngang 5 %, dẹt dọc 4 % rồi co về theo
+      // lò xo; tách / dính dùng lò xo đàn hồi. Giảm chuyển động: không co giãn, đổi ngay.
+      .scaleEffect(x: 1 + 0.05 * pulse, y: 1 - 0.04 * pulse, anchor: .center)
       .animation(motion, value: slow)
       .animation(motion, value: mistake)
+      .onChange(of: phaseKey) { _, _ in
+        guard !reduceMotion else { return }
+        withAnimation(.spring(response: 0.18, dampingFraction: 0.6)) { pulse = 1 }  // reduce-motion: guard ở trên
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.55).delay(0.12)) { pulse = 0 }  // reduce-motion: guard ở trên
+      }
     }
   }
 

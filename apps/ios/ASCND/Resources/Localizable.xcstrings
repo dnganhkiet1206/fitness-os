@@ -77199,29 +77199,6 @@
         }
       }
     },
-    "eg.demo3d.tempo.rep %lld %lld": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rep %1$lld/%2$lld"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rep %1$lld/%2$lld"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rep %1$lld/%2$lld"
-          }
-        }
-      }
-    },
     "eg.demo3d.tempo.slow": {
       "extractionState": "manual",
       "localizations": {
