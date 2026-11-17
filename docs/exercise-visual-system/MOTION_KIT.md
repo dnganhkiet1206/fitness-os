@@ -42,6 +42,11 @@ Bài toán production rút ra từ phân tích ngược các app fitness (Apple 
                   (factory.py sheet) + tờ tầm mắt người đứng nhìn 1,6 m (factory.py eye).
                   BẮT BUỘC soi tay, lưng, đầu, chân, dụng cụ ở mọi góc,
                   đối chiếu nguồn kỹ thuật, trước khi báo xong (MOTION_KIT_LESSONS.md luật 1)
+                - CI tự động (.github/workflows/motion-kit.yml) chạy trên mọi PR chạm kit:
+                  unit test + kiểm provenance/blocklist nguồn cấm + kiểm UV suy biến trên
+                  USDZ đã xuất + validate_motion cho bài template + cổng chặn hồi quy
+                  (check_qa_gate.py). Bench không qua cổng validate của CI (validator
+                  riêng + 3 FAIL đã biết); USDZ của bench vẫn qua kiểm UV.
    Ghi kết quả: exercise.json → agent_review (đã kiểm gì, còn lỗi gì) và
                   ExerciseDemo3D.catalog trong app (dấu tích xanh ở tab Lab 3D).
 6. Xuất         pipeline/export_usdz.py (sợi cơ vẽ, bản chỉ cơ chính) + tempo.json + poster → app
@@ -68,6 +73,7 @@ Bài toán production rút ra từ phân tích ngược các app fitness (Apple 
 | **Họ `row`, `press_vertical` + nhịp vai–cánh tay (14/11, lô 2)**: row cúi người (tư thế hinge, cẳng tay thẳng đứng, khuỷu dẫn); đẩy vai ngồi ghế tựa (template đặt ghế theo lưng, chân ngồi); xương đòn và bả vai xoay theo độ nâng tay (Inman 1944) | `motionlab/families/row.py`, `press_vertical.py`, `primitives.scapulohumeral`, `generate_exercise.pose_girdle`, ghế `utility_bench_upright` | row 15/16, shoulder press 17/18 (cả hai còn giãn da háng) |
 | **Nhịp từng rep cho app (P5, 14/11)**: `tempo.json` (`ascnd.tempo/1`): các pha ms, mốc đổi chiều / xong rep, thở ra–hít vào, lời nhắc theo pha; cổng `tempo_sync` bảo đảm hoạt cảnh lệch ≤ 1 khung so với tệp | `motionlab/tempo.py`, `evs/motion_qa.tempo_sync`, chép cạnh USDZ khi xuất | xong; app chưa đọc (cần mock rung / đếm rep cho Kiệt) |
 | **Giải theo mục tiêu** | `pipeline/solve_targets.py`, `pipeline/measure_animation.py` | xong; bench press: khuỷu 104° / dang vai 60° sau 24 lần thử |
+| **CI tự động cho kit** | `.github/workflows/motion-kit.yml`, `pipeline/check_provenance.py`, `pipeline/check_qa_gate.py`, `pipeline/check_usdz_uv.py` | xong 14/11; chạy trên mọi PR chạm kit/docs/bản USDZ trong app; bench không qua cổng validate (xem quy trình bước 5) |
 
 ## Đã học từ dữ liệu (bench press)
 
