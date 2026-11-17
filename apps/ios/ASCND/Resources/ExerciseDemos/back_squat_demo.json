@@ -66,6 +66,22 @@
       "role_key": "eg.demo3d.legend.stabilizer"
     }
   ],
+  "roles": {
+    "primary": [
+      "quadriceps",
+      "gluteus_maximus"
+    ],
+    "secondary": [
+      "adductors",
+      "calves"
+    ],
+    "stabilizing": [
+      "erector_spinae",
+      "hamstrings",
+      "rectus_abdominis",
+      "trapezius_upper"
+    ]
+  },
   "focus_prefix": "back_squat_focus",
   "motion": "back_squat_motion",
   "full_prefix": "back_squat_full",

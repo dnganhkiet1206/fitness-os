@@ -70,6 +70,10 @@ def demo(ex_dir: Path, keys: dict, colors: dict) -> tuple[str, dict] | None:
         "duration_s": app.get("duration_s") or round(report["expectations"]["animation_duration_s"], 1),
         "camera": {"position": cam.get("position_m"), "target": cam.get("target_m")},
         "legend": legend(exercise, keys, colors),
+        # Muscle ids per role for the runtime muscle shader (MODULAR_3D_PLAN.md step 1, 17/11):
+        # the app builds a 64-entry colour table from these, aggregates expanded with
+        # muscle_parts.json. Same three roles as the legend.
+        "roles": {r: list(exercise.get(f"{r}_muscles") or []) for r in ("primary", "secondary", "stabilizing")},
         "focus_prefix": f"{prefix}_focus",
         "motion": f"{prefix}_motion" if modular else None,
         "full_prefix": f"{prefix}_full" if modular else None,

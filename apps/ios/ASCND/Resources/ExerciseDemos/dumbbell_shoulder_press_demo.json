@@ -65,6 +65,23 @@
       "role_key": "eg.demo3d.legend.stabilizer"
     }
   ],
+  "roles": {
+    "primary": [
+      "deltoid_anterior",
+      "deltoid_lateral"
+    ],
+    "secondary": [
+      "triceps_brachii",
+      "trapezius_middle",
+      "trapezius_lower",
+      "serratus_anterior"
+    ],
+    "stabilizing": [
+      "trapezius_upper",
+      "rotator_cuff_posterior",
+      "biceps_brachii"
+    ]
+  },
   "focus_prefix": "dumbbell_shoulder_press_focus",
   "motion": "dumbbell_shoulder_press_motion",
   "full_prefix": "dumbbell_shoulder_press_full",

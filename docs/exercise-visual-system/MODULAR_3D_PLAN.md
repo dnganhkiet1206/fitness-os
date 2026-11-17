@@ -86,6 +86,20 @@ Lợi thêm: 8 bài hiện chiếm 47 MB. Sang dạng khối thì còn 1 nhân v
 
 1. ~~**Nguyên mẫu (≈ nửa ngày):**~~ **xong 16/11 (xem trên).** `export_usdz.py --split` xuất `character.usdz` + `dumbbell_curl_motion.usdz` + `equipment/dumbbell.usdz`. App ghép lại và so khung hình với bản cũ trên simulator.
 2. ~~Chuyển 8 bài sang dạng khối;~~ **16/11: 7 bài đã chuyển (bench chờ A/B, vẫn USDZ cũ); texture JPEG q92; thư mục 3D của app 63 → 30 MB; mở đủ 7 bài trên simulator.** trình xem nạp theo khối; bỏ bản chép nhân vật trong từng USDZ.
+2b. **Tô cơ lúc chạy, xong 17/11** (Kiệt chọn 16/11, bàn giao việc 1):
+   - Một bộ ảnh dùng chung cho mọi bài (`pipeline/export_muscle_shader_maps.py`, ~2,7 MB):
+     - `muscle_ids.png`: R = số thứ tự phần cơ + 1, G = độ phủ, B = viền;
+     - `muscle_shade.jpg`;
+     - `muscle_normal.jpg`: khối cơ, không thớ;
+     - `muscle_fiber_normal.jpg`: khối cơ có thớ của cả 48 phần;
+     - `muscle_parts.json`.
+   - `<bài>_demo.json` có `roles` (mã cơ theo vai trò).
+   - App (`MuscleShader.swift`) pha da thân + quần × đủ / chỉ cơ chính khi mở bài, đúng phép pha của pipeline (`albedo_from_highlight` + `apply_shade` + `painted_emission`):
+     - thớ cơ (normal có thớ) chỉ có trên phần cơ có vai trò; tô hết 48 phần thì thân trông như tranh giải phẫu;
+     - ẩn / hiện cơ phụ = đổi bộ đã dựng.
+   - Đã bỏ `<bài>_full_*` / `_focus_*` của 7 bài khỏi app: **−11,5 MB**, thư mục 3D 30 → 21 MB.
+   - **Vì sao pha trên CPU, không dùng shader Metal:** Xcode 26 tách Metal Toolchain thành thành phần tải riêng; máy dev chưa có, CI chưa chắc có. Bản shader đã viết sẵn: `docs/exercise-visual-system/MuscleSurface.metal.txt` (`CustomMaterial`, `textures().custom()` lấy mẫu nearest). Khi máy và CI có Metal Toolchain thì đổi sang shader: mở bài nhanh hơn và không tốn RAM cho 4 bộ ảnh pha sẵn.
+   - **Đo:** bản Debug trên simulator mất ~1,7 s cho 4 bộ ảnh 2048² (song song, ngoài luồng chính). Bản Release chưa đo.
 3. Điểm neo trang trí trong phòng + 1 gói mẫu (mock cho Kiệt duyệt trước, vì đây là thiết kế).
 4. Dấu ẩn texture (tuỳ chọn).
 

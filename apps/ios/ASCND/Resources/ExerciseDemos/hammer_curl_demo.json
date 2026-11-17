@@ -45,6 +45,18 @@
       "role_key": "eg.demo3d.legend.stabilizer"
     }
   ],
+  "roles": {
+    "primary": [
+      "forearm_muscles"
+    ],
+    "secondary": [
+      "biceps_brachii"
+    ],
+    "stabilizing": [
+      "deltoid_anterior",
+      "trapezius_upper"
+    ]
+  },
   "focus_prefix": "hammer_curl_focus",
   "motion": "hammer_curl_motion",
   "full_prefix": "hammer_curl_full",

@@ -40,6 +40,21 @@
       "role_key": "eg.demo3d.legend.secondary"
     }
   ],
+  "roles": {
+    "primary": [
+      "pectoralis_major"
+    ],
+    "secondary": [
+      "deltoid_anterior",
+      "triceps_brachii"
+    ],
+    "stabilizing": [
+      "biceps_brachii",
+      "latissimus_dorsi",
+      "deltoid_posterior",
+      "rotator_cuff_posterior"
+    ]
+  },
   "focus_prefix": "bench_press_focus",
   "motion": null,
   "full_prefix": null,

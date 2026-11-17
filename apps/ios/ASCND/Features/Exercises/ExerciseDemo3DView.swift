@@ -134,7 +134,15 @@
                     content.add(motion)
                     await Self.mountEquipment(on: motion, manifest: motionFile.replacingOccurrences(of: "_motion", with: "_equipment"))
                   }
-                  if let prefix = demoInfo?.focusTexturePrefix {
+                  // Dạng khối có vai trò cơ: tô cơ lúc chạy từ bộ ảnh dùng chung (17/11); thiếu tệp
+                  // thì lùi về texture nướng sẵn như trước.
+                  let painted: Bool =
+                    if motionFile != nil, let roles = demoInfo?.roles, !roles.isEmpty {
+                      await bodySkins.prepareShader(scene: scene, apparel: apparel, roles: roles)
+                    } else { false }
+                  if painted {
+                    bodySkins.apply(focus: hideSecondary, force: true)
+                  } else if let prefix = demoInfo?.focusTexturePrefix {
                     await bodySkins.prepare(scene: scene, apparel: apparel, prefix: prefix, fullPrefix: demoInfo?.fullTexturePrefix)
                     // update{} không chạy lại khi texture nạp xong: gán ngay.
                     bodySkins.apply(focus: hideSecondary, force: true)
@@ -736,6 +744,49 @@
       }
       self.body = body
       ready = true
+    }
+
+    /// Tô cơ lúc chạy (17/11, `MuscleShader`): da pha từ bộ ảnh dùng chung theo vai trò cơ của bài,
+    /// thay texture nướng sẵn từng bài. false = thiếu tệp hay không tìm thấy lưới thân, để bên gọi
+    /// lùi về texture nướng sẵn.
+    func prepareShader(scene: Entity, apparel: Entity?, roles: [String: [String]]) async -> Bool {
+      guard let body = Self.find(in: scene), body.model != nil else { return false }
+      let skins = await Task.detached(priority: .userInitiated) { () -> MuscleShader.Skins? in
+        let start = Date()
+        guard let shared = MuscleShader.shared() else { return nil }
+        let skins = MuscleShader.skins(roles: roles, shared: shared)
+        #if DEBUG
+          print("[muscle] composed in \(Int(Date().timeIntervalSince(start) * 1000)) ms")
+        #endif
+        return skins
+      }.value
+      guard let skins else { return false }
+      func tex(_ image: CGImage?, _ semantic: TextureResource.Semantic = .color) -> PhysicallyBasedMaterial.Texture? {
+        image.flatMap { try? TextureResource(image: $0, options: .init(semantic: semantic)) }.map { .init($0) }
+      }
+      guard let fa = tex(skins.fullBody.albedo), let fe = tex(skins.fullBody.emission),
+        let fn = tex(skins.fullBody.normal, .normal),
+        let ca = tex(skins.focusBody.albedo), let ce = tex(skins.focusBody.emission),
+        let cn = tex(skins.focusBody.normal, .normal)
+      else { return false }
+      full = (fa, fe, fn)
+      focus = (ca, ce, cn)
+      let apparelModel = apparel.flatMap { Self.find(in: $0) } ?? body
+      if let index = apparelModel.model?.materials.firstIndex(where: {
+        guard let pbr = $0 as? PhysicallyBasedMaterial else { return false }
+        return pbr.normal.texture == nil && pbr.baseColor.texture != nil
+      }),
+        let afa = tex(skins.fullApparel.albedo), let afe = tex(skins.fullApparel.emission),
+        let aca = tex(skins.focusApparel.albedo), let ace = tex(skins.focusApparel.emission)
+      {
+        apparelIndex = index
+        apparelBody = apparelModel
+        fullApparel = (afa, afe, nil)
+        focusApparel = (aca, ace, nil)
+      }
+      self.body = body
+      ready = true
+      return true
     }
 
     private static func texture(_ name: String, _ semantic: TextureResource.Semantic) async -> TextureResource? {
