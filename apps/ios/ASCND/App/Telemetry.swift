@@ -131,6 +131,14 @@ enum Telemetry {
         scope.setLevel(.error)
         scope.setTag(value: stage, key: "sync.stage")
       }
+    case .undecodable(let count):
+      // Hàng trên đĩa bản app này không đọc được (R2-SYNC-02): chỉ số lượng,
+      // không id hàng, không payload. Mức cảnh báo — hàng không mất, chỉ chờ
+      // bản đọc được nó.
+      SentrySDK.capture(message: "sync.undecodable") { scope in
+        scope.setLevel(.warning)
+        scope.setExtra(value: count, key: "undecodable_rows")
+      }
     }
   }
 

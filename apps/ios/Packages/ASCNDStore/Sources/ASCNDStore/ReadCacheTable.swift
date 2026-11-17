@@ -115,10 +115,12 @@ public enum ReadCacheNamespace {
 struct ReadCacheTable: Sendable {
   let db: DatabaseQueue
   let accounts: AccountScope
+  private let clock: any WallClock
 
-  init(_ database: ASCNDDatabase) {
+  init(_ database: ASCNDDatabase, clock: any WallClock = SystemWallClock()) {
     db = database.queue
     accounts = database.accounts
+    self.clock = clock
   }
 
   /// JSON thô của (người, kind); `nil` khi không có hoặc chốt không cho đọc.
@@ -139,17 +141,20 @@ struct ReadCacheTable: Sendable {
   }
 
   /// Ghi đè (người, kind). Chốt không cho thì bỏ — không lỗi: lượt làm mới
-  /// muộn của người đã rời đi không có gì để báo cho ai.
+  /// muộn của người đã rời đi không có gì để báo cho ai. Mỗi lần ghi đóng dấu
+  /// `updatedAt` (v5): lượt cắt hướng dẫn theo tuổi đọc dấu này, không đọc
+  /// lúc mở — "tuổi" là từ lần làm mới cuối, không phải lần xem cuối.
   func put(_ json: String, userId: String, kind: String) async throws {
     assert(ReadCacheNamespace.isRegistered(kind), "kind chưa khai báo trong ReadCacheNamespace: \(kind)")
+    let stamped = clock.nowMillis().millis
     try await db.write { [accounts] db in
       guard accounts.allows(userId) else { return }
       try db.execute(
         sql: """
-          INSERT INTO read_cache (userId, kind, json) VALUES (?, ?, ?)
-          ON CONFLICT(userId, kind) DO UPDATE SET json = excluded.json
+          INSERT INTO read_cache (userId, kind, json, updatedAt) VALUES (?, ?, ?, ?)
+          ON CONFLICT(userId, kind) DO UPDATE SET json = excluded.json, updatedAt = excluded.updatedAt
           """,
-        arguments: [userId, kind, json])
+        arguments: [userId, kind, json, stamped])
     }
   }
 
@@ -172,6 +177,16 @@ struct ReadCacheTable: Sendable {
 /// chốt, nên không nằm trên `ReadCacheTable` — một cache thường không có lý do
 /// gì để xoá hàng của người khác (#459).
 public struct ReadCacheCleanup: Sendable {
+  /// Trần hàng hướng dẫn (`exercise-guide:`) của một người (R2-SYNC-03): các
+  /// kind cố định mỗi người một hàng theo khoá chính, chỉ kind theo bài ×
+  /// ngôn ngữ mới phình theo số bài đã xem. Quá trần thì hàng lâu không làm
+  /// mới nhất rời đi trước. Giá trị ghi ở
+  /// `docs/CONSTRAINTS_AND_DEFERRED.md` §5 (17/11/2026).
+  public static let maxExerciseGuideRows = 100
+  /// Tuổi tối đa của một hàng hướng dẫn (30 ngày, R2-SYNC-03) kể từ lần làm
+  /// mới cuối (`updatedAt`, v5).
+  public static let exerciseGuideMaxAgeMillis: Int64 = 30 * 24 * 3_600_000
+
   private let db: DatabaseQueue
 
   public init(_ database: ASCNDDatabase) {
@@ -194,6 +209,55 @@ public struct ReadCacheCleanup: Sendable {
     try await db.write { db in
       try db.execute(sql: "DELETE FROM read_cache WHERE lower(userId) != lower(?)", arguments: [userId])
       return db.changesCount
+    }
+  }
+
+  /// Cắt hàng hướng dẫn (`exercise-guide:`) của `userId` về giới hạn
+  /// (R2-SYNC-03): bỏ hàng quá tuổi kể từ lần làm mới cuối, rồi hàng lâu
+  /// không làm mới nhất nếu còn quá trần. Hàng không có dấu (trước v5) không
+  /// bị cắt theo tuổi — chỉ rời đi khi quá trần, trước hàng có dấu. Chỉ chạm
+  /// kind hướng dẫn của đúng người ấy; kind cố định (kế hoạch, hồ sơ…) và
+  /// hàng của người khác để nguyên. Cache thì tải lại được, nên cắt là an
+  /// toàn. Trả về số hàng bỏ.
+  @discardableResult
+  public func pruneExerciseGuides(userId: String, now: EpochMillis) async throws -> Int {
+    try await db.write { db in
+      var rows: [(rowid: Int64, updatedAt: Int64?)] = []
+      for row in try Row.fetchAll(
+        db,
+        sql: "SELECT rowid, updatedAt FROM read_cache WHERE lower(userId) = lower(?) AND kind LIKE ? ORDER BY rowid",
+        arguments: [userId, ReadCacheNamespace.exerciseGuide + "%"])
+      {
+        let rowid: Int64 = row[0]
+        let updatedAt: Int64? = row[1]
+        rows.append((rowid, updatedAt))
+      }
+      let cutoff = now.millis - Self.exerciseGuideMaxAgeMillis
+      var victims: [Int64] = []
+      var survivors = rows.filter { row in
+        if let updatedAt = row.updatedAt, updatedAt < cutoff {
+          victims.append(row.rowid)
+          return false
+        }
+        return true
+      }
+      if survivors.count > Self.maxExerciseGuideRows {
+        // Cũ nhất trước: hàng không dấu trước, rồi theo dấu tăng dần; cùng
+        // dấu thì hàng chèn trước (rowid nhỏ) trước.
+        survivors.sort {
+          switch ($0.updatedAt, $1.updatedAt) {
+          case (nil, nil): $0.rowid < $1.rowid
+          case (nil, _): true
+          case (_, nil): false
+          case (let a?, let b?): a == b ? $0.rowid < $1.rowid : a < b
+          }
+        }
+        victims += survivors.prefix(survivors.count - Self.maxExerciseGuideRows).map(\.rowid)
+      }
+      for rowid in victims {
+        try db.execute(sql: "DELETE FROM read_cache WHERE rowid = ?", arguments: [rowid])
+      }
+      return victims.count
     }
   }
 }

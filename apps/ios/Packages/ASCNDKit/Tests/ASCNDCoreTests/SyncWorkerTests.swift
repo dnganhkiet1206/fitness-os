@@ -252,6 +252,55 @@ struct SyncWorkerTests {
     #expect(await store.pending.map(\.id) == ["a"])
     #expect(w.outbox.pending.map(\.id) == ["a"])
   }
+
+  /// R2-SYNC-02: hàng không giải mã được hiện ra — Lab thấy số lượng, app báo
+  /// một sự cố khi số lượng tăng, không báo lại cùng một số ở lần nạp sau.
+  @Test func undecodableRowsAreCountedAndReportedOncePerRise() async {
+    let store = InMemoryOutboxStore()
+    await store.setUndecodable(2)
+    let w = worker(store, FakeServer())
+    var seen: [SyncWorker.Incident] = []
+    w.onIncident = { seen.append($0) }
+    await run(w)
+    #expect(w.undecodableCount == 2)
+    #expect(seen == [.undecodable(count: 2)])
+    await run(w)
+    #expect(seen == [.undecodable(count: 2)], "cùng số lượng: không báo lại")
+    await store.setUndecodable(3)
+    await run(w)
+    #expect(seen == [.undecodable(count: 2), .undecodable(count: 3)])
+    #expect(w.undecodableCount == 3)
+  }
+
+  /// R2-SYNC-03: lần nạp đầu cắt bảng `dead`; lần nạp sau không cắt lại.
+  @Test func firstLoadPrunesDeadOnce() async {
+    let store = InMemoryOutboxStore([entry("a")])
+    let w = worker(store, FakeServer())
+    await run(w)
+    #expect(await store.pruneCalls == 1)
+    await run(w)
+    #expect(await store.pruneCalls == 1)
+  }
+
+  /// AUD-62: bản ghi đã bỏ cuộc gửi lại được qua worker — cùng id, lên server,
+  /// không cần nhập lại; đĩa hết hàng `dead` của nó.
+  @Test func retryDeadResendsWithTheSameId() async {
+    let store = InMemoryOutboxStore([entry("a")])
+    let server = FakeServer()
+    await server.script("a", .fail(.server(code: "23514")))
+    let w = worker(store, server)
+    await run(w)
+    #expect(w.deadCount == 1)
+    #expect(await store.dead.map(\.entry.id) == ["a"])
+    #expect(await w.retryDead(id: "a"))
+    await w.settle()
+    #expect(await server.attempts == ["a", "a"], "gửi lại cùng id")
+    #expect(await server.rows.keys.sorted() == ["a"])
+    #expect(w.deadCount == 0)
+    #expect(await store.dead.isEmpty)
+    #expect(await store.pending.isEmpty)
+    #expect(await w.retryDead(id: "nope") == false)
+  }
 }
 
 /// Đầu-cuối trong Core: màn tập chốt → outbox → worker → server.

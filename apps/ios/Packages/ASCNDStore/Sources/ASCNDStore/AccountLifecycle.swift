@@ -10,7 +10,8 @@ import Foundation
 /// - Phiên mở (`sessionStarted`): mở chốt cho người ấy, RỒI dọn read model và
 ///   điểm quay lại của mọi người khác (lượt làm mới / ghi muộn của người trước
 ///   có thể về sau lượt dọn lúc đăng xuất, #335; app chết giữa lượt dọn; hàng
-///   `#legacy`), RỒI dọn ngày quá 14 ngày của chính người ấy.
+///   `#legacy`), RỒI dọn ngày quá 14 ngày của chính người ấy, RỒI cắt hàng
+///   hướng dẫn của người ấy về giới hạn (R2-SYNC-03).
 ///
 /// Hai lối XUYÊN tài khoản (`clearAll`, `clearAll(except:)`) chỉ được gọi từ
 /// đây. Mọi lối khác của `GRDBWorkoutStore` — kể cả `pruneDays` — chỉ chạm
@@ -31,11 +32,13 @@ public final class AccountLifecycle: Sendable {
   public let accounts: AccountScope
   private let workouts: GRDBWorkoutStore
   private let readCache: GRDBTemplateCache
+  private let cleanup: ReadCacheCleanup
 
   public init(_ database: ASCNDDatabase) {
     accounts = database.accounts
     workouts = GRDBWorkoutStore(database)
     readCache = GRDBTemplateCache(database)
+    cleanup = ReadCacheCleanup(database)
   }
 
   /// App mở: chưa ai đăng nhập cho tới khi phiên mở.
@@ -50,6 +53,9 @@ public final class AccountLifecycle: Sendable {
     _ = try? await readCache.clearAll(except: userId)
     _ = try? await workouts.clearAll(except: userId)
     _ = try? await workouts.pruneDays(today: today)
+    // Cắt hàng hướng dẫn của chính người ấy về giới hạn (R2-SYNC-03) — sau
+    // lượt bỏ của người khác, để chỉ còn hàng của người này mà cắt.
+    _ = try? await cleanup.pruneExerciseGuides(userId: userId, now: SystemWallClock().nowMillis())
   }
 
   /// Phiên kết thúc. `next`: người của phiên mới khi đổi thẳng tài khoản,

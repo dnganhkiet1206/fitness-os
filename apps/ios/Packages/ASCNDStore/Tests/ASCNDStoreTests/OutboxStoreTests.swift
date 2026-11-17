@@ -172,4 +172,79 @@ struct OutboxStoreTests {
     #expect(try store.load().pending.map(\.id) == ["other", "tpl", "tpl@day0"])
     #expect(try store.pending(userId: "u1").map(\.id) == ["tpl", "tpl@day0"])
   }
+
+  /// R2-SYNC-02: `undecodableCount()` đếm hàng không đọc được ở cả hai bảng —
+  /// worker dùng số này cho Lab và Sentry.
+  @Test func undecodableCountCountsBothTables() throws {
+    let database = try ASCNDDatabase()
+    let store = OutboxStore(database)
+    #expect(try store.undecodableCount() == 0)
+    try database.queue.write { db in
+      try db.execute(
+        sql: "INSERT INTO outbox (id, userId, entry) VALUES (?, ?, ?)",
+        arguments: ["future", "u1", #"{"kind":"water","shape":"from-a-newer-app"}"#])
+      try db.execute(
+        sql: "INSERT INTO outbox_dead (id, dead) VALUES (?, ?)", arguments: ["old", #"{"not":"a dead entry"}"#])
+    }
+    #expect(try store.undecodableCount() == 2)
+    #expect(try store.load().pending.isEmpty)
+  }
+
+  /// AUD-62: gửi lại qua `retryDead` rồi ghi đĩa — hàng chờ gửi trở lại, hàng
+  /// `dead` rời đĩa, mở lại không hồi sinh bản sao `dead`, ghi lần hai không
+  /// nhân đôi.
+  @Test func retryDeadPersistsWithoutResurrectingTheDeadRow() throws {
+    let store = try OutboxStore()
+    try store.append(entry("a"))
+    var box = try store.load()
+    _ = box.next(now: EpochMillis(0), online: true, signedInUser: "u1")
+    box.failed(id: "a", .server(code: "23514"), now: EpochMillis(0))
+    try store.persist(box, settled: [])
+    #expect(try store.load().dead.map(\.entry.id) == ["a"])
+
+    var retried = try store.load()
+    #expect(retried.retryDead(id: "a"))
+    try store.persist(retried, settled: [])
+    var loaded = try store.load()
+    #expect(loaded.pending.map(\.id) == ["a"])
+    #expect(loaded.dead.isEmpty)
+    #expect(loaded.pending[0].history == FailureHistory(), "ngân sách mới")
+
+    try store.persist(retried, settled: [])
+    loaded = try store.load()
+    #expect(loaded.pending.map(\.id) == ["a"])
+    #expect(loaded.dead.isEmpty)
+  }
+
+  /// R2-SYNC-03: cắt `outbox_dead` theo tuổi (30 ngày) rồi theo số hàng (100,
+  /// cũ nhất trước); hàng chờ gửi không đụng tới; hàng không đọc được không xoá.
+  @Test func pruneDeadBoundsTheDeadTableAndLeavesPendingAlone() throws {
+    let database = try ASCNDDatabase()
+    let store = OutboxStore(database)
+    let now = EpochMillis(100 * 24 * 3_600_000)
+    try store.append(entry("keep-pending"))
+    func deadRow(_ id: String, at: EpochMillis) throws {
+      let json = try OutboxStore.json(DeadEntry(entry: entry(id), reason: .exhausted, failure: nil, at: at))
+      try database.queue.write { db in
+        try db.execute(sql: "INSERT INTO outbox_dead (id, dead) VALUES (?, ?)", arguments: [id, json])
+      }
+    }
+    try deadRow("old", at: EpochMillis(now.millis - Outbox.deadMaxAgeMillis - 1))
+    for i in 0..<101 {
+      try deadRow("d\(i)", at: EpochMillis(now.millis - 100 + Int64(i)))
+    }
+    try database.queue.write { db in
+      try db.execute(sql: "INSERT INTO outbox_dead (id, dead) VALUES (?, ?)", arguments: ["mystery", #"{"not":"a dead entry"}"#])
+    }
+
+    #expect(try store.pruneDead(now: now) == 2, "1 quá tuổi + 1 vượt trần 100")
+    let loaded = try store.load()
+    #expect(loaded.pending.map(\.id) == ["keep-pending"])
+    #expect(loaded.dead.count == 100)
+    #expect(!loaded.dead.map(\.entry.id).contains("old"))
+    #expect(!loaded.dead.map(\.entry.id).contains("d0"), "cũ nhất trong số còn tuổi rời đi")
+    #expect(loaded.dead.map(\.entry.id).contains("d100"))
+    #expect(try store.undecodableIds() == ["mystery"])
+    #expect(try store.pruneDead(now: now) == 0, "cắt lại: không còn gì để cắt")
+  }
 }

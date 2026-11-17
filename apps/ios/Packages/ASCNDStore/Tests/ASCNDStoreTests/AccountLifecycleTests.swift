@@ -356,6 +356,28 @@ struct AccountLifecycleTests {
     #expect(try d.owners().isEmpty)
     await #expect(throws: AccountScopeClosed.self) { try await d.store.pruneDays(today: today) }
   }
+
+  /// R2-SYNC-03: phiên mở cắt hàng hướng dẫn quá tuổi của chính người ấy —
+  /// hàng mới làm mới ở lại, hàng của người khác đã đi ở lượt dọn trước đó.
+  @Test func sessionStartedPrunesStaleExerciseGuides() async throws {
+    let d = try Device()
+    let now = Int64(Date().timeIntervalSince1970 * 1000)
+    let stale = now - ReadCacheCleanup.exerciseGuideMaxAgeMillis - 1
+    try d.db.queue.write { db in
+      for (kind, updatedAt) in [
+        ("exercise-guide:bench:vi", stale), ("exercise-guide:curl:vi", now),
+      ] as [(String, Int64)] {
+        try db.execute(
+          sql: "INSERT INTO read_cache (userId, kind, json, updatedAt) VALUES (?, ?, ?, ?)",
+          arguments: ["a", kind, "{}", updatedAt])
+      }
+    }
+    await d.life.sessionStarted(userId: "a", today: today)
+    let kinds = try d.db.queue.read { db in
+      try String.fetchAll(db, sql: "SELECT kind FROM read_cache ORDER BY kind")
+    }
+    #expect(kinds == ["exercise-guide:curl:vi"])
+  }
 }
 
 /// Giữ closure / controller qua ranh giới `@Sendable` của `between`.
