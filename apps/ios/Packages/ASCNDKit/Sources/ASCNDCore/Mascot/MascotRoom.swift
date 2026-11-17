@@ -4,10 +4,10 @@ public import Observation
 // Phòng linh vật (#527 Phase 7) — dữ liệu và hành động của `app/mascot-room.tsx`
 // @ fac9ac2 (`hooks/use-mascot-room.ts`, `use-daily-quests.ts`, `use-extras.ts`).
 //
-// Kinh tế: SERVER là chủ. App chỉ gọi hai RPC — `claim_quest_reward(ref_key)`
+// Kinh tế: SERVER là chủ. App chỉ gọi RPC `claim_quest_reward(ref_key)`
 // (server định giá theo `reward_prices`, chặn trùng bằng `UNIQUE(user_id,
-// ref_key)`, trần 800 xu/ngày) và `buy_streak_freeze(request_id)` (giá
-// `shop_prices`, kiểm số dư, giữ tối đa 2, idempotent theo `request_id`).
+// ref_key)`, trần 800 xu/ngày). Băng chuỗi đã đóng bán (AUD-14): không còn
+// lối mua trong app; băng đã mua giữ nguyên.
 // Số dư / XP / cấp là PHÉP CỘNG trên sổ `mascot_transactions` mà RLS cho đọc —
 // đúng như RN `useMascotWallet`; app không ghi sổ, không gửi số xu.
 
@@ -135,12 +135,10 @@ public protocol MascotSource: Sendable {
   func dailySignals(userId: String, date: LocalDate) async throws -> DailySignals
 }
 
-/// Hai RPC của server. Ném `MascotFailure` (adapter dịch thông điệp Postgres).
+/// RPC của server. Ném `MascotFailure` (adapter dịch thông điệp Postgres).
 public protocol MascotEconomy: Sendable {
   /// `claim_quest_reward(p_ref_key, p_reason)` → số xu server trả.
   func claimReward(refKey: String, reason: String) async throws -> Int
-  /// `buy_streak_freeze(p_request_id)` → số dư sau khi mua.
-  func buyStreakFreeze(requestId: UUID) async throws -> Int
 }
 
 /// Vì sao một hành động kinh tế không xong — theo thứ người dùng làm được.
@@ -196,8 +194,7 @@ public final class MascotRoomController {
   public private(set) var awardCount: Int?
   public private(set) var signals: DailySignals?
   public private(set) var claiming = false
-  public private(set) var buyingFreeze = false
-  /// Lỗi của hành động gần nhất (nhận thưởng / mua băng); xoá khi thử lại.
+  /// Lỗi của hành động gần nhất (nhận thưởng); xoá khi thử lại.
   public private(set) var actionFailure: MascotFailure?
   /// Lần nhận thưởng chào mừng vừa thành công (số xu) — màn báo một lần.
   public private(set) var welcomeGranted: Int?
@@ -207,11 +204,7 @@ public final class MascotRoomController {
 
   @ObservationIgnored private let source: any MascotSource
   @ObservationIgnored private let economy: any MascotEconomy
-  @ObservationIgnored private let makeRequestId: @Sendable () -> UUID
   @ObservationIgnored private let stepsGoalSource: @Sendable () -> Int
-  /// Mã của lần mua băng đang dở: GIỮ tới khi server nhận, để bấm lại sau một
-  /// lần lỗi mạng không trừ tiền hai lần (`pendingFreezeBuy`).
-  @ObservationIgnored private var pendingFreezeRequest: UUID?
   /// Chốt của thưởng chào mừng: đặt TRƯỚC khi gọi, gỡ khi bị từ chối (RN).
   @ObservationIgnored private var welcomeTried = false
   @ObservationIgnored private var closed = false
@@ -222,7 +215,6 @@ public final class MascotRoomController {
 
   public init(
     userId: String, today: LocalDate, source: any MascotSource, economy: any MascotEconomy,
-    makeRequestId: @escaping @Sendable () -> UUID = { UUID() },
     stepsGoal: @escaping @Sendable () -> Int = { DailySignals.defaultStepsGoal },
     questObserver: QuestObserver? = nil
   ) {
@@ -232,7 +224,6 @@ public final class MascotRoomController {
     self.today = today
     self.source = source
     self.economy = economy
-    self.makeRequestId = makeRequestId
   }
 
   /// Phiên kết thúc: mọi kết quả về sau bị bỏ.
@@ -282,19 +273,11 @@ public final class MascotRoomController {
   /// Đọc lại sổ xu — sau khi bộ quan sát tự nhận một nhiệm vụ ở nơi khác.
   public func refreshWallet() async { await reloadLedger() }
 
-  /// Chỉ đọc lại sổ (sau một lần nhận / mua).
+  /// Chỉ đọc lại sổ (sau một lần nhận).
   private func reloadLedger() async {
     let uid = userId, src = source
     guard let rows = try? await src.ledger(userId: uid), !closed else { return }
     wallet = MascotWallet(rows: rows)
-  }
-
-  private func reloadFreezes() async {
-    let uid = userId, src = source
-    guard let rows = try? await src.freezes(userId: uid), !closed else { return }
-    let used = rows.compactMap(\.usedOn)
-    freezesHeld = rows.count - used.count
-    freezesUsed = used.count
   }
 
   // MARK: - Hiện
@@ -344,9 +327,6 @@ public final class MascotRoomController {
   /// (9…25), lệch với số thật được trả ở chuỗi 2–9 ngày.
   public var streakBonus: Int { MascotRules.streakPayout }
 
-  public var freezeFull: Bool { freezesHeld >= MascotRules.freezeMax }
-  public var canBuyFreeze: Bool { !freezeFull && !buyingFreeze && balance >= MascotRules.freezePrice }
-
   public var completedChallenges: [WeeklyChallenge] { (challenges ?? []).filter(\.completed) }
 
   // MARK: - Hành động
@@ -385,30 +365,6 @@ public final class MascotRoomController {
       guard !closed else { return nil }
       if !silent { actionFailure = Self.failure(error) }
       return nil
-    }
-  }
-
-  /// Mua một băng chuỗi. Cùng một mã yêu cầu cho tới khi server nhận.
-  @discardableResult
-  public func buyFreeze() async -> Bool {
-    guard canBuyFreeze else { return false }
-    buyingFreeze = true
-    actionFailure = nil
-    defer { buyingFreeze = false }
-    let request = pendingFreezeRequest ?? makeRequestId()
-    pendingFreezeRequest = request
-    do {
-      _ = try await economy.buyStreakFreeze(requestId: request)
-      guard !closed else { return false }
-      pendingFreezeRequest = nil
-      async let l: Void = reloadLedger()
-      async let f: Void = reloadFreezes()
-      _ = await (l, f)
-      return true
-    } catch {
-      guard !closed else { return false }
-      actionFailure = Self.failure(error)
-      return false
     }
   }
 
