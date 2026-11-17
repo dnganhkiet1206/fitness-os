@@ -248,6 +248,70 @@ struct DailyLogRebuildTests {
     #expect(sources != nil)
     #expect(sources?.profile == nil)
   }
+
+  /// Đọc song song cho cùng kết quả như đọc tuần tự: mỗi nguồn trả một hàng
+  /// đánh dấu riêng, nên lắp nhầm thứ tự là lộ ngay. Kèm theo: mỗi truy vấn
+  /// trong `Reads.sources` được gửi đúng MỘT lần — không thiếu, không thừa.
+  @Test func readSourcesMatchesSequentialReads() async throws {
+    let reads = DailyLog.queries(userId: "u1", date: Self.today, in: Self.utc)
+    #expect(Set(reads.sources).count == 12)
+    var rows: [RowQuery: [JSONValue]] = [:]
+    for (i, q) in reads.sources.enumerated() {
+      rows[q] = [.object(["source": .number(Double(i))])]
+    }
+    let store = MarkedStore(rows: rows)
+    let concurrent = try await DailyLog.readSources(reads, store)
+    let issued = await store.queries
+    #expect(issued.count == 12)
+    #expect(Set(issued) == Set(reads.sources))
+    // Mỗi hàng đánh dấu về đúng trường của nó.
+    func marker(_ i: Int) -> [JSONValue] { [.object(["source": .number(Double(i))])] }
+    let fields: (DailyLog.Sources) -> [[JSONValue]] = {
+      [$0.meals, $0.workouts, $0.sleeps, $0.supplements, $0.intakes, $0.bio, $0.bioHistory,
+       $0.load7d, $0.load28d, $0.sleeps7d, $0.water]
+    }
+    let expectedFields = [
+      marker(0), marker(1), marker(2), marker(3), marker(4), marker(5),
+      marker(7), marker(8), marker(9), marker(10), marker(11),
+    ]
+    #expect(fields(concurrent) == expectedFields)
+    #expect(concurrent.profile == marker(6).first)
+    // Tham chiếu tuần tự: gửi từng nguồn theo đúng thứ tự `Reads.sources`,
+    // lắp theo cùng thứ tự — kết quả phải giống hệt bản song song.
+    var values: [[JSONValue]] = []
+    for q in reads.sources {
+      values.append(try await store.select(q))
+    }
+    let sequential = DailyLog.Sources(
+      meals: values[0], workouts: values[1], sleeps: values[2], supplements: values[3], intakes: values[4],
+      bio: values[5], profile: values[6].first, bioHistory: values[7], load7d: values[8], load28d: values[9],
+      sleeps7d: values[10], water: values[11])
+    #expect(fields(concurrent) == fields(sequential))
+    #expect(concurrent.profile == sequential.profile)
+  }
+
+  /// Hai nguồn cùng hỏng: lỗi ném ra vẫn là lỗi của nguồn đứng trước — và
+  /// cả 12 nguồn đều đã bay (chờ hết rồi mới xét lỗi, AUD-50), mỗi nguồn
+  /// đúng một lần. Bản tuần tự cũ dừng ở nguồn hỏng đầu tiên; bản song
+  /// song không thu hồi được chuyến đã bay, nên khi lỗi mà số truy vấn
+  /// nhiều hơn trước là đúng ý đồ, không phải hồi quy.
+  @Test func readSourcesOnFailureThrowsFirstErrorAndIssuesEverySource() async {
+    let reads = DailyLog.queries(userId: "u1", date: Self.today, in: Self.utc)
+    let store = MarkedStore(rows: [:], failures: [
+      reads.sleeps: RowStoreError(code: nil, message: "sleeps boom"),
+      reads.water: RowStoreError(code: nil, message: "water boom"),
+    ])
+    var thrown: RowStoreError?
+    do {
+      _ = try await DailyLog.readSources(reads, store)
+    } catch {
+      thrown = error
+    }
+    #expect(thrown?.message == "sleeps boom")
+    let issued = await store.queries
+    #expect(issued.count == 12)
+    #expect(Set(issued) == Set(reads.sources))
+  }
 }
 
 /// Kho đếm số select đang bay cùng lúc: mỗi select giữ một nhịp rồi mới trả,
@@ -277,6 +341,29 @@ private final class KeyedFailingStore: RowStore, @unchecked Sendable {
     if let e = failures[q] { throw e }
     if q.mode == .single { throw RowStoreError(code: "PGRST116", message: "no rows") }
     return []
+  }
+
+  func insert(_ table: String, _ row: [String: JSONValue]) async throws(RowStoreError) {}
+  func update(_ table: String, _ row: [String: JSONValue], where filters: [RowQuery.Filter]) async throws(RowStoreError) -> Int { 0 }
+}
+
+/// Kho trả mỗi truy vấn hàng đã định sẵn (kèm lỗi theo truy vấn, nếu có),
+/// ghi lại mọi truy vấn đã nhận — để kiểm đọc song song lắp đúng nguồn và
+/// gửi mỗi nguồn đúng một lần. Actor nên đọc song song an toàn.
+private actor MarkedStore: RowStore {
+  private let rows: [RowQuery: [JSONValue]]
+  private let failures: [RowQuery: RowStoreError]
+  private(set) var queries: [RowQuery] = []
+
+  init(rows: [RowQuery: [JSONValue]], failures: [RowQuery: RowStoreError] = [:]) {
+    self.rows = rows
+    self.failures = failures
+  }
+
+  func select(_ q: RowQuery) async throws(RowStoreError) -> [JSONValue] {
+    queries.append(q)
+    if let e = failures[q] { throw e }
+    return rows[q] ?? []
   }
 
   func insert(_ table: String, _ row: [String: JSONValue]) async throws(RowStoreError) {}
