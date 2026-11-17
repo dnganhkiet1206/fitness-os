@@ -61,7 +61,8 @@ struct ReadCachePruneTests {
     }
     let cleanup = ReadCacheCleanup(db)
     #expect(try await cleanup.pruneExerciseGuides(userId: "u1", now: now) == 1)
-    #expect(!try kinds(db, userId: "u1").contains("exercise-guide:legacy:vi"))
+    let kept = try kinds(db, userId: "u1")
+    #expect(!kept.contains("exercise-guide:legacy:vi"))
   }
 
   /// `put` đóng dấu `updatedAt` để lượt cắt có tuổi mà đọc.
@@ -69,7 +70,7 @@ struct ReadCachePruneTests {
     let db = try ASCNDDatabase()
     let cache = GRDBTemplateCache(db)
     try await cache.save(userId: "u1", TemplateSnapshot(routine: [], templates: [], fetchedAt: EpochMillis(1)))
-    let stamped = try db.queue.read { db in
+    let stamped = try await db.queue.read { db in
       try Int64.fetchOne(db, sql: "SELECT updatedAt FROM read_cache WHERE kind = 'templates'")
     }
     #expect(stamped != nil)

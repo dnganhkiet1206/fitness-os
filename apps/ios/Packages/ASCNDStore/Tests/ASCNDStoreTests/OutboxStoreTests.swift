@@ -225,7 +225,11 @@ struct OutboxStoreTests {
     let now = EpochMillis(100 * 24 * 3_600_000)
     try store.append(entry("keep-pending"))
     func deadRow(_ id: String, at: EpochMillis) throws {
-      let json = try OutboxStore.json(DeadEntry(entry: entry(id), reason: .exhausted, failure: nil, at: at))
+      // `DeadEntry` không có init public (memberwise init chỉ thấy trong
+      // ASCNDCore), nên dựng đúng blob JSON mà `pruneDead`/`load` giải mã:
+      // `entry` từ chính bộ mã hoá của nó, `failure` null, `at` là số mili
+      // giây (`EpochMillis` mã hoá một giá trị).
+      let json = #"{"at":\#(at.millis),"entry":\#(try OutboxStore.json(entry(id))),"failure":null,"reason":"exhausted"}"#
       try database.queue.write { db in
         try db.execute(sql: "INSERT INTO outbox_dead (id, dead) VALUES (?, ?)", arguments: [id, json])
       }

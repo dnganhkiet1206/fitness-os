@@ -403,7 +403,7 @@ struct AccountLifecycleTests {
     let d = try Device()
     let now = Int64(Date().timeIntervalSince1970 * 1000)
     let stale = now - ReadCacheCleanup.exerciseGuideMaxAgeMillis - 1
-    try d.db.queue.write { db in
+    try await d.db.queue.write { db in
       for (kind, updatedAt) in [
         ("exercise-guide:bench:vi", stale), ("exercise-guide:curl:vi", now),
       ] as [(String, Int64)] {
@@ -413,7 +413,7 @@ struct AccountLifecycleTests {
       }
     }
     await d.life.sessionStarted(userId: "a", today: today)
-    let kinds = try d.db.queue.read { db in
+    let kinds = try await d.db.queue.read { db in
       try String.fetchAll(db, sql: "SELECT kind FROM read_cache ORDER BY kind")
     }
     #expect(kinds == ["exercise-guide:curl:vi"])
