@@ -275,10 +275,19 @@ def to_jpeg(out_dir: Path, prefix: str) -> None:
 
 
 def geometry_hash(root) -> str:
+    """Hash of an implement model: every part's vertices and faces, and each
+    child's placement RELATIVE TO THE ROOT (moving a plate on the bar changes
+    the model; moving or animating the whole bar does not). PR #914 review."""
     import hashlib
     h = hashlib.md5()
-    for o in [root, *[c for c in root.children_recursive if c.type == "MESH"]]:
+    inv = root.matrix_world.inverted()
+    parts = [root, *sorted((c for c in root.children_recursive if c.type == "MESH"), key=lambda o: o.name)]
+    for o in parts:
         h.update(np.round(np.array([v.co[:] for v in o.data.vertices]), 4).tobytes())
+        h.update(np.array([i for p in o.data.polygons for i in (*p.vertices, -1)], dtype=np.int64).tobytes())
+        if o is not root:
+            # 1 mm / 0.001 rad grid, and +0.0 so -0.0 hashes like 0.0.
+            h.update((np.round(np.array(inv @ o.matrix_world), 3) + 0.0).tobytes())
     return h.hexdigest()[:6]
 
 
@@ -380,6 +389,10 @@ def export_split(args, scene, rig, body, shorts, out_dir: Path, prefix: str, tmp
     equipment = [o for o in scene.objects if o.type == "MESH" and o.get("evs_equipment")]
     if args.equipment_out:
         split_equipment(scene, equipment, Path(args.equipment_out), out_dir, prefix)
+    else:
+        # Equipment stays inside the motion file: an older socket manifest
+        # would make the app mount a second copy (PR #914 review).
+        (out_dir / f"{prefix}_equipment.json").unlink(missing_ok=True)
     if args.character_out:
         scene.frame_set(scene.frame_start)
         # With --apparel-out the body ships alone and the shorts get their
