@@ -283,8 +283,17 @@ def geometry_hash(root) -> str:
     inv = root.matrix_world.inverted()
     parts = [root, *sorted((c for c in root.children_recursive if c.type == "MESH"), key=lambda o: o.name)]
     for o in parts:
-        h.update(np.round(np.array([v.co[:] for v in o.data.vertices]), 4).tobytes())
-        h.update(np.array([i for p in o.data.polygons for i in (*p.vertices, -1)], dtype=np.int64).tobytes())
+        # +0.0 so -0.0 hashes like 0.0
+        h.update((np.round(np.array([v.co[:] for v in o.data.vertices]), 4) + 0.0).tobytes())
+        # The SET of faces, not their storage order: the same dumbbell is stored with its faces in a
+        # different order in different scenes (17/11, re-export of #914: one 12 kg dumbbell gave five
+        # hashes). Each face starts at its lowest vertex index (winding kept), then faces are sorted.
+        def canon(vs):
+            vs = list(vs)
+            k = vs.index(min(vs))
+            return tuple(vs[k:] + vs[:k])
+        faces = sorted(canon(p.vertices) for p in o.data.polygons)
+        h.update(np.array([i for f in faces for i in (*f, -1)], dtype=np.int64).tobytes())
         if o is not root:
             # 1 mm / 0.001 rad grid, and +0.0 so -0.0 hashes like 0.0.
             h.update((np.round(np.array(inv @ o.matrix_world), 3) + 0.0).tobytes())
