@@ -203,7 +203,8 @@ struct OutboxStoreTests {
     #expect(try store.load().dead.map(\.entry.id) == ["a"])
 
     var retried = try store.load()
-    #expect(retried.retryDead(id: "a"))
+    let didRetry = retried.retryDead(id: "a")
+    #expect(didRetry)
     try store.persist(retried, settled: [])
     var loaded = try store.load()
     #expect(loaded.pending.map(\.id) == ["a"])

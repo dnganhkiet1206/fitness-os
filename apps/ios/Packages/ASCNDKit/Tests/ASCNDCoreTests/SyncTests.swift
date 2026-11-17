@@ -294,7 +294,8 @@ struct OutboxTests {
     #expect(box.dead.map(\.entry.id) == ["a"])
     #expect(box.pending.map(\.id) == ["b"])
 
-    #expect(box.retryDead(id: "a"))
+    let didRetry = box.retryDead(id: "a")
+    #expect(didRetry)
     #expect(box.dead.isEmpty)
     #expect(box.pending.map(\.id) == ["a", "b"], "về đầu làn của u1: tạo trước b")
     let retried = box.pending[0]
@@ -303,7 +304,8 @@ struct OutboxTests {
     #expect(retried.notBefore == nil)
     #expect(!retried.needsNetwork)
     #expect(box.next(now: at(1000), online: true, signedInUser: "u1") == .send(retried))
-    #expect(!box.retryDead(id: "nope"))
+    let retriedMissing = box.retryDead(id: "nope")
+    #expect(!retriedMissing)
   }
 
   /// Gửi lại xếp vào đầu làn của CHỦ nó: trước hàng cùng chủ, sau hàng của
@@ -316,7 +318,8 @@ struct OutboxTests {
     _ = box.next(now: at(0), online: true, signedInUser: "u9")
     box.failed(id: "x", .server(code: "23514"), now: at(0))
     #expect(box.pending.map(\.id) == ["a", "y"])
-    #expect(box.retryDead(id: "x"))
+    let didRetry = box.retryDead(id: "x")
+    #expect(didRetry)
     #expect(box.pending.map(\.id) == ["a", "x", "y"], "trước y (cùng chủ), sau a (khác chủ)")
     #expect(box.next(now: at(0), online: true, signedInUser: "u9") == .send(entry("x", user: "u9")))
   }
