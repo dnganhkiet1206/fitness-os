@@ -63,6 +63,15 @@ struct TodayDayBlock: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   /// Nhãn "Koa" lớn theo Dynamic Type (#795 đợt 2c: bộ kiểm accessibility báo cỡ cố định); mặc định 12.
   @ScaledMetric(relativeTo: .caption) private var nameSize: CGFloat = 12
+  // Chữ còn lại của thẻ lớn theo Dynamic Type (nối tiếp #795 đợt 2c, cùng thang `ptNN` của
+  // `TodayDayCard`). Tên theo cỡ ở mức chữ mặc định, đúng bản thiết kế đã duyệt: ở mặc định thẻ
+  // không đổi. `nameSize` giữ riêng cho nhãn "Koa".
+  @ScaledMetric(relativeTo: .caption2) private var pt11: CGFloat = 11
+  @ScaledMetric(relativeTo: .caption) private var pt12: CGFloat = 12
+  @ScaledMetric(relativeTo: .footnote) private var pt13: CGFloat = 13
+  @ScaledMetric(relativeTo: .subheadline) private var pt14: CGFloat = 14
+  @ScaledMetric(relativeTo: .subheadline) private var pt15: CGFloat = 15
+  @ScaledMetric(relativeTo: .body) private var pt17: CGFloat = 17
   @Environment(\.colorScheme) private var scheme
   @Environment(AppServices.self) private var services: AppServices?
   /// Được khen hôm nay chưa (khen một lần mỗi ngày, `allowPraise`).
@@ -149,7 +158,7 @@ struct TodayDayBlock: View {
             .foregroundStyle(KoaCardInk.muted(dark))
           if let text = said ?? bubbleText(line, tubes: tubes) {
             Text(verbatim: text)
-              .font(.system(size: 17, weight: .semibold))
+              .font(.system(size: pt17, weight: .semibold))
               .foregroundStyle(KoaCardInk.ink(dark))
               .fixedSize(horizontal: false, vertical: true)
               .id(text)
@@ -166,14 +175,14 @@ struct TodayDayBlock: View {
         }
       }
       HStack {
-        Text(verbatim: "\(doneCount)/\(tubes.count)").font(.system(size: 12, weight: .bold).monospacedDigit())
+        Text(verbatim: "\(doneCount)/\(tubes.count)").font(.system(size: pt12, weight: .bold).monospacedDigit())
           .foregroundStyle(KoaCardInk.ink(dark))
-          + Text(verbatim: " ") + Text("koa.card.doneToday").font(.system(size: 12)).foregroundStyle(KoaCardInk.muted(dark))
+          + Text(verbatim: " ") + Text("koa.card.doneToday").font(.system(size: pt12)).foregroundStyle(KoaCardInk.muted(dark))
         Spacer()
         // Nhịp 30 ngày thay chuỗi ngày (Kiệt duyệt 02/11): không có số liên tiếp để gãy
         if let rhythm, rhythm.sessions > 0 {
           Label(String(localized: "rhythm.short \(rhythm.sessions)"), systemImage: "circle.grid.3x3.fill")
-            .font(.system(size: 12, weight: .bold))
+            .font(.system(size: pt12, weight: .bold))
             .foregroundStyle(MascotRoomView.signalColor(.meal))
         }
       }
@@ -308,8 +317,8 @@ struct TodayDayBlock: View {
   /// "+N" vàng bay lên trên đầu Koa khi xu vừa về.
   private func coinBurst(_ amount: Int) -> some View {
     HStack(spacing: 3) {
-      Image(systemName: "circle.circle.fill").font(.system(size: 11, weight: .bold))
-      Text(verbatim: "+\(amount)").font(.system(size: 14, weight: .heavy).monospacedDigit())
+      Image(systemName: "circle.circle.fill").font(.system(size: pt11, weight: .bold))
+      Text(verbatim: "+\(amount)").font(.system(size: pt14, weight: .heavy).monospacedDigit())
     }
     .foregroundStyle(DS.Color.readinessYellow.swiftUI)
     .padding(.horizontal, 8)
@@ -360,7 +369,7 @@ struct TodayDayBlock: View {
   private func bubble(_ text: String, next: MascotRules.Quest?) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Text(verbatim: text)
-        .font(.system(size: 15))
+        .font(.system(size: pt15))
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .fixedSize(horizontal: false, vertical: true)
         .messageBubble(mine: false, fill: Color(uiColor: .systemGray5))
@@ -370,10 +379,10 @@ struct TodayDayBlock: View {
       if let next, next != .steps {
         Button { onAct(next) } label: {
           HStack(spacing: 5) {
-            Image(systemName: "plus").font(.system(size: 12, weight: .bold))
-            Text(Self.action(next)).font(.system(size: 14, weight: .semibold))
+            Image(systemName: "plus").font(.system(size: pt12, weight: .bold))
+            Text(Self.action(next)).font(.system(size: pt14, weight: .semibold))
             Text(verbatim: "· +\(TodayDay.coins(next))")
-              .font(.system(size: 13, weight: .bold).monospacedDigit())
+              .font(.system(size: pt13, weight: .bold).monospacedDigit())
               .opacity(0.85)
           }
           .foregroundStyle(.white)
@@ -396,8 +405,8 @@ struct TodayDayBlock: View {
     Button { onAct(next) } label: {
       HStack(spacing: 6) {
         Circle().fill(MascotRoomView.signalColor(next)).frame(width: 8, height: 8)
-        Text(Self.action(next)).font(.system(size: 13, weight: .bold))
-        Text(verbatim: "+\(TodayDay.coins(next))").font(.system(size: 12, weight: .bold).monospacedDigit()).opacity(0.6)
+        Text(Self.action(next)).font(.system(size: pt13, weight: .bold))
+        Text(verbatim: "+\(TodayDay.coins(next))").font(.system(size: pt12, weight: .bold).monospacedDigit()).opacity(0.6)
       }
       .foregroundStyle(dark ? Color.black : .white)
       .padding(.horizontal, 12)
@@ -508,6 +517,9 @@ struct TodayTube: View {
 
   static let size = CGSize(width: 26, height: 60)
 
+  // Nhãn "Next" và glyph lớn theo Dynamic Type, cùng thang `ptNN` của `TodayDayCard`; mặc định 11.
+  @ScaledMetric(relativeTo: .caption2) private var pt11: CGFloat = 11
+
   private var unit: Water.Unit { services?.preferences.volumeUnit ?? .ml }
 
   var body: some View {
@@ -515,10 +527,10 @@ struct TodayTube: View {
     VStack(spacing: 6) {
       ZStack {
         // Giữ chỗ cho nhãn ở mọi ống để hàng không nhảy khi nhãn trượt đi.
-        Text(String(localized: "today.next")).font(.system(size: 11, weight: .bold)).padding(.vertical, 2).hidden()
+        Text(String(localized: "today.next")).font(.system(size: pt11, weight: .bold)).padding(.vertical, 2).hidden()
         if isNext {
           Text(String(localized: "today.next"))
-            .font(.system(size: 11, weight: .bold))
+            .font(.system(size: pt11, weight: .bold))
             .foregroundStyle(.white)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
@@ -548,7 +560,7 @@ struct TodayTube: View {
           .frame(width: 2, height: Self.size.height * 0.62)
           .offset(x: -7, y: -Self.size.height * 0.2)
         Image(systemName: Self.glyph(tube.quest))
-          .font(.system(size: 11, weight: .bold))
+          .font(.system(size: pt11, weight: .bold))
           .foregroundStyle(tube.fill > 0.3 ? .white : color)
           .frame(width: 22, height: 22)
           .background(Circle().fill(tube.fill > 0.3 ? Color.white.opacity(0.22) : color.opacity(0.12)))
@@ -656,15 +668,20 @@ struct KoaBar: View {
   let reduceMotion: Bool
   let unit: Water.Unit
 
+  // Glyph và tên chỉ số lớn theo Dynamic Type, cùng thang `ptNN` của `TodayDayCard`; mặc định
+  // 12 và 13,5.
+  @ScaledMetric(relativeTo: .caption) private var pt12: CGFloat = 12
+  @ScaledMetric(relativeTo: .footnote) private var pt13Half: CGFloat = 13.5
+
   var body: some View {
     let color = MascotRoomView.signalColor(tube.quest)
     HStack(spacing: 10) {
       Image(systemName: TodayTube.glyph(tube.quest))
-        .font(.system(size: 12, weight: .bold))
+        .font(.system(size: pt12, weight: .bold))
         .foregroundStyle(color)
         .frame(width: 18)
       Text(verbatim: TodayDayBlock.name(tube.quest))
-        .font(.system(size: 13.5, weight: isNext ? .bold : .regular))
+        .font(.system(size: pt13Half, weight: isNext ? .bold : .regular))
         .foregroundStyle(KoaCardInk.ink(dark))
         .frame(width: 64, alignment: .leading)
         .lineLimit(1).minimumScaleFactor(0.8)
