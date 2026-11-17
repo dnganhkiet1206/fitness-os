@@ -9,7 +9,7 @@ import Foundation
   /// cho mọi bài (`muscle_ids.png` / `muscle_shade.jpg` / `muscle_normal.jpg` + `muscle_parts.json`)
   /// thay cho ~3,6 MB texture da nướng sẵn của mỗi bài; màu cơ dựng từ `roles` của `<bài>_demo.json`.
   ///
-  /// Pha trên CPU khi mở bài (không cần Metal Toolchain lúc build), đúng phép pha của pipeline
+  /// Đường lùi trên CPU (từ 17/11 app tô bằng shader GPU, `MuscleMaterial`), đúng phép pha của pipeline
   /// (`export_usdz.py`: `albedo_from_highlight` + `apply_shade` + `painted_emission`), trong không gian
   /// tuyến tính:
   ///   a        = độ phủ · hệ số · có vai trò

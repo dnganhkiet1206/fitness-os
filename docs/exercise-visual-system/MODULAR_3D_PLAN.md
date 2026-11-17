@@ -98,7 +98,7 @@ Lợi thêm: 8 bài hiện chiếm 47 MB. Sang dạng khối thì còn 1 nhân v
      - thớ cơ (normal có thớ) chỉ có trên phần cơ có vai trò; tô hết 48 phần thì thân trông như tranh giải phẫu;
      - ẩn / hiện cơ phụ = đổi bộ đã dựng.
    - Đã bỏ `<bài>_full_*` / `_focus_*` của 7 bài khỏi app: **−11,5 MB**, thư mục 3D 30 → 21 MB.
-   - **Vì sao pha trên CPU, không dùng shader Metal:** Xcode 26 tách Metal Toolchain thành thành phần tải riêng; máy dev chưa có, CI chưa chắc có. Bản shader đã viết sẵn: `docs/exercise-visual-system/MuscleSurface.metal.txt` (`CustomMaterial`, `textures().custom()` lấy mẫu nearest). Khi máy và CI có Metal Toolchain thì đổi sang shader: mở bài nhanh hơn và không tốn RAM cho 4 bộ ảnh pha sẵn.
+   - ~~**Vì sao pha trên CPU, không dùng shader Metal:** Xcode 26 tách Metal Toolchain thành thành phần tải riêng; máy dev chưa có, CI chưa chắc có.~~ **17/11 (Kiệt cho tải Metal Toolchain):** tô cơ trên GPU bằng `CustomMaterial` + `apps/ios/ASCND/Features/Exercises/MuscleSurface.metal` (`MuscleMaterial.swift`): đổi bài hay bật / tắt cơ phụ chỉ đổi bảng màu 64×2, không pha 4 ảnh 2K. CI tải Metal Toolchain khi ảnh runner thiếu. Đường CPU (`MuscleShader.compose`) giữ làm đường lùi khi không dựng được vật liệu; bản Debug ép đường CPU bằng `ASCND_MUSCLE_CPU=1` để so.
    - **Đo:** bản Debug trên simulator mất ~1,7 s cho 4 bộ ảnh 2048² (song song, ngoài luồng chính). Bản Release chưa đo.
 3. Điểm neo trang trí trong phòng + 1 gói mẫu (mock cho Kiệt duyệt trước, vì đây là thiết kế).
 4. Dấu ẩn texture (tuỳ chọn).
