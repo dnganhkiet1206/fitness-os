@@ -3,37 +3,37 @@
   "parts": [
     {
       "part": "floor",
-      "file": "gym_room_light_floor",
+      "file": "gym_room_floor",
       "logo": false
     },
     {
       "part": "ceiling",
-      "file": "gym_room_light_ceiling",
+      "file": "gym_room_ceiling",
       "logo": false
     },
     {
       "part": "walls",
-      "file": "gym_room_light_walls",
+      "file": "gym_room_walls",
       "logo": false
     },
     {
       "part": "slats",
-      "file": "gym_room_light_slats",
+      "file": "gym_room_slats",
       "logo": false
     },
     {
       "part": "racks",
-      "file": "gym_room_light_racks",
+      "file": "gym_room_racks",
       "logo": false
     },
     {
       "part": "leds",
-      "file": "gym_room_light_leds",
+      "file": "gym_room_leds",
       "logo": false
     },
     {
       "part": "logo",
-      "file": "gym_room_light_logo",
+      "file": "gym_room_logo",
       "logo": true
     }
   ],
