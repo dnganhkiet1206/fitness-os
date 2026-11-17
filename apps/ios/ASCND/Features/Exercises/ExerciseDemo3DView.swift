@@ -126,19 +126,23 @@
                     in: .main)
                   content.add(scene)
                   let motion: Entity? = if let motionFile { try await Entity(named: motionFile, in: .main) } else { nil }
+                  // Quần áo là khối riêng (Kiệt 16/11); bản nhân vật cũ còn quần
+                  // trong thân thì không có file này.
+                  let apparel: Entity? = motionFile == nil ? nil : try? await Entity(named: ExerciseDemo3D.sharedApparelFile, in: .main)
+                  if let apparel { content.add(apparel) }
                   if let motion, let motionFile {
                     content.add(motion)
                     await Self.mountEquipment(on: motion, manifest: motionFile.replacingOccurrences(of: "_motion", with: "_equipment"))
                   }
                   if let prefix = demoInfo?.focusTexturePrefix {
-                    await bodySkins.prepare(scene: scene, prefix: prefix, fullPrefix: demoInfo?.fullTexturePrefix)
+                    await bodySkins.prepare(scene: scene, apparel: apparel, prefix: prefix, fullPrefix: demoInfo?.fullTexturePrefix)
                     // update{} không chạy lại khi texture nạp xong: gán ngay.
                     bodySkins.apply(focus: hideSecondary, force: true)
                   }
                   Self.addLights(to: content, target: cameraTarget)
                   // Phòng nướng sẵn không còn bóng của bài nào (dùng chung,
                   // 16/11): bóng tiếp xúc mềm dưới nhân vật + dụng cụ.
-                  if let shadow = Self.contactShadow(under: [scene] + (motion.map { [$0] } ?? [])) {
+                  if let shadow = Self.contactShadow(under: [scene] + [motion, apparel].compactMap { $0 }) {
                     content.add(shadow)
                   }
                   // Tự chạy và lặp vô hạn, không dừng ở cuối. Dạng khối: cùng
@@ -147,6 +151,7 @@
                   if let animation = (motion ?? scene).availableAnimations.first {
                     scene.playAnimation(animation.repeat())
                     motion?.playAnimation(animation.repeat())
+                    apparel?.playAnimation(animation.repeat())
                   }
                 } catch {
                   await MainActor.run { loadFailed = true }
@@ -672,6 +677,9 @@
       normal: PhysicallyBasedMaterial.Texture?
     )
     @ObservationIgnored private weak var body: ModelEntity?
+    /// Lưới mang quần: chính thân (file gộp) hoặc khối quần riêng
+    /// (`apparel_shorts.usdz`, dạng khối từ 16/11).
+    @ObservationIgnored private weak var apparelBody: ModelEntity?
     @ObservationIgnored private var full: Skin = (nil, nil, nil)
     @ObservationIgnored private var focus: Skin = (nil, nil, nil)
     /// Quần (vật liệu không có normal map) cũng tô cơ bên dưới, nên có bộ
@@ -687,7 +695,7 @@
     /// xương (`config/master_character.json` → `armature_object`).
     private static let bodyName = "MasterRig"
 
-    func prepare(scene: Entity, prefix: String, fullPrefix: String? = nil) async {
+    func prepare(scene: Entity, apparel: Entity? = nil, prefix: String, fullPrefix: String? = nil) async {
       guard let body = Self.find(in: scene), let model = body.model,
         let bodyMaterial = model.materials.lazy.compactMap({ $0 as? PhysicallyBasedMaterial })
           .first(where: { $0.normal.texture != nil }),
@@ -706,16 +714,18 @@
       {
         full = (.init(fa), .init(fe), .init(fn))
       }
-      if let index = model.materials.firstIndex(where: {
+      let apparelModel = apparel.flatMap { Self.find(in: $0) } ?? body
+      if let index = apparelModel.model?.materials.firstIndex(where: {
         guard let pbr = $0 as? PhysicallyBasedMaterial else { return false }
         return pbr.normal.texture == nil && pbr.baseColor.texture != nil
       }),
-        let apparel = model.materials[index] as? PhysicallyBasedMaterial,
+        let apparelMaterial = apparelModel.model?.materials[index] as? PhysicallyBasedMaterial,
         let apparelAlbedo = await Self.texture("\(prefix)_apparel_albedo", .color),
         let apparelEmission = await Self.texture("\(prefix)_apparel_emission", .color)
       {
         apparelIndex = index
-        fullApparel = (apparel.baseColor.texture, apparel.emissiveColor.texture, nil)
+        apparelBody = apparelModel
+        fullApparel = (apparelMaterial.baseColor.texture, apparelMaterial.emissiveColor.texture, nil)
         focusApparel = (.init(apparelAlbedo), .init(apparelEmission), nil)
         if let fullPrefix,
           let fa = await Self.texture("\(fullPrefix)_apparel_albedo", .color),
@@ -739,24 +749,36 @@
     /// quần. Gán lại mảng vật liệu cũ thì RealityKit không vẽ lại, nên luôn
     /// dựng vật liệu mới.
     func apply(focus on: Bool, force: Bool = false) {
-      guard ready, force || on != shownFocus, let body, let model = body.model else { return }
+      guard ready, force || on != shownFocus, let body else { return }
       let skin = on ? focus : full
       let apparelSkin = on ? focusApparel : fullApparel
-      body.model?.materials = model.materials.enumerated().map { index, material in
-        guard var pbr = material as? PhysicallyBasedMaterial else { return material }
+      Self.retexture(body) { index, pbr in
         if pbr.normal.texture != nil {
           pbr.baseColor.texture = skin.base
           pbr.emissiveColor.texture = skin.emissive
           pbr.normal.texture = skin.normal
-        } else if index == apparelIndex {
+          return true
+        }
+        return false
+      }
+      if let apparelBody, let apparelIndex {
+        Self.retexture(apparelBody) { index, pbr in
+          guard index == apparelIndex, pbr.normal.texture == nil else { return false }
           pbr.baseColor.texture = apparelSkin.base
           pbr.emissiveColor.texture = apparelSkin.emissive
-        } else {
-          return material
+          return true
         }
-        return pbr
       }
       shownFocus = on
+    }
+
+    /// Dựng mảng vật liệu mới (gán lại mảng cũ thì RealityKit không vẽ lại).
+    private static func retexture(_ entity: ModelEntity, _ change: (Int, inout PhysicallyBasedMaterial) -> Bool) {
+      guard let model = entity.model else { return }
+      entity.model?.materials = model.materials.enumerated().map { index, material in
+        guard var pbr = material as? PhysicallyBasedMaterial, change(index, &pbr) else { return material }
+        return pbr
+      }
     }
 
     private static func find(in entity: Entity) -> ModelEntity? {

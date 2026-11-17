@@ -51,6 +51,9 @@
 
     /// Nhân vật dùng chung cho mọi bài dạng khối (`characters/master_character_003/usdz`).
     static let sharedCharacterFile = "character_003"
+    /// Quần áo dùng chung (khung xương + quần, tư thế nghỉ), Kiệt 16/11: đổi
+    /// đồ không đụng thân hay bài nào.
+    static let sharedApparelFile = "apparel_shorts"
 
     /// Một mục trong legend: chấm màu đúng màu tô sáng của vai trò trong
     /// bản render + tên cơ + vai trò, qua key i18n.

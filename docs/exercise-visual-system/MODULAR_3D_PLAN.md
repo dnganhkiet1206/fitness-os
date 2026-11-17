@@ -78,7 +78,9 @@ Lợi thêm: 8 bài hiện chiếm 47 MB. Sang dạng khối thì còn 1 nhân v
 
 **16/11 — Dữ liệu bài thành file (Kiệt, việc 2):** `pipeline/export_app_demos.py` sinh `<bài>_demo.json` + `demo3d_index.json` từ `exercise.json` (`app_demo`: tên, tên gọi khác, ghi chú Lab) + `usdz_report.json` (góc máy) + vai trò cơ (chú thích, qua `config/legend_keys.json` và màu thương hiệu). App đọc các file này thay cho khai báo cứng trong `ExerciseDemo3D.swift`. Thêm bài / sửa vai trò cơ / sửa ghi chú: sửa `exercise.json`, chạy lệnh, không đụng code. Đối chiếu: chú thích + thời lượng của 8 bài giống hệt bản Swift; góc máy lệch < 2 mm (báo cáo mới hơn). Mẹo kỹ thuật (en/es/vi) vẫn trong Swift.
 
-**16/11 — Phòng theo phần (đang làm):** `build_gym_room.py --parts` xuất từng phần + `room_manifest_<look>.json` (phần + điểm neo trang trí); app ráp phòng theo manifest, không có manifest thì dùng file gộp.
+**16/11 — Phòng theo phần:** `build_gym_room.py --parts` xuất 7 phần (sàn, trần, tường, thanh gỗ, kệ, LED, biển logo) cho mỗi bản sáng / tối + `room_manifest_<look>.json` (danh sách phần + điểm neo trang trí: logo, trần trái/phải, tường trái/phải, sàn trái/phải, dây đèn). App ráp phòng theo manifest; bỏ 2 file phòng gộp khỏi app. Đổi sàn / kệ / logo = thay một file.
+
+**16/11 — Quần áo tách khỏi thân (Kiệt, việc 3):** `--apparel-out` xuất `apparel_shorts.usdz` (khung xương + quần); `character_003.usdz` chỉ còn thân. App nạp quần như khối riêng, chạy cùng chuyển động, đổi texture "chỉ cơ chính" trên quần. Đổi đồ / in logo lên quần / đồ theo mùa = một file, không đụng thân hay bài.
 
 ## Lộ trình đề xuất
 

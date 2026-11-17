@@ -382,9 +382,16 @@ def export_split(args, scene, rig, body, shorts, out_dir: Path, prefix: str, tmp
         split_equipment(scene, equipment, Path(args.equipment_out), out_dir, prefix)
     if args.character_out:
         scene.frame_set(scene.frame_start)
-        select([rig, body, shorts])
+        # With --apparel-out the body ships alone and the shorts get their
+        # own file (same rig, so the same animation drives both).
+        select([rig, body] if args.apparel_out else [rig, body, shorts])
         bpy.ops.wm.usd_export(filepath=str(args.character_out), export_animation=False, **USD_EXPORT)
         print(f"[evs] split: character {args.character_out} {Path(args.character_out).stat().st_size} bytes")
+    if args.apparel_out:
+        scene.frame_set(scene.frame_start)
+        select([rig, shorts])
+        bpy.ops.wm.usd_export(filepath=str(args.apparel_out), export_animation=False, **USD_EXPORT)
+        print(f"[evs] split: apparel {args.apparel_out} {Path(args.apparel_out).stat().st_size} bytes")
     me = bpy.data.meshes.new("EVS_MotionProxy")
     me.from_pydata([(0.0, 0.0, 0.9), (0.001, 0.0, 0.9), (0.0, 0.001, 0.9)], [], [(0, 1, 2)])
     proxy = bpy.data.objects.new("EVS_MotionProxy", me)
@@ -415,6 +422,9 @@ def main(exercise_name: str | None = None) -> None:
     parser.add_argument("--equipment-out", default=None,
                         help="with --split: write each implement once as equipment_<key>.usdz here and leave only "
                              "its animated socket in the motion file (Kiệt 16/11: change a dumbbell once for all)")
+    parser.add_argument("--apparel-out", default=None,
+                        help="with --split: write the shorts alone (rig + shorts, rest pose) to this path; the shared "
+                             "character then has no shorts (Kiệt 16/11: outfits change without touching the body)")
     parser.add_argument("--character-out", default=None,
                         help="with --split: also write the shared character (rest pose, no animation) to this path")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:])
