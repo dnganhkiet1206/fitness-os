@@ -1,0 +1,10 @@
+{
+  "comment": "Muscle id (exercise.json roles, config/muscle_map.json) -> legend name key eg.demo3d.legend.<key> in the app's Localizable.xcstrings. Default: the id in camelCase; overrides below. Ids that map to the same key appear once (trapezius middle + lower = 'Cơ thang giữa, dưới').",
+  "overrides": {
+    "forearm_muscles": "forearms",
+    "trapezius_middle": "trapezius",
+    "trapezius_lower": "trapezius"
+  },
+  "role_keys": {"primary": "eg.demo3d.legend.primary", "secondary": "eg.demo3d.legend.secondary", "stabilizing": "eg.demo3d.legend.stabilizer"},
+  "role_colors": {"primary": "muscle_primary", "secondary": "muscle_secondary", "stabilizing": "muscle_stabilizer"}
+}

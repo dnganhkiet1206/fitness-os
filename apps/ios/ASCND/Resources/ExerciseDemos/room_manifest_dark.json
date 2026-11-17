@@ -1,0 +1,108 @@
+{
+  "look": "dark",
+  "parts": [
+    {
+      "part": "floor",
+      "file": "gym_room_dark_floor",
+      "logo": false
+    },
+    {
+      "part": "ceiling",
+      "file": "gym_room_dark_ceiling",
+      "logo": false
+    },
+    {
+      "part": "walls",
+      "file": "gym_room_dark_walls",
+      "logo": false
+    },
+    {
+      "part": "slats",
+      "file": "gym_room_dark_slats",
+      "logo": false
+    },
+    {
+      "part": "racks",
+      "file": "gym_room_dark_racks",
+      "logo": false
+    },
+    {
+      "part": "leds",
+      "file": "gym_room_dark_leds",
+      "logo": false
+    },
+    {
+      "part": "logo",
+      "file": "gym_room_dark_logo",
+      "logo": true
+    }
+  ],
+  "anchors": {
+    "logo": [
+      -4.031,
+      2.2,
+      -4.159
+    ],
+    "ceiling_l": [
+      -2.546,
+      5.0,
+      -4.795
+    ],
+    "ceiling_r": [
+      -4.667,
+      5.0,
+      -2.674
+    ],
+    "wall_l": [
+      -2.857,
+      2.2,
+      -5.248
+    ],
+    "wall_r": [
+      -5.12,
+      2.2,
+      -2.985
+    ],
+    "floor_l": [
+      -1.131,
+      0.0,
+      -5.785
+    ],
+    "floor_r": [
+      -5.657,
+      0.0,
+      -1.26
+    ],
+    "string_a": [
+      -0.106,
+      3.05,
+      -7.871
+    ],
+    "string_b": [
+      -7.743,
+      3.05,
+      -0.234
+    ]
+  },
+  "facing": {
+    "into_room": [
+      0.707,
+      -0.0,
+      0.707
+    ],
+    "along_wall": [
+      0.707,
+      -0.0,
+      -0.707
+    ]
+  },
+  "room": {
+    "half_width_m": 6.0,
+    "height_m": 5.0,
+    "center": [
+      0.177,
+      0.0,
+      0.049
+    ]
+  }
+}

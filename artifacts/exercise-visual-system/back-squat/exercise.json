@@ -312,5 +312,18 @@
     ],
     "remaining": [],
     "note": "Redone after Kiệt 16/11 (shoulders ballooned, posture not right); waiting for Kiệt to look again. Status stays DRAFT."
+  },
+  "app_demo": {
+    "title": "Barbell Back Squat",
+    "family_label": "squat",
+    "note": "Kiệt 16/11: vai/ngực/cơ thang phồng, tư thế chưa đúng. Làm lại theo 2 video (PureGym, Dave Watkeys) + Catalyst Athletics, Squat University: tay nắm ngoài vai 1 nắm tay, kép bả vai, khuỷu chĩa xuống, đòn trên cơ thang; nhân vật thêm xương phụ chia góc xoay cánh tay. QA 18/18. Chờ Kiệt xem lại",
+    "review": null,
+    "aliases": [
+      "squat",
+      "back squat",
+      "barbell back squat",
+      "barbell squat"
+    ],
+    "catalog_order": 1
   }
 }

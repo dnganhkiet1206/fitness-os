@@ -390,5 +390,34 @@
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Pectoralis major, anterior deltoid and triceps brachii are the agonists in the systematic review by Stastny et al. 2017 (reference_notes.json). Stabilisers are listed from the same review's discussion, where the evidence is thinner; they are recorded here but not highlighted in the render (highlight_roles)."
+  "muscle_roles_note": "Pectoralis major, anterior deltoid and triceps brachii are the agonists in the systematic review by Stastny et al. 2017 (reference_notes.json). Stabilisers are listed from the same review's discussion, where the evidence is thinner; they are recorded here but not highlighted in the render (highlight_roles).",
+  "app_demo": {
+    "title": "Barbell Bench Press",
+    "family_label": "press_horizontal (script riêng)",
+    "note": "Chưa kiểm lại: bản trong app là bản cũ; dựng lại trên nhân vật 003 đang chờ chọn phương án đáy A/B",
+    "review": null,
+    "aliases": [
+      "bench press",
+      "barbell bench press",
+      "barbell bench press - medium grip"
+    ],
+    "catalog_order": 0,
+    "usdz": "bench_press_animation",
+    "loop": "bench_press_45_loop",
+    "poster": "bench_press_45_poster",
+    "duration_s": 8.5,
+    "camera": {
+      "position_m": [
+        3.5378,
+        2.3302,
+        3.3852
+      ],
+      "target_m": [
+        0.1817,
+        0.6027,
+        0.0291
+      ]
+    },
+    "legacy_comment": "Bench press is still the 14/11 full USDZ in the app (A/B bottom choice pending): these overrides describe that file, not the current pipeline report."
+  }
 }
