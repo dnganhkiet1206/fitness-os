@@ -21,7 +21,7 @@ private func seedParkedDay(_ db: ASCNDDatabase, owner: String, key: String) asyn
   try await db.queue.write { db in
     try db.execute(
       sql: "INSERT INTO workout_day (userId, key, state) VALUES (?, ?, ?)",
-      arguments: [owner, key, #"{"progress":{"done":{}}}"])
+      arguments: [owner, key, #"{"progress":{"done":{}}}"#])
   }
 }
 
