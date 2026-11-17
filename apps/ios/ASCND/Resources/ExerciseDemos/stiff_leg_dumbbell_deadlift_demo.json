@@ -60,6 +60,21 @@
       "role_key": "eg.demo3d.legend.stabilizer"
     }
   ],
+  "roles": {
+    "primary": [
+      "hamstrings"
+    ],
+    "secondary": [
+      "gluteus_maximus",
+      "adductors"
+    ],
+    "stabilizing": [
+      "erector_spinae",
+      "trapezius_upper",
+      "rhomboids",
+      "forearm_muscles"
+    ]
+  },
   "focus_prefix": "stiff_leg_dumbbell_deadlift_focus",
   "motion": "stiff_leg_dumbbell_deadlift_motion",
   "full_prefix": "stiff_leg_dumbbell_deadlift_full",

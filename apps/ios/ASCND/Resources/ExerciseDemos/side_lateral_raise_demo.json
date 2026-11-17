@@ -65,6 +65,23 @@
       "role_key": "eg.demo3d.legend.stabilizer"
     }
   ],
+  "roles": {
+    "primary": [
+      "deltoid_lateral"
+    ],
+    "secondary": [
+      "deltoid_anterior",
+      "trapezius_middle",
+      "trapezius_lower",
+      "serratus_anterior"
+    ],
+    "stabilizing": [
+      "trapezius_upper",
+      "rotator_cuff_posterior",
+      "erector_spinae",
+      "forearm_muscles"
+    ]
+  },
   "focus_prefix": "side_lateral_raise_focus",
   "motion": "side_lateral_raise_motion",
   "full_prefix": "side_lateral_raise_full",

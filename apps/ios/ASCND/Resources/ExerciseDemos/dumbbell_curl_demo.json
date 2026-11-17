@@ -52,6 +52,20 @@
       "role_key": "eg.demo3d.legend.stabilizer"
     }
   ],
+  "roles": {
+    "primary": [
+      "biceps_brachii"
+    ],
+    "secondary": [
+      "forearm_muscles"
+    ],
+    "stabilizing": [
+      "deltoid_anterior",
+      "trapezius_upper",
+      "trapezius_middle",
+      "trapezius_lower"
+    ]
+  },
   "focus_prefix": "dumbbell_curl_focus",
   "motion": "dumbbell_curl_motion",
   "full_prefix": "dumbbell_curl_full",

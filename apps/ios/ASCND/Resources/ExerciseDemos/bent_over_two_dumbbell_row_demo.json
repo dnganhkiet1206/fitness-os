@@ -80,6 +80,26 @@
       "role_key": "eg.demo3d.legend.stabilizer"
     }
   ],
+  "roles": {
+    "primary": [
+      "latissimus_dorsi",
+      "trapezius_middle",
+      "trapezius_lower",
+      "rhomboids"
+    ],
+    "secondary": [
+      "deltoid_posterior",
+      "biceps_brachii",
+      "rotator_cuff_posterior",
+      "forearm_muscles"
+    ],
+    "stabilizing": [
+      "erector_spinae",
+      "trapezius_upper",
+      "hamstrings",
+      "gluteus_maximus"
+    ]
+  },
   "focus_prefix": "bent_over_two_dumbbell_row_focus",
   "motion": "bent_over_two_dumbbell_row_motion",
   "full_prefix": "bent_over_two_dumbbell_row_full",

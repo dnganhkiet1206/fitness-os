@@ -44,6 +44,9 @@
       /// Tiền tố texture da đủ ba vai trò (`<prefix>_albedo/_emission/_normal.png`
       /// + `_apparel_albedo/_emission`) cho bài dạng khối.
       var fullTexturePrefix: String?
+      /// Mã cơ theo vai trò (`primary` / `secondary` / `stabilizing`) cho shader tô cơ lúc chạy
+      /// (`MuscleShader`, 17/11). Rỗng = bài dùng texture nướng sẵn.
+      var roles: [String: [String]] = [:]
       /// File 3D phải có trong bundle để mở bài: file chuyển động (dạng khối)
       /// hoặc USDZ đầy đủ (bài cũ).
       var bundledFile: String { motionFile ?? usdzFile }
@@ -87,6 +90,7 @@
       let focus_prefix: String?
       let motion: String?
       let full_prefix: String?
+      let roles: [String: [String]]?
       let review: ReviewFile?
       let note: String?
     }
@@ -119,6 +123,7 @@
       d.focusTexturePrefix = f.focus_prefix
       d.motionFile = f.motion
       d.fullTexturePrefix = f.full_prefix
+      d.roles = f.roles ?? [:]
       return d
     }
 

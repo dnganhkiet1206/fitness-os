@@ -1,0 +1,50 @@
+// Tô cơ lúc chạy (MODULAR_3D_PLAN.md bước 1, Kiệt chọn 16/11; làm 17/11).
+//
+// Một bộ ảnh dùng chung cho mọi bài thay cho texture da nướng sẵn từng bài:
+//   custom         = muscle_ids.png (R = số thứ tự phần cơ + 1, G = độ phủ, B = viền), đọc
+//                    đúng điểm ảnh (không nội suy, mép hai phần cơ không lẫn số);
+//   base_color     = muscle_shade.jpg (thớ cơ, 1 = không đổi), nạp dạng raw (số tuyến tính);
+//   emissive_color = bảng màu 64×1 dựng lúc chạy từ vai trò của bài: rgb = màu vai trò
+//                    (tuyến tính), a = 1 khi phần cơ có vai trò;
+//   normal         = muscle_normal.jpg (khối cơ, dùng chung);
+//   base_color_tint = màu nền (da / quần), custom_parameter.x = hệ số (thân 1, quần 0,8).
+//
+// Đúng phép pha của pipeline (export_usdz.py: albedo_from_highlight, apply_shade,
+// painted_emission), trong không gian tuyến tính:
+//   a        = độ phủ · hệ số · có vai trò
+//   albedo   = (nền·(1−a) + màu·a) · shade        (shade chỉ trên phần cơ có vai trò)
+//   emission = màu·a·shade·0,24 + (màu·0,55 + 0,45)·viền·0,95
+#include <metal_stdlib>
+#include <RealityKit/RealityKit.h>
+using namespace metal;
+
+[[visible]]
+void ascndMuscleSurface(realitykit::surface_parameters params)
+{
+    constexpr sampler smooth(coord::normalized, address::clamp_to_edge, filter::linear, mip_filter::linear);
+    auto tex = params.textures();
+    auto surface = params.surface();
+    float2 uv = params.geometry().uv0();
+    // Ảnh lưu theo thứ tự PNG (hàng trên = v 1) như mọi texture USD.
+    uv.y = 1.0 - uv.y;
+
+    texture2d<half> ids = tex.custom();
+    uint2 size = uint2(ids.get_width(), ids.get_height());
+    uint2 px = min(uint2(uv * float2(size)), size - 1);
+    half4 id = ids.read(px);
+    uint part = min(uint(round(float(id.r) * 255.0)), 63u);
+    half4 role = tex.emissive_color().read(uint2(part, 0));
+    half on = part == 0 ? half(0) : role.a;
+
+    half gain = half(params.uniforms().custom_parameter().x);
+    half a = clamp(id.g * gain * on, half(0), half(1));
+    half shade = mix(half(1), tex.base_color().sample(smooth, uv).r, on);
+    half3 base = half3(params.material_constants().base_color_tint());
+
+    surface.set_base_color((base * (1.0h - a) + role.rgb * a) * shade);
+    half3 tint = role.rgb * 0.55h + 0.45h;
+    surface.set_emissive_color(role.rgb * a * shade * 0.24h + tint * id.b * on * 0.95h);
+    surface.set_normal(float3(realitykit::unpack_normal(tex.normal().sample(smooth, uv).rgb)));
+    surface.set_roughness(half(params.material_constants().roughness_scale()));
+    surface.set_metallic(0.0h);
+}
