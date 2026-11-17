@@ -48,7 +48,9 @@ public struct SupabaseOnboardingWriter: OnboardingWriter {
   }
 }
 
-/// Hồ sơ (#425): `useProfile` — `select('*') … eq('user_id')`.
+/// Hồ sơ (#425): `useProfile` — đúng các cột `Profile.init(row:)` đọc (R2-OPS-08,
+/// không `select('*')` nữa); `eq('user_id')`. Thêm cột đọc ở `Profile` thì thêm
+/// ở đây — cột thiếu về `nil`, không báo lỗi.
 public struct SupabaseProfileSource: ProfileSource {
   private let client: SupabaseClient
 
@@ -58,7 +60,11 @@ public struct SupabaseProfileSource: ProfileSource {
 
   public func profile(userId: String) async throws -> JSONValue? {
     let rows: [JSONValue] = try await client.from("profiles")
-      .select("*")
+      .select(
+        "user_id, name, dob, sex, activity_level, training_level, dietary_preference, height_cm, weight_kg, goal, "
+          + "tdee_target_kcal, macro_protein_g, macro_carbs_g, macro_fat_g, macro_fiber_g, water_target_ml, "
+          + "units_weight, units_height, sleep_target_hours, sleep_target_bedtime, sleep_target_waketime, "
+          + "sleep_target_bedtime_set, sleep_target_waketime_set, allergies, disliked_foods, onboarding_completed")
       .eq("user_id", value: userId)
       .limit(1)
       .execute().value
