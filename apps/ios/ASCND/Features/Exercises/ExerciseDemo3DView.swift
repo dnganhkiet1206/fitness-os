@@ -204,8 +204,9 @@
               }
           }
           if showTips {
-            // Vẽ lại mỗi khung: điểm neo đi theo khớp khi động tác chạy.
-            TimelineView(.animation) { _ in
+            // Vẽ lại mỗi khung: điểm neo đi theo khớp khi động tác chạy. Bật Giảm chuyển động thì
+            // chỉ cập nhật 4 lần/giây (nhãn nhảy theo bước, không trượt).
+            TimelineView(.animation(minimumInterval: reduceMotion ? 0.25 : nil)) { _ in
             GeometryReader { geo in
               ExerciseTipsOverlay(
                 tips: demoInfo?.tips ?? [],
