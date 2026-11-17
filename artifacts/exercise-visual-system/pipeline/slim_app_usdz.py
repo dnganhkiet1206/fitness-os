@@ -171,7 +171,12 @@ def a2_a3_room(app: Path) -> None:
             d_tex = sorted((d_layer.parent / "textures").glob("*"))
             if len(l_tex) != 1 or len(d_tex) != 1:
                 raise RuntimeError(f"{lp['part']}: expected one texture per look, got {l_tex} / {d_tex}")
-            _pack(l_layer, app / f"{shared}.usdz")
+            # Pack to a temporary name first: after a first run one of the inputs IS the shared
+            # file (one look re-exported alone with --looks), so deleting inputs must never
+            # touch the output (review #939).
+            out = app / f"{shared}.usdz"
+            staged = app / f"{shared}.staged.usdz"
+            _pack(l_layer, staged)
             lp["file"] = shared
             dp["file"] = shared
             dp.pop("texture", None)
@@ -179,8 +184,10 @@ def a2_a3_room(app: Path) -> None:
                 out_tex = app / f"gym_room_dark_{lp['part']}{d_tex[0].suffix}"
                 shutil.copyfile(d_tex[0], out_tex)
                 dp["texture"] = out_tex.stem
-            lf.unlink()
-            df.unlink()
+            for old_input in {lf, df}:
+                if old_input.resolve() != out.resolve() and old_input.exists():
+                    old_input.unlink()
+            staged.replace(out)
         after = (app / f"{shared}.usdz").stat().st_size + (
             (app / f"{dp['texture']}{d_tex[0].suffix}").stat().st_size if "texture" in dp else 0)
         print(f"[slim] A2+A3 {lp['part']}: {before / 1e6:.2f} -> {after / 1e6:.2f} MB")
