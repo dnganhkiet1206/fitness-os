@@ -117,3 +117,4 @@ DO $$ DECLARE e text; BEGIN
   ASSERT e = 'Tác giả', format('RG15 trích đoạn báo cáo người phải là display_name, ra %s', e);
 END $$;
 RESET ROLE;
+\echo 'TẤT CẢ 17 KỊCH BẢN BÁO CÁO ĐỌC ĐƯỢC ĐÚNG'

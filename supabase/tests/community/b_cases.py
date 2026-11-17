@@ -110,6 +110,10 @@ CASES = [
        old="WHERE post_id = NEW.post_id AND status = 'open' AND counted\n  ) >= 3 THEN", new="WHERE post_id = NEW.post_id AND status = 'open' AND counted\n  ) >= 2 THEN", expect='28 hai báo cáo'),
   dict(suite=F, id='29', mig='20261007220000_community_report_trust', how='ngưỡng tự ẩn bài nâng lên 4',
        old="WHERE post_id = NEW.post_id AND status = 'open' AND counted\n  ) >= 3 THEN", new="WHERE post_id = NEW.post_id AND status = 'open' AND counted\n  ) >= 4 THEN", expect='29 ba người'),
+  # 29b đo guard 20261117170000 (không đọc được thì không báo cáo): bỏ kiểm
+  # chặn trong hàm đọc bài thì B bị chặn vẫn báo cáo được bài của A.
+  dict(suite=F, id='29b', mig='20261117170000_community_report_readable_guard', how='bỏ kiểm chặn trong hàm đọc bài (guard)',
+       old="          AND NOT public.community_blocked_between(p_viewer, p.author_id)", new="          AND true", expect='29b '),
   # 30b là ĐỐI CHỨNG của 30: người xem gỡ được dòng ẩn riêng của mình, nên 30
   # chỉ còn đo cờ `hidden` chung. Phá policy gỡ ẩn thì 30b phải đỏ.
   dict(suite=F, id='30b', mig='20261007220000_community_report_trust', how='ĐỐI CHỨNG: không gỡ được dòng ẩn riêng',
@@ -1262,6 +1266,64 @@ CASES += [
        old="REVOKE EXECUTE ON FUNCTION public.community_reporter_eligible(uuid) FROM PUBLIC, anon, authenticated;",
        new="REVOKE EXECUTE ON FUNCTION public.community_reporter_eligible(uuid) FROM PUBLIC, anon;", expect='RT29 '),
   dict(suite=RTS, id='RT30', mig=RTM, how='anon giữ quyền trên bảng ẩn', old="REVOKE ALL ON public.community_post_hides FROM anon;\n", new="", expect='RT30 '),
+]
+
+# ── Báo cáo chỉ trên nội dung mình đọc được (D, 17/11 — Devin #924, SEC) ──
+# Mỗi chốt của guard 20261117170000 có một ca phá thử nó: bỏ chốt nào thì
+# nhãn đo chốt ấy phải đỏ đầu tiên.
+RGM = '20261117170000_community_report_readable_guard'
+RGS = 'report_guard'
+CASES += [
+  dict(suite=RGS, id='RG0', mig=RGM, how='hàm đọc bài luôn nói đọc được',
+       old="  SELECT EXISTS (\n    SELECT 1 FROM public.community_posts p",
+       new="  SELECT true OR EXISTS (\n    SELECT 1 FROM public.community_posts p", expect='RG0 '),
+  dict(suite=RGS, id='RG0b', mig=RGM, how='báo cáo người (không có đích) bị coi là không đọc được',
+       old="    (p_post IS NULL OR public.community_post_readable_by(p_viewer, p_post))",
+       new="    (p_post IS NOT NULL AND public.community_post_readable_by(p_viewer, p_post))", expect='RG0b '),
+  dict(suite=RGS, id='RG1', mig=RGM, how='hàm đọc bài luôn nói không đọc được',
+       old="  SELECT EXISTS (\n    SELECT 1 FROM public.community_posts p",
+       new="  SELECT false AND EXISTS (\n    SELECT 1 FROM public.community_posts p", expect='RG1 '),
+  dict(suite=RGS, id='RG2', mig=RGM, how='bài chỉ-follower đọc được với mọi người',
+       old="            p.visibility = 'public'\n            OR EXISTS (",
+       new="            true\n            OR EXISTS (", expect='RG2 '),
+  dict(suite=RGS, id='RG3', mig=RGM, how='bỏ nhánh đang theo dõi của hàm đọc bài',
+       old="              WHERE f.follower_id = p_viewer AND f.followee_id = p.author_id",
+       new="              WHERE false", expect='RG3 '),
+  dict(suite=RGS, id='RG4', mig=RGM, how='bỏ kiểm chặn trong hàm đọc bài',
+       old="          AND NOT public.community_blocked_between(p_viewer, p.author_id)",
+       new="          AND true", expect='RG4 '),
+  dict(suite=RGS, id='RG5', mig=RGM, how='chỉ chặn một chiều (tác giả chặn người xem)',
+       old="          AND NOT public.community_blocked_between(p_viewer, p.author_id)",
+       new="          AND NOT EXISTS (SELECT 1 FROM public.community_blocks b WHERE b.blocker_id = p.author_id AND b.blocked_id = p_viewer)", expect='RG5 '),
+  dict(suite=RGS, id='RG6', mig=RGM, how='bỏ kiểm bài đã ẩn trong hàm đọc bài',
+       old="          NOT p.hidden", new="          true", expect='RG6 '),
+  dict(suite=RGS, id='RG7', mig=RGM, how='tác giả không còn đọc được bài của chính mình',
+       old="        p.author_id = p_viewer\n        OR (",
+       new="        false\n        OR (", expect='RG7 '),
+  dict(suite=RGS, id='RG8', mig=RGM, how='bình luận luôn không đọc được (bỏ kiểm bài cha)',
+       old="        AND public.community_post_readable_by(p_viewer, c.post_id)",
+       new="        AND false", expect='RG8 '),
+  dict(suite=RGS, id='RG9', mig=RGM, how='bỏ kiểm bài cha của bình luận',
+       old="        AND public.community_post_readable_by(p_viewer, c.post_id)",
+       new="        AND true", expect='RG9 '),
+  dict(suite=RGS, id='RG10', mig=RGM, how='bỏ kiểm bình luận đã ẩn',
+       old="          OR (NOT c.hidden AND NOT public.community_blocked_between(p_viewer, c.author_id))",
+       new="          OR (true AND NOT public.community_blocked_between(p_viewer, c.author_id))", expect='RG10 '),
+  dict(suite=RGS, id='RG11', mig=RGM, how='bỏ kiểm chặn trong hàm đọc bình luận',
+       old="          OR (NOT c.hidden AND NOT public.community_blocked_between(p_viewer, c.author_id))",
+       new="          OR (NOT c.hidden AND true)", expect='RG11 '),
+  dict(suite=RGS, id='RG12', mig=RGM, how='báo cáo người bị từ chối (đòi phải có đích bài/bình luận)',
+       old="  IF NOT public.community_report_target_readable(NEW.reporter_id, NEW.post_id, NEW.comment_id) THEN",
+       new="  IF (NEW.post_id IS NULL AND NEW.comment_id IS NULL) OR NOT public.community_report_target_readable(NEW.reporter_id, NEW.post_id, NEW.comment_id) THEN", expect='RG12 '),
+  dict(suite=RGS, id='RG13', mig=RGM, how='trích đoạn luôn rỗng',
+       old="        WHEN public.community_report_target_readable(v_uid, r.post_id, r.comment_id) THEN coalesce(",
+       new="        WHEN false THEN coalesce(", expect='RG13 '),
+  dict(suite=RGS, id='RG14', mig=RGM, how='bỏ kiểm quyền đọc của trích đoạn',
+       old="        WHEN public.community_report_target_readable(v_uid, r.post_id, r.comment_id) THEN coalesce(",
+       new="        WHEN true THEN coalesce(", expect='RG14 '),
+  dict(suite=RGS, id='RG15', mig=RGM, how='trích đoạn báo cáo người mất display_name',
+       old="          (SELECT cp.display_name FROM community_profiles cp WHERE cp.user_id = r.reported_user_id))",
+       new="          (SELECT NULL::text))", expect='RG15 '),
 ]
 
 # ── Hữu ích tuần này (A, 04/10 — concept §19, bàn với C ở #6) ──

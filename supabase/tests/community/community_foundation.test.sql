@@ -151,4 +151,4 @@ RESET ROLE;
 -- ── xoá tài khoản ──
 DELETE FROM auth.users WHERE id = :A;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_profiles WHERE user_id = 'aaaaaaaa-0000-0000-0000-000000000001') = 0 AND (SELECT count(*) FROM community_posts) = 0, '36 xoá tài khoản để lại dữ liệu cộng đồng'; END $$;
-\echo TẤT CẢ 40 KỊCH BẢN ĐÚNG
+\echo TẤT CẢ 41 KỊCH BẢN ĐÚNG
