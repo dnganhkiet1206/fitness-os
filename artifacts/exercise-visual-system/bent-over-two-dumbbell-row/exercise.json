@@ -329,5 +329,17 @@
     "note": "Agent self-check only; status stays DRAFT until a qualified reviewer approves.",
     "owner_feedback": "Kiệt 14/11: wrong posture; fixed knees 31 deg (shins vertical, hips back), flat back with chest up, head in line, scapular retraction at the top. Awaiting Kiệt's re-check.",
     "status": "reopened"
+  },
+  "app_demo": {
+    "title": "Bent Over Two-Dumbbell Row",
+    "family_label": "row",
+    "note": "Kiệt 14–15/11: sai tư thế. Làm lại theo 2 video YouTube người thật + Garage Gym Reviews, PowerliftingTechnique, Muscle & Strength: thân gập ~52° và giữ nguyên, gối hơi gập, lưng thẳng, cổ trung tính; khuỷu sát thân kéo về phía hông, tạ lên ngang eo. QA 17/17. Chờ Kiệt xem lại",
+    "review": null,
+    "aliases": [
+      "bent over two-dumbbell row",
+      "bent over dumbbell row",
+      "dumbbell bent over row"
+    ],
+    "catalog_order": 6
   }
 }

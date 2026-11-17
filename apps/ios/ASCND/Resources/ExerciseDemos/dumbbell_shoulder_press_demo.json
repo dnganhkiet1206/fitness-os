@@ -1,0 +1,86 @@
+{
+  "id": "dumbbell_shoulder_press",
+  "title": "Dumbbell Shoulder Press",
+  "family_label": "press_vertical (ngồi)",
+  "aliases": [
+    "dumbbell shoulder press",
+    "seated dumbbell shoulder press",
+    "seated dumbbell press"
+  ],
+  "usdz": "dumbbell_shoulder_press_animation",
+  "loop": null,
+  "poster": "dumbbell_shoulder_press_poster",
+  "duration_s": 8.8,
+  "camera": {
+    "position": [
+      1.7982,
+      1.6958,
+      1.9101
+    ],
+    "target": [
+      0.0102,
+      0.7754,
+      0.1221
+    ]
+  },
+  "legend": [
+    {
+      "hex": "#E8552B",
+      "name_key": "eg.demo3d.legend.deltoidAnterior",
+      "role_key": "eg.demo3d.legend.primary"
+    },
+    {
+      "hex": "#E8552B",
+      "name_key": "eg.demo3d.legend.deltoidLateral",
+      "role_key": "eg.demo3d.legend.primary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.tricepsBrachii",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.trapezius",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.serratusAnterior",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.trapeziusUpper",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.rotatorCuffPosterior",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.bicepsBrachii",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    }
+  ],
+  "focus_prefix": "dumbbell_shoulder_press_focus",
+  "motion": "dumbbell_shoulder_press_motion",
+  "full_prefix": "dumbbell_shoulder_press_full",
+  "review": {
+    "date": "16/11",
+    "checked": [
+      "QA tự động 19/19: xương, tay bám dụng cụ, chân không trượt, dụng cụ không xuyên da, dáng toàn thân, khớp nhịp tempo.json",
+      "Tờ soi xoay vòng 8 góc × 3 khung (đầu, giữa, cuối pha)",
+      "Tờ soi tầm mắt người đứng nhìn (1,6 m) 5 góc: ghế 70°, lưng và đầu tựa đệm, vai hạ, khuỷu dưới cổ tay ~35° ra trước, hạ tới ngang cằm, đẩy thẳng lên, hai tạ không chạm",
+      "Mở trong trình xem 3D của app (simulator iPhone 17), chú thích cơ đúng",
+      "Render lại 16/11 trên nhân vật 3.3: bản đồ cơ 48 phần, thớ cơ theo từng phần, tô 3 cấp Chính / Phụ / Ổn định (vai trò theo ExRx)",
+      "Đối chiếu 3 video YouTube người thật + ACE, Muscle & Strength, ExRx",
+      "Kiệt duyệt động tác 15/11",
+      "Mẹo: 5 ô (ghế, vai, khuỷu, độ sâu, bụng)"
+    ],
+    "remaining": []
+  },
+  "note": "Kiệt duyệt động tác 15/11. Bấm nút Mẹo (bóng đèn) trong trình xem để xem 5 mẹo kỹ thuật"
+}

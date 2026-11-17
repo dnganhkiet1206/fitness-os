@@ -319,5 +319,27 @@
       "giãn da háng trước (giới hạn lưới nhân vật 003) 2,80/2,6"
     ],
     "note": "Agent self-check only; status stays DRAFT until a qualified reviewer approves."
+  },
+  "app_demo": {
+    "title": "Stiff-Legged Dumbbell Deadlift",
+    "family_label": "hinge",
+    "note": null,
+    "review": {
+      "date": "16/11",
+      "checked": [
+        "QA tự động 18/18: xương, tay bám dụng cụ, chân không trượt, dụng cụ không xuyên da, dáng toàn thân, khớp nhịp tempo.json",
+        "Tờ soi xoay vòng 8 góc × 3 khung (đầu, giữa, cuối pha)",
+        "Tờ soi tầm mắt người đứng nhìn (1,6 m) 5 góc: gập hông, lưng thẳng, gối mềm, hông lùi ra sau, tạ sát chân xuống giữa cẳng chân, trọng tâm trên bàn chân",
+        "Mở trong trình xem 3D của app (simulator iPhone 17), chú thích cơ đúng",
+        "Render lại 16/11 trên nhân vật 3.3: bản đồ cơ 48 phần, thớ cơ theo từng phần, tô 3 cấp Chính / Phụ / Ổn định (vai trò theo ExRx)"
+      ],
+      "remaining": []
+    },
+    "aliases": [
+      "stiff-legged dumbbell deadlift",
+      "stiff-leg dumbbell deadlift",
+      "dumbbell stiff-legged deadlift"
+    ],
+    "catalog_order": 5
   }
 }

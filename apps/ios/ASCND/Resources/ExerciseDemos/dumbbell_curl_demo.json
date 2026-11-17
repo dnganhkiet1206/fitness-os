@@ -1,0 +1,70 @@
+{
+  "id": "dumbbell_curl",
+  "title": "Dumbbell Biceps Curl",
+  "family_label": "curl",
+  "aliases": [
+    "bicep curl",
+    "biceps curl",
+    "dumbbell curl",
+    "dumbbell bicep curl",
+    "dumbbell biceps curl"
+  ],
+  "usdz": "dumbbell_curl_animation",
+  "loop": null,
+  "poster": "dumbbell_curl_poster",
+  "duration_s": 9.8,
+  "camera": {
+    "position": [
+      1.6281,
+      1.7949,
+      1.7824
+    ],
+    "target": [
+      -0.0455,
+      0.9334,
+      0.1088
+    ]
+  },
+  "legend": [
+    {
+      "hex": "#E8552B",
+      "name_key": "eg.demo3d.legend.bicepsBrachii",
+      "role_key": "eg.demo3d.legend.primary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.forearms",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.deltoidAnterior",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.trapeziusUpper",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.trapezius",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    }
+  ],
+  "focus_prefix": "dumbbell_curl_focus",
+  "motion": "dumbbell_curl_motion",
+  "full_prefix": "dumbbell_curl_full",
+  "review": {
+    "date": "16/11",
+    "checked": [
+      "QA tự động 19/19: xương, tay bám dụng cụ, chân không trượt, dụng cụ không xuyên da, dáng toàn thân, khớp nhịp tempo.json",
+      "Tờ soi xoay vòng 8 góc × 3 khung (đầu, giữa, cuối pha)",
+      "Tờ soi tầm mắt người đứng nhìn (1,6 m) 5 góc: cánh tay trên sát thân, khuỷu gập ~138°, lòng bàn tay ngửa, thân đứng yên",
+      "Mở trong trình xem 3D của app (simulator iPhone 17), chú thích cơ đúng",
+      "Render lại 16/11 trên nhân vật 3.3: bản đồ cơ 48 phần, thớ cơ theo từng phần, tô 3 cấp Chính / Phụ / Ổn định (vai trò theo ExRx)"
+    ],
+    "remaining": []
+  },
+  "note": null
+}

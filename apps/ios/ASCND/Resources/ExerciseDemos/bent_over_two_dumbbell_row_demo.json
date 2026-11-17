@@ -1,0 +1,88 @@
+{
+  "id": "bent_over_two_dumbbell_row",
+  "title": "Bent Over Two-Dumbbell Row",
+  "family_label": "row",
+  "aliases": [
+    "bent over two-dumbbell row",
+    "bent over dumbbell row",
+    "dumbbell bent over row"
+  ],
+  "usdz": "bent_over_two_dumbbell_row_animation",
+  "loop": null,
+  "poster": "bent_over_two_dumbbell_row_poster",
+  "duration_s": 8.2,
+  "camera": {
+    "position": [
+      1.0571,
+      1.4568,
+      -1.5131
+    ],
+    "target": [
+      -0.0744,
+      0.7388,
+      0.1029
+    ]
+  },
+  "legend": [
+    {
+      "hex": "#E8552B",
+      "name_key": "eg.demo3d.legend.latissimusDorsi",
+      "role_key": "eg.demo3d.legend.primary"
+    },
+    {
+      "hex": "#E8552B",
+      "name_key": "eg.demo3d.legend.trapezius",
+      "role_key": "eg.demo3d.legend.primary"
+    },
+    {
+      "hex": "#E8552B",
+      "name_key": "eg.demo3d.legend.rhomboids",
+      "role_key": "eg.demo3d.legend.primary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.deltoidPosterior",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.bicepsBrachii",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.rotatorCuffPosterior",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.forearms",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.erectorSpinae",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.trapeziusUpper",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.hamstrings",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.gluteusMaximus",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    }
+  ],
+  "focus_prefix": "bent_over_two_dumbbell_row_focus",
+  "motion": "bent_over_two_dumbbell_row_motion",
+  "full_prefix": "bent_over_two_dumbbell_row_full",
+  "review": null,
+  "note": "Kiệt 14–15/11: sai tư thế. Làm lại theo 2 video YouTube người thật + Garage Gym Reviews, PowerliftingTechnique, Muscle & Strength: thân gập ~52° và giữ nguyên, gối hơi gập, lưng thẳng, cổ trung tính; khuỷu sát thân kéo về phía hông, tạ lên ngang eo. QA 17/17. Chờ Kiệt xem lại"
+}

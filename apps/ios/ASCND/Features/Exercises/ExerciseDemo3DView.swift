@@ -114,8 +114,7 @@
                 content.camera = .virtual  // dùng thực thể có PerspectiveCameraComponent ở trên
                 do {
                   // Phòng tập 3D, ánh sáng đã nướng sẵn: vẽ không cần đèn.
-                  let roomName = scheme == .dark ? "gym_room_dark" : "gym_room_light"
-                  if let room = try? await Entity(named: roomName, in: .main) {
+                  if let room = await Self.loadRoom(look: scheme == .dark ? "dark" : "light") {
                     Self.makeUnlit(room, dark: scheme == .dark)
                     content.add(room)
                   }
@@ -547,6 +546,29 @@
         PerspectiveCameraComponent(near: 0.1, far: 100, fieldOfViewInDegrees: verticalFOV))
       camera.look(at: cameraTarget, from: cameraPosition, relativeTo: nil)
       return camera
+    }
+
+    /// Phòng dạng khối (Kiệt 16/11): `room_manifest_<look>.json` liệt kê từng
+    /// phần (sàn, tường, trần, thanh gỗ, kệ, LED, biển logo), mỗi phần một
+    /// USDZ, cùng các điểm neo cho đồ trang trí. Đổi một phần = thay một file.
+    /// Không có manifest thì dùng file phòng gộp như trước.
+    private struct RoomManifest: Decodable {
+      struct Part: Decodable { let part: String; let file: String }
+      let parts: [Part]
+      let anchors: [String: [Float]]
+    }
+
+    private static func loadRoom(look: String) async -> Entity? {
+      guard let url = Bundle.main.url(forResource: "room_manifest_\(look)", withExtension: "json"),
+        let data = try? Data(contentsOf: url),
+        let manifest = try? JSONDecoder().decode(RoomManifest.self, from: data)
+      else { return try? await Entity(named: "gym_room_\(look)", in: .main) }
+      let room = Entity()
+      room.name = "GymRoom"
+      for part in manifest.parts {
+        if let e = try? await Entity(named: part.file, in: .main) { room.addChild(e) }
+      }
+      return room
     }
 
     private struct EquipmentManifest: Decodable {
