@@ -9,6 +9,10 @@ Writes, once per character (same UVs as the body):
 * ``muscle_ids.png`` (RGB, 2048²): R = part index + 1 (0 = skin, nearest
   sampled), G = crisp coverage of that part (soft edge), B = rim band just
   inside each muscle outline (the glow that makes groups read at a glance);
+* ``muscle_ids2.png`` (grey, 2048²): the SECOND part under each texel where two parts overlap
+  (0 = none; PR #931 review: the rhomboids lie under the middle trapezius, a single label
+  hid them in exercises where only the rhomboids have a role). The app takes the first of
+  the two labels that has a role;
 * ``muscle_shade.jpg``: fibre shading for every part (multiplies the role
   colour; 1 = no change);
 * ``muscle_normal.jpg``: the layered muscle sculpt (no fibres), used on skin and on parts that
@@ -65,6 +69,11 @@ def main() -> None:
     # Index into the full part list (stable across characters), not `present`.
     lookup = np.array([parts.index(p) + 1 for p in present], dtype=np.uint8)
     ids = np.where(ids > 0, lookup[np.maximum(ids.astype(int) - 1, 0)], 0).astype(np.uint8)
+    # Second label: the best other part that also covers the texel (> 0.5).
+    second_crisp = crisp.copy()
+    np.put_along_axis(second_crisp, best[None], 0.0, axis=0)
+    second = second_crisp.argmax(0)
+    ids2 = np.where((second_crisp.max(0) > 0.5) & (ids > 0), lookup[second], 0).astype(np.uint8)
     sculpt_path = atlas / "sculpt_height.npz"
     base = base_relief = None
     if sculpt_path.exists():
@@ -80,6 +89,12 @@ def main() -> None:
     out = Path(args.out)
     # PNG-ordered like the other skin textures (top row = v 1).
     pngio.write_png(out / "muscle_ids.png", np.flipud(rgba))
+    pngio.write_png(out / "muscle_ids2.png", np.flipud(np.repeat(ids2[..., None], 3, -1)))
+    # One format per map: never leave an older JPEG / PNG twin next to the new file (the app
+    # takes JPEG first). PR #931 review.
+    for stem in ("muscle_shade", "muscle_normal", "muscle_fiber_normal"):
+        for ext in (".jpg", ".png"):
+            (out / f"{stem}{ext}").unlink(missing_ok=True)
     shade_png = out / "_muscle_shade.png"
     pngio.write_png(shade_png, np.flipud(np.repeat((np.clip(shade, 0, 1) * 255 + 0.5).astype(np.uint8)[..., None], 3, -1)))
     normal_src = out / "_muscle_normal.png"

@@ -33,6 +33,9 @@ import Foundation
       let height: Int
       /// RGBA: R = số thứ tự phần cơ + 1, G = độ phủ, B = viền.
       let ids: [UInt8]
+      /// Một kênh: phần cơ thứ hai nằm chồng dưới (0 = không có), ví dụ cơ trám dưới cơ thang giữa.
+      /// Khi pha, lấy nhãn đầu tiên có vai trò trong bài (review #931).
+      let ids2: [UInt8]
       /// Một kênh: thớ cơ (255 = 1, không đổi).
       let shade: [UInt8]
       /// RGBA: normal khối cơ (không thớ) và normal có thớ của mọi phần cơ.
@@ -72,16 +75,18 @@ import Foundation
       guard let partsURL = Bundle.main.url(forResource: "muscle_parts", withExtension: "json"),
         let data = try? Data(contentsOf: partsURL),
         let file = try? JSONDecoder().decode(PartsFile.self, from: data),
-        let ids = pixels("muscle_ids", "png", channels: 4),
-        let shade = pixels("muscle_shade", "jpg", channels: 1),
-        let normal = pixels("muscle_normal", "jpg", channels: 4),
-        let fiber = pixels("muscle_fiber_normal", "jpg", channels: 4),
+        let ids = pixels("muscle_ids", channels: 4),
+        let ids2 = pixels("muscle_ids2", channels: 1),
+        let shade = pixels("muscle_shade", channels: 1),
+        let normal = pixels("muscle_normal", channels: 4),
+        let fiber = pixels("muscle_fiber_normal", channels: 4),
         ids.width == shade.width, ids.height == shade.height,
+        ids2.width == ids.width, ids2.height == ids.height,
         [normal.width, fiber.width].allSatisfy({ $0 == ids.width }),
         [normal.height, fiber.height].allSatisfy({ $0 == ids.height })
       else { return nil }
       let s = Shared(
-        width: ids.width, height: ids.height, ids: ids.bytes, shade: shade.bytes, normal: normal.bytes,
+        width: ids.width, height: ids.height, ids: ids.bytes, ids2: ids2.bytes, shade: shade.bytes, normal: normal.bytes,
         fiberNormal: fiber.bytes, parts: file.parts,
         aggregates: file.aggregates)
       cached = s
@@ -89,8 +94,10 @@ import Foundation
     }
 
     /// Giải nén ảnh thành điểm ảnh thô (không quản lý màu: số đọc ra đúng như đã lưu).
-    private static func pixels(_ name: String, _ ext: String, channels: Int) -> (width: Int, height: Int, bytes: [UInt8])? {
-      guard let url = Bundle.main.url(forResource: name, withExtension: ext),
+    /// JPEG hay PNG đều được: máy xuất không có ImageMagick thì ra PNG (review #931).
+    private static func pixels(_ name: String, channels: Int) -> (width: Int, height: Int, bytes: [UInt8])? {
+      guard let url = Bundle.main.url(forResource: name, withExtension: "jpg")
+        ?? Bundle.main.url(forResource: name, withExtension: "png"),
         let src = CGImageSourceCreateWithURL(url as CFURL, nil),
         let image = CGImageSourceCreateImageAtIndex(src, 0, [kCGImageSourceShouldCache: false] as CFDictionary)
       else { return nil }
@@ -167,12 +174,18 @@ import Foundation
       // Màu theo ô bảng (nil → không tô) thành ba mảng phẳng để vòng lặp không giải optional.
       var on = [Bool](repeating: false, count: 64)
       var cr = [Float](repeating: 0, count: 64), cg = cr, cb = cr
+      // Thứ hạng vai trò (chính 3 > phụ 2 > ổn định 1): hai nhãn chồng nhau thì lấy vai trò cao hơn.
+      var rank = [Int](repeating: 0, count: 64)
+      let roleColors = roleHex.map { linear($0.hex) }
       for (i, c) in table.enumerated() {
-        if let c { on[i] = true; cr[i] = c.x; cg[i] = c.y; cb[i] = c.z }
+        guard let c else { continue }
+        on[i] = true; cr[i] = c.x; cg[i] = c.y; cb[i] = c.z
+        rank[i] = (roleColors.firstIndex(of: c) ?? 0) + 1
       }
       let lut = toSRGB
       func enc(_ x: Float, _ l: UnsafeBufferPointer<UInt8>) -> UInt8 { l[Int(max(0, min(1, x)) * 4095 + 0.5)] }
       s.ids.withUnsafeBufferPointer { ids in
+        s.ids2.withUnsafeBufferPointer { ids2 in
         s.shade.withUnsafeBufferPointer { shade in
           s.fiberNormal.withUnsafeBufferPointer { fiber in
             lut.withUnsafeBufferPointer { l in
@@ -180,8 +193,9 @@ import Foundation
                 emission.withUnsafeMutableBufferPointer { em in
                   normal.withUnsafeMutableBufferPointer { nm in
                     for i in 0 ..< n {
-                      let part = Int(ids[i &* 4])
-                      if part == 0 || part >= 64 || !on[part] { continue }
+                      let first = min(Int(ids[i &* 4]), 63), second = min(Int(ids2[i]), 63)
+                      let part = rank[second] > rank[first] ? second : first
+                      if part == 0 || !on[part] { continue }
                       if withNormal {
                         let o = i &* 4
                         nm[o] = fiber[o]; nm[o + 1] = fiber[o + 1]; nm[o + 2] = fiber[o + 2]; nm[o + 3] = fiber[o + 3]
@@ -204,6 +218,7 @@ import Foundation
               }
             }
           }
+        }
         }
       }
       func bytes(_ px: [UInt32]) -> [UInt8] { px.withUnsafeBytes { Array($0) } }
