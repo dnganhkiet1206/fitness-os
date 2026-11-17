@@ -49,6 +49,26 @@ def legend(exercise: dict, keys: dict, colors: dict) -> list[dict]:
     return out
 
 
+def tempo(ex_dir: Path) -> dict | None:
+    """Rep-by-rep timing for the app's tempo strip (C1, 17/11): every phase of every rep, in ms
+    of the clip, with its breath. Same clip timeline as the motion (tempo.json is written by
+    the Motion Lab together with the animation and checked by QA)."""
+    path = ex_dir / "tempo.json"
+    if not path.exists():
+        return None
+    t = json.loads(path.read_text())
+    return {
+        "duration_ms": t["duration_ms"],
+        "notation": t.get("notation"),
+        "reps": len(t["reps"]),
+        "phases": [
+            {"rep": r["index"], "kind": p["kind"], "start_ms": p["start_ms"], "end_ms": p["end_ms"],
+             "breath": p.get("breath")}
+            for r in t["reps"] for p in r["phases"]
+        ],
+    }
+
+
 def demo(ex_dir: Path, keys: dict, colors: dict) -> tuple[str, dict] | None:
     exercise = json.loads((ex_dir / "exercise.json").read_text())
     app = exercise.get("app_demo")
@@ -83,6 +103,7 @@ def demo(ex_dir: Path, keys: dict, colors: dict) -> tuple[str, dict] | None:
         # the first frame, and the joint + offset the leader line follows while the clip plays
         # (filled by pipeline/tip_anchors.py). No joint = fixed point (equipment).
         "tips": [{k: t[k] for k in ("id", "anchor", "joint", "offset") if k in t} for t in app.get("tips") or []],
+        "tempo": tempo(ex_dir),
     }
     return prefix, d | {"catalog_order": app.get("catalog_order", 999)}
 

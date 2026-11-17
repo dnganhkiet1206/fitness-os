@@ -30,6 +30,9 @@
     @State private var selectedTip: String?
     /// Điểm neo mẹo đi theo khớp của nhân vật khi động tác chạy (B1, 17/11).
     @State private var tipAnchors = TipAnchors()
+    /// Bộ điều khiển phát (nhịp từng rep, xem chậm 0,5×; C1, 17/11).
+    @State private var playback = DemoPlayback()
+    @State private var slowMotion = false
     /// Ẩn vùng tô sáng của cơ phụ để tập trung vào cơ chính (Kiệt 13/11).
     /// Mặc định chỉ hiện cơ chính (Kiệt 16/11); nút "Hiện cơ phụ" bật Phụ + Ổn định.
     @State private var hideSecondary = true
@@ -160,9 +163,10 @@
                   // một chuyển động phát trên nhân vật và trên file chuyển động
                   // (dụng cụ), bắt đầu cùng khung hình nên khớp nhau.
                   if let animation = (motion ?? scene).availableAnimations.first {
-                    scene.playAnimation(animation.repeat())
-                    motion?.playAnimation(animation.repeat())
-                    apparel?.playAnimation(animation.repeat())
+                    let controllers = [scene, motion, apparel].compactMap { $0?.playAnimation(animation.repeat()) }
+                    playback.duration = animation.definition.duration
+                    playback.controllers = controllers
+                    playback.setSpeed(slowMotion ? 0.5 : 1)
                   }
                 } catch {
                   await MainActor.run { loadFailed = true }
@@ -282,6 +286,21 @@
                   .frame(minWidth: 44, minHeight: 44)
               }
               .accessibilityLabel(Text("eg.demo3d.tips"))
+            }
+          }
+          if let tempo = demoInfo?.tempo {
+            ToolbarItem(placement: .principal) {
+              // Vẽ lại mỗi khung để theo kịp chuyển động.
+              TimelineView(.animation) { _ in
+                ExerciseTempoStrip(
+                  tempo: tempo,
+                  ms: playback.time.map { $0 / max(playback.duration, 0.001) * tempo.durationMs },
+                  slow: slowMotion
+                ) {
+                  slowMotion.toggle()
+                  playback.setSpeed(slowMotion ? 0.5 : 1)
+                }
+              }
             }
           }
           ToolbarItem(placement: .cancellationAction) {
