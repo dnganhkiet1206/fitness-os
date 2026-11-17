@@ -12,14 +12,36 @@ public final class ASCNDDatabase: Sendable {
   /// Tài khoản mà các cache theo người dùng đang phục vụ (#431).
   public let accounts = AccountScope()
 
+  /// Cấu hình SQLite RÕ RÀNG (R2-SYNC-09): trước đây `DatabaseQueue(path:)`
+  /// dùng mặc định — journal DELETE của SQLite, không ai chọn, không ai khẳng
+  /// định. Nay:
+  /// - Journal WAL: ghi không chặn đọc; tắt app / mất điện không hỏng tệp
+  ///   (khôi phục từ `-wal` lúc mở sau). GRDB 7 không có nút `synchronous`
+  ///   riêng: mở WAL thì GRDB đặt `synchronous = NORMAL` kèm theo
+  ///   (`setUpWALMode`) — commit chỉ mất khi mất điện trước checkpoint, không
+  ///   bao giờ hỏng, và không bao giờ mất khi chỉ tắt / kill app (điều mà lời
+  ///   hứa "đã lưu trên máy" của outbox cần). `FULL` sẽ fsync mỗi commit cho
+  ///   một tệp nhật ký của một người — không đáng.
+  /// - Pragmas hiệu lực được khẳng định bằng test trên tệp thật
+  ///   (`DatabaseConfigurationTests`): `journal_mode = wal`, `synchronous = 1`.
+  /// - Chế độ journal GHI DAI trong tệp: tệp cũ mở lên được chuyển sang WAL ở
+  ///   lần mở đầu sau bản này; `synchronous` theo kết nối, GRDB đặt lại mỗi
+  ///   lần mở. Cơ sở trong bộ nhớ bỏ qua phần journal (GRDB không dựng WAL
+  ///   cho `:memory:`), cùng một `Configuration` vẫn dùng được.
+  static var configuration: Configuration {
+    var config = Configuration()
+    config.journalMode = .wal
+    return config
+  }
+
   public init(path: String) throws {
-    queue = try DatabaseQueue(path: path)
+    queue = try DatabaseQueue(path: path, configuration: Self.configuration)
     try Self.migrator.migrate(queue)
   }
 
   /// Trong bộ nhớ — cho test.
   public init() throws {
-    queue = try DatabaseQueue()
+    queue = try DatabaseQueue(configuration: Self.configuration)
     try Self.migrator.migrate(queue)
   }
 
@@ -94,6 +116,17 @@ public final class ASCNDDatabase: Sendable {
         t.column("desired", .integer).notNull()
         t.column("server", .integer).notNull()
         t.primaryKey(["userId", "intentKey"])
+      }
+    }
+    // Hai migration cùng tiền tố v5 là có chủ ý (gộp #927 với #930): GRDB
+    // theo dõi theo tên đầy đủ, hai tên khác nhau nên cả hai đều chạy.
+    m.registerMigration("v5-read-cache-updated-at") { db in
+      // Dấu lần ghi cuối của mỗi hàng `read_cache` (R2-SYNC-03): lượt cắt
+      // hướng dẫn theo tuổi (`ReadCacheCleanup.pruneExerciseGuides`) cần biết
+      // hàng nào đã lâu không làm mới. Hàng cũ mang NULL — không biết tuổi thì
+      // chỉ rời đi khi quá trần số hàng, không bị cắt theo tuổi.
+      try db.alter(table: "read_cache") { t in
+        t.add(column: "updatedAt", .integer)
       }
     }
     return m

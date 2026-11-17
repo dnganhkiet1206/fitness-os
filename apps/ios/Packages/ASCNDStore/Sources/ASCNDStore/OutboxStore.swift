@@ -61,6 +61,46 @@ public final class OutboxStore: Sendable {
     }
   }
 
+  /// Số hàng `undecodableIds()` liệt kê — worker đếm để chẩn đoán
+  /// (R2-SYNC-02) mà không cần id từng hàng.
+  public func undecodableCount() throws -> Int {
+    try undecodableIds().count
+  }
+
+  /// Cắt bảng `outbox_dead` về giới hạn (R2-SYNC-03): bỏ bản ghi cũ hơn
+  /// `Outbox.deadMaxAgeMillis`, rồi bản ghi cũ nhất nếu còn quá
+  /// `Outbox.maxDeadEntries` hàng. Worker gọi lúc nạp hàng đợi lần đầu, trước
+  /// khi nhận trạng thái đĩa — cắt sau thì bộ nhớ hồi sinh hàng vừa bỏ ở lần
+  /// ghi sau. Hàng chờ gửi không đụng tới; hàng không giải mã được không xoá
+  /// (không biết tuổi, và không xoá dữ liệu không đọc được — như `load()`).
+  /// Trả về số hàng bỏ.
+  @discardableResult
+  public func pruneDead(now: EpochMillis) throws -> Int {
+    try db.write { db in
+      let decoder = JSONDecoder()
+      var kept: [(id: String, at: EpochMillis)] = []
+      for row in try Row.fetchAll(db, sql: "SELECT id, dead FROM outbox_dead ORDER BY seq") {
+        let id: String = row[0]
+        let json: String = row[1]
+        guard let dead = try? decoder.decode(DeadEntry.self, from: Data(json.utf8)) else { continue }
+        kept.append((id, dead.at))
+      }
+      let cutoff = now - Outbox.deadMaxAgeMillis
+      var victims: [String] = []
+      var survivors: [(id: String, at: EpochMillis)] = []
+      for row in kept {
+        if row.at < cutoff { victims.append(row.id) } else { survivors.append(row) }
+      }
+      if survivors.count > Outbox.maxDeadEntries {
+        victims += survivors.prefix(survivors.count - Outbox.maxDeadEntries).map(\.id)
+      }
+      for id in victims {
+        try db.execute(sql: "DELETE FROM outbox_dead WHERE id = ?", arguments: [id])
+      }
+      return victims.count
+    }
+  }
+
   /// Hàng `(id, json)` của `sql`, chia thành giá trị giải mã được và id của
   /// hàng không giải mã được, giữ thứ tự.
   private static func rows<T: Decodable>(
@@ -120,11 +160,17 @@ public final class OutboxStore: Sendable {
             """,
           arguments: [entry.id, entry.userId, json])
       }
-      // Đếm hàng `dead` mà `load()` thấy — hàng không giải mã được bị bỏ qua ở
-      // đó nên cũng không tính ở đây, không thì `outbox.dead` (ngắn hơn số hàng
-      // trên đĩa) mất bản ghi `dead` mới nhất ở lần ghi kế tiếp.
-      let stored = try Self.rows(db, "SELECT id, dead FROM outbox_dead ORDER BY seq", as: DeadEntry.self).decoded.count
-      for (id, json) in dead.dropFirst(stored) {
+      // Hàng `dead` đã gửi lại (AUD-62): bản ghi đã về hàng chờ thì rời bảng
+      // `dead` — không thì lần nạp sau hồi sinh nó song song với hàng chờ gửi.
+      // Rồi chỉ nối bản ghi `dead` chưa có trên đĩa, theo id — thay cách đếm
+      // "số hàng `load()` thấy" trước đây: đếm vỡ khi `pruneDead` đã bỏ hàng
+      // cũ (đĩa ít hàng đi, `dropFirst` nối trùng) và khi hàng không giải mã
+      // được chen giữa. Id là khoá của bản ghi: một bản ghi, một hàng `dead`.
+      let storedIds = try Set(String.fetchAll(db, sql: "SELECT id FROM outbox_dead"))
+      for id in pending.map({ $0.0.id }) where storedIds.contains(id) {
+        try db.execute(sql: "DELETE FROM outbox_dead WHERE id = ?", arguments: [id])
+      }
+      for (id, json) in dead where !storedIds.contains(id) {
         try db.execute(sql: "INSERT INTO outbox_dead (id, dead) VALUES (?, ?)", arguments: [id, json])
       }
     }

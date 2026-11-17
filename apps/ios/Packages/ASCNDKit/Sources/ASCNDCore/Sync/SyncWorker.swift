@@ -24,6 +24,19 @@ public protocol OutboxPersistence: Sendable {
   /// Xoá hẳn mọi hàng (chờ gửi và `dead`) của một tài khoản đã bị xoá trên server.
   @discardableResult
   func purge(userId: String) async throws -> Int
+  /// Số hàng trên đĩa mà bản app này không giải mã được — `load()` bỏ qua
+  /// chúng (R2-SYNC-02). Mặc định 0: store trong bộ nhớ không có hàng lạ.
+  func undecodableCount() async throws -> Int
+  /// Cắt bảng `dead` về giới hạn (tuổi + số hàng, R2-SYNC-03). Trả về số hàng
+  /// bỏ. Mặc định không làm gì: store trong bộ nhớ không phình.
+  @discardableResult
+  func pruneDead(now: EpochMillis) async throws -> Int
+}
+
+extension OutboxPersistence {
+  public func undecodableCount() async throws -> Int { 0 }
+  @discardableResult
+  public func pruneDead(now: EpochMillis) async throws -> Int { 0 }
 }
 
 /// Vòng gửi của lớp Ghi nhận (ADR-0003): MỘT làn tuần tự, đọc `Outbox` (luật)
@@ -50,6 +63,18 @@ public final class SyncWorker {
   /// Ghi đĩa gần nhất hỏng — hàng đợi trên đĩa đang đi sau bộ nhớ.
   public private(set) var unsaved: LocalWriteError?
 
+  /// Hàng trên đĩa mà bản app này không giải mã được (R2-SYNC-02) — `load()`
+  /// bỏ qua chúng, nên trước đây chúng vô hình: không đếm, không báo, bản ghi
+  /// "đã lưu trên máy" đứng yên mãi mà không ai biết. Đếm ở đây để màn Lab
+  /// thấy và `onIncident` báo lên Sentry.
+  ///
+  /// Đường hồi phục: hàng vẫn NẰM trên đĩa — `persist` không xoá thứ nó không
+  /// đọc được. Thường là bản app mới hơn đã ghi rồi người dùng quay về bản cũ:
+  /// cập nhật lên bản đọc được nó thì lần nạp sau nó gửi như thường. Hàng hỏng
+  /// thật (không phải lược đồ mới hơn) thì nằm đó mãi — không tự xoá dữ liệu
+  /// không đọc được; chỉ `purge` (xoá tài khoản) mới bỏ nó, theo `userId`.
+  public private(set) var undecodableCount = 0
+
   /// Chỉ của người đang đăng nhập: bản ghi đỗ lại của tài khoản khác không
   /// hiện, không đếm (#335).
   public var pendingCount: Int { outbox.pending(for: signedInUser).count }
@@ -60,6 +85,10 @@ public final class SyncWorker {
   public enum Incident: Sendable, Hashable {
     case dead(kind: String, reason: DeadEntry.Reason, code: String?)
     case localWrite(stage: String)
+    /// Hàng trên đĩa bản app này không giải mã được (R2-SYNC-02): chỉ số
+    /// lượng — không id hàng, không payload. Báo khi số lượng TĂNG, không báo
+    /// lại cùng một số ở mỗi lần nạp.
+    case undecodable(count: Int)
   }
 
   /// App nối vào Sentry. Gọi trên main actor, sau khi bước ấy đã xong.
@@ -78,6 +107,8 @@ public final class SyncWorker {
   private var kicked = false
   /// Bộ nhớ đi trước đĩa (bước chưa ghi được, hay ghi hỏng).
   private var dirty = false
+  /// Số hàng không giải mã được đã báo qua `onIncident` — chỉ báo khi tăng.
+  private var reportedUndecodable = 0
 
   /// - Parameter sleep: ngủ chừng ấy mili giây (test thay bằng đồng hồ tay).
   public init(
@@ -131,6 +162,18 @@ public final class SyncWorker {
     let parked = outbox.park()
     if dirty || !settled.isEmpty { await persist() }
     return parked
+  }
+
+  /// Gửi lại một bản ghi đã bỏ cuộc (AUD-62): về lại hàng chờ với ngân sách
+  /// mới, cùng idempotency key (`Outbox.retryDead`), ghi đĩa rồi mở vòng gửi.
+  /// Trả về `false` khi không có bản ghi `dead` nào mang `id` ấy.
+  @discardableResult
+  public func retryDead(id: String) async -> Bool {
+    guard outbox.retryDead(id: id) else { return false }
+    dirty = true
+    await persist()
+    kick()
+    return true
   }
 
   /// Tài khoản đã bị xoá trên server: bỏ hẳn mọi bản ghi của nó trên máy (gửi
@@ -196,7 +239,19 @@ public final class SyncWorker {
   /// đã thành, hay hồi sinh cái server đã từ chối.
   private func reload() async {
     do {
+      // Lần nạp đầu: cắt bảng `dead` TRƯỚC khi nhận trạng thái đĩa
+      // (R2-SYNC-03) — cắt sau thì bộ nhớ giữ bản ghi đĩa vừa bỏ, và lần ghi
+      // sau hồi sinh chúng. Cắt hỏng thì báo rồi nạp tiếp: hàng đợi không
+      // dừng vì một lượt dọn.
+      if !loaded {
+        do {
+          _ = try await store.pruneDead(now: clock.nowMillis())
+        } catch {
+          onIncident?(.localWrite(stage: "prune"))
+        }
+      }
       let disk = try await store.load()
+      await refreshUndecodable()
       if !loaded {
         outbox = disk
         loaded = true
@@ -209,6 +264,24 @@ public final class SyncWorker {
     } catch {
       unsaved = LocalWriteError("load: \(error)")
       onIncident?(.localWrite(stage: "load"))
+    }
+  }
+
+  /// Đếm lại hàng không giải mã được (R2-SYNC-02) và báo khi số lượng tăng.
+  /// Đếm hỏng thì giữ số cũ — một con số chẩn đoán không được chặn vòng gửi.
+  private func refreshUndecodable() async {
+    do {
+      let count = try await store.undecodableCount()
+      undecodableCount = count
+      if count > reportedUndecodable {
+        reportedUndecodable = count
+        onIncident?(.undecodable(count: count))
+      } else if count < reportedUndecodable {
+        // Hàng đã đọc được trở lại (lên bản mới): hạ mốc để lần tăng sau báo lại.
+        reportedUndecodable = count
+      }
+    } catch {
+      // Giữ số cũ.
     }
   }
 
