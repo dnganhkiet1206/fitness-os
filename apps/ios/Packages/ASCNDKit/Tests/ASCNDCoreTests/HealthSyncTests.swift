@@ -92,6 +92,19 @@ struct HealthSyncTests {
     #expect(store.upserts.contains { $0.table == "workout_sessions" })
   }
 
+  /// Sinh trắc hỏng: giấc ngủ + buổi tập + `daily_logs` vẫn ghi, lỗi báo đúng
+  /// tên phần (R2-SYNC-06: ba phần đầu gom lỗi như `daily_logs`, không dừng lượt).
+  @Test func biometricFailureDoesNotStopSleepAndWorkouts() async {
+    let store = Store()
+    store.failUpsert = "biometric_samples"
+    await #expect(throws: HealthSync.Failure.incomplete(["nCxHealthSyncPartBio"])) {
+      try await HealthSync.run(Self.snapshot(), userId: "u1", lang: "vi", store: store, now: Self.now, in: Self.utc)
+    }
+    #expect(store.upserts.contains { $0.table == "sleep_logs" })
+    #expect(store.upserts.contains { $0.table == "workout_sessions" })
+    #expect(store.upserts.contains { $0.table == "daily_logs" })
+  }
+
   @Test func autoSyncEveryFifteenMinutesOnlyOnceAsked() {
     let t = Self.now
     #expect(HealthSync.shouldAutoSync(asked: true, lastSync: nil, now: t))
