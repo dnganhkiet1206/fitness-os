@@ -65,6 +65,46 @@ class ConfigTests(unittest.TestCase):
         self.assertNotEqual(ex["status"], "APPROVED")
 
 
+class NeckFanTests(unittest.TestCase):
+    """muscle_eval.neck_fan (17/11): the upper trapezius stays on the back of the neck."""
+
+    def setUp(self):
+        self.fan = config.muscle_map()["groups"]["trapezius_upper"]["neck_fan"]
+        a, b = (np.asarray(v, dtype=float) for v in self.fan["axis"])
+        self.a, self.axis = a, (b - a) / np.linalg.norm(b - a)
+
+    def _point(self, z: float, angle_deg: float, radius: float) -> np.ndarray:
+        """Point at height ~z, ``angle_deg`` around the neck axis from straight back."""
+        centre = self.a + self.axis * (z - self.a[2]) / self.axis[2]
+        side = np.array([1.0, 0.0, 0.0])
+        back = np.cross(self.axis, side)
+        back = back if back[1] > 0 else -back
+        t = np.radians(angle_deg)
+        return centre + radius * (np.cos(t) * back + np.sin(t) * side)
+
+    def test_back_of_upper_neck_kept(self):
+        f = muscle_eval.neck_fan(self.fan, np.array([self._point(1.60, 10.0, 0.06)]))
+        self.assertGreater(f[0], 0.99)
+
+    def test_side_of_upper_neck_cut(self):
+        # The old region coloured up to ~90 degrees under the ear.
+        f = muscle_eval.neck_fan(self.fan, np.array([self._point(1.60, 85.0, 0.06)]))
+        self.assertLess(f[0], 0.01)
+
+    def test_base_of_neck_reaches_further(self):
+        f = muscle_eval.neck_fan(self.fan, np.array([self._point(1.50, 85.0, 0.06), self._point(1.60, 85.0, 0.06)]))
+        self.assertGreater(f[0], 0.99)
+        self.assertLess(f[1], 0.01)
+
+    def test_shoulder_slope_far_from_axis_untouched(self):
+        f = muscle_eval.neck_fan(self.fan, np.array([self._point(1.52, 100.0, 0.15)]))
+        self.assertGreater(f[0], 0.99)
+
+    def test_below_table_untouched(self):
+        f = muscle_eval.neck_fan(self.fan, np.array([self._point(1.40, 170.0, 0.05)]))
+        self.assertEqual(f[0], 1.0)
+
+
 class ExerciseSchemaTests(unittest.TestCase):
     def base(self):
         return config.exercise_config("bench-press")

@@ -103,4 +103,38 @@ Lợi thêm: 8 bài hiện chiếm 47 MB. Sang dạng khối thì còn 1 nhân v
 3. Điểm neo trang trí trong phòng + 1 gói mẫu (mock cho Kiệt duyệt trước, vì đây là thiết kế).
 4. Dấu ẩn texture (tuỳ chọn).
 
+## Rà soát 17/11: còn tách / gọn được gì (Kiệt hỏi 17/11)
+
+Đo trên thư mục 3D của app (20 MB, 7 bài dạng khối + bench cũ).
+
+**A. Gọn nhẹ, không đổi hình (agent làm được ngay):**
+
+| # | Việc | Đo được | Lợi |
+|---|---|---|---|
+| A1 | Bỏ texture da trong `character_003.usdz` và `apparel_shorts.usdz`: shader tô cơ lúc chạy đã thay cả ba (albedo, emission, normal). App nhận vật liệu thân theo tên thay vì "vật liệu có normal map". | 2,8 MB + 0,8 MB texture chết | −3,6 MB |
+| A2 | Phòng sáng / tối dùng chung hình học: 7 phần có `usdc` giống hệt nhau (khác 1 byte tên), chỉ ảnh ánh sáng nướng khác. | nan gỗ 1,35 MB + kệ 0,33 MB chép 2 lần | −1,7 MB |
+| A3 | Nan gỗ thành 1 thanh + vị trí (instancing; RealityKit có `MeshInstancesComponent` từ iOS 26). | 1 lưới gộp 17 982 mặt | −1,2 MB, nạp nhanh hơn |
+| A4 | Chuyển động: bỏ khung mà nội suy từ hai khung bên cạnh vẫn lệch < ~0,3° (USD cho lấy mẫu thời gian không đều). Chạy lại QA để chứng minh không đổi. | curl: 90 khớp × 189 khung, chỉ kênh xoay | ước 2–3× nhỏ hơn mỗi file (~0,3 → ~0,1 MB / bài) |
+
+Gộp A1–A4: 20 → ~13 MB; mỗi bài mới ~0,1–0,15 MB thay vì ~0,35 MB.
+
+**B. Tách dữ liệu khỏi code (không đổi giao diện):**
+
+- **B1. Mẹo kỹ thuật thành `<bài>_tips.json`** (en / es / vi). Hiện 9 mẹo viết cứng trong `ExerciseDemoTips.swift`, điểm neo là toạ độ cố định nên không bám theo người khi động tác chạy. Đề xuất neo vào **tên khớp + độ lệch** (`"joint": "upperarm_l", "offset": [...]`): mẹo đi theo cơ thể, bài mới thêm mẹo không cần sửa code, dịch thuật nằm cùng chỗ với nội dung.
+- **B2. Ánh sáng thành preset trong `room_manifest_*.json`** (hiện `addLights` viết cứng): đổi ánh sáng theo phòng hay theo mùa mà không sửa code.
+
+**C. Tính năng mới dựa trên các khối đã tách (cần Kiệt duyệt mock trước):**
+
+- **C1. Nhịp từng rep (P5).** 7 bài đã có `tempo.json` (2 rep, pha lên / giữ / xuống / nghỉ, nhịp thở) nhưng app chưa đọc. Có thể hiện chữ pha ("Lên 2 s · Giữ · Xuống 1,6 s"), nhịp thở, đếm rep, nút chậm 0,5×. Đối thủ: RealiFit có lời nhắc từng rep và đọc số rep; Muscle & Motion tô cơ nhưng không thấy nhịp. Nhịp là điểm khác biệt.
+- **C2. Clip lỗi sai (P7).** Cùng nhân vật, thêm file chuyển động "sai" (~0,3 MB, ví dụ lưng cong khi deadlift); nút "Sai thường gặp" chuyển qua lại, viền đỏ ở khớp sai.
+- **C3. Bài một bên tay / chân.** Lật gương chuyển động lúc chạy: một file cho cả hai bên.
+- **C4. Dụng cụ theo mức tạ người dùng ghi (P2).** Cùng chuyển động, đổi mẫu tạ (đã có cơ chế ổ cắm + `equipment_<khoá>.usdz`).
+- **C5. Đồ / trang trí theo mùa.** Quần đã tách (`apparel_shorts.usdz`), phòng có điểm neo trang trí: chỉ còn thiếu mock và gói đầu tiên (việc 3 của bàn giao).
+
+**D. Khi lên hàng trăm bài (hoãn, P9, cần duyệt):** On-Demand Resources đã bị Apple bỏ; thay bằng Background Assets, gói tài sản được quản lý (iOS 26, Apple host hoặc tự host). Diễn đàn có báo lỗi giải mã gói trên iOS 26.4–26.6 (chưa Apple xác nhận). Với A1–A4, 100 bài ước ~25 MB trong app, nên chưa cần tải về theo nhu cầu.
+
+**Công cụ mã nguồn mở / có sẵn:** Blender 5.2 (đang dùng) cho A2–A4; `usdcat` / `usdzip` có sẵn trên macOS để đọc và đóng gói USD. ACL (Animation Compression Library, MIT) là tham khảo cách nén chuyển động, nhưng RealityKit chỉ phát USD, nên A4 làm bằng một bước lọc khung trong pipeline (numpy), không nhúng ACL vào app.
+
+Nguồn rà soát 17/11: [RealityKit MeshInstancesComponent](https://developer.apple.com/documentation/realitykit/meshinstancescomponent), [WWDC25 What's new in RealityKit](https://developer.apple.com/videos/play/wwdc2025/287/), [Apple: kiểm USD (RealityKit hỗ trợ instancing)](https://developer.apple.com/documentation/usd/validating-usd-files), [OpenUSD: scenegraph instancing](https://openusd.org/dev/api/_usd__page__scenegraph_instancing.html), [Blender: USD xuất chuyển động rất nặng #110184](https://projects.blender.org/blender/blender/issues/110184), [ACL](https://github.com/nfrechette/acl), [Background Assets: AssetPackManager](https://developer.apple.com/documentation/backgroundassets/assetpackmanager), [App Store Connect: Apple-hosted asset packs](https://developer.apple.com/help/app-store-connect/manage-asset-packs/overview-of-apple-hosted-asset-packs), [Diễn đàn: lỗi tải gói iOS 26.4–26.6](https://developer.apple.com/forums/thread/845723), [Muscle & Motion](https://muscleandmotion.com/strength-training-app), [RealiFit](https://apps.apple.com/cd/app/realifit/id717142096).
+
 Nguồn: [Apple forum: chuyển động USDZ từ file khác](https://developer.apple.com/forums/thread/719891), [Apple forum: thay mô hình giữ chuyển động](https://developer.apple.com/forums/thread/712959), [Apple forum: nhiều chuyển động trong USDZ](https://developer.apple.com/forums/thread/797061), [Apple: kiểm USD (variant đổi được sau khi nạp)](https://developer.apple.com/documentation/usd/validating-usd-files), [Apple: khái niệm USD](https://developer.apple.com/documentation/usd/usd-concepts), [DEV: khớp có "/" bị RealityKit bỏ](https://dev.to/_4a49fbaa067787556beb/investigating-missing-skeletons-in-realitykit-after-converting-unirig-glb-files-2kfj).
