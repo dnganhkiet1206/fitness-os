@@ -101,7 +101,7 @@ struct AdminUserScreen: View {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         HStack(spacing: DS.Spacing.sm) {
           Text(verbatim: d.name)
-            .font(DS.TextStyle.title3)
+            .font(DS.TextStyle.title2)
             .foregroundStyle(DS.Color.foreground.swiftUI)
           Spacer(minLength: 0)
           Text(verbatim: ModerationFailureText.roleText(d.role))

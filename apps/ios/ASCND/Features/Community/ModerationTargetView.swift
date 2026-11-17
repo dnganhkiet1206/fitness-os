@@ -215,7 +215,7 @@ struct ModerationTargetScreen: View {
   private func authorStat(label: String, value: Int, alert: Bool = false, warn: Bool = false) -> some View {
     VStack(alignment: .leading, spacing: 0) {
       Text(verbatim: "\(value)")
-        .font(DS.TextStyle.title3)
+        .font(DS.TextStyle.title2)
         .foregroundStyle(
           alert ? DS.Color.destructive.swiftUI
             : warn ? DS.Color.readinessYellow.swiftUI : DS.Color.foreground.swiftUI)

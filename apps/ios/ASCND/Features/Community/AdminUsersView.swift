@@ -144,7 +144,7 @@ struct AdminStat: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       Text(verbatim: "\(value)")
-        .font(DS.TextStyle.title3)
+        .font(DS.TextStyle.title2)
         .foregroundStyle(
           alert ? DS.Color.destructive.swiftUI
             : warn ? DS.Color.readinessYellow.swiftUI : DS.Color.foreground.swiftUI)
