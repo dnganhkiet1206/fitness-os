@@ -386,10 +386,17 @@ final class AppServices {
   }
 
   /// App mở / quay lại tiền cảnh: đọc phiên, thử gửi hàng đợi. Dọn ngày cũ
-  /// KHÔNG ở đây (#469): lúc này chốt còn đóng — nó chạy khi phiên mở, cho
-  /// đúng người (`forgetOtherAccounts`).
+  /// của người đang đăng nhập KHÔNG ở đây (#469): nó chạy khi phiên mở, cho
+  /// đúng người (`forgetOtherAccounts`). Ngoại lệ: ngày đỗ quá hạn của người
+  /// KHÁC thì dọn ở đây — chỉ hàng quá 14 ngày của chủ khác, không chạm dữ
+  /// liệu của người của phiên vừa khôi phục (`pruneParkedStaleDays`).
   func start() async {
     await session.start()
+    // Ngoại lệ #469 (xem `AccountLifecycle.pruneParkedStaleDays`): chỉ ngày
+    // đỗ quá hạn của chủ khác với phiên vừa khôi phục; không có phiên thì
+    // dọn của mọi người — ngày trong cửa sổ 14 ngày không bao giờ bị chạm.
+    await lifecycle.pruneParkedStaleDays(
+      except: session.session?.userId, today: LocalDate(SystemWallClock().nowMillis(), in: .current))
     sync.kick()
     autoSyncHealth()
     await reminders.refreshPermission()
