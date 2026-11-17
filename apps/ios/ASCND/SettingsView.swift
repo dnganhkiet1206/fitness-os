@@ -29,6 +29,9 @@ public struct SettingsView: View {
   /// Dựng form đổi mật khẩu cho phiên đang mở (`settings.tsx:658`); `nil` khi
   /// không có phiên (preview, đã đăng xuất) — không hiện hàng.
   var makePasswordChange: (@MainActor () -> PasswordChangeController)?
+  /// Dựng controller màn paywall cho phiên đang mở (must-do #2, 17/11);
+  /// `nil` khi không có phiên (preview, đã đăng xuất) — không hiện hàng Gói.
+  var makePurchase: (@MainActor () -> PurchaseController?)?
   /// Ngôn ngữ của văn bản pháp lý (`settings.tsx:739`); `nil` thì không hiện hàng.
   var legalLang: AppPreferences.Lang?
   /// Apple Health (15/10, audit toàn app: thẻ đồng bộ lặp ở Hôm nay và Trợ lý) —
@@ -141,6 +144,7 @@ public struct SettingsView: View {
     theme: String = "system",
     onThemeChange: @escaping (String) -> Void = { _ in },
     makePasswordChange: (@MainActor () -> PasswordChangeController)? = nil,
+    makePurchase: (@MainActor () -> PurchaseController?)? = nil,
     legalLang: AppPreferences.Lang? = nil,
     healthAvailable: Bool = false,
     healthSync: (@MainActor () async throws(HealthSync.Failure) -> Void)? = nil,
@@ -155,6 +159,7 @@ public struct SettingsView: View {
     self.theme = theme
     self.onThemeChange = onThemeChange
     self.makePasswordChange = makePasswordChange
+    self.makePurchase = makePurchase
     self.legalLang = legalLang
     self.healthAvailable = healthAvailable
     self.healthSync = healthSync
@@ -183,6 +188,14 @@ public struct SettingsView: View {
           }
         } header: {
           Text(String(localized: "settings.account"))
+        }
+
+        // Gói trả phí (must-do #2, 17/11): gói hiện tại + màn paywall.
+        // Chỉ khi đã đăng nhập và dựng được controller (preview thì không hiện).
+        if account != nil, let makePurchase, let controller = makePurchase() {
+          Section {
+            PlanSettingsRow(controller: controller, legalLang: legalLang)
+          }
         }
 
         // Giao diện — NGAY TRÊN ngôn ngữ như RN: hai tuỳ chọn của MÁY đứng cạnh nhau.

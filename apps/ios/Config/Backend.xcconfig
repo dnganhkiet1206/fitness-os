@@ -20,4 +20,13 @@ ASCND_SENTRY_DSN =
 ASCND_POSTHOG_KEY =
 ASCND_POSTHOG_HOST =
 
+// Mua hàng (17/11, must-do #2): product ID của App Store Connect — TRỐNG =
+// chưa mở bán, màn paywall hiện "chưa mở bán" và không có nút mua nào chạy.
+// Product ID không phải bí mật (nằm trong app), nhưng CHỈ điền ID thật đã
+// tạo trong App Store Connect; ID bịa làm StoreKit trả về rỗng. Phải khớp
+// với env `PRODUCT_ID_PLUS` / `PRODUCT_ID_MAX` của server, nếu không server
+// từ chối giao dịch. Điền ở đây hoặc ở Backend.local.xcconfig (không commit).
+ASCND_PRODUCT_ID_PLUS =
+ASCND_PRODUCT_ID_MAX =
+
 #include? "Backend.local.xcconfig"
