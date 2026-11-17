@@ -352,6 +352,27 @@ struct SupplementTakenTests {
     #expect(await h.server.writes == 1)
   }
 
+  /// Nhận lại sau khi mở app lại (AUD-29): ý của ngày đã qua thì dọn, ý của
+  /// hôm nay thì gắn `send` và gửi — một dòng duy nhất cho hôm nay.
+  @Test func reattachPrunesPastDaysAndAdoptsToday() async throws {
+    let h = SupplementHarness()
+    await h.server.put(.init(id: "a", user: "u1", name: "Creatine", timing: "morning"))
+    let book = h.book()
+    await book.load()
+    let store = FakeStateIntentPersistence()
+    try store.save([
+      StateIntent(key: "supplement:taken:a:2026-10-07", desired: true, server: false),
+      StateIntent(key: "supplement:taken:a:2026-10-08", desired: true, server: false),
+    ])
+    let w = writer()
+    w.attachPersistence(store)
+    book.reattach(writer: w)
+    await drain()
+    #expect(w.pendingKeys.isEmpty)
+    #expect(store.snapshot.isEmpty)
+    #expect(await h.server.intakes.count == 1)
+  }
+
   /// Mục đã xoá ở máy khác: bỏ ý và báo.
   @Test func deletedElsewhereIsGone() async {
     let h = SupplementHarness()

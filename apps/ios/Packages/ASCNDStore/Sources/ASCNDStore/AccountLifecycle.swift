@@ -35,11 +35,13 @@ public final class AccountLifecycle: Sendable {
   public let accounts: AccountScope
   private let workouts: GRDBWorkoutStore
   private let readCache: GRDBTemplateCache
+  private let stateIntents: StateIntentStore
 
   public init(_ database: ASCNDDatabase) {
     accounts = database.accounts
     workouts = GRDBWorkoutStore(database)
     readCache = GRDBTemplateCache(database)
+    stateIntents = StateIntentStore(database)
   }
 
   /// App mở: chưa ai đăng nhập cho tới khi phiên mở.
@@ -53,6 +55,7 @@ public final class AccountLifecycle: Sendable {
     accounts.signIn(userId)
     _ = try? await readCache.clearAll(except: userId)
     _ = try? await workouts.clearAll(except: userId)
+    _ = try? await stateIntents.clearAll(except: userId)
     _ = try? await workouts.pruneDays(today: today)
   }
 
@@ -69,8 +72,10 @@ public final class AccountLifecycle: Sendable {
     // (dựng lại được từ server) bị bỏ.
     if let next {
       _ = try? await readCache.clearAll(except: next)
+      _ = try? await stateIntents.clearAll(except: next)
     } else {
       _ = try? await readCache.clearAll()
+      _ = try? await stateIntents.clearAll()
     }
   }
 
