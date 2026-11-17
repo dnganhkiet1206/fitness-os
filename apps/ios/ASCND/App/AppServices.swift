@@ -396,32 +396,50 @@ final class AppServices {
     await probeAI()
   }
 
-  /// Edge function AI đã deploy chưa (15/10: server trả 404 "function not found" cho
-  /// MỌI function). `true` mới hiện lối vào AI (Coach, tổng kết tuần, Insight, gợi ý
-  /// bữa, chụp ảnh món); `nil` (chưa biết / không có mạng) và `false` → ẩn, không để
-  /// người dùng chạm vào một màn lỗi. Server deploy xong → lần mở app sau tự hiện.
-  private(set) var aiDeployed: Bool?
+  /// Edge function AI đã deploy chưa, theo từng function (17/11: trước đây một
+  /// `Bool?` duy nhất dò chỉ `ai-coach` — coach sập thì mọi lối vào AI ẩn dù
+  /// function của chính nó vẫn chạy). Mỗi lối vào chỉ nhìn cờ của function nó
+  /// gọi (`isAIDeployed`); vắng = chưa biết / không có mạng → ẩn, như `false`.
+  /// Server deploy xong → lần mở app / quay lại tiền cảnh sau tự hiện.
+  private(set) var aiAvailability = AIFunctionAvailability()
 
-  /// Một lượt hỏi gateway, không đăng nhập: function có → 401 (chưa chạy gì), không
-  /// có → 404. Lỗi mạng: giữ `nil`, thử lại lần ra tiền cảnh sau.
+  /// Function AI đã deploy thì lối vào của nó mới hiện.
+  func isAIDeployed(_ fn: EdgeFunction.Name) -> Bool { aiAvailability.isDeployed(fn) }
+
+  /// Một lượt hỏi gateway cho từng function, không đăng nhập: function có → 401
+  /// (chưa chạy gì), không có → 404. Lỗi mạng: giữ "chưa biết", thử lại lần ra
+  /// tiền cảnh sau. Sáu function dò song song; mỗi function giữ nguyên ngữ nghĩa
+  /// cũ: timeout 8 giây, thử lại ba lần cách 2 giây, đã biết là có thì không dò lại.
   func probeAI() async {
     // UI test: máy chủ giả trả lời edge function — lối vào AI hiện như khi đã deploy.
-    if Self.uiTest { aiDeployed = true }
-    guard aiDeployed != true, let base = Self.supabaseURL, let key = Self.supabaseKey else { return }
-    var req = URLRequest(url: base.appendingPathComponent("functions/v1/ai-coach"))
-    req.httpMethod = "POST"
-    req.timeoutInterval = 8
-    req.setValue(key, forHTTPHeaderField: "apikey")
-    req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    req.httpBody = Data("{}".utf8)
-    // Mở app lúc mạng chưa sẵn (16/10: dải "Offline" lúc khởi động) thì lần dò
-    // đầu hỏng và mọi lối AI ẩn cả phiên. Thử lại ba lần, cách 2 giây; quay lại
-    // tiền cảnh cũng dò lại (`didBecomeActive`).
-    for attempt in 0..<3 {
-      if attempt > 0 { try? await Task.sleep(for: .seconds(2)) }
-      if let (_, resp) = try? await URLSession.shared.data(for: req), let http = resp as? HTTPURLResponse {
-        aiDeployed = http.statusCode != 404
-        return
+    if Self.uiTest { aiAvailability.markAllDeployed() }
+    guard let base = Self.supabaseURL, let key = Self.supabaseKey else { return }
+    let pending = AIFunctionAvailability.probed.filter { !aiAvailability.isDeployed($0) }
+    guard !pending.isEmpty else { return }
+    await withTaskGroup(of: (EdgeFunction.Name, Bool?).self) { group in
+      for fn in pending {
+        group.addTask {
+          var req = URLRequest(url: base.appendingPathComponent("functions/v1/\(fn.rawValue)"))
+          req.httpMethod = "POST"
+          req.timeoutInterval = 8
+          req.setValue(key, forHTTPHeaderField: "apikey")
+          req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+          req.httpBody = Data("{}".utf8)
+          // Mở app lúc mạng chưa sẵn (16/10: dải "Offline" lúc khởi động) thì lần dò
+          // đầu hỏng và mọi lối AI ẩn cả phiên. Thử lại ba lần, cách 2 giây; quay lại
+          // tiền cảnh cũng dò lại (`didBecomeActive`).
+          for attempt in 0..<3 {
+            if attempt > 0 { try? await Task.sleep(for: .seconds(2)) }
+            if let (_, resp) = try? await URLSession.shared.data(for: req), let http = resp as? HTTPURLResponse {
+              let deployed: Bool? = http.statusCode != 404
+              return (fn, deployed)
+            }
+          }
+          return (fn, nil)
+        }
+      }
+      for await (fn, deployed) in group {
+        if let deployed { aiAvailability.set(fn, deployed: deployed) }
       }
     }
   }
