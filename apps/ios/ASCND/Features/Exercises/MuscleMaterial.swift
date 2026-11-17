@@ -47,6 +47,9 @@ import Foundation
       return Images(ids: ids, shadeIds2: si, normal: normal, fiberNormal: fiber)
     }
 
+    /// Texture đã nạp ở lần mở bài trước (nil = chưa): có rồi thì không dựng lại ảnh 2K (review #936).
+    static var loaded: Textures? { cached }
+
     static func textures(_ images: Images) -> Textures? {
       if let cached { return cached }
       func load(_ image: CGImage, mipmaps: Bool = true) -> TextureResource? {

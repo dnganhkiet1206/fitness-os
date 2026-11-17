@@ -811,11 +811,15 @@
       #if DEBUG
         let start = Date()
       #endif
-      let built = await Task.detached(priority: .userInitiated) { () -> (MuscleShader.Shared, MuscleMaterial.Images)? in
-        guard let shared = MuscleShader.shared(), let images = MuscleMaterial.images(shared) else { return nil }
+      let loaded = MuscleMaterial.loaded
+      let built = await Task.detached(priority: .userInitiated) { () -> (MuscleShader.Shared, MuscleMaterial.Images?)? in
+        guard let shared = MuscleShader.shared() else { return nil }
+        // Ảnh 2K chỉ dựng lần đầu; các bài sau dùng lại texture đã nạp.
+        if loaded != nil { return (shared, nil) }
+        guard let images = MuscleMaterial.images(shared) else { return nil }
         return (shared, images)
       }.value
-      guard let (shared, images) = built, let textures = MuscleMaterial.textures(images),
+      guard let (shared, images) = built, let textures = loaded ?? images.flatMap(MuscleMaterial.textures),
         let full = MuscleMaterial.palette(roles: roles, shared: shared, primaryOnly: false),
         let focus = MuscleMaterial.palette(roles: roles, shared: shared, primaryOnly: true),
         let materials = body.model?.materials,
