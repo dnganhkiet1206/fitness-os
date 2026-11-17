@@ -218,8 +218,9 @@
               }
           }
           if showTips {
-            // Vẽ lại mỗi khung: điểm neo đi theo khớp khi động tác chạy.
-            TimelineView(.animation) { _ in
+            // Vẽ lại mỗi khung: điểm neo đi theo khớp khi động tác chạy. Bật Giảm chuyển động thì
+            // chỉ cập nhật 4 lần/giây (nhãn nhảy theo bước, không trượt).
+            TimelineView(.animation(minimumInterval: reduceMotion ? 0.25 : nil)) { _ in
             GeometryReader { geo in
               ExerciseTipsOverlay(
                 tips: demoInfo?.tips ?? [],
@@ -335,8 +336,8 @@
           }
           if let tempo = demoInfo?.tempo {
             ToolbarItem(placement: .principal) {
-              // Vẽ lại mỗi khung để theo kịp chuyển động.
-              TimelineView(.animation) { _ in
+              // Vẽ lại mỗi khung để theo kịp chuyển động; Giảm chuyển động: 4 lần/giây.
+              TimelineView(.animation(minimumInterval: reduceMotion ? 0.25 : nil)) { _ in
                 ExerciseTempoStrip(
                   tempo: tempo,
                   ms: playback.time.map { $0 / max(playback.duration, 0.001) * tempo.durationMs },
