@@ -64,7 +64,7 @@ struct PurchaseTests {
   private func coordinator(
     config: StoreProductConfig = StoreProductConfig(plus: "ascnd.plus", max: "ascnd.max"),
     client: FakeStoreClient = FakeStoreClient(),
-    verifier: FakeVerifier = FakeVerifier(),
+    verifier: any PurchaseVerifier = FakeVerifier(),
     tierSource: FakeTierSource = FakeTierSource()
   ) -> PurchaseCoordinator {
     PurchaseCoordinator(config: config, client: client, verifier: verifier, tierSource: tierSource)
