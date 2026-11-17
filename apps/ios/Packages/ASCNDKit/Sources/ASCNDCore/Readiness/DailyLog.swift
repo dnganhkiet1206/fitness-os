@@ -220,8 +220,11 @@ public enum DailyLog {
   // MARK: - Hàng
 
   /// Hàng `daily_logs` dựng từ các nguồn — phần thuần của `recomputeDailyLog`.
+  /// `historyWindow` (iOS 27) chỉ để engine ghi cờ "lịch sử giới hạn" — không
+  /// đổi điểm; mặc định không biết cửa sổ, hành vi như trước.
   public static func row(
-    userId: String, date: LocalDate, sources s: Sources, now: EpochMillis, in tz: TimeZone
+    userId: String, date: LocalDate, sources s: Sources, now: EpochMillis, in tz: TimeZone,
+    historyWindow: HealthHistoryWindow = .unknown
   ) -> [String: JSONValue] {
     func sum(_ rows: [JSONValue], _ col: String) -> Double { rows.reduce(0) { $0 + JS.number($1[col]) } }
 
@@ -239,7 +242,7 @@ public enum DailyLog {
     var recommendation = ""
     var acwr: JSONValue = .null
 
-    if let input = readinessInput(sources: s, date: date, now: now, in: tz) {
+    if let input = readinessInput(sources: s, date: date, now: now, in: tz, historyWindow: historyWindow) {
       if let r = ReadinessEngine.compute(input) {
         score = JS.json(r.score)
         status = .string(r.status.rawValue)
@@ -275,8 +278,10 @@ public enum DailyLog {
   /// Đầu vào của điểm sẵn sàng từ các nguồn của ngày — CHUNG cho hàng
   /// `daily_logs` và tín hiệu phục hồi của Daily Plan (GĐ1), nên hai nơi không
   /// bao giờ đọc số khác nhau. `nil` khi chưa đủ dữ liệu để chấm.
+  /// `historyWindow` (iOS 27) chỉ để engine ghi cờ "lịch sử giới hạn".
   public static func readinessInput(
-    sources s: Sources, date: LocalDate, now: EpochMillis, in tz: TimeZone
+    sources s: Sources, date: LocalDate, now: EpochMillis, in tz: TimeZone,
+    historyWindow: HealthHistoryWindow = .unknown
   ) -> ReadinessInput? {
     let measured28d = s.load28d.filter { SessionLoad.load($0) != nil }
     let trainingDays28d = chronicDaysCovered(measured28d, now: now)
@@ -318,7 +323,8 @@ public enum DailyLog {
       // Đau cơ đã trừ vào điểm tải; KHÔNG coi nó là "chấn thương" (trần 45) nữa —
       // một con số bị trừ hai lần (24/10). App chưa có ô ghi chấn thương riêng.
       sorenessToday: soreness, illness: today?["illness_flag"] == .bool(true), painFlagMax: nil,
-      hrvHistory28d: hrvHistory, rhrHistory28d: rhrHistory)
+      hrvHistory28d: hrvHistory, rhrHistory28d: rhrHistory,
+      readableHistoryDays: historyWindow.readableDays(through: date))
   }
 
   /// Trung bình mỗi ngày địa phương của một cột (bỏ ô trống), theo thứ tự ngày.
@@ -429,8 +435,10 @@ public struct DailyLogRebuildError: Error, Sendable, Hashable {
 extension DailyLog {
   /// `recomputeDailyLog(userId, date)`: đọc token, đọc 12 nguồn, tính, ghi có
   /// điều kiện; bị chen thì làm lại (tối đa `rebuildAttempts`).
+  /// `historyWindow` (iOS 27) chỉ để engine ghi cờ "lịch sử giới hạn".
   public static func recompute(
-    userId: String, date: LocalDate, store: any RowStore, now: EpochMillis, in tz: TimeZone
+    userId: String, date: LocalDate, store: any RowStore, now: EpochMillis, in tz: TimeZone,
+    historyWindow: HealthHistoryWindow = .unknown
   ) async throws(DailyLogRebuildError) {
     let reads = queries(userId: userId, date: date, in: tz)
     for attempt in 0..<rebuildAttempts {
@@ -449,7 +457,7 @@ extension DailyLog {
       } catch {
         throw DailyLogRebuildError(message: "Không dựng lại được ngày \(date): không đọc được \(error.message)")
       }
-      let computed = row(userId: userId, date: date, sources: s, now: now, in: tz)
+      let computed = row(userId: userId, date: date, sources: s, now: now, in: tz, historyWindow: historyWindow)
 
       guard let seen, let id = seen["id"], let token = seen["updated_at"] else {
         do {

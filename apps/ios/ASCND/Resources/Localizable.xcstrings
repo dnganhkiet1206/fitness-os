@@ -16658,6 +16658,52 @@
         }
       }
     },
+    "rd.history.short": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health has shared less than 7 days of history, so your readiness baseline is still forming."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health mới chia sẻ chưa tới 7 ngày lịch sử, nên nền sẵn sàng vẫn đang hình thành."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud ha compartido menos de 7 días de historial, así que tu base de readiness aún se está formando."
+          }
+        }
+      }
+    },
+    "rd.history.limited": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health shares only part of your history, so trends start from when you granted access."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health chỉ chia sẻ một phần lịch sử, nên xu hướng bắt đầu từ lúc bạn cấp quyền."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Salud solo comparte una parte de tu historial, así que las tendencias empiezan desde que diste acceso."
+          }
+        }
+      }
+    },
     "rd.a11y %lld %@": {
       "extractionState": "manual",
       "localizations": {
