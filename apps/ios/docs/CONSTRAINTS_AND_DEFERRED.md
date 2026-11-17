@@ -38,7 +38,7 @@ Hệ quả cho người làm:
 | **iPhone thật để kiểm** | Camera (mã vạch, ảnh món), Apple Health thật, push, Live Activity khi khoá màn hình | Chưa kiểm. Danh sách ở `GD0-DEVICE-CHECKLIST.md` | Kiệt (máy), agent (kịch bản) |
 | **Token Sentry** (dSYM) | Đọc được stack của các lỗi treo APPLE-IOS-4/5/6/7 | Chỉ bản Release mới tải dSYM | Kiệt |
 | **Sao lưu / PITR của Supabase** (round 3, AUD-01) | Khôi phục khi xoá nhầm, migration hỏng, sự cố hạ tầng | `supabase backups list` 12/11: `pitr_enabled: false`, `backups: []`, không có bản sao lưu nào khôi phục được. Câu "sao lưu tới 30 ngày" trong `legal-content.json` chưa có bằng chứng | Kiệt (nâng gói / bật PITR, hay sửa câu chữ) |
-| **Doanh thu / gói trả phí** | Mua trong app | Server có `verify-purchase` / `store-webhook`; app không có màn nào; chưa có quyết định sản phẩm | Kiệt (quyết định) |
+| **Doanh thu / gói trả phí** | Mua trong app | ~~Server có `verify-purchase` / `store-webhook`; app không có màn nào; chưa có quyết định sản phẩm~~ **17/11 (nhánh `agent/c/storekit-purchase`, must-do #2):** app đã có StoreKit 2 + màn paywall (Cài đặt → Gói) + mock `docs/design/mocks/paywall.html`, nhưng **chưa bán được**: (1) probe 17/11: `verify-purchase` và `store-webhook` CHƯA deploy (404); (2) chưa có product nào trong App Store Connect, chưa có product ID trong config; (3) chưa có quyết định sản phẩm (quyền lợi từng gói, giá, chu kỳ). Khi chưa đủ 3 điều, màn paywall hiện "chưa mở bán" và không có nút mua nào chạy | Kiệt (quyết định + tạo product + deploy hàm + cấu hình env Apple) |
 
 **Quy tắc:**
 - Agent **không** tự đăng ký, mua, tạo tài khoản hay nhập thông tin thanh toán.

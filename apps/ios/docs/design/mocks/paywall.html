@@ -1,0 +1,127 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mock — Paywall gói Plus / Max</title>
+<style>
+:root{--ink:#1a1917;--paper:#f7f4ef;--card:#ffffff;--mute:#6b6559;--line:#dcd5c8;--gold:#7d6733;--green:#078055;--red:#de0b44}
+body{margin:0;background:#ece6dc;font-family:-apple-system,system-ui;color:var(--ink);padding:18px}
+h1{font-size:20px;margin:0 0 4px}p.s{color:var(--mute);font-size:13px;margin:0 0 12px;max-width:900px}
+p.s b{color:var(--ink)}
+.row{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:8px}
+.cap{font-size:14px;font-weight:700;margin:4px 0 0}.d{font-size:12.5px;color:#6f665a;max-width:310px;margin:0}
+.ph{width:310px;height:660px;border-radius:42px;background:var(--paper);position:relative;overflow:hidden;border:1px solid #e2d8c6;box-sizing:border-box;padding:52px 14px 14px}
+.top{display:flex;align-items:center;justify-content:space-between;margin:0 4px 12px}
+.brand{font-weight:800;font-size:20px;letter-spacing:.5px}
+.nav{display:flex;align-items:center;gap:8px;margin:0 4px 14px;font-size:15px}
+.nav b{font-size:17px}
+.card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 1px 0 rgba(0,0,0,.03),0 6px 18px rgba(60,40,10,.06);border:1px solid var(--line);margin-bottom:12px}
+.card h3{margin:0;font-size:20px}
+.price{font-size:17px;font-weight:700}
+.btn{height:50px;border-radius:25px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;margin-top:12px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid rgba(26,25,23,.2)}
+.btn.dim{opacity:.45}
+.mut{color:var(--mute);font-size:13px}
+.sub{font-size:15px;color:var(--mute);margin:0 4px 16px}
+.tierline{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:15px}
+.tierline span{color:var(--mute)}
+.notice{border-radius:12px;padding:10px 12px;font-size:13.5px;margin-bottom:12px}
+.notice.green{background:#e3efe8;color:var(--green)}
+.notice.red{background:#fde4e8;color:var(--red)}
+.notice.grey{background:#efe8dc;color:#6f665a}
+.fine{font-size:11.5px;color:var(--mute);margin-top:14px}
+.link{color:var(--ink);font-size:14px;font-weight:600;margin-top:8px}
+.seg{display:inline-flex;background:#efe8dc;border-radius:12px;padding:3px;gap:3px;font-size:13px;margin-bottom:14px}
+.seg button{border:0;background:transparent;padding:6px 14px;border-radius:9px;font-size:13px;cursor:pointer}
+.seg button.on{background:#fff;font-weight:700}
+.q{background:#fffbe8;border:1px solid #e5d9a8;border-radius:12px;padding:12px 14px;max-width:900px;margin-bottom:14px;font-size:13.5px}
+.q b{display:block;margin-bottom:4px}
+.q li{margin-bottom:3px}
+.spin{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--mute);display:inline-block;vertical-align:-4px;margin-right:8px}
+.listrow{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 14px;font-size:15px;margin-bottom:8px}
+.listrow span{color:var(--mute);font-size:14px}
+</style>
+<h1 data-i18n="h1">Paywall — gói Plus / Max</h1>
+<p class="s" data-i18n="intro">Màn bán gói trong Cài đặt. Tên và giá do App Store trả về — mock để giá là “—” vì chưa có product nào. Màn này <b>không hứa quyền lợi nào</b>: chưa có quyết định nào về việc Plus/Max mở khoá gì.</p>
+<div class="seg" role="group" aria-label="Ngôn ngữ mock">
+  <button data-lang="vi" class="on">Tiếng Việt</button><button data-lang="en">English</button><button data-lang="es">Español</button>
+</div>
+<div class="q"><b data-i18n="qTitle">Cần Kiệt quyết định trước khi bán được (xem PR):</b>
+<ul style="margin:0;padding-left:18px">
+<li data-i18n="q1">1. Plus / Max mở khoá gì (quyền lợi từng gói)?</li>
+<li data-i18n="q2">2. Giá và chu kỳ (tháng/năm) cho từng gói?</li>
+<li data-i18n="q3">3. Product ID trong App Store Connect + nhóm subscription?</li>
+<li data-i18n="q4">4. Deploy 2 edge function verify-purchase + store-webhook và cấu hình env Apple trên server?</li>
+</ul></div>
+
+<div class="row">
+
+<!-- 1. Settings row -->
+<div class="col">
+<div class="ph">
+  <div class="nav"><span>‹</span><b data-i18n="settings">Cài đặt</b></div>
+  <div class="listrow"><span>✉️ test@example.com</span></div>
+  <div class="listrow"><span data-i18n="planRow">⭐ Gói</span><span><span data-i18n="free">Miễn phí</span> ›</span></div>
+  <div class="listrow"><span data-i18n="appearance">Giao diện</span><span>▣</span></div>
+  <div class="listrow"><span data-i18n="language">🌐 Ngôn ngữ</span><span>Tiếng Việt</span></div>
+</div>
+<p class="cap" data-i18n="cap1">1. Hàng “Gói” trong Cài đặt</p>
+<p class="d" data-i18n="d1">Hiện gói hiện tại bên phải. Chạm mở paywall. Chưa đăng nhập thì không hiện hàng.</p>
+</div>
+
+<!-- 2. Paywall ready -->
+<div class="col">
+<div class="ph">
+  <div class="nav"><span>‹</span><b data-i18n="paywallTitle">Gói ASCND</b></div>
+  <p class="sub" data-i18n="subtitle">Nâng cấp gói của bạn. Thanh toán an toàn qua App Store.</p>
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><h3>Plus</h3><span class="price">—</span></div><div class="btn" data-i18n="buy">Mua</div></div>
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><h3>Max</h3><span class="price">—</span></div><div class="btn" data-i18n="buy2">Mua</div></div>
+  <div class="btn ghost" data-i18n="restore">Khôi phục giao dịch</div>
+  <p class="fine" data-i18n="footer">Giao dịch được xử lý bởi Apple. Bạn có thể quản lý hoặc huỷ gói trong cài đặt App Store.</p>
+  <div class="link" data-i18n="manage">Quản lý gói trong App Store</div>
+  <div class="link" data-i18n="legal">Điều khoản &amp; quyền riêng tư</div>
+</div>
+<p class="cap" data-i18n="cap2">2. Paywall khi đã có product</p>
+<p class="d" data-i18n="d2">Tên + giá lấy từ App Store Connect. Không có dòng quyền lợi nào cho tới khi Kiệt chốt.</p>
+</div>
+
+<!-- 3. Unconfigured -->
+<div class="col">
+<div class="ph">
+  <div class="nav"><span>‹</span><b data-i18n="paywallTitle2">Gói ASCND</b></div>
+  <p class="sub" data-i18n="subtitle2">Nâng cấp gói của bạn. Thanh toán an toàn qua App Store.</p>
+  <h3 style="margin:4px 4px 6px;font-size:20px" data-i18n="notOpen">Chưa mở bán</h3>
+  <p class="sub" data-i18n="notOpenBody">Cửa hàng chưa mở. Nếu bạn đã mua gói trước đây, hãy dùng nút khôi phục bên dưới.</p>
+  <div class="btn ghost" data-i18n="restore2">Khôi phục giao dịch</div>
+  <p class="fine" data-i18n="footer2">Giao dịch được xử lý bởi Apple. Bạn có thể quản lý hoặc huỷ gói trong cài đặt App Store.</p>
+</div>
+<p class="cap" data-i18n="cap3">3. Chưa cấu hình product ID</p>
+<p class="d" data-i18n="d3">Trạng thái hiện tại của app: không product giả, không nút mua. Khôi phục vẫn chạy.</p>
+</div>
+
+<!-- 4. Pending + error -->
+<div class="col">
+<div class="ph">
+  <div class="nav"><span>‹</span><b data-i18n="paywallTitle3">Gói ASCND</b></div>
+  <p class="sub" data-i18n="subtitle3">Nâng cấp gói của bạn. Thanh toán an toàn qua App Store.</p>
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><h3>Plus</h3><span class="price">—</span></div><div class="btn dim"><span class="spin"></span><span data-i18n="buying">Đang mua…</span></div></div>
+  <div class="notice grey" data-i18n="pending">Giao dịch đang chờ Apple duyệt. Khi duyệt xong, gói sẽ tự cập nhật.</div>
+  <div class="notice red" data-i18n="errDeploy">Máy chủ chưa sẵn sàng xác minh giao dịch. Hãy thử lại sau.</div>
+  <div class="btn ghost" data-i18n="restore3">Khôi phục giao dịch</div>
+</div>
+<p class="cap" data-i18n="cap4">4. Đang mua / đang chờ / lỗi xác minh</p>
+<p class="d" data-i18n="d4">Chờ duyệt thì báo chờ, không ghi quyền lợi. Lỗi gọi đúng tên: ví dụ máy chủ chưa triển khai hàm xác minh.</p>
+</div>
+
+</div>
+
+<script>
+const T = {
+  vi: { h1: "Paywall — gói Plus / Max", intro: "Màn bán gói trong Cài đặt. Tên và giá do App Store trả về — mock để giá là “—” vì chưa có product nào. Màn này không hứa quyền lợi nào: chưa có quyết định nào về việc Plus/Max mở khoá gì.", qTitle: "Cần Kiệt quyết định trước khi bán được (xem PR):", q1: "1. Plus / Max mở khoá gì (quyền lợi từng gói)?", q2: "2. Giá và chu kỳ (tháng/năm) cho từng gói?", q3: "3. Product ID trong App Store Connect + nhóm subscription?", q4: "4. Deploy 2 edge function verify-purchase + store-webhook và cấu hình env Apple trên server?", settings: "Cài đặt", planRow: "⭐ Gói", free: "Miễn phí", appearance: "Giao diện", language: "🌐 Ngôn ngữ", cap1: "1. Hàng “Gói” trong Cài đặt", d1: "Hiện gói hiện tại bên phải. Chạm mở paywall. Chưa đăng nhập thì không hiện hàng.", paywallTitle: "Gói ASCND", paywallTitle2: "Gói ASCND", paywallTitle3: "Gói ASCND", subtitle: "Nâng cấp gói của bạn. Thanh toán an toàn qua App Store.", subtitle2: "Nâng cấp gói của bạn. Thanh toán an toàn qua App Store.", subtitle3: "Nâng cấp gói của bạn. Thanh toán an toàn qua App Store.", buy: "Mua", buy2: "Mua", restore: "Khôi phục giao dịch", restore2: "Khôi phục giao dịch", restore3: "Khôi phục giao dịch", footer: "Giao dịch được xử lý bởi Apple. Bạn có thể quản lý hoặc huỷ gói trong cài đặt App Store.", footer2: "Giao dịch được xử lý bởi Apple. Bạn có thể quản lý hoặc huỷ gói trong cài đặt App Store.", manage: "Quản lý gói trong App Store", legal: "Điều khoản & quyền riêng tư", cap2: "2. Paywall khi đã có product", d2: "Tên + giá lấy từ App Store Connect. Không có dòng quyền lợi nào cho tới khi Kiệt chốt.", notOpen: "Chưa mở bán", notOpenBody: "Cửa hàng chưa mở. Nếu bạn đã mua gói trước đây, hãy dùng nút khôi phục bên dưới.", cap3: "3. Chưa cấu hình product ID", d3: "Trạng thái hiện tại của app: không product giả, không nút mua. Khôi phục vẫn chạy.", buying: "Đang mua…", pending: "Giao dịch đang chờ Apple duyệt. Khi duyệt xong, gói sẽ tự cập nhật.", errDeploy: "Máy chủ chưa sẵn sàng xác minh giao dịch. Hãy thử lại sau.", cap4: "4. Đang mua / đang chờ / lỗi xác minh", d4: "Chờ duyệt thì báo chờ, không ghi quyền lợi. Lỗi gọi đúng tên: ví dụ máy chủ chưa triển khai hàm xác minh." },
+  en: { h1: "Paywall — Plus / Max plans", intro: "The plan screen in Settings. Names and prices come from the App Store — the mock shows “—” because no products exist yet. This screen promises no perks: nothing has been decided about what Plus/Max unlock.", qTitle: "Kiệt to decide before anything can be sold (see PR):", q1: "1. What do Plus / Max unlock (perks per plan)?", q2: "2. Prices and periods (monthly/yearly) per plan?", q3: "3. Product IDs in App Store Connect + subscription group?", q4: "4. Deploy the verify-purchase + store-webhook edge functions and configure Apple env on the server?", settings: "Settings", planRow: "⭐ Plan", free: "Free", appearance: "Appearance", language: "🌐 Language", cap1: "1. “Plan” row in Settings", d1: "Shows the current plan on the right. Tap to open the paywall. Hidden when signed out.", paywallTitle: "ASCND Plans", paywallTitle2: "ASCND Plans", paywallTitle3: "ASCND Plans", subtitle: "Upgrade your plan. Secure payment through the App Store.", subtitle2: "Upgrade your plan. Secure payment through the App Store.", subtitle3: "Upgrade your plan. Secure payment through the App Store.", buy: "Buy", buy2: "Buy", restore: "Restore purchases", restore2: "Restore purchases", restore3: "Restore purchases", footer: "Purchases are processed by Apple. You can manage or cancel your plan in your App Store settings.", footer2: "Purchases are processed by Apple. You can manage or cancel your plan in your App Store settings.", manage: "Manage plan in the App Store", legal: "Terms & privacy", cap2: "2. Paywall once products exist", d2: "Name + price come from App Store Connect. No perk lines until Kiệt decides.", notOpen: "Not on sale yet", notOpenBody: "The store isn't open yet. If you bought a plan before, use the restore button below.", cap3: "3. No product IDs configured", d3: "The app's current state: no fake products, no working buy button. Restore still works.", buying: "Purchasing…", pending: "Your purchase is waiting for Apple's approval. Your plan will update automatically once approved.", errDeploy: "The server isn't ready to verify purchases yet. Please try again later.", cap4: "4. Purchasing / pending / verification error", d4: "Pending shows as pending, no perks granted. Errors are named: e.g. the verification function isn't deployed." },
+  es: { h1: "Paywall — planes Plus / Max", intro: "La pantalla de planes en Ajustes. Nombres y precios vienen del App Store — el mock muestra “—” porque aún no hay productos. Esta pantalla no promete ventajas: nada se ha decidido sobre lo que desbloquean Plus/Max.", qTitle: "Kiệt debe decidir antes de vender (ver PR):", q1: "1. ¿Qué desbloquean Plus / Max (ventajas por plan)?", q2: "2. ¿Precios y periodos (mensual/anual) por plan?", q3: "3. ¿IDs de producto en App Store Connect + grupo de suscripción?", q4: "4. ¿Desplegar las edge functions verify-purchase + store-webhook y configurar el entorno de Apple en el servidor?", settings: "Ajustes", planRow: "⭐ Plan", free: "Gratis", appearance: "Apariencia", language: "🌐 Idioma", cap1: "1. Fila “Plan” en Ajustes", d1: "Muestra el plan actual a la derecha. Toca para abrir el paywall. Oculta sin sesión.", paywallTitle: "Planes de ASCND", paywallTitle2: "Planes de ASCND", paywallTitle3: "Planes de ASCND", subtitle: "Mejora tu plan. Pago seguro a través del App Store.", subtitle2: "Mejora tu plan. Pago seguro a través del App Store.", subtitle3: "Mejora tu plan. Pago seguro a través del App Store.", buy: "Comprar", buy2: "Comprar", restore: "Restaurar compras", restore2: "Restaurar compras", restore3: "Restaurar compras", footer: "Las compras las procesa Apple. Puedes gestionar o cancelar tu plan en los ajustes del App Store.", footer2: "Las compras las procesa Apple. Puedes gestionar o cancelar tu plan en los ajustes del App Store.", manage: "Gestionar el plan en el App Store", legal: "Términos y privacidad", cap2: "2. Paywall cuando existan productos", d2: "Nombre + precio vienen de App Store Connect. Sin líneas de ventajas hasta que Kiệt decida.", notOpen: "Aún no está a la venta", notOpenBody: "La tienda aún no está abierta. Si ya compraste un plan, usa el botón de restaurar abajo.", cap3: "3. Sin IDs de producto configurados", d3: "Estado actual de la app: sin productos falsos, sin botón de compra. Restaurar sigue funcionando.", buying: "Comprando…", pending: "Tu compra está esperando la aprobación de Apple. Tu plan se actualizará automáticamente cuando se apruebe.", errDeploy: "El servidor aún no está listo para verificar compras. Inténtalo más tarde.", cap4: "4. Comprando / pendiente / error de verificación", d4: "Pendiente se muestra como pendiente, sin ventajas. Errores con nombre: p. ej., la función de verificación no está desplegada." }
+};
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".seg button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  const d = T[b.dataset.lang];
+  document.querySelectorAll("[data-i18n]").forEach(el => { const k = el.dataset.i18n; if (d[k]) el.textContent = d[k]; });
+}));
+</script>
