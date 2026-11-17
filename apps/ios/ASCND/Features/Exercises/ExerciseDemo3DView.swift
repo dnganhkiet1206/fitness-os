@@ -808,7 +808,9 @@
     @ObservationIgnored private var gpu: GPUSkin?
 
     private func prepareGPU(body: ModelEntity, apparel: Entity?, roles: [String: [String]]) async -> Bool {
-      let start = Date()
+      #if DEBUG
+        let start = Date()
+      #endif
       let built = await Task.detached(priority: .userInitiated) { () -> (MuscleShader.Shared, MuscleMaterial.Images)? in
         guard let shared = MuscleShader.shared(), let images = MuscleMaterial.images(shared) else { return nil }
         return (shared, images)
