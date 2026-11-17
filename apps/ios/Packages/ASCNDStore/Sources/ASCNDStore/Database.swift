@@ -104,6 +104,22 @@ public final class ASCNDDatabase: Sendable {
       try db.drop(table: "workout_day")
       try db.rename(table: "workout_day_owned", to: "workout_day")
     }
+    m.registerMigration("v5-state-intents") { db in
+      // Ý chờ gửi của lớp Trạng thái (#161, AUD-29): một hàng mỗi (người,
+      // khoá) — giá trị muốn đặt và giá trị server lúc ý ấy được ghi. Theo
+      // tài khoản như `read_cache` (v3): ý của người này không được sống
+      // sang phiên của người khác. `send` là closure, không lưu được — ý
+      // nạp về đợi chủ nó nhận lại (`StateWriter.adopt`).
+      try db.create(table: "state_intents") { t in
+        t.column("userId", .text).notNull()
+        t.column("intentKey", .text).notNull()
+        t.column("desired", .integer).notNull()
+        t.column("server", .integer).notNull()
+        t.primaryKey(["userId", "intentKey"])
+      }
+    }
+    // Hai migration cùng tiền tố v5 là có chủ ý (gộp #927 với #930): GRDB
+    // theo dõi theo tên đầy đủ, hai tên khác nhau nên cả hai đều chạy.
     m.registerMigration("v5-read-cache-updated-at") { db in
       // Dấu lần ghi cuối của mỗi hàng `read_cache` (R2-SYNC-03): lượt cắt
       // hướng dẫn theo tuổi (`ReadCacheCleanup.pruneExerciseGuides`) cần biết

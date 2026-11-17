@@ -102,7 +102,11 @@ struct SupplementsView: View {
         }
         services.stateWriter.clearNotice()
       }
-      .task { await book.refresh() }
+      .task {
+        await book.refresh()
+        // Ý "đã uống" khôi phục từ đĩa (AUD-29): danh sách đã đọc thì nhận lại, gửi khi có mạng.
+        book.reattach(writer: services.stateWriter)
+      }
       .alert(
         pendingDelete.map { String(localized: "supplements.delete.confirm \($0.name)") } ?? "",
         isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),

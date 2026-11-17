@@ -64,10 +64,34 @@ public struct SupabaseCoachStream: CoachStream {
     }
   }
 
+  /// Hết giờ KHÔNG CÓ BYTE của luồng SSE (AUD-67): `timeoutInterval` của
+  /// `URLRequest` là hết giờ idle — không byte nào trong từng ấy giây thì
+  /// hỏng — KHÔNG phải tổng thời gian luồng. Câu trả lời dài vẫn chảy bình
+  /// thường; chỉ luồng treo mới bị cắt.
+  ///
+  /// 90 giây, KHÔNG copy 25 giây của REST (`StallRecovery.requestTimeout`):
+  /// PostgREST trả trong vài trăm ms, còn byte đầu của `ai-coach` phải đợi
+  /// 8 lần đọc song song + giữ quota + lượt gọi provider — provider có hết
+  /// giờ header 20 giây mỗi lần thử, tối đa 3 lần thử mỗi provider
+  /// (R2-OPS-04), nên byte đầu hợp lệ có thể tới sau 60 giây ở đường
+  /// failover. 90 = 3 × 20 (trọn một vòng thử của một provider) + 30 giây
+  /// dư cho đọc/giữ quota/mạng. Không phủ trọn trường hợp xấu nhất (~180
+  /// giây, cả ba provider): một khoảng lặng quá 90 giây đã không phân biệt
+  /// được với treo, và cắt sớm quan trọng hơn đuôi failover (việc của ngân
+  /// sách phía server).
+  ///
+  /// Đặt ở request (không phải session): có hiệu lực cả trên `.shared` mặc
+  /// định lẫn session do người gọi đưa vào. Hết giờ vẫn qua `failure(_:)`
+  /// như mọi lỗi mạng khác (`.timedOut` nằm trong `offlineCodes` nên hiện
+  /// là "offline") — phân loại timeout riêng cho AI là việc của R2-OPS-04,
+  /// không đổi ở đây.
+  static let idleTimeout: TimeInterval = 90
+
   /// POST của `expoFetch`: token của phiên + `apikey`, thân JSON.
   static func request(url: URL, anonKey: String, token: String, body: JSONValue) throws -> URLRequest {
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
+    request.timeoutInterval = Self.idleTimeout
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
     request.setValue(anonKey, forHTTPHeaderField: "apikey")

@@ -2,23 +2,20 @@ public import ASCNDCore
 import Foundation
 import Supabase
 
-/// `PerformanceSource` thật: các buổi trong cửa sổ, như `useWorkoutSessions`
-/// (`use-fitness-data.ts:874`) nhưng chỉ cột "lần trước" cần.
+/// `PerformanceSource` thật: các buổi trong cửa sổ qua lượt đọc chung
+/// `SharedWorkoutSessions` (R2-OPS-08), lọc trong bộ nhớ theo đúng `since` —
+/// chỉ cột "lần trước" cần (`id, date_time, sets`).
 public struct SupabasePerformanceSource: PerformanceSource {
   private let client: SupabaseClient
+  private let shared: SharedWorkoutSessions
 
   public init(backend: Backend) {
     self.client = backend.client
+    self.shared = backend.sharedSessions
   }
 
   public func sessions(userId: String, since: EpochMillis) async throws -> [SessionHistoryRow] {
-    let rows: [Row] = try await client.from("workout_sessions")
-      .select("id, date_time, sets")
-      .eq("user_id", value: userId)
-      .gte("date_time", value: WorkoutSessionRecord.iso8601(since))
-      .order("date_time", ascending: false)
-      .execute().value
-    return Self.rows(rows)
+    Self.historyRows(try await shared.rows(userId: userId, since: since))
   }
 
   /// `useWeightHistory(days)` (`use-fitness-data.ts:884`): `weight_logs`
@@ -53,16 +50,14 @@ public struct SupabasePerformanceSource: PerformanceSource {
     }
   }
 
-  struct Row: Decodable, Sendable {
-    let id: String
-    let date_time: String
-    let sets: JSONValue?
-  }
-
-  /// Hàng không đọc được thời điểm thì bỏ — không đoán buổi ấy thuộc ngày nào.
-  static func rows(_ rows: [Row]) -> [SessionHistoryRow] {
-    rows.compactMap { r in
-      EpochMillis(iso8601: r.date_time).map { SessionHistoryRow(id: r.id.lowercased(), at: $0, sets: r.sets) }
+  /// Hàng không đọc được id hay thời điểm thì bỏ — không đoán buổi ấy thuộc
+  /// ngày nào. Id về chữ thường như truy vấn cũ.
+  static func historyRows(_ rows: [JSONValue]) -> [SessionHistoryRow] {
+    rows.compactMap { row in
+      guard let id = row["id"]?.stringValue,
+        let at = row["date_time"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) })
+      else { return nil }
+      return SessionHistoryRow(id: id.lowercased(), at: at, sets: row["sets"])
     }
   }
 }

@@ -60,8 +60,6 @@ struct MascotRoomControllerTests {
     let source: FakeSource
     var claims: [String] = []
     var claimError: (any Error)?
-    var freezeRequests: [UUID] = []
-    var freezeError: (any Error)?
 
     init(source: FakeSource) { self.source = source }
 
@@ -72,31 +70,12 @@ struct MascotRoomControllerTests {
       source.lock.withLock { source.ledgerRows.append(LedgerRow(amount: amount, refKey: refKey)) }
       return amount
     }
-
-    func buyStreakFreeze(requestId: UUID) async throws -> Int {
-      lock.withLock { freezeRequests.append(requestId) }
-      if let freezeError { throw freezeError }
-      source.lock.withLock {
-        source.ledgerRows.append(LedgerRow(amount: -MascotRules.freezePrice, refKey: "freeze:\(requestId)"))
-        source.freezeRows.append(FreezeRow(usedOn: nil))
-      }
-      return 0
-    }
   }
 
-  func make(_ source: FakeSource, user: String = "u1", ids: [UUID] = []) -> (MascotRoomController, FakeEconomy) {
+  func make(_ source: FakeSource, user: String = "u1") -> (MascotRoomController, FakeEconomy) {
     let economy = FakeEconomy(source: source)
-    let queue = IdQueue(ids)
-    let c = MascotRoomController(
-      userId: user, today: today, source: source, economy: economy, makeRequestId: { queue.next() })
+    let c = MascotRoomController(userId: user, today: today, source: source, economy: economy)
     return (c, economy)
-  }
-
-  final class IdQueue: @unchecked Sendable {
-    let lock = NSLock()
-    var ids: [UUID]
-    init(_ ids: [UUID]) { self.ids = ids }
-    func next() -> UUID { lock.withLock { ids.isEmpty ? UUID() : ids.removeFirst() } }
   }
 
   static let welcomed = [LedgerRow(amount: 300, refKey: "welcome")]
@@ -271,51 +250,16 @@ struct MascotRoomControllerTests {
 
   // MARK: - Băng chuỗi
 
-  @Test func freezeButtonFollowsBalanceAndCap() async {
+  /// Băng đã mua giữ nguyên sau khi đóng bán: số đang giữ / đã dùng vẫn đọc
+  /// từ hàng `streak_freezes` (lối mua đã gỡ — AUD-14).
+  @Test func freezeCountsComeFromHeldAndUsedRows() async {
     let s = FakeSource()
-    s.ledgerRows = [LedgerRow(amount: 100, refKey: "welcome")]
-    let (c, _) = make(s)
-    await c.load()
-    #expect(!c.canBuyFreeze, "100 < 150")
     s.ledgerRows = Self.welcomed
     s.freezeRows = [FreezeRow(usedOn: nil), FreezeRow(usedOn: nil), FreezeRow(usedOn: LocalDate("2026-10-01"))]
+    let (c, _) = make(s)
     await c.load()
     #expect(c.freezesHeld == 2)
     #expect(c.freezesUsed == 1)
-    #expect(c.freezeFull)
-    #expect(!c.canBuyFreeze)
-  }
-
-  /// Lỗi mạng giữa chừng: lần bấm lại dùng CÙNG mã yêu cầu (server không trừ hai lần);
-  /// xong thì mã mới cho lần mua sau.
-  @Test func freezePurchaseReusesItsRequestIdUntilAccepted() async {
-    let a = UUID(), b = UUID()
-    let s = FakeSource()
-    s.ledgerRows = Self.welcomed
-    let (c, e) = make(s, ids: [a, b])
-    await c.load()
-    e.freezeError = URLError(.networkConnectionLost)
-    #expect(await c.buyFreeze() == false)
-    #expect(c.actionFailure == .offline)
-    e.freezeError = nil
-    #expect(await c.buyFreeze())
-    #expect(e.freezeRequests == [a, a])
-    #expect(c.balance == 150)
-    #expect(c.freezesHeld == 1)
-    #expect(await c.buyFreeze())
-    #expect(e.freezeRequests == [a, a, b])
-    #expect(c.balance == 0)
-    #expect(c.freezeFull)
-  }
-
-  @Test func serverFreezeRefusalIsNamed() async {
-    let s = FakeSource()
-    s.ledgerRows = Self.welcomed
-    let (c, e) = make(s)
-    await c.load()
-    e.freezeError = MascotFailure.insufficientCoins
-    #expect(await c.buyFreeze() == false)
-    #expect(c.actionFailure == .insufficientCoins)
   }
 
   // MARK: - Thử thách tuần

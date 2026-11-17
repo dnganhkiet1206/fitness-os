@@ -103,9 +103,12 @@ struct RecordCelebrationView: View {
     onDone()
   }
 
-  /// Số trong dòng kỷ lục theo dấu thập phân của ngôn ngữ app ("82,5 kg").
+  /// Số trong dòng kỷ lục theo dấu thập phân của ngôn ngữ app ("82,5 kg") —
+  /// cùng nguồn với `WeightUnit.localizedLoad` (`Locale.app`): khi app theo
+  /// ngôn ngữ máy (chưa ghi đè) thì vẫn đúng, thay vì ép về "." của "en" như
+  /// `Locale(identifier: code ?? "en")` trước đây.
   private static func decimals(_ p: RecordLine.Parts) -> RecordLine.Parts {
-    let mark = Locale(identifier: AppLanguage.shared.code ?? "en").decimalSeparator ?? "."
+    let mark = Locale.app.decimalSeparator ?? "."
     func fix(_ s: String) -> String { s.replacingOccurrences(of: ".", with: mark) }
     return RecordLine.Parts(
       form: p.form, exercise: p.exercise, value: fix(p.value), previous: fix(p.previous),

@@ -167,7 +167,6 @@ struct WeeklyChallengesBookTests {
       if let failure { throw failure }
       return 50
     }
-    func buyStreakFreeze(requestId: UUID) async throws -> Int { 0 }
   }
 
   let thursday = LocalDate("2026-10-08")!

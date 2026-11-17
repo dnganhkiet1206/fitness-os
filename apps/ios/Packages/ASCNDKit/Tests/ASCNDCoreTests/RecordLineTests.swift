@@ -3,6 +3,11 @@ import Testing
 
 /// Câu báo kỷ lục (#527, `lib/record-line.ts` @ fac9ac2): bốn nhánh, số theo
 /// đơn vị của người dùng, số 0 thật không bao giờ được in.
+///
+/// Số trong `Parts` luôn dấu "." (không theo locale) — hợp đồng chung của mọi
+/// chỗ vẽ; chỗ vẽ mới đổi theo dấu thập phân của ngôn ngữ app
+/// (`RecordCelebrationView.decimals`). Test này khoá hợp đồng đó: đừng sửa
+/// "82.5" thành "82,5" ở đây.
 struct RecordLineTests {
   @Test func weightRecordQuotesThePreviousBest() {
     let r = PersonalRecord(exercise: "Squat", kind: .weight, value: 100, previous: 95, atWeight: nil)
@@ -32,6 +37,8 @@ struct RecordLineTests {
     #expect(p.count == 9)
     #expect(p.value == "9")
     #expect(p.previous == "8")
+    // Dấu "." là đúng theo hợp đồng không-locale của `Parts`; chỗ vẽ đổi
+    // thành "82,5" theo ngôn ngữ app.
     #expect(p.atWeight == "82.5")
   }
 

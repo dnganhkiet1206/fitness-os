@@ -25,11 +25,23 @@ public struct SupabaseMealLog: MealFoodSource {
       .execute().value
   }
 
-  /// Như RN: không lọc `user_id` — `meal_entry_items` không có cột ấy, RLS chỉ
-  /// trả món thuộc bữa của chính người. `userId` để dành cho kho giả của test.
+  /// Hai lượt, lọc theo người trước (AUD-53): lượt 1 lấy id `limit` bữa mới
+  /// nhất của người (theo `created_at`); lượt 2 lấy món của các bữa ấy, mới
+  /// trước. `limit` món mới nhất nằm trong `limit` bữa mới nhất — mỗi món thuộc
+  /// một bữa — trừ món gắn thêm vào bữa cũ sau này. Không còn quét
+  /// `meal_entry_items` rồi trông vào RLS; cột trả về như cũ.
   public func recentItems(userId: String, limit: Int) async throws -> [JSONValue] {
-    try await client.from("meal_entry_items")
+    let entries: [JSONValue] = try await client.from("meal_entries")
+      .select("id")
+      .eq("user_id", value: userId)
+      .order("created_at", ascending: false)
+      .limit(limit)
+      .execute().value
+    let entryIds = entries.compactMap { $0["id"]?.stringValue }
+    guard !entryIds.isEmpty else { return [] }
+    return try await client.from("meal_entry_items")
       .select("food_name, food_item_id, kcal, protein_g, carbs_g, fat_g, fiber_g, servings, created_at")
+      .in("meal_entry_id", values: entryIds)
       .order("created_at", ascending: false)
       .limit(limit)
       .execute().value

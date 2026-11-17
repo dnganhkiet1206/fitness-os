@@ -76,6 +76,49 @@ struct KoaQuestsTests {
     #expect(q.table == "mascot_transactions" && q.filters.contains(.or("ref_key.like.\"*:overload\"")))
   }
 
+  /// Kho giả theo đúng ngữ nghĩa PostgREST mà `SupabaseRowStore` thực thi:
+  /// xếp theo `order` của truy vấn rồi mới cắt `limit` (bộ lọc `or` bỏ qua —
+  /// mọi hàng trong test đều là hàng cần đọc).
+  final class OrderedStore: RowStore, @unchecked Sendable {
+    var rows: [JSONValue] = []
+    func select(_ q: RowQuery) async throws(RowStoreError) -> [JSONValue] {
+      var out = rows
+      if let o = q.order {
+        out = out.enumerated().sorted {
+          let a = $0.element[o.column]?.stringValue ?? "", b = $1.element[o.column]?.stringValue ?? ""
+          let c = (a < b ? -1 : a > b ? 1 : 0) * (o.ascending ? 1 : -1)
+          return c != 0 ? c < 0 : $0.offset < $1.offset
+        }.map(\.element)
+      }
+      if let l = q.limit { out = Array(out.prefix(l)) }
+      return out
+    }
+    func insert(_ table: String, _ row: [String: JSONValue]) async throws(RowStoreError) {}
+    func update(_ table: String, _ row: [String: JSONValue], where filters: [RowQuery.Filter]) async throws(RowStoreError)
+      -> Int { 0 }
+  }
+
+  /// R2-ECO-11 (kiểm như `cleanQuery`): quá trần 2000 ngày tăng tải thì các
+  /// ngày MỚI nhất thắng — ngày cũ nhất rơi ra ngoài, không phải ngày mới nhất.
+  @Test func overloadQueryKeepsTheNewestRows() async throws {
+    let q = KoaGainsSync.overloadQuery(userId: "u")
+    #expect(q.order == RowQuery.Order(column: "created_at", ascending: false))
+    #expect(q.limit == KoaGainsSync.limit)
+    let start = LocalDate("2026-08-01")!
+    let store = OrderedStore()
+    store.rows = (0...KoaGainsSync.limit).map { i in
+      let day = start.adding(days: i)
+      return JSONValue.object([
+        "ref_key": .string("d:\(day):overload"), "created_at": .string("\(day)T00:00:00.000Z"),
+      ])
+    }
+    let keys = try await store.select(q).compactMap { $0["ref_key"]?.stringValue }
+    #expect(keys.count == KoaGainsSync.limit)
+    #expect(keys.first == "d:\(start.adding(days: KoaGainsSync.limit)):overload")
+    #expect(keys.last == "d:\(start.adding(days: 1)):overload")
+    #expect(!keys.contains("d:\(start):overload"))
+  }
+
   /// Mất mạng lúc nhận thưởng tự động: giữ khoá để nhận bù; server đã trả lời có tên thì thôi.
   @Test func retryOnlyWhenNotDelivered() {
     #expect(QuestRetry.shouldRetry(.offline))

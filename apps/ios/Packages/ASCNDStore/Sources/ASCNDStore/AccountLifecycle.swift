@@ -13,12 +13,16 @@ import Foundation
 ///   `#legacy`), RỒI dọn ngày quá 14 ngày của chính người ấy, RỒI cắt hàng
 ///   hướng dẫn của người ấy về giới hạn (R2-SYNC-03).
 ///
-/// Hai lối XUYÊN tài khoản (`clearAll`, `clearAll(except:)`) chỉ được gọi từ
-/// đây. Mọi lối khác của `GRDBWorkoutStore` — kể cả `pruneDays` — chỉ chạm
-/// ngày của người đang đăng nhập.
+/// Lối XUYÊN tài khoản (`clearAll(except:)`) chỉ được gọi từ đây. Mọi lối
+/// khác của `GRDBWorkoutStore` — kể cả `pruneDays` — chỉ chạm ngày của người
+/// đang đăng nhập.
 /// - Phiên kết thúc (`sessionEnded`): đóng chốt TRƯỚC mọi bước dọn — lượt ghi
 ///   muộn của người vừa rời đi bị từ chối ngay, không đợi dọn xong — rồi dọn
-///   của họ.
+///   read model của họ. Ngày tập (`workout_day`) KHÔNG bị xoá nữa (R3-DATA-01):
+///   nó đỗ lại theo chủ như hàng đợi chưa gửi (AUD-06, #241 (b)) — chính chủ
+///   đăng nhập lại thì tập tiếp được, người khác mở phiên thì lượt dọn của
+///   `sessionStarted` bỏ nó đi, và chỉ khi tài khoản bị xoá mới bỏ hẳn
+///   (`accountDeleted`).
 ///
 /// Đổi thẳng tài khoản (A → B, không qua đăng xuất): `SessionStore` đặt phiên
 /// B rồi mới chạy lượt dọn của A, và lượt dọn ấy NHƯỜNG (`await`) ở giữa — màn
@@ -33,12 +37,14 @@ public final class AccountLifecycle: Sendable {
   private let workouts: GRDBWorkoutStore
   private let readCache: GRDBTemplateCache
   private let cleanup: ReadCacheCleanup
+  private let stateIntents: StateIntentStore
 
   public init(_ database: ASCNDDatabase) {
     accounts = database.accounts
     workouts = GRDBWorkoutStore(database)
     readCache = GRDBTemplateCache(database)
     cleanup = ReadCacheCleanup(database)
+    stateIntents = StateIntentStore(database)
   }
 
   /// App mở: chưa ai đăng nhập cho tới khi phiên mở.
@@ -52,6 +58,7 @@ public final class AccountLifecycle: Sendable {
     accounts.signIn(userId)
     _ = try? await readCache.clearAll(except: userId)
     _ = try? await workouts.clearAll(except: userId)
+    _ = try? await stateIntents.clearAll(except: userId)
     _ = try? await workouts.pruneDays(today: today)
     // Cắt hàng hướng dẫn của chính người ấy về giới hạn (R2-SYNC-03) — sau
     // lượt bỏ của người khác, để chỉ còn hàng của người này mà cắt.
@@ -60,19 +67,29 @@ public final class AccountLifecycle: Sendable {
 
   /// Phiên kết thúc. `next`: người của phiên mới khi đổi thẳng tài khoản,
   /// `nil` khi đăng xuất. `between` chạy SAU khi chốt đóng và TRƯỚC khi dọn
-  /// (bỏ hàng đợi chưa gửi, #241) — thứ tự của `AppServices`.
+  /// (đỗ hàng đợi chưa gửi, #241 (b)) — thứ tự của `AppServices`.
   public func sessionEnded(next: String?, between: @Sendable () async -> Void = {}) async {
     if !(next.map { accounts.current == .signedIn($0.lowercased()) } ?? false) {
       accounts.signOut()
     }
     await between()
+    // Ngày tập KHÔNG dọn ở đây (R3-DATA-01): đỗ lại theo chủ cho lần đăng
+    // nhập sau; người khác mở phiên thì `sessionStarted` dọn. Chỉ read model
+    // (dựng lại được từ server) bị bỏ.
     if let next {
-      _ = try? await workouts.clearAll(except: next)
       _ = try? await readCache.clearAll(except: next)
+      _ = try? await stateIntents.clearAll(except: next)
     } else {
-      _ = try? await workouts.clearAll()
       _ = try? await readCache.clearAll()
+      _ = try? await stateIntents.clearAll()
     }
+  }
+
+  /// Tài khoản `userId` đã bị xoá trên server: bỏ hẳn ngày tập của nó khỏi
+  /// máy. Chỉ gọi khi tài khoản không còn — kết thúc phiên thường giữ ngày
+  /// lại cho lần đăng nhập sau (R3-DATA-01).
+  public func accountDeleted(userId: String) async {
+    _ = try? await workouts.purge(userId: userId)
   }
 
 }

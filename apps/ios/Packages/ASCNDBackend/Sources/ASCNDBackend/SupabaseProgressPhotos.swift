@@ -17,8 +17,9 @@ public struct SupabaseProgressPhotos: ProgressPhotoRemote {
 
   public func rows(userId: String, from: Int) async throws -> [JSONValue] {
     do {
+      // Đúng các cột `ProgressPhotos.photo` đọc (R2-OPS-08, không `select('*')`).
       return try await client.from("progress_photos")
-        .select("*")
+        .select("id, date, photo_url, pose, notes")
         .eq("user_id", value: userId)
         .order("date", ascending: false)
         .order("id", ascending: false)
