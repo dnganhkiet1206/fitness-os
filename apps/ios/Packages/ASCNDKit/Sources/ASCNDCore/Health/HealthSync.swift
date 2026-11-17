@@ -69,7 +69,8 @@ public enum HealthSync {
   }
 
   public static func run(
-    _ s: Snapshot, userId: String, lang: String, store: any RowStore, now: EpochMillis, in tz: TimeZone
+    _ s: Snapshot, userId: String, lang: String, store: any RowStore, now: EpochMillis, in tz: TimeZone,
+    historyWindow: HealthHistoryWindow = .unknown
   ) async throws(Failure) {
     if s.isEmpty { throw .noData }
     let me: JSONValue = .string(userId)
@@ -190,7 +191,8 @@ public enum HealthSync {
     touched.formUnion(s.water.map(\.date))
     for day in touched.sorted() {
       do {
-        try await DailyLog.recompute(userId: userId, date: day, store: store, now: now, in: tz)
+        try await DailyLog.recompute(
+          userId: userId, date: day, store: store, now: now, in: tz, historyWindow: historyWindow)
       } catch {
         failures.append("nCxHealthSyncPartRebuild:\(day)")
       }

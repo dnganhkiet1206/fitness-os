@@ -24,11 +24,17 @@ public struct ReadinessInput: Sendable, Hashable {
   public var painFlagMax: Double?
   public var hrvHistory28d: [Double]
   public var rhrHistory28d: [Double]
+  /// Số ngày lịch sử Apple Health đọc được tới ngày chấm (iOS 27: cửa sổ giới
+  /// hạn). `nil` = không biết (iOS < 27, SDK cũ, hoặc không giới hạn) — khi ấy
+  /// engine không ghi cờ gì, hành vi như trước. Chỉ dùng để GHI CỜ, không bao
+  /// giờ đổi điểm: điểm vẫn chia lại trọng số theo chiều đo được như cũ.
+  public var readableHistoryDays: Int?
 
   public init(
     hrvToday: Double?, rhrToday: Double?, sleepMinLastNight: Double, sleepTargetMin: Double,
     sleepDebt7dMin: Double, trainingLoad7d: Double, trainingLoad28d: Double, trainingDays28d: Double?,
-    sorenessToday: Double?, illness: Bool, painFlagMax: Double?, hrvHistory28d: [Double], rhrHistory28d: [Double]
+    sorenessToday: Double?, illness: Bool, painFlagMax: Double?, hrvHistory28d: [Double], rhrHistory28d: [Double],
+    readableHistoryDays: Int? = nil
   ) {
     self.hrvToday = hrvToday
     self.rhrToday = rhrToday
@@ -43,6 +49,7 @@ public struct ReadinessInput: Sendable, Hashable {
     self.painFlagMax = painFlagMax
     self.hrvHistory28d = hrvHistory28d
     self.rhrHistory28d = rhrHistory28d
+    self.readableHistoryDays = readableHistoryDays
   }
 }
 
@@ -58,6 +65,12 @@ public struct ReadinessResult: Sendable, Hashable {
   /// Làm tròn 2 chữ số; `nil` khi không có nền 28 ngày.
   public let acwr: Double?
   public let confidence: Confidence
+  /// Lịch sử Apple Health bị cắt dưới nền tối thiểu 7 ngày (iOS 27, cửa sổ
+  /// giới hạn): điểm vẫn tính đúng theo chiều đo được, nhưng nền HRV / nhịp
+  /// tim nghỉ chưa đủ ngày vì hệ thống không cho đọc thêm — không phải vì
+  /// người dùng không đeo đồng hồ. Mặc định `false` để code cũ dựng kết quả
+  /// trực tiếp (test, Daily Plan) không đổi hành vi.
+  public let limitedHistory: Bool = false
 }
 
 public enum ReadinessEngine {
@@ -229,9 +242,24 @@ public enum ReadinessEngine {
     if let sleep { subscores["sleep"] = JS.round(sleep) }
     if let load { subscores["load"] = JS.round(load) }
 
+    // Lịch sử bị cắt (iOS 27): điểm KHÔNG đổi — chia lại trọng số theo chiều
+    // đo được đã đúng — nhưng kết quả phải ghi rõ khi nền thiếu ngày VÌ cửa sổ
+    // hệ thống. Chỉ cửa sổ ngắn thì chưa đủ: lịch sử đã lưu từ lần cấp quyền
+    // trước vẫn có thể lấp đầy nền — cờ chỉ bật khi cửa sổ ngắn HƠN nền tối
+    // thiểu VÀ ít nhất một nền (HRV / nhịp tim nghỉ) thật sự thiếu ngày, theo
+    // đúng điều kiện hai hàm chấm dùng để bỏ chiều. Khi cờ bật, độ tin cậy
+    // không được "cao": điểm dựa trên nền không tái tạo được từ Health.
+    let windowShort = input.readableHistoryDays.map { $0 < baselineDays } ?? false
+    let hrvHistoryDays = input.hrvHistory28d.filter { $0 > 0 }.count
+    let baselineShort = hrvHistoryDays < baselineDays || input.rhrHistory28d.count < baselineDays
+    let limitedHistory = windowShort && baselineShort
+    let baseConfidence = confidence(present.count)
+    let cappedConfidence: ReadinessResult.Confidence =
+      limitedHistory && baseConfidence == .high ? .medium : baseConfidence
+
     return ReadinessResult(
       score: score, status: status, explainToken: explainToken, recommendationKey: key, subscores: subscores,
-      acwr: ratio.map { JS.round($0 * 100) / 100 }, confidence: confidence(present.count))
+      acwr: ratio.map { JS.round($0 * 100) / 100 }, confidence: cappedConfidence, limitedHistory: limitedHistory)
   }
 
   /// `String(n)` của JS cho số nguyên đã làm tròn (`-0` → "0", NaN → "NaN").
