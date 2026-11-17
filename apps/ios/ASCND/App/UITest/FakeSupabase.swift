@@ -321,7 +321,7 @@
       let value: JSONValue =
         switch name {
         case "current_tier": .string("free")
-        case "claim_quest_reward", "buy_streak_freeze": .number(10)
+        case "claim_quest_reward": .number(10)
         case "buy_mascot_item": .number(0)
         case "dm_open": .string(UUID().uuidString.lowercased())
         case "community_user_stats": .object([:])

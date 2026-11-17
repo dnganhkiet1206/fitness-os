@@ -4,8 +4,8 @@ import Foundation
 /// @ fac9ac2, chép từng con số. Golden: `mascot-golden.json`
 /// (`tools/insights-golden/gen-mascot.mjs`, sinh bằng CHÍNH mã RN).
 ///
-/// Quyền định giá nằm ở SERVER (`claim_quest_reward`, `buy_streak_freeze`,
-/// bảng `reward_prices` / `shop_prices`): app không bao giờ gửi số xu, không
+/// Quyền định giá nằm ở SERVER (`claim_quest_reward`, bảng `reward_prices` /
+/// `shop_prices`): app không bao giờ gửi số xu, không
 /// tự ghi sổ. Các con số ở đây chỉ để HIỆN và để tính XP / cấp từ sổ đã đọc
 /// — đúng như RN (`xpForRefKey`).
 public enum MascotRules {
