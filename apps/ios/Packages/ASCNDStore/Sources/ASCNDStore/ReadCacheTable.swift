@@ -1,4 +1,4 @@
-internal import ASCNDCore
+public import ASCNDCore
 import Foundation
 import GRDB
 
