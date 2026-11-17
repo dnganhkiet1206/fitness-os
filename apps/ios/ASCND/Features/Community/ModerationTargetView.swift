@@ -26,12 +26,15 @@ struct ModerationTargetScreen: View {
     case appeal(approve: Bool, appealId: String)
     case restrict
     case unrestrict
+    /// Gói "gỡ + khoá đăng": một lý do, một hạn — gỡ rồi khoá.
+    case removeRestrict
     var id: String {
       switch self {
       case .decide(let a): "decide-\(a.rawValue)"
       case .appeal(let ok, let aid): "appeal-\(ok)-\(aid)"
       case .restrict: "restrict"
       case .unrestrict: "unrestrict"
+      case .removeRestrict: "remove-restrict"
       }
     }
   }
@@ -175,10 +178,52 @@ struct ModerationTargetScreen: View {
             .padding(.vertical, DS.Spacing.xs)
             .background(DS.Color.secondary.swiftUI, in: Capsule())
         }
+        // Dải lịch sử tác giả (giai đoạn 2, `author_stats` của `mod_target`):
+        // server chưa deploy migration thì trường vắng — ẩn dải, KHÔNG hiện
+        // số 0 giả.
+        if let stats = d.authorStats {
+          authorStatsStrip(stats)
+        }
         restrictionRow(d, author: author)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
     }
+  }
+
+  /// Dải lịch sử tác giả: số bài / ẩn / gỡ và báo cáo về họ / họ đã gửi.
+  /// Số gỡ > 0 thì đỏ, báo cáo đang mở > 0 thì vàng — tín hiệu nhanh cho ca
+  /// trực (Reddit hiện lịch sử tác giả ngay trên mục kiểm duyệt).
+  private func authorStatsStrip(_ stats: ModAuthorStats) -> some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+      HStack(spacing: DS.Spacing.md) {
+        authorStat(label: String(localized: "community.mod.authorstats.posts"), value: stats.posts)
+        authorStat(label: String(localized: "community.mod.authorstats.hidden"), value: stats.hiddenPosts)
+        authorStat(
+          label: String(localized: "community.mod.authorstats.removed"), value: stats.removedPosts,
+          alert: stats.removedPosts > 0)
+      }
+      HStack(spacing: DS.Spacing.md) {
+        authorStat(
+          label: String(localized: "community.mod.authorstats.against"), value: stats.openReportsAgainst,
+          warn: stats.openReportsAgainst > 0)
+        authorStat(label: String(localized: "community.mod.authorstats.filed"), value: stats.reportsFiled)
+      }
+    }
+    .accessibilityElement(children: .combine)
+  }
+
+  private func authorStat(label: String, value: Int, alert: Bool = false, warn: Bool = false) -> some View {
+    VStack(alignment: .leading, spacing: 0) {
+      Text(verbatim: "\(value)")
+        .font(DS.TextStyle.title3)
+        .foregroundStyle(
+          alert ? DS.Color.destructive.swiftUI
+            : warn ? DS.Color.readinessYellow.swiftUI : DS.Color.foreground.swiftUI)
+      Text(verbatim: label)
+        .font(DS.TextStyle.caption)
+        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+    }
+    .accessibilityLabel(Text(verbatim: "\(label) · \(value)"))
   }
 
   /// Hàng tạm khoá đăng: đang khoá thì hiện tới bao giờ + vì sao và nút gỡ;
@@ -221,10 +266,25 @@ struct ModerationTargetScreen: View {
   // MARK: - Quyết định
 
   /// Nút theo trạng thái (ADMIN.md): đang hiện → ẩn / bác báo cáo; đang ẩn →
-  /// khôi phục / gỡ; đã gỡ → không còn quyết định nào ở đây (chỉ admin hoàn
-  /// tác — giai đoạn 2).
+  /// khôi phục / gỡ; đã gỡ → chỉ admin hoàn tác (khôi phục — server cho phép
+  /// admin, moderator nhận 42501 nên không thấy nút).
   @ViewBuilder private func actionsCard(_ d: ModTargetDetail) -> some View {
-    if !d.target.removed {
+    if d.target.removed {
+      if book.role == .admin {
+        DSCard {
+          VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+            Text("community.mod.target.actions")
+              .font(DS.TextStyle.headline)
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+            let busy = book.deciding(type: type, id: id)
+            DSButton(String(localized: "community.mod.action.restore"), style: .secondary) { sheet = .decide(.restore) }
+              .disabled(busy)
+            if busy { ProgressView().frame(maxWidth: .infinity) }
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+        }
+      }
+    } else {
       DSCard {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
           Text("community.mod.target.actions")
@@ -241,6 +301,18 @@ struct ModerationTargetScreen: View {
               .disabled(busy)
             DSButton(String(localized: "community.mod.action.dismiss"), style: .secondary) { sheet = .decide(.dismiss) }
               .disabled(busy)
+          }
+          // Gói "gỡ + khoá đăng": chỉ khi tác giả không phải mình / không
+          // phải staff (server chặn khoá hai trường hợp này) và chưa bị khoá
+          // — `mod_restrict` GHI ĐÈ hạn khoá cũ, gói 24 giờ mà bấm vào người
+          // đang bị khoá 7 ngày thì rút ngắn khoá của họ.
+          if let author = d.author, author.person.userId != book.userId, !author.role.isStaff,
+            book.restriction == nil
+          {
+            DSButton(String(localized: "community.mod.bundlerestrict.title"), style: .secondary) {
+              sheet = .removeRestrict
+            }
+            .disabled(busy || book.restricting(user: author.person.userId))
           }
           if busy { ProgressView().frame(maxWidth: .infinity) }
         }
@@ -389,13 +461,14 @@ struct ModerationTargetScreen: View {
     case .decide(let action):
       ModerationReasonSheet(
         title: Self.actionText(action), requiresReason: action.requiresReason,
-        confirmTitle: Self.actionText(action), destructive: action == .remove
+        confirmTitle: Self.actionText(action), destructive: action == .remove,
+        presets: action == .hide || action == .remove
       ) { reason, _ in Task { await runDecide(action, reason: reason) } }
     case .appeal(let approve, let appealId):
       ModerationReasonSheet(
         title: approve ? String(localized: "community.mod.appeal.approve") : String(localized: "community.mod.appeal.reject"),
         confirmTitle: approve ? String(localized: "community.mod.appeal.approve") : String(localized: "community.mod.appeal.reject"),
-        destructive: !approve
+        destructive: !approve, presets: !approve
       ) { reason, _ in Task { await runAppeal(appealId, approve: approve, reason: reason) } }
     case .restrict:
       ModerationReasonSheet(
@@ -405,13 +478,26 @@ struct ModerationTargetScreen: View {
         durations: [
           .init(hours: 24, label: String(localized: "community.mod.restrict.day")),
           .init(hours: 168, label: String(localized: "community.mod.restrict.week")),
-        ]
+        ],
+        presets: true
       ) { reason, hours in Task { await runRestrict(hours: hours ?? 24, reason: reason) } }
     case .unrestrict:
       ModerationReasonSheet(
         title: String(localized: "community.mod.unrestrict"),
         requiresReason: true, confirmTitle: String(localized: "community.mod.unrestrict")
       ) { reason, _ in Task { await runUnrestrict(reason: reason) } }
+    case .removeRestrict:
+      ModerationReasonSheet(
+        title: String(localized: "community.mod.bundlerestrict.title"),
+        message: String(localized: "community.mod.bundlerestrict.body"),
+        requiresReason: true, confirmTitle: String(localized: "community.mod.bundlerestrict.title"),
+        destructive: true,
+        durations: [
+          .init(hours: 24, label: String(localized: "community.mod.restrict.day")),
+          .init(hours: 168, label: String(localized: "community.mod.restrict.week")),
+        ],
+        presets: true
+      ) { reason, hours in Task { await runRemoveRestrict(hours: hours ?? 24, reason: reason) } }
     }
   }
 
@@ -446,6 +532,33 @@ struct ModerationTargetScreen: View {
     case .done: message = String(localized: "community.mod.action.done")
     case .failed(let f): message = ModerationFailureText.text(f)
     case .ignored: break
+    }
+  }
+
+  /// Gói "gỡ + khoá đăng": gỡ hỏng thì dừng (chưa khoá gì); khoá hỏng thì nội
+  /// dung đã gỡ — hộp báo nói rõ phần nào hỏng và cho thử lại đúng phần khoá
+  /// (cùng lý do + hạn đã chọn).
+  private func runRemoveRestrict(hours: Int, reason: String) async {
+    guard let author = book.detail?.author else { return }
+    switch await book.removeAndRestrict(
+      type: type, id: id, user: author.person.userId, reason: reason, hours: hours
+    ) {
+    case .done:
+      message = String(localized: "community.mod.action.done")
+    case .removeFailed(let f):
+      message = ModerationFailureText.text(f)
+    case .restrictFailed(let f):
+      ConfirmAlert.choose(
+        title: String(localized: "community.mod.bundlerestrict.failed"),
+        message: ModerationFailureText.text(f),
+        choices: [
+          AlertChoice(title: String(localized: "community.mod.bundlerestrict.retry")) {
+            Task { await runRestrict(hours: hours, reason: reason) }
+          },
+          .cancel(),
+        ])
+    case .ignored:
+      break
     }
   }
 

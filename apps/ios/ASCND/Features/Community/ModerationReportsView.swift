@@ -52,7 +52,7 @@ struct ModerationReportsScreen: View {
         } else {
           ForEach(book.reports) { item in
             Button { openTarget = ModTargetRef(type: item.type, id: item.targetId) } label: {
-              DSCard { ModQueueRow(item: item) }
+              DSCard { ModQueueRow(item: item, showStale: book.reportStatus == .open) }
             }
             .buttonStyle(.plain)
           }
@@ -73,6 +73,9 @@ struct ModerationReportsScreen: View {
 /// trạng thái ẩn / gỡ và dấu kháng nghị chờ.
 struct ModQueueRow: View {
   let item: ModQueueItem
+  /// Chỉ hiện nhãn "chờ hơn 48 giờ" cho mục đang mở (mục đã quyết không cần
+  /// nhắc — người ta đã xử lý rồi).
+  let showStale: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
@@ -107,6 +110,16 @@ struct ModQueueRow: View {
           .foregroundStyle(DS.Color.foreground.swiftUI)
       }
       HStack(spacing: DS.Spacing.sm) {
+        // Chờ hơn 48 giờ chưa quyết (Discourse nhắc mọi mod khi một cờ quá
+        // 48 giờ) — nhãn vàng, chỉ ở tab đang mở.
+        if showStale, ModStale.isStale(item.lastAt, now: Date()) {
+          Text("community.mod.queue.stale")
+            .font(DS.TextStyle.caption.weight(.semibold))
+            .foregroundStyle(DS.Color.readinessYellow.swiftUI)
+            .padding(.horizontal, DS.Spacing.sm)
+            .padding(.vertical, DS.Spacing.xs)
+            .background(DS.Color.readinessYellow.swiftUI.opacity(0.12), in: Capsule())
+        }
         if let top = item.topReason {
           Text(verbatim: HiddenNoticeView.reasonText(top))
             .font(DS.TextStyle.caption)

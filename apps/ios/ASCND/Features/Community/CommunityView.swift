@@ -142,7 +142,9 @@ struct CommunityFeedView: View {
     .statusBarScrim()
     .background { TodayAmbient(accent: nil) }
     .communityUserLinks()
-    .communityPostActions(userId: book.userId, host: book)
+    // Sổ kiểm duyệt của feed (đã tạo sẵn cho nút khiên) — menu ⋯ thêm mục
+    // "Kiểm duyệt" khi là staff, không tạo sổ mới.
+    .communityPostActions(userId: book.userId, host: book, moderation: moderation)
     // Trước mọi sheet / màn con (01/11): màn mở ra không thừa hưởng kéo để làm mới.
     .refreshable {
       await book.load()

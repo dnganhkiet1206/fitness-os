@@ -17,6 +17,7 @@ enum ModerationFailureText {
     case .offline: String(localized: "community.mod.error.offline")
     case .forbidden: String(localized: "community.mod.error.forbidden")
     case .gone: String(localized: "community.mod.error.gone")
+    case .lastAdmin: String(localized: "community.admin.role.lastadmin")
     case .server: String(localized: "community.mod.error.server")
     }
   }
@@ -36,6 +37,10 @@ enum ModerationFailureText {
     case "REJECT_APPEAL": String(localized: "community.mod.audit.rejectappeal")
     case "RESTRICT_USER": String(localized: "community.mod.audit.restrictuser")
     case "UNRESTRICT_USER": String(localized: "community.mod.audit.unrestrictuser")
+    case "ADD_IMAGE": String(localized: "community.mod.audit.addimage")
+    case "REMOVE_IMAGE": String(localized: "community.mod.audit.removeimage")
+    case "RESTORE_IMAGE": String(localized: "community.mod.audit.restoreimage")
+    case "ROLE_CHANGE": String(localized: "community.mod.audit.rolechange")
     default: action
     }
   }
@@ -95,9 +100,19 @@ struct ModAuditRowView: View {
 /// sáu số đếm + hoạt động gần đây + lối vào hai hàng đợi.
 struct ModerationDashboardScreen: View {
   let book: ModerationBook
+  @Environment(AppServices.self) private var services
   @State private var openReports = false
   @State private var openAppeals = false
   @State private var openTarget: ModTargetRef?
+  /// Sổ quản trị — chỉ tạo khi admin chạm vào mục Quản trị (moderator không
+  /// thấy mục này, không tạo sổ, không gọi RPC admin nào).
+  @State private var admin: AdminBook?
+  @State private var adminDestination: AdminDestination?
+
+  /// Ba màn quản trị (giai đoạn 2) — cùng một sổ, tải một lần.
+  enum AdminDestination: Hashable {
+    case users, audit, art
+  }
 
   var body: some View {
     content
@@ -109,6 +124,15 @@ struct ModerationDashboardScreen: View {
       .navigationDestination(isPresented: $openReports) { ModerationReportsScreen(book: book) }
       .navigationDestination(isPresented: $openAppeals) { ModerationAppealsScreen(book: book) }
       .navigationDestination(item: $openTarget) { t in ModerationTargetScreen(book: book, type: t.type, id: t.id) }
+      .navigationDestination(item: $adminDestination) { dest in
+        if let admin {
+          switch dest {
+          case .users: AdminUsersScreen(book: admin)
+          case .audit: AdminAuditScreen(book: admin)
+          case .art: AdminArtScreen(book: admin)
+          }
+        }
+      }
   }
 
   @ViewBuilder private var content: some View {
@@ -171,10 +195,60 @@ struct ModerationDashboardScreen: View {
               }
             }
           }
+          // Quản trị (giai đoạn 2): chỉ admin thấy. Moderator không có mục
+          // này — và sổ quản trị chỉ tạo khi chạm vào.
+          if book.role == .admin {
+            VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+              Text("community.admin.title")
+                .font(DS.TextStyle.headline)
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+                .accessibilityAddTraits(.isHeader)
+              DSCard {
+                VStack(spacing: DS.Spacing.md) {
+                  adminRow(
+                    label: String(localized: "community.admin.users.title"), icon: "person.2",
+                    destination: .users)
+                  Divider()
+                  adminRow(
+                    label: String(localized: "community.admin.audit.title"), icon: "list.clipboard",
+                    destination: .audit)
+                  Divider()
+                  adminRow(
+                    label: String(localized: "community.admin.art.title"), icon: "photo",
+                    destination: .art)
+                }
+              }
+            }
+          }
         }
       }
       .padding(DS.Spacing.md)
     }
+  }
+
+  /// Một hàng của mục Quản trị: chạm thì tạo sổ (một lần) rồi mở màn.
+  private func adminRow(label: String, icon: String, destination: AdminDestination) -> some View {
+    Button {
+      if admin == nil, let a = services.makeAdmin(userId: book.userId) { admin = a }
+      adminDestination = destination
+    } label: {
+      HStack(spacing: DS.Spacing.sm) {
+        Image(systemName: icon)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .accessibilityHidden(true)
+        Text(verbatim: label)
+          .font(DS.TextStyle.body)
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+        Spacer(minLength: 0)
+        Image(systemName: "chevron.right")
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .accessibilityHidden(true)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
   }
 
   /// Một ô số đếm. Có `action` thì là nút (mở hàng đợi tương ứng).

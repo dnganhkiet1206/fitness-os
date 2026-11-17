@@ -21,6 +21,28 @@ public enum CommunityInbox {
     case like, comment, follow, reply, mention, save
     case tryWorkout = "try"
     case challengeMilestone = "challenge_milestone"
+    /// Quyết định kiểm duyệt (migration 20261117070000): thông báo hệ thống,
+    /// không có người gây ra — tác giả / người báo cáo nghe kết quả xử lý.
+    case moderation
+  }
+
+  /// Kết quả kiểm duyệt kèm trong `payload` của một thông báo `moderation`.
+  /// `outcome`: hidden | removed | restored | appeal_approved |
+  /// appeal_rejected (cho tác giả) và report_actioned | report_dismissed
+  /// (cho người báo cáo).
+  public struct ModerationNotice: Sendable, Hashable {
+    public let outcome: String
+    public let reason: String
+    public let targetType: String
+    public let commentId: String?
+
+    public init?(row: JSONValue) {
+      guard let outcome = row["outcome"]?.stringValue, !outcome.isEmpty else { return nil }
+      self.outcome = outcome
+      reason = row["reason"]?.stringValue ?? ""
+      targetType = row["target_type"]?.stringValue ?? "post"
+      commentId = row["comment_id"]?.stringValue
+    }
   }
 
   public struct Challenge: Sendable, Hashable {
@@ -41,6 +63,8 @@ public enum CommunityInbox {
     public let at: String
     public internal(set) var unread: Bool
     public let challenge: Challenge?
+    /// Chỉ có ở thông báo kiểm duyệt (không có người gây ra).
+    public let moderation: ModerationNotice?
     public var id: String { key }
   }
 
@@ -72,7 +96,18 @@ public enum CommunityInbox {
         out.append(
           Item(
             key: key, kind: kind, actors: [], count: 1, postId: nil, at: at, unread: unread,
-            challenge: Challenge(id: ch.id, title: ch.title, milestone: Int(m ?? 0))))
+            challenge: Challenge(id: ch.id, title: ch.title, milestone: Int(m ?? 0)), moderation: nil))
+        continue
+      }
+      // Kiểm duyệt: thông báo hệ thống (không có người gây ra), một quyết
+      // định một dòng — không gộp (ẩn rồi gỡ là hai kết quả khác nhau).
+      // Payload lạ / thiếu thì bỏ hàng, như mọi hàng lạ khác.
+      if kind == .moderation {
+        guard let notice = r["payload"].flatMap(ModerationNotice.init(row:)) else { continue }
+        out.append(
+          Item(
+            key: key, kind: kind, actors: [], count: 1, postId: r["post_id"]?.stringValue, at: at, unread: unread,
+            challenge: nil, moderation: notice))
         continue
       }
       let actor = r["actor_id"]?.stringValue.flatMap { byId[$0] }
@@ -88,15 +123,16 @@ public enum CommunityInbox {
         out.append(
           Item(
             key: "like:\(postId)", kind: kind, actors: actor.map { [$0] } ?? [], count: 1, postId: postId, at: at,
-            unread: unread, challenge: nil))
+            unread: unread, challenge: nil, moderation: nil))
         continue
       }
       out.append(
         Item(
           key: key, kind: kind, actors: actor.map { [$0] } ?? [], count: 1, postId: postId, at: at, unread: unread,
-          challenge: nil))
+          challenge: nil, moderation: nil))
     }
-    return out.filter { !$0.actors.isEmpty || $0.challenge != nil }
+    // Hàng kiểm duyệt cũng không có người gây ra — giữ lại nhờ `moderation`.
+    return out.filter { !$0.actors.isEmpty || $0.challenge != nil || $0.moderation != nil }
   }
 
   /// Câu của một dòng (`sentence` của màn).
@@ -106,6 +142,8 @@ public enum CommunityInbox {
     case like
     /// "{name} và N người khác".
     case likeMany(others: Int)
+    /// Thông báo kiểm duyệt — màn vẽ riêng (khiên + kết quả + lý do).
+    case moderation
   }
 
   public static func sentence(_ x: Item) -> Sentence {
@@ -116,6 +154,7 @@ public enum CommunityInbox {
     case .mention: return .mention
     case .save: return .save
     case .tryWorkout: return .tryWorkout
+    case .moderation: return .moderation
     default:
       if let ch = x.challenge { return ch.milestone == 100 ? .challengeDone : .challengeHalf }
       return x.count > 1 ? .likeMany(others: x.count - 1) : .like

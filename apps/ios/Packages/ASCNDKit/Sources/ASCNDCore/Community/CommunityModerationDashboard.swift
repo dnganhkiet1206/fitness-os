@@ -51,6 +51,8 @@ public enum ModerationFailure: Error, Sendable, Hashable {
   case forbidden
   /// P0002: đích / kháng nghị / người dùng không còn.
   case gone
+  /// 22023 'cannot remove the last admin': không hạ admin cuối cùng.
+  case lastAdmin
   case server(code: String?)
 }
 
@@ -296,6 +298,14 @@ public struct ModTargetDetail: Sendable, Hashable {
   public let type: ModTargetType
   public let target: Target
   public let author: Author?
+  /// Dải lịch sử tác giả (`author_stats` của `mod_target`, migration
+  /// 20261117070000) — `nil` khi server chưa deploy migration (màn ẩn dải,
+  /// KHÔNG hiện số 0 giả).
+  public let authorStats: ModAuthorStats?
+  /// Tạm khoá đăng kèm trong `mod_target` (cùng dữ liệu
+  /// `mod_user_restriction`) — `nil` khi trường vắng (server cũ) hoặc khi
+  /// không bị khoá. Sổ phân biệt hai trường hợp bằng khóa thô.
+  public let restriction: ModUserRestriction?
   public let reports: [Report]
   public let appeals: [Appeal]
   public let history: [ModAuditRow]
@@ -320,6 +330,8 @@ public struct ModTargetDetail: Sendable, Hashable {
     } else {
       author = nil
     }
+    authorStats = row["author_stats"].flatMap(ModAuthorStats.init(row:))
+    restriction = row["restriction"].flatMap(ModUserRestriction.init(row:))
     var reports: [Report] = []
     if case .array(let rows)? = row["reports"] {
       for r in rows {
@@ -363,6 +375,72 @@ public struct ModUserRestriction: Sendable, Hashable {
     self.until = until
     reason = row["reason"]?.stringValue ?? ""
     createdAt = row["created_at"]?.stringValue ?? ""
+  }
+}
+
+/// Lịch sử của tác giả trên một đích (`author_stats` của `mod_target`) —
+/// số bài, bài ẩn, bài gỡ, báo cáo đang mở về họ, báo cáo họ đã gửi. Cùng
+/// truy vấn với `admin_users`.
+public struct ModAuthorStats: Sendable, Hashable {
+  public let posts: Int
+  public let hiddenPosts: Int
+  public let removedPosts: Int
+  public let openReportsAgainst: Int
+  public let reportsFiled: Int
+
+  public init?(row: JSONValue) {
+    guard case .object = row else { return nil }
+    posts = CommunityHiddenReason.count(row["posts"])
+    hiddenPosts = CommunityHiddenReason.count(row["hidden_posts"])
+    removedPosts = CommunityHiddenReason.count(row["removed_posts"])
+    openReportsAgainst = CommunityHiddenReason.count(row["open_reports_against"])
+    reportsFiled = CommunityHiddenReason.count(row["reports_filed"])
+  }
+}
+
+/// Nhãn "chờ lâu" của hàng đợi: một việc chưa quyết sau 48 giờ thì hiện nhãn
+/// (Discourse nhắc mọi mod khi một cờ quá 48 giờ chưa xử lý — ở đây chỉ là
+/// nhãn trên hàng đợi, chưa phải push).
+public enum ModStale {
+  /// 48 giờ, tính bằng giây.
+  public static let threshold: TimeInterval = 48 * 3600
+
+  /// Chuỗi ngày lạ / thiếu thì coi là chưa chờ lâu (không gắn nhãn sai).
+  public static func isStale(_ iso: String, now: Date) -> Bool {
+    guard let date = ISO8601DateFormatter().date(from: iso) else { return false }
+    return now.timeIntervalSince(date) > threshold
+  }
+}
+
+/// Lý do mẫu cho sheet lý do (nghiên cứu 17/11, mẫu 3: lý do mẫu + tự gửi
+/// cho tác giả là công cụ nhất quán rẻ nhất). Năm lý do đầu dùng lại nhãn của
+/// `CommunityReportReason`; ba lý do sau có khoá riêng
+/// (`community.mod.preset.*`). "Khác" để tự gõ — chạm thì xoá ô lý do và
+/// đặt con trỏ vào ô.
+public enum ModReasonPreset: String, Sendable, Hashable, CaseIterable {
+  case spam, harassment, inappropriate, misleading
+  case rules, duplicate, advertising
+  case other
+
+  /// `nil` = dùng nhãn báo cáo sẵn có (`HiddenNoticeView.reasonText`).
+  public var presetKey: String? {
+    switch self {
+    case .rules: "community.mod.preset.rules"
+    case .duplicate: "community.mod.preset.duplicate"
+    case .advertising: "community.mod.preset.advertising"
+    default: nil
+    }
+  }
+
+  public var reportReason: CommunityReportReason? {
+    switch self {
+    case .spam: .spam
+    case .harassment: .harassment
+    case .inappropriate: .inappropriate
+    case .misleading: .misleading
+    case .other: .other
+    case .rules, .duplicate, .advertising: nil
+    }
   }
 }
 
@@ -549,7 +627,13 @@ public final class ModerationBook {
       }
       detail = d
       targetPhase = .ready
-      if let author = d.author {
+      // Server mới (20261117070000) kèm `restriction` trong `mod_target`:
+      // khoá có mặt (kể cả `null` = không bị khoá) thì dùng luôn, khỏi gọi
+      // thêm. Khoá VẮNG = server cũ → gọi `mod_user_restriction` như trước.
+      if row["restriction"] != nil {
+        restriction = d.restriction
+        restrictionKnown = true
+      } else if let author = d.author {
         await loadRestriction(user: author.person.userId)
       } else {
         restrictionKnown = true
@@ -627,6 +711,55 @@ public final class ModerationBook {
       try await remote.unrestrict(user: user, reason: reason)
     } catch {
       return .failed(Self.map(error))
+    }
+    guard !closed else { return .done }
+    await refreshAll()
+    return .done
+  }
+
+  /// Kết quả của gói "gỡ + khoá đăng": hai lệnh chạy nối nhau, lỗi từng phần
+  /// phải nói rõ phần nào hỏng (để màn cho thử lại đúng phần ấy).
+  public enum RemoveRestrictResult: Sendable, Hashable {
+    case done
+    /// Gỡ hỏng — chưa khoá gì.
+    case removeFailed(ModerationFailure)
+    /// Đã gỡ, khoá hỏng — nội dung đã gỡ, tác giả chưa bị khoá.
+    case restrictFailed(ModerationFailure)
+    case ignored
+  }
+
+  /// Gói "gỡ + khoá đăng" (nghiên cứu 17/11, mẫu 2: một chạm gói cả quyết
+  /// định nội dung lẫn hành động với người dùng — như gói Agree của
+  /// Discourse). Một lý do cho cả hai lệnh; gỡ trước, khoá sau. Gỡ hỏng thì
+  /// dừng (chưa khoá); khoá hỏng thì vẫn đọc lại tất cả rồi báo phần khoá.
+  public func removeAndRestrict(
+    type: ModTargetType, id: String, user: String, reason: String, hours: Int
+  ) async -> RemoveRestrictResult {
+    let decideKey = "decide:\(type.rawValue):\(id)"
+    let restrictKey = "restrict:\(user)"
+    guard role?.isStaff == true, !working.contains(decideKey), !working.contains(restrictKey), !closed else {
+      return .ignored
+    }
+    guard (1...720).contains(hours), !reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+      return .ignored
+    }
+    working.insert(decideKey)
+    working.insert(restrictKey)
+    defer {
+      working.remove(decideKey)
+      working.remove(restrictKey)
+    }
+    do {
+      try await remote.decide(action: .remove, type: type, id: id, reason: reason)
+    } catch {
+      return .removeFailed(Self.map(error))
+    }
+    do {
+      try await remote.restrict(user: user, hours: hours, reason: reason)
+    } catch {
+      guard !closed else { return .restrictFailed(Self.map(error)) }
+      await refreshAll()
+      return .restrictFailed(Self.map(error))
     }
     guard !closed else { return .done }
     await refreshAll()

@@ -170,6 +170,65 @@ struct CommunityModerationDashboardParseTests {
     #expect(ModUserRestriction(row: .object([:])) == nil)
   }
 
+  @Test func targetDetailParsesAuthorStatsAndInlineRestriction() throws {
+    // Server mới (20261117070000): author_stats + restriction kèm trong
+    // `mod_target` — một lời gọi có đủ.
+    let fresh: JSONValue = .object([
+      "type": .string("post"),
+      "target": .object(["id": .string("p1"), "created_at": .string("2026-11-15T10:00:00Z")]),
+      "author_stats": .object([
+        "posts": .number(12), "hidden_posts": .number(2), "removed_posts": .number(1),
+        "open_reports_against": .number(3), "reports_filed": .number(5),
+      ]),
+      "restriction": .object([
+        "until": .string("2026-11-17T10:00:00Z"), "reason": .string("spam"),
+        "created_at": .string("2026-11-16T10:00:00Z"),
+      ]),
+    ])
+    let d = try #require(ModTargetDetail(row: fresh))
+    let stats = try #require(d.authorStats)
+    #expect(stats.posts == 12 && stats.hiddenPosts == 2 && stats.removedPosts == 1)
+    #expect(stats.openReportsAgainst == 3 && stats.reportsFiled == 5)
+    #expect(d.restriction?.reason == "spam")
+    // Server cũ: vắng cả hai trường → nil (màn ẩn dải lịch sử, KHÔNG hiện
+    // số 0 giả; sổ gọi `mod_user_restriction` riêng như trước).
+    let old: JSONValue = .object([
+      "type": .string("post"),
+      "target": .object(["id": .string("p1"), "created_at": .string("2026-11-15T10:00:00Z")]),
+    ])
+    let o = try #require(ModTargetDetail(row: old))
+    #expect(o.authorStats == nil && o.restriction == nil)
+    // `restriction: null` (server mới, không bị khoá) cũng là nil — sổ phân
+    // biệt bằng khóa thô, không bằng giá trị đã parse.
+    let unblocked: JSONValue = .object([
+      "type": .string("post"),
+      "target": .object(["id": .string("p1"), "created_at": .string("2026-11-15T10:00:00Z")]),
+      "restriction": .null,
+    ])
+    #expect(try #require(ModTargetDetail(row: unblocked)).restriction == nil)
+  }
+
+  @Test func staleBoundary() throws {
+    let now = try #require(ISO8601DateFormatter().date(from: "2026-11-17T12:00:00Z"))
+    #expect(!ModStale.isStale("2026-11-15T12:00:00Z", now: now))  // đúng 48 giờ — chưa quá
+    #expect(ModStale.isStale("2026-11-15T11:59:59Z", now: now))  // quá 1 giây
+    #expect(!ModStale.isStale("2026-11-15T12:00:01Z", now: now))  // chưa tới 48 giờ
+    #expect(!ModStale.isStale("không phải ngày", now: now))  // chuỗi lạ thì không gắn nhãn sai
+    #expect(!ModStale.isStale("2026-11-18T12:00:00Z", now: now))  // tương lai
+  }
+
+  @Test func presetsAreComplete() {
+    #expect(ModReasonPreset.allCases.count == 8)
+    for p in ModReasonPreset.allCases {
+      // Mỗi preset có nhãn: hoặc nhãn báo cáo sẵn có, hoặc khoá riêng.
+      #expect(p.reportReason != nil || p.presetKey != nil)
+    }
+    #expect(ModReasonPreset.other.reportReason == .other)
+    #expect(ModReasonPreset.rules.presetKey == "community.mod.preset.rules")
+    #expect(ModReasonPreset.duplicate.presetKey == "community.mod.preset.duplicate")
+    #expect(ModReasonPreset.advertising.presetKey == "community.mod.preset.advertising")
+  }
+
   @Test func appRoleFallsBackToUser() {
     #expect(AppRole.from("admin") == .admin && AppRole.from("moderator") == .moderator)
     #expect(AppRole.from("user") == .user && AppRole.from("superadmin") == .user && AppRole.from(nil) == .user)
@@ -221,6 +280,8 @@ struct CommunityModerationDashboardBookTests {
     var unrestricted: [(String, String)] = []
     var readFailure: (any Error)?
     var decideFailure: (any Error)?
+    /// Chỉ lệnh khoá hỏng (gói gỡ+khoá: gỡ xong, khoá hỏng).
+    var restrictFailure: (any Error)?
     var restrictionFailure: (any Error)?
     var reportRows: [JSONValue] = []
     var appealRows: [JSONValue] = []
@@ -278,6 +339,7 @@ struct CommunityModerationDashboardBookTests {
     }
 
     func restrict(user: String, hours: Int, reason: String) async throws {
+      if let f = restrictFailure { throw f }
       if let f = decideFailure { throw f }
       restricted.append((user, hours, reason))
     }
@@ -460,5 +522,88 @@ struct CommunityModerationDashboardBookTests {
     r.restrictionFailure = nil
     await b.loadTarget(type: .post, id: "p1")
     #expect(b.restrictionKnown && b.restriction == nil)
+  }
+
+  @Test func loadTargetUsesInlineRestrictionWhenPresent() async {
+    // Server mới kèm `restriction` trong `mod_target`: dùng luôn, không gọi
+    // `mod_user_restriction` thêm.
+    var row = Self.targetRow()
+    if case .object(var o) = row {
+      o["restriction"] = .object([
+        "until": .string("2026-11-17T10:00:00Z"), "reason": .string("spam"),
+        "created_at": .string("2026-11-16T10:00:00Z"),
+      ])
+      row = .object(o)
+    }
+    let r = Remote()
+    r.targetRow = row
+    let b = ModerationBook(userId: "me", remote: r)
+    await b.loadTarget(type: .post, id: "p1")
+    #expect(b.targetPhase == .ready)
+    #expect(b.restrictionKnown && b.restriction?.reason == "spam")
+    #expect(r.restrictionCalls == 0)
+    // `restriction: null` (không bị khoá) cũng không gọi thêm.
+    if case .object(var o) = row {
+      o["restriction"] = .null
+      row = .object(o)
+    }
+    r.targetRow = row
+    await b.loadTarget(type: .post, id: "p1")
+    #expect(b.restrictionKnown && b.restriction == nil)
+    #expect(r.restrictionCalls == 0)
+  }
+
+  @Test func removeAndRestrictRunsBothAndRereads() async {
+    let r = Remote()
+    let b = ModerationBook(userId: "me", remote: r)
+    await b.load()
+    let dash = r.dashboardCalls
+    let out = await b.removeAndRestrict(type: .post, id: "p1", user: "u1", reason: "spam", hours: 24)
+    #expect(out == .done)
+    #expect(r.decided.count == 1 && r.decided[0].0 == .remove)
+    #expect(r.restricted.count == 1 && r.restricted[0].0 == "u1" && r.restricted[0].1 == 24)
+    #expect(r.dashboardCalls == dash + 1)
+    #expect(b.working.isEmpty)
+  }
+
+  @Test func removeAndRestrictReportsPartialFailure() async {
+    let r = Remote()
+    r.restrictFailure = ModerationFailure.offline
+    let b = ModerationBook(userId: "me", remote: r)
+    await b.load()
+    let dash = r.dashboardCalls
+    // Gỡ xong, khoá hỏng: báo đúng phần khoá, vẫn đọc lại (nội dung đã gỡ).
+    let out = await b.removeAndRestrict(type: .post, id: "p1", user: "u1", reason: "spam", hours: 168)
+    #expect(out == .restrictFailed(.offline))
+    #expect(r.decided.count == 1 && r.restricted.isEmpty)
+    #expect(r.dashboardCalls == dash + 1)
+  }
+
+  @Test func removeAndRestrictStopsWhenRemoveFails() async {
+    let r = Remote()
+    r.decideFailure = ModerationFailure.offline
+    let b = ModerationBook(userId: "me", remote: r)
+    await b.load()
+    let dash = r.dashboardCalls
+    let out = await b.removeAndRestrict(type: .post, id: "p1", user: "u1", reason: "spam", hours: 24)
+    #expect(out == .removeFailed(.offline))
+    #expect(r.restricted.isEmpty)  // gỡ hỏng thì chưa khoá gì
+    #expect(r.dashboardCalls == dash)  // không đọc lại
+  }
+
+  @Test func removeAndRestrictValidationNeverReachesServer() async {
+    let r = Remote()
+    let b = ModerationBook(userId: "me", remote: r)
+    await b.load()
+    #expect(await b.removeAndRestrict(type: .post, id: "p1", user: "u1", reason: "", hours: 24) == .ignored)
+    #expect(await b.removeAndRestrict(type: .post, id: "p1", user: "u1", reason: "x", hours: 0) == .ignored)
+    #expect(await b.removeAndRestrict(type: .post, id: "p1", user: "u1", reason: "x", hours: 721) == .ignored)
+    #expect(r.decided.isEmpty && r.restricted.isEmpty)
+    // Người thường thì bỏ qua.
+    r.role = "user"
+    let b2 = ModerationBook(userId: "me", remote: r)
+    await b2.load()
+    #expect(await b2.removeAndRestrict(type: .post, id: "p1", user: "u1", reason: "x", hours: 24) == .ignored)
+    #expect(r.decided.isEmpty && r.restricted.isEmpty)
   }
 }

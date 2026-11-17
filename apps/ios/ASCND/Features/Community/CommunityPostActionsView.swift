@@ -34,14 +34,20 @@ extension EnvironmentValues {
 }
 
 extension View {
-  func communityPostActions(userId: String, host: any CommunityPostHost) -> some View {
-    modifier(CommunityPostActionsModifier(userId: userId, host: host))
+  /// `moderation`: sổ kiểm duyệt của feed (nếu có) — menu ⋯ của bài người khác
+  /// thêm mục "Kiểm duyệt" khi người dùng là staff, mở thẳng màn chi tiết của
+  /// bài đó. Màn không có sổ thì menu như cũ.
+  func communityPostActions(
+    userId: String, host: any CommunityPostHost, moderation: ModerationBook? = nil
+  ) -> some View {
+    modifier(CommunityPostActionsModifier(userId: userId, host: host, moderation: moderation))
   }
 }
 
 private struct CommunityPostActionsModifier: ViewModifier {
   let userId: String
   let host: any CommunityPostHost
+  let moderation: ModerationBook?
   @Environment(AppServices.self) private var services
   @Environment(WorkoutFlow.self) private var flow
   @State private var actions: CommunityPostActions?
@@ -58,6 +64,8 @@ private struct CommunityPostActionsModifier: ViewModifier {
   @State private var savedNotice: Int?
   @State private var openLibrary = false
   @State private var addingMeal: PendingMeal?
+  /// Đích kiểm duyệt đang mở từ menu ⋯ của feed (in-feed mod mode).
+  @State private var openModerationTarget: ModTargetRef?
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   /// Đang ở chính thư viện thì không kèm nút dẫn về chỗ đang đứng (RN).
@@ -82,6 +90,9 @@ private struct CommunityPostActionsModifier: ViewModifier {
         if !Task.isCancelled { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { savedNotice = nil } }
       }
       .navigationDestination(isPresented: $openLibrary) { CommunitySavedScreen(userId: userId) }
+      .navigationDestination(item: $openModerationTarget) { t in
+        if let moderation { ModerationTargetScreen(book: moderation, type: t.type, id: t.id) }
+      }
       .sheet(item: $addingMeal) { m in
         LogMealView(userId: userId, prefill: [m.food])
       }
@@ -144,6 +155,15 @@ private struct CommunityPostActionsModifier: ViewModifier {
         out.append(AlertChoice(title: String(localized: "community.user.mute \(a.handle)")) { Task { await mute(a) } })
       }
       out.append(AlertChoice(title: String(localized: "community.post.report")) { askReason(post) })
+      // Kiểm duyệt trong feed (#915, giai đoạn 2): staff thấy mục này trên
+      // bài NGƯỜI KHÁC — mở thẳng màn chi tiết kiểm duyệt của bài đó, khỏi
+      // quay về bảng rồi tìm trong hàng đợi. Bài của mình thì không (tự xử
+      // lý bài của mình là xung đột lợi ích).
+      if let moderation, moderation.role?.isStaff == true {
+        out.append(AlertChoice(title: String(localized: "community.mod.menu.moderate")) {
+          openModerationTarget = ModTargetRef(type: .post, id: post.id)
+        })
+      }
       if let a = post.author {
         out.append(AlertChoice(title: String(localized: "community.user.block \(a.handle)"), role: .destructive) {
           confirmBlock(a)

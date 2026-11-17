@@ -1499,6 +1499,20 @@ final class AppServices {
     return ModerationBook(userId: userId, remote: SupabaseModeration(backend: backend))
   }
 
+  /// Quản trị Cộng đồng (#915, giai đoạn 2): người dùng / vai trò / nhật ký /
+  /// thư viện ảnh qua RPC `admin_*`. Chỉ admin mới tải dữ liệu.
+  func makeAdmin(userId: String) -> AdminBook? {
+    guard let backend else { return nil }
+    return AdminBook(userId: userId, remote: SupabaseModeration(backend: backend))
+  }
+
+  /// "Báo cáo của tôi" (#915, giai đoạn 2): báo cáo của chính mình qua RPC
+  /// `community_my_reports()`.
+  func makeMyReports(userId: String) -> MyReportsBook? {
+    guard let backend else { return nil }
+    return MyReportsBook(userId: userId, remote: SupabaseCommunity(backend: backend))
+  }
+
   /// Hồ sơ cộng đồng của mình (#527, lát 2): `community_profiles` (upsert theo
   /// `user_id`) + số buổi tập / bữa ăn để mở khoá linh vật.
   func makeCommunityProfile(userId: String) -> CommunityProfileBook? {
