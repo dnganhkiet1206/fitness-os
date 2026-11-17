@@ -73,7 +73,10 @@
     /// Thời điểm trong clip, mili giây theo dòng thời gian của `tempo`.
     let ms: Double?
     let slow: Bool
+    /// Đang xem clip lỗi sai (C2): viên đỏ tách khỏi dải, chạm để về động tác đúng.
+    var mistake: Bool = false
     var onToggleSpeed: () -> Void
+    var onExitMistake: () -> Void = {}
 
     private let lift = Color(red: 0.91, green: 0.33, blue: 0.17)
     private let lower = Color(red: 0.44, green: 0.65, blue: 0.79)
@@ -159,11 +162,11 @@
           progress(repPhases)
             .frame(height: 3)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 14)
       ExerciseTempoIsland(
-        strip: strip, phaseTint: phaseTint, slow: slow, reduceMotion: reduceMotion,
-        stripLabel: accessibilityText(phase: phase, rep: rep), onToggleSpeed: onToggleSpeed)
+        strip: strip, phaseTint: phaseTint, slow: slow, mistake: mistake, reduceMotion: reduceMotion,
+        stripLabel: accessibilityText(phase: phase, rep: rep), onToggleSpeed: onToggleSpeed,
+        onExitMistake: onExitMistake)
     }
 
     /// Một vạch cho mỗi pha của rep, dài theo thời lượng; phần đã qua tô màu pha.
@@ -192,66 +195,144 @@
     }
   }
 
-  /// Dải nhịp + viên tốc độ, hai khối kính tách / dính như Dynamic Island (Kiệt 17/11): 1× thì
-  /// viên tốc độ áp sát dải, hai khối hút thành một; 0,5× thì viên tách ra, nhuộm cam. Chạm khối
-  /// nào cũng đổi tốc độ, nên hai khối tách / dính theo nhau. iOS 26: Liquid Glass
-  /// (`GlassEffectContainer`, hiệu ứng giọt nước); máy cũ hơn: nền mờ hệ thống, chỉ đổi khoảng cách.
+  /// Dải nhịp kiểu Dynamic Island (Kiệt 17/11: "dính với nhau phải có ý nghĩa"). Quy ước: MỖI
+  /// KHỐI TÁCH RA LÀ MỘT CHẾ ĐỘ ĐANG BẬT, chạm khối đó để tắt (nó dính lại).
+  /// * Một viên liền = xem bình thường; đuôi viên chỉ có con rùa (gợi ý: chạm để xem chậm).
+  /// * Xem chậm: con rùa tách ra thành viên cam "🐢 0,5×".
+  /// * Clip lỗi sai (C2): viên đỏ "⚠︎ Sai" tách ra bên phải.
+  /// Các khối cao bằng nhau, căn giữa. iOS 26: Liquid Glass (`GlassEffectContainer` +
+  /// `glassEffectUnion`, hiệu ứng giọt nước); máy cũ hơn: nền mờ, chỉ đổi khoảng cách.
   struct ExerciseTempoIsland<Strip: View>: View {
     let strip: Strip
     let phaseTint: Color?
     let slow: Bool
+    let mistake: Bool
     let reduceMotion: Bool
     let stripLabel: Text
     var onToggleSpeed: () -> Void
+    var onExitMistake: () -> Void
     @Namespace private var glass
 
     private let orange = Color(red: 0.91, green: 0.33, blue: 0.17)
-    /// Khoảng hút của hai khối kính: gần hơn thì dính thành một.
-    private let mergeDistance: CGFloat = 14
+    private let red = Color(red: 0.86, green: 0.18, blue: 0.16)
+    private let height: CGFloat = 40
+    private let gap: CGFloat = 8
 
-    private var speedLabel: some View {
-      Text(slow ? "eg.demo3d.tempo.slow" : "eg.demo3d.tempo.normal")
-        .font(DS.TextStyle.footnote.weight(.bold))
-        .monospacedDigit()
-        .foregroundStyle(slow ? Color.white : DS.Color.foreground.swiftUI)
-        .contentTransition(reduceMotion ? .opacity : .numericText())
-        .padding(.horizontal, 10)
-        .frame(minHeight: 36)
+    /// Đuôi viên khi dính: con rùa mờ, ngăn với dải bằng vạch mảnh. Khi tách: rùa + "0,5×".
+    private var speedChip: some View {
+      HStack(spacing: 4) {
+        Image(systemName: "tortoise.fill")
+          .font(.system(size: 13, weight: .semibold))
+        if slow {
+          Text("eg.demo3d.tempo.slow")
+            .font(DS.TextStyle.footnote.weight(.bold))
+            .monospacedDigit()
+            .transition(.opacity)
+        }
+      }
+      .foregroundStyle(slow ? Color.white : DS.Color.mutedForeground.swiftUI)
+      .padding(.horizontal, slow ? 12 : 10)
+      .frame(height: height)
+      .overlay(alignment: .leading) {
+        Capsule()
+          .fill(DS.Color.foreground.swiftUI.opacity(0.18))
+          .frame(width: 1, height: height * 0.45)
+          .opacity(slow ? 0 : 1)
+      }
+    }
+
+    private var mistakeChip: some View {
+      HStack(spacing: 4) {
+        Image(systemName: "exclamationmark.triangle.fill")
+          .font(.system(size: 12, weight: .bold))
+        Text("eg.demo3d.mistake.short")
+          .font(DS.TextStyle.footnote.weight(.bold))
+      }
+      .foregroundStyle(.white)
+      .padding(.horizontal, 12)
+      .frame(height: height)
+    }
+
+    private var motion: Animation? {
+      reduceMotion ? nil : .spring(duration: 0.45, bounce: 0.08)
     }
 
     var body: some View {
       Group {
         if #available(iOS 26.0, *) {
-          GlassEffectContainer(spacing: mergeDistance) {
-            HStack(spacing: slow ? mergeDistance + 6 : 0) {
-              Button(action: onToggleSpeed) { strip }
-                .buttonStyle(.plain)
-                .glassEffect(.regular.tint(phaseTint?.opacity(0.18)).interactive(), in: Capsule())
-                .glassEffectID("strip", in: glass)
-              Button(action: onToggleSpeed) { speedLabel }
-                .buttonStyle(.plain)
-                .glassEffect(.regular.tint(slow ? orange.opacity(0.85) : nil).interactive(), in: Capsule())
-                .glassEffectID("speed", in: glass)
+          GlassEffectContainer(spacing: gap) {
+            HStack(spacing: 0) {
+              speedGroup
+                .glassEffectTransition(.matchedGeometry)
+              if mistake {
+                Button(action: onExitMistake) { mistakeChip }
+                  .buttonStyle(.plain)
+                  .glassEffect(.regular.tint(red.opacity(0.9)).interactive(), in: Capsule())
+                  .glassEffectID("mistake", in: glass)
+                  .padding(.leading, gap)
+                  .accessibilityLabel(Text("eg.demo3d.mistake.badge"))
+                  .accessibilityHint(Text("eg.demo3d.mistake.hide"))
+              }
             }
           }
         } else {
-          HStack(spacing: slow ? mergeDistance + 6 : 2) {
-            Button(action: onToggleSpeed) { strip }
-              .buttonStyle(.plain)
-              .background(Capsule().fill(.ultraThinMaterial))
-            Button(action: onToggleSpeed) { speedLabel }
-              .buttonStyle(.plain)
-              .background(Capsule().fill(slow ? AnyShapeStyle(orange) : AnyShapeStyle(.ultraThinMaterial)))
+          HStack(spacing: 0) {
+            speedGroup
+            if mistake {
+              Button(action: onExitMistake) { mistakeChip }
+                .buttonStyle(.plain)
+                .background(Capsule().fill(red))
+                .padding(.leading, gap)
+                .accessibilityLabel(Text("eg.demo3d.mistake.badge"))
+                .accessibilityHint(Text("eg.demo3d.mistake.hide"))
+            }
           }
         }
       }
-      // Lò xo nảy nhẹ khi tách / dính; Giảm chuyển động: đổi ngay.
-      .animation(reduceMotion ? nil : .spring(duration: 0.5, bounce: 0.3), value: slow)
-      .accessibilityElement(children: .ignore)
-      .accessibilityLabel(stripLabel + Text(verbatim: ", ") + Text(slow ? "eg.demo3d.tempo.slow" : "eg.demo3d.tempo.normal"))
-      .accessibilityHint(Text("eg.demo3d.tempo.hint"))
-      .accessibilityAddTraits(.isButton)
-      .accessibilityAction { onToggleSpeed() }
+      // Lò xo êm, gần như không nảy; Giảm chuyển động: đổi ngay.
+      .animation(motion, value: slow)
+      .animation(motion, value: mistake)
+    }
+
+    /// Dải + đuôi tốc độ: dính thành một viên khi xem bình thường, tách khi xem chậm.
+    @ViewBuilder private var speedGroup: some View {
+      if #available(iOS 26.0, *) {
+        HStack(spacing: 0) {
+          Button(action: onToggleSpeed) { strip.frame(height: height) }
+            .buttonStyle(.plain)
+            .glassEffect(.regular.tint(phaseTint?.opacity(0.18)).interactive(), in: Capsule())
+            .glassEffectID("strip", in: glass)
+            .glassEffectUnion(id: slow ? nil : "island", namespace: glass)
+          Button(action: onToggleSpeed) { speedChip }
+            .buttonStyle(.plain)
+            .glassEffect(.regular.tint(slow ? orange.opacity(0.9) : nil).interactive(), in: Capsule())
+            .glassEffectID("speed", in: glass)
+            .glassEffectUnion(id: slow ? nil : "island", namespace: glass)
+            .padding(.leading, slow ? gap : 0)
+        }
+        .speedAccessibility(stripLabel: stripLabel, slow: slow, toggle: onToggleSpeed)
+      } else {
+        HStack(spacing: 0) {
+          Button(action: onToggleSpeed) { strip.frame(height: height) }
+            .buttonStyle(.plain)
+          Button(action: onToggleSpeed) { speedChip }
+            .buttonStyle(.plain)
+            .background(Capsule().fill(slow ? AnyShapeStyle(orange) : AnyShapeStyle(Color.clear)))
+            .padding(.leading, slow ? gap : 0)
+        }
+        .background(Capsule().fill(.ultraThinMaterial))
+        .speedAccessibility(stripLabel: stripLabel, slow: slow, toggle: onToggleSpeed)
+      }
+    }
+  }
+
+  private extension View {
+    func speedAccessibility(stripLabel: Text, slow: Bool, toggle: @escaping () -> Void) -> some View {
+      accessibilityElement(children: .ignore)
+        .accessibilityLabel(stripLabel + Text(verbatim: ", ") + Text(slow ? "eg.demo3d.tempo.slow" : "eg.demo3d.tempo.normal"))
+        .accessibilityHint(Text("eg.demo3d.tempo.hint"))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { toggle() }
     }
   }
 #endif

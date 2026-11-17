@@ -343,11 +343,13 @@
                 ExerciseTempoStrip(
                   tempo: tempo,
                   ms: playback.time.map { $0 / max(playback.duration, 0.001) * tempo.durationMs },
-                  slow: slowMotion
-                ) {
-                  slowMotion.toggle()
-                  playback.setSpeed(slowMotion ? 0.5 : 1)
-                }
+                  slow: slowMotion,
+                  mistake: mistakeID != nil,
+                  onToggleSpeed: {
+                    slowMotion.toggle()
+                    playback.setSpeed(slowMotion ? 0.5 : 1)
+                  },
+                  onExitMistake: { showMistake(nil) })
               }
             }
           }
