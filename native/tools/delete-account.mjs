@@ -81,14 +81,16 @@ try {
   mkdirSync(fnDir, { recursive: true });
   copyFileSync(path.join(REPO, 'supabase/functions/delete-account/index.ts'), path.join(fnDir, 'delete-account.ts'));
   copyFileSync(path.join(REPO, 'supabase/functions/_shared/guard.ts'), path.join(fnDir, 'guard.ts'));
-  for (const f of ['delete-account.ts', 'guard.ts']) {
+  copyFileSync(path.join(REPO, 'supabase/functions/_shared/apple-signin.ts'), path.join(fnDir, 'apple-signin.ts'));
+  for (const f of ['delete-account.ts', 'guard.ts', 'apple-signin.ts']) {
     const p = path.join(fnDir, f);
     writeFileSync(
       p,
       readFileSync(p, 'utf8')
         .replace('https://deno.land/std@0.168.0/http/server.ts', './shim-serve.js')
         .replace('https://esm.sh/@supabase/supabase-js@2', './shim-sb.js')
-        .replaceAll('"../_shared/guard.ts"', '"./guard.ts"'),
+        .replaceAll('"../_shared/guard.ts"', '"./guard.ts"')
+        .replaceAll('"../_shared/apple-signin.ts"', '"./apple-signin.ts"'),
     );
   }
   writeFileSync(
@@ -160,14 +162,14 @@ try {
   try {
     execFileSync(
       'npx',
-      ['tsc', path.join(fnDir, 'delete-account.ts'), path.join(fnDir, 'guard.ts'),
+      ['tsc', path.join(fnDir, 'delete-account.ts'), path.join(fnDir, 'guard.ts'), path.join(fnDir, 'apple-signin.ts'),
         '--outDir', fnDir, '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck', '--ignoreConfig'],
       { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
     );
   } catch { /* Deno globals have no types here — emitted anyway. */ }
   for (const f of readdirSync(fnDir).filter((f) => f.endsWith('.js') && !f.startsWith('shim-'))) {
     const p = path.join(fnDir, f);
-    writeFileSync(p, readFileSync(p, 'utf8').replace('require("./guard.ts")', 'require("./guard.js")'));
+    writeFileSync(p, readFileSync(p, 'utf8').replace('require("./guard.ts")', 'require("./guard.js")').replace('require("./apple-signin.ts")', 'require("./apple-signin.js")'));
   }
 
   writeFileSync(
