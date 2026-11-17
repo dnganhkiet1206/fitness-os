@@ -37,16 +37,22 @@ public struct SupabaseWeightLog: WeightLogSource {
   }
 
   /// Upsert theo `(user_id, date)` — ghi đè, như RN — rồi `syncProfileWeight`.
+  /// Hồ sơ theo không được thì ném (AUD-35, như `HealthSync.importWeighIns`
+  /// không nuốt lỗi ghi hồ sơ): hàng cân ĐÃ lưu rồi, bên gọi thấy lỗi và gửi
+  /// lại — upsert cùng hàng nên gửi lại vô hại, và phát lại outbox cũng thử
+  /// lại lượt theo hồ sơ. Cuộc đua (cân mới hơn chen giữa) cần cột
+  /// `weight_as_of` = migration, NGOÀI phạm vi.
   static func write(_ client: SupabaseClient, row: JSONValue, userId: String) async throws {
     try await client.from("weight_logs").upsert(row, onConflict: "user_id,date").execute()
     guard let kg = row["weight_kg"]?.doubleValue, let date = row["date"]?.stringValue else { return }
-    await syncProfileWeight(client, userId: userId, kg: kg, date: date)
+    try await syncProfileWeight(client, userId: userId, kg: kg, date: date)
   }
 
   /// `syncProfileWeight` (`lib/weight-sync.ts`): `profiles.weight_kg` theo lần
   /// cân này — chỉ khi hợp lệ và KHÔNG có lần cân nào sau ngày ấy. Đọc hỏng thì
-  /// để yên (lệch nhiều nhất một lần cân); lỗi ghi hồ sơ không được kiểm, như RN.
-  static func syncProfileWeight(_ client: SupabaseClient, userId: String, kg: Double, date: String) async {
+  /// để yên (lệch nhiều nhất một lần cân); lỗi GHI hồ sơ thì ném, không nuốt
+  /// như RN (`_ = try?` cũ).
+  static func syncProfileWeight(_ client: SupabaseClient, userId: String, kg: Double, date: String) async throws {
     guard WeightLog.plausible(kg) else { return }
     guard
       let newer: [JSONValue] = try? await client.from("weight_logs")
@@ -57,7 +63,7 @@ public struct SupabaseWeightLog: WeightLogSource {
         .execute().value
     else { return }
     guard newer.isEmpty else { return }
-    _ = try? await client.from("profiles")
+    try await client.from("profiles")
       .update(["weight_kg": kg])
       .eq("user_id", value: userId)
       .execute()
