@@ -119,12 +119,18 @@ import Foundation
 
     /// Bảng màu 64 ô (ô `i` = phần cơ thứ `i − 1`): màu tuyến tính của vai trò, nil = không tô.
     static func palette(roles: [String: [String]], shared: Shared, primaryOnly: Bool) -> [SIMD3<Float>?] {
+      palette(roles: roles, parts: shared.parts, aggregates: shared.aggregates, primaryOnly: primaryOnly)
+    }
+
+    static func palette(
+      roles: [String: [String]], parts: [String], aggregates: [String: [String]], primaryOnly: Bool
+    ) -> [SIMD3<Float>?] {
       var table = [SIMD3<Float>?](repeating: nil, count: 64)
       for (role, hex) in roleHex where !primaryOnly || role == "primary" {
         let color = linear(hex)
         for name in roles[role] ?? [] {
-          for part in shared.aggregates[name] ?? [name] {
-            guard let index = shared.parts.firstIndex(of: part), index + 1 < 64 else { continue }
+          for part in aggregates[name] ?? [name] {
+            guard let index = parts.firstIndex(of: part), index + 1 < 64 else { continue }
             table[index + 1] = color
           }
         }

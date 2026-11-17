@@ -5,69 +5,69 @@ import Foundation
   import RealityKit
 
   /// Tô cơ trên GPU (17/11): `CustomMaterial` với shader `MuscleSurface.metal`, đọc thẳng bộ ảnh dùng
-  /// chung của `MuscleShader`. Đổi bài hay bật / tắt cơ phụ chỉ đổi bảng màu 64×2, không pha lại
+  /// chung (`muscle_*`). Đổi bài hay bật / tắt cơ phụ chỉ đổi bảng màu 64×2, không pha lại
   /// bốn ảnh 2K trên CPU như `MuscleShader.skins` (đường lùi khi GPU không dựng được vật liệu).
   @MainActor enum MuscleMaterial {
-    /// Texture dùng chung cho mọi bài (nạp một lần).
+    /// Texture dùng chung cho mọi bài, nạp thẳng từ tệp ảnh một lần (không giải nén ra mảng byte).
     struct Textures {
+      /// `muscle_ids`: R = phần cơ + 1, G = độ phủ, B = viền.
       let ids: TextureResource
-      /// R = shade, G = phần cơ thứ hai (`muscle_ids2`).
-      let shadeIds2: TextureResource
+      /// `muscle_ids2`: phần cơ thứ hai nằm dưới.
+      let ids2: TextureResource
+      let shade: TextureResource
       let normal: TextureResource
       let fiberNormal: TextureResource
     }
 
+    /// Tên phần cơ + nhóm tổng hợp (`muscle_parts.json`), đủ để dựng bảng màu.
+    struct Parts: Decodable, Sendable {
+      let parts: [String]
+      let aggregates: [String: [String]]
+    }
+
     private static var cached: Textures?
+    private static var cachedParts: Parts?
     private static var shaders: (body: CustomMaterial.SurfaceShader, apparel: CustomMaterial.SurfaceShader)?
 
-    /// Ảnh gộp, dựng ngoài luồng chính (vòng lặp qua 4 triệu điểm ảnh).
-    struct Images: @unchecked Sendable {
-      let ids: CGImage
-      let shadeIds2: CGImage
-      let normal: CGImage
-      let fiberNormal: CGImage
-    }
-
-    nonisolated static func images(_ s: MuscleShader.Shared) -> Images? {
-      let n = s.width * s.height
-      var shadeIds2 = [UInt8](repeating: 0, count: n * 4)
-      s.shade.withUnsafeBufferPointer { shade in
-        s.ids2.withUnsafeBufferPointer { ids2 in
-          shadeIds2.withUnsafeMutableBufferPointer { out in
-            for i in 0 ..< n {
-              out[i &* 4] = shade[i]
-              out[i &* 4 + 1] = ids2[i]
-            }
-          }
-        }
-      }
-      guard let ids = rgb(s.ids, s.width, s.height), let si = rgb(shadeIds2, s.width, s.height),
-        let normal = rgb(s.normal, s.width, s.height), let fiber = rgb(s.fiberNormal, s.width, s.height)
+    static func parts() -> Parts? {
+      if let cachedParts { return cachedParts }
+      guard let url = Bundle.main.url(forResource: "muscle_parts", withExtension: "json"),
+        let data = try? Data(contentsOf: url), let p = try? JSONDecoder().decode(Parts.self, from: data)
       else { return nil }
-      return Images(ids: ids, shadeIds2: si, normal: normal, fiberNormal: fiber)
+      cachedParts = p
+      return p
     }
 
-    /// Texture đã nạp ở lần mở bài trước (nil = chưa): có rồi thì không dựng lại ảnh 2K (review #936).
-    static var loaded: Textures? { cached }
-
-    static func textures(_ images: Images) -> Textures? {
+    /// Nạp năm texture song song (lần đầu); các lần sau trả bản đã nạp (review #936).
+    static func textures() async -> Textures? {
       if let cached { return cached }
-      func load(_ image: CGImage, mipmaps: Bool = true) -> TextureResource? {
-        try? TextureResource(
-          image: image, options: .init(semantic: .raw, mipmapsMode: mipmaps ? .allocateAndGenerateAll : .none))
+      func load(_ name: String, mipmaps: Bool = true) async -> TextureResource? {
+        // JPEG hay PNG đều được (máy xuất không có ImageMagick thì ra PNG, review #931).
+        guard let url = Bundle.main.url(forResource: name, withExtension: "jpg")
+          ?? Bundle.main.url(forResource: name, withExtension: "png")
+        else { return nil }
+        // raw: số đọc ra đúng như đã lưu (nhãn phần cơ phải chính xác từng điểm ảnh).
+        return try? await TextureResource(
+          contentsOf: url, options: .init(semantic: .raw, mipmapsMode: mipmaps ? .allocateAndGenerateAll : .none))
       }
-      guard let ids = load(images.ids, mipmaps: false), let si = load(images.shadeIds2),
-        let normal = load(images.normal), let fiber = load(images.fiberNormal)
+      async let ids = load("muscle_ids", mipmaps: false)
+      async let ids2 = load("muscle_ids2", mipmaps: false)
+      async let shade = load("muscle_shade")
+      async let normal = load("muscle_normal")
+      async let fiber = load("muscle_fiber_normal")
+      guard let ids = await ids, let ids2 = await ids2, let shade = await shade, let normal = await normal,
+        let fiber = await fiber
       else { return nil }
-      let t = Textures(ids: ids, shadeIds2: si, normal: normal, fiberNormal: fiber)
+      let t = Textures(ids: ids, ids2: ids2, shade: shade, normal: normal, fiberNormal: fiber)
       cached = t
       return t
     }
 
     /// Bảng màu 64×2 của một bài: hàng 0 màu vai trò tuyến tính, hàng 1 hạng vai trò (ổn định 1, phụ 2,
     /// chính 3) / 3. nil = không dựng được.
-    static func palette(roles: [String: [String]], shared: MuscleShader.Shared, primaryOnly: Bool) -> TextureResource? {
-      let table = MuscleShader.palette(roles: roles, shared: shared, primaryOnly: primaryOnly)
+    static func palette(roles: [String: [String]], parts: Parts, primaryOnly: Bool) -> TextureResource? {
+      let table = MuscleShader.palette(
+        roles: roles, parts: parts.parts, aggregates: parts.aggregates, primaryOnly: primaryOnly)
       let roleColors = MuscleShader.roleHex.map { MuscleShader.linear($0.hex) }
       var bytes = [UInt8](repeating: 0, count: 64 * 2 * 4)
       for (i, color) in table.enumerated() {
@@ -95,7 +95,8 @@ import Foundation
       m.custom.value = SIMD4(base.x, base.y, base.z, gain)
       m.custom.texture = .init(textures.ids)
       m.emissiveColor.texture = .init(palette)
-      m.baseColor.texture = .init(textures.shadeIds2)
+      m.baseColor.texture = .init(textures.shade)
+      m.roughness.texture = .init(textures.ids2)
       if body {
         m.normal.texture = .init(textures.normal)
         m.ambientOcclusion.texture = .init(textures.fiberNormal)

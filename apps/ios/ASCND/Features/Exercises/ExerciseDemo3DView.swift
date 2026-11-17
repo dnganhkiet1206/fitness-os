@@ -762,7 +762,7 @@
         guard let shared = MuscleShader.shared() else { return nil }
         let skins = MuscleShader.skins(roles: roles, shared: shared)
         #if DEBUG
-          print("[muscle] composed in \(Int(Date().timeIntervalSince(start) * 1000)) ms")
+          NSLog("[muscle] CPU composed in %d ms", Int(Date().timeIntervalSince(start) * 1000))
         #endif
         return skins
       }.value
@@ -811,17 +811,9 @@
       #if DEBUG
         let start = Date()
       #endif
-      let loaded = MuscleMaterial.loaded
-      let built = await Task.detached(priority: .userInitiated) { () -> (MuscleShader.Shared, MuscleMaterial.Images?)? in
-        guard let shared = MuscleShader.shared() else { return nil }
-        // Ảnh 2K chỉ dựng lần đầu; các bài sau dùng lại texture đã nạp.
-        if loaded != nil { return (shared, nil) }
-        guard let images = MuscleMaterial.images(shared) else { return nil }
-        return (shared, images)
-      }.value
-      guard let (shared, images) = built, let textures = loaded ?? images.flatMap(MuscleMaterial.textures),
-        let full = MuscleMaterial.palette(roles: roles, shared: shared, primaryOnly: false),
-        let focus = MuscleMaterial.palette(roles: roles, shared: shared, primaryOnly: true),
+      guard let parts = MuscleMaterial.parts(), let textures = await MuscleMaterial.textures(),
+        let full = MuscleMaterial.palette(roles: roles, parts: parts, primaryOnly: false),
+        let focus = MuscleMaterial.palette(roles: roles, parts: parts, primaryOnly: true),
         let materials = body.model?.materials,
         let bodyIndex = materials.firstIndex(where: { ($0 as? PhysicallyBasedMaterial)?.normal.texture != nil }),
         let bodyOriginal = materials[bodyIndex] as? PhysicallyBasedMaterial,
@@ -841,7 +833,7 @@
         textures: textures, full: full, focus: focus, bodyIndex: bodyIndex, bodyOriginal: bodyOriginal,
         apparelOriginal: apparelOriginal)
       #if DEBUG
-        print("[muscle] GPU material ready in \(Int(Date().timeIntervalSince(start) * 1000)) ms")
+        NSLog("[muscle] GPU material ready in %d ms", Int(Date().timeIntervalSince(start) * 1000))
       #endif
       self.body = body
       ready = true
