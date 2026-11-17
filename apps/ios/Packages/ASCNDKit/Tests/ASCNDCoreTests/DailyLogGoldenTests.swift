@@ -18,6 +18,10 @@ struct DailyLogGoldenTests {
     var fail: Set<String>
     var reads: [RowQuery] = []
     var writes: [(kind: String, row: [String: JSONValue], filters: [RowQuery.Filter])] = []
+    /// `readSources` đọc 12 nguồn SONG SONG trên cùng một kho: mọi chạm vào
+    /// `tables` / `reads` / `writes` đều qua khoá này — không thì 12 chuyến
+    /// cùng ghi sẽ làm hỏng bộ nhớ (CI #929 vỡ SIGSEGV/SIGABRT ở `select`).
+    private let lock = NSLock()
 
     init(tables: [String: [JSONValue]], fail: Set<String> = []) {
       self.tables = tables
@@ -44,10 +48,22 @@ struct DailyLogGoldenTests {
       }
     }
 
+    /// Đồng bộ bảng từ kho ngoài (`HealthSyncTests.Store`): gán dưới khoá để
+    /// không đua với ảnh chụp trong `select`.
+    func syncTables(_ t: [String: [JSONValue]]) {
+      lock.withLock { tables = t }
+    }
+
     func select(_ q: RowQuery) async throws(RowStoreError) -> [JSONValue] {
-      reads.append(q)
-      if fail.contains(q.table) { throw RowStoreError(code: nil, message: "boom") }
-      var out = (tables[q.table] ?? []).filter { Self.matches($0, q.filters) }
+      // Ghi truy vấn + chụp bảng dưới MỘT lần khoá: 12 chuyến song song của
+      // `readSources` không được chen nhau giữa chừng. Lọc/sắp xếp chạy trên
+      // ảnh chụp, ngoài khoá — vẫn song song.
+      let snapshot: (rows: [JSONValue], failed: Bool) = lock.withLock {
+        reads.append(q)
+        return (tables[q.table] ?? [], fail.contains(q.table))
+      }
+      if snapshot.failed { throw RowStoreError(code: nil, message: "boom") }
+      var out = snapshot.rows.filter { Self.matches($0, q.filters) }
       if let o = q.order {
         // Ổn định như `Array.prototype.sort`.
         out = out.enumerated().sorted {
@@ -61,20 +77,24 @@ struct DailyLogGoldenTests {
     }
 
     func insert(_ table: String, _ row: [String: JSONValue]) async throws(RowStoreError) {
-      writes.append(("insert", row, []))
-      tables[table, default: []].append(.object(row))
+      lock.withLock {
+        writes.append(("insert", row, []))
+        tables[table, default: []].append(.object(row))
+      }
     }
 
     func update(_ table: String, _ row: [String: JSONValue], where filters: [RowQuery.Filter]) async throws(RowStoreError) -> Int {
-      writes.append(("update", row, filters))
-      var n = 0
-      for (i, r) in (tables[table] ?? []).enumerated() where Self.matches(r, filters) {
-        guard case .object(var o) = r else { continue }
-        for (k, v) in row { o[k] = v }
-        tables[table]![i] = .object(o)
-        n += 1
+      return lock.withLock {
+        writes.append(("update", row, filters))
+        var n = 0
+        for (i, r) in (tables[table] ?? []).enumerated() where Self.matches(r, filters) {
+          guard case .object(var o) = r else { continue }
+          for (k, v) in row { o[k] = v }
+          tables[table]![i] = .object(o)
+          n += 1
+        }
+        return n
       }
-      return n
     }
   }
 
