@@ -134,13 +134,28 @@ enum Telemetry {
     }
   }
 
-  /// Dựng lại `daily_logs` sau một lần gửi hỏng (số ngày hỏng, loại bản ghi).
-  static func reportRebuild(kind: String, failedDays: Int) {
+  /// Dựng lại `daily_logs` sau một lượt gửi hỏng (AUD-50): số ngày hỏng trên
+  /// số entry lượt ấy đã gửi. Một lượt có nhiều loại entry nên không gắn một
+  /// loại nào — tag `sync.kind` là `drain`.
+  static func reportRebuild(failedDays: Int, entries: Int) {
     guard SentrySDK.isEnabled else { return }
     SentrySDK.capture(message: "sync.rebuild_failed") { scope in
       scope.setLevel(.warning)
-      scope.setTag(value: kind, key: "sync.kind")
+      scope.setTag(value: "drain", key: "sync.kind")
       scope.setExtra(value: failedDays, key: "failed_days")
+      scope.setExtra(value: entries, key: "entries")
+    }
+  }
+
+  /// Đẩy tạm nghỉ Koa lên server hỏng (R2-SYNC-05): trước đây `catch {}` nuốt
+  /// lặng — đội không bao giờ biết máy người dùng không đẩy được. Cờ chờ /
+  /// ảnh đã gửi giữ nguyên nên lần đồng bộ sau gửi bù; sự kiện này chỉ để đội
+  /// thấy. `stage`: `pause` (đợt đang có) hay `pause_log` (sổ các đợt).
+  static func reportKoaPausePush(stage: String) {
+    guard SentrySDK.isEnabled else { return }
+    SentrySDK.capture(message: "sync.koa_pause_push_failed") { scope in
+      scope.setLevel(.warning)
+      scope.setTag(value: stage, key: "sync.stage")
     }
   }
 

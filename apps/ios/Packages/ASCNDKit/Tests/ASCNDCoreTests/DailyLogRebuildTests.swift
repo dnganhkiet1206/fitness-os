@@ -20,8 +20,13 @@ struct DailyLogRebuildTests {
     var failTable: String?
     var stored: JSONValue?
     var updates = 0, inserts = 0
+    /// Mọi select đã chạy — ghi dưới khoá vì `readSources` đọc song song.
+    private let queriesLock = NSLock()
+    private var recorded: [RowQuery] = []
+    var queries: [RowQuery] { queriesLock.withLock { recorded } }
 
     func select(_ q: RowQuery) async throws(RowStoreError) -> [JSONValue] {
+      queriesLock.withLock { recorded.append(q) }
       if q.table == failTable { throw RowStoreError(code: nil, message: "boom") }
       if q.table == "daily_logs" {
         if q.columns == "id, updated_at" { return row.map { [$0] } ?? [] }
@@ -178,4 +183,102 @@ struct DailyLogRebuildTests {
     let failures = await DailyLog.rebuildAfterWrite(e, store: s, clock: FixedWallClock(iso8601: "2026-10-05T10:00:00Z"), in: Self.utc)
     #expect(failures.count == 2)
   }
+
+  // MARK: - Gom lượt (AUD-50)
+
+  /// 20 entry chạm 2 ngày phân biệt → đúng 2 lượt dựng: mỗi ngày 1 select
+  /// token + 12 select nguồn + 1 insert. Entry không về buổi tập / bữa / ngủ
+  /// (kế hoạch) không dựng thêm ngày nào.
+  @Test func rebuildAfterWritesCoalescesDistinctDays() async {
+    let s = Scripted()
+    var entries: [OutboxEntry] = []
+    for i in 0..<10 {
+      entries.append(entry(
+        WorkoutSessionRecord.outboxKind,
+        ["id": .string("past-\(i)"), "date_time": .string("2026-10-03T18:00:00.000Z")]))
+    }
+    for i in 0..<10 {
+      entries.append(entry(
+        WorkoutSessionRecord.outboxKind,
+        ["id": .string("today-\(i)"), "date_time": .string("2026-10-05T08:00:00.000Z")]))
+    }
+    entries.append(entry(PlanEdit.templateKind, ["id": .string("t1")]))
+    let failures = await DailyLog.rebuildAfterWrites(
+      entries, store: s, clock: FixedWallClock(iso8601: "2026-10-05T10:00:00Z"), in: Self.utc)
+    #expect(failures.isEmpty)
+    #expect(s.inserts == 2)
+    #expect(s.queries.count == 26)
+    #expect(s.queries.filter { $0.columns != "id, updated_at" }.count == 24)
+  }
+
+  /// 12 nguồn cùng bay: mọi select chồng lên nhau trong lúc chờ.
+  @Test func readSourcesReadsAllTwelveConcurrently() async {
+    let store = ConcurrentStore()
+    let reads = DailyLog.queries(userId: "u1", date: Self.today, in: Self.utc)
+    let sources = try? await DailyLog.readSources(reads, store)
+    #expect(sources != nil)
+    #expect(sources?.profile == nil)
+    #expect(await store.maxInFlight == 12)
+  }
+
+  /// Hai nguồn cùng hỏng thì lỗi ném ra là lỗi của nguồn ĐỨNG TRƯỚC theo thứ
+  /// tự cố định — đúng lỗi bản tuần tự cũ ném.
+  @Test func readSourcesThrowsTheFirstFailureInFixedOrder() async {
+    let store = KeyedFailingStore()
+    let reads = DailyLog.queries(userId: "u1", date: Self.today, in: Self.utc)
+    store.failures = [
+      reads.meals: RowStoreError(code: nil, message: "meals boom"),
+      reads.water: RowStoreError(code: nil, message: "water boom"),
+    ]
+    var thrown: RowStoreError?
+    do {
+      _ = try await DailyLog.readSources(reads, store)
+    } catch {
+      thrown = error
+    }
+    #expect(thrown?.message == "meals boom")
+  }
+
+  /// Hồ sơ hỏng vẫn là "không có hồ sơ", không phải lỗi dựng lại.
+  @Test func readSourcesTreatsProfileFailureAsMissingProfile() async {
+    let store = KeyedFailingStore()
+    let reads = DailyLog.queries(userId: "u1", date: Self.today, in: Self.utc)
+    store.failures = [reads.profile: RowStoreError(code: nil, message: "profile boom")]
+    let sources = try? await DailyLog.readSources(reads, store)
+    #expect(sources != nil)
+    #expect(sources?.profile == nil)
+  }
+}
+
+/// Kho đếm số select đang bay cùng lúc: mỗi select giữ một nhịp rồi mới trả,
+/// nên đọc song song thì cả 12 chuyến chồng lên nhau.
+private actor ConcurrentStore: RowStore {
+  var maxInFlight = 0
+  private var inFlight = 0
+
+  func select(_ q: RowQuery) async throws(RowStoreError) -> [JSONValue] {
+    inFlight += 1
+    maxInFlight = max(maxInFlight, inFlight)
+    defer { inFlight -= 1 }
+    try? await Task.sleep(nanoseconds: 10_000_000)
+    if q.mode == .single { throw RowStoreError(code: "PGRST116", message: "no rows") }
+    return []
+  }
+
+  func insert(_ table: String, _ row: [String: JSONValue]) async throws(RowStoreError) {}
+  func update(_ table: String, _ row: [String: JSONValue], where filters: [RowQuery.Filter]) async throws(RowStoreError) -> Int { 0 }
+}
+
+/// Kho hỏng theo đúng truy vấn, để kiểm thứ tự lỗi.
+private final class KeyedFailingStore: RowStore, @unchecked Sendable {
+  var failures: [RowQuery: RowStoreError] = [:]
+
+  func select(_ q: RowQuery) async throws(RowStoreError) -> [JSONValue] {
+    if let e = failures[q] { throw e }
+    if q.mode == .single { throw RowStoreError(code: "PGRST116", message: "no rows") }
+    return []
+  }
+
+  func insert(_ table: String, _ row: [String: JSONValue]) async throws(RowStoreError) {}
+  func update(_ table: String, _ row: [String: JSONValue], where filters: [RowQuery.Filter]) async throws(RowStoreError) -> Int { 0 }
 }

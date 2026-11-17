@@ -487,30 +487,51 @@ extension DailyLog {
     }
   }
 
-  /// 12 nguồn. RN gửi song song và chờ HẾT rồi mới xét lỗi; ở đây tuần tự —
-  /// kết quả như nhau, lỗi nào cũng là không ghi.
+  /// 12 nguồn đọc SONG SONG (`Promise.all` của RN — AUD-50): cả 12 chuyến
+  /// cùng bay, chờ HẾT rồi mới xét lỗi. Lỗi ném ra là lỗi ĐẦU TIÊN theo thứ
+  /// tự cố định của `Reads.sources` — đúng lỗi mà bản tuần tự cũ ném, nên
+  /// `recompute` / `DailyPlanRecovery` thấy cùng một lỗi như trước. Hồ sơ vẫn
+  /// "lỗi nào cũng là không có hồ sơ" (`profileRes.error ? null`).
   static func readSources(_ r: Reads, _ store: any RowStore) async throws(RowStoreError) -> Sources {
-    let meals = try await store.select(r.meals)
-    let workouts = try await store.select(r.workouts)
-    let sleeps = try await store.select(r.sleeps)
-    let supplements = try await store.select(r.supplements)
-    let intakes = try await store.select(r.intakes)
-    let bio = try await store.select(r.bio)
-    // Hồ sơ: lỗi nào cũng là "không có hồ sơ" (`profileRes.error ? null`).
-    let profile: JSONValue?
-    do {
-      profile = try await store.select(r.profile).first
-    } catch {
-      profile = nil
+    let ordered: [Result<[JSONValue], RowStoreError>] = await withTaskGroup(
+      of: (Int, Result<[JSONValue], RowStoreError>).self
+    ) { group in
+      for (index, query) in r.sources.enumerated() {
+        group.addTask {
+          do {
+            return (index, .success(try await store.select(query)))
+          } catch {
+            return (index, .failure(error))
+          }
+        }
+      }
+      var collected: [(Int, Result<[JSONValue], RowStoreError>)] = []
+      collected.reserveCapacity(r.sources.count)
+      for await pair in group { collected.append(pair) }
+      return collected.sorted { $0.0 < $1.0 }.map(\.1)
     }
-    let bioHistory = try await store.select(r.bioHistory)
-    let load7d = try await store.select(r.load7d)
-    let load28d = try await store.select(r.load28d)
-    let sleeps7d = try await store.select(r.sleeps7d)
-    let water = try await store.select(r.water)
+    // Lắp theo đúng thứ tự của `Reads.sources` (bữa, buổi, ngủ, thực phẩm bổ
+    // sung, lần uống bổ sung, sinh trắc, hồ sơ, lịch sử sinh trắc, tải 7 ngày,
+    // tải 28 ngày, ngủ 7 ngày, nước). Lỗi đầu tiên theo thứ tự này thì ném;
+    // riêng hồ sơ hỏng thì coi như không có hồ sơ.
+    var values: [[JSONValue]] = []
+    values.reserveCapacity(ordered.count)
+    for (offset, result) in ordered.enumerated() {
+      switch result {
+      case .success(let rows):
+        values.append(rows)
+      case .failure(let error):
+        if r.sources[offset] == r.profile {
+          values.append([])
+        } else {
+          throw error
+        }
+      }
+    }
     return Sources(
-      meals: meals, workouts: workouts, sleeps: sleeps, supplements: supplements, intakes: intakes, bio: bio,
-      profile: profile, bioHistory: bioHistory, load7d: load7d, load28d: load28d, sleeps7d: sleeps7d, water: water)
+      meals: values[0], workouts: values[1], sleeps: values[2], supplements: values[3], intakes: values[4],
+      bio: values[5], profile: values[6].first, bioHistory: values[7], load7d: values[8], load28d: values[9],
+      sleeps7d: values[10], water: values[11])
   }
 }
 
@@ -552,6 +573,37 @@ extension DailyLog {
 }
 
 extension DailyLog {
+  /// Sau khi server nhận NHIỀU entry trong MỘT lượt gửi (AUD-50): gom các ngày
+  /// phân biệt của mọi entry rồi dựng lại mỗi (người, ngày) MỘT lần — 20 entry
+  /// chạm 2 ngày chỉ tốn 2 lượt dựng, không phải 20. KHÔNG ném, như bản một
+  /// entry: ghi đã thành, lỗi dựng lại chỉ trả về để test / chẩn đoán, ngày
+  /// tạm lệch tự sửa ở lần ghi kế vào ngày ấy.
+  public static func rebuildAfterWrites(
+    _ entries: [OutboxEntry], store: any RowStore, clock: any WallClock = SystemWallClock(), in tz: TimeZone = .current
+  ) async -> [DailyLogRebuildError] {
+    let now = clock.nowMillis()
+    let today = LocalDate(now, in: tz)
+    var done: Set<RebuildDay> = []
+    var failures: [DailyLogRebuildError] = []
+    for entry in entries {
+      for day in rebuildDays(after: entry, today: today, in: tz) {
+        guard done.insert(RebuildDay(userId: entry.userId, day: day)).inserted else { continue }
+        do {
+          try await recompute(userId: entry.userId, date: day, store: store, now: now, in: tz)
+        } catch {
+          failures.append(error)
+        }
+      }
+    }
+    return failures
+  }
+
+  /// Một (người, ngày) đã dựng lại trong lượt này — trùng thì bỏ, không dựng nữa.
+  private struct RebuildDay: Hashable {
+    let userId: String
+    let day: LocalDate
+  }
+
   /// Sau khi server nhận `entry`: dựng lại từng ngày `rebuildDays` chỉ ra.
   /// KHÔNG ném (`rebuildAfterReplay` của RN): ghi đã thành; để lỗi dựng lại làm
   /// hỏng lượt gửi thì hàng đợi phát lại và nhân đôi bản ghi — tệ hơn một ngày
@@ -560,15 +612,6 @@ extension DailyLog {
   public static func rebuildAfterWrite(
     _ entry: OutboxEntry, store: any RowStore, clock: any WallClock = SystemWallClock(), in tz: TimeZone = .current
   ) async -> [DailyLogRebuildError] {
-    let now = clock.nowMillis()
-    var failures: [DailyLogRebuildError] = []
-    for day in rebuildDays(after: entry, today: LocalDate(now, in: tz), in: tz) {
-      do {
-        try await recompute(userId: entry.userId, date: day, store: store, now: now, in: tz)
-      } catch {
-        failures.append(error)
-      }
-    }
-    return failures
+    await rebuildAfterWrites([entry], store: store, clock: clock, in: tz)
   }
 }

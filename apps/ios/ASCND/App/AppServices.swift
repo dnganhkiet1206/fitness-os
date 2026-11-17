@@ -285,17 +285,19 @@ final class AppServices {
     sync = SyncWorker(
       store: outboxStore,
       remote: backend.map { b -> any RemoteWriter in
-        // Server đã nhận một lệnh buổi tập → dựng lại `daily_logs` của ngày ấy
-        // (+ hôm nay), như `rebuildAfterReplay` của RN (#266), rồi làm mới
-        // widget (điểm sẵn sàng / buổi hôm nay vừa đổi). Lỗi dựng lại không
-        // làm hỏng lượt gửi — ghi đã thành rồi.
+        // Lượt gửi xong (AUD-50, R2-SYNC-04): dựng lại `daily_logs` của các
+        // ngày phân biệt trong lượt (+ hôm nay, như `rebuildAfterReplay` của
+        // RN #266), rồi làm mới widget (điểm sẵn sàng / buổi hôm nay vừa đổi)
+        // — MỖI VIỆC MỘT LẦN mỗi lượt, không phải mỗi entry một lần. Lỗi dựng
+        // lại không làm hỏng lượt gửi — ghi đã thành rồi. Lượt bị huỷ (đăng
+        // xuất) hay app chết giữa lượt thì việc cuối lượt không chạy: ngày
+        // tạm lệch, tự sửa ở lần ghi kế vào ngày ấy.
         let rows = SupabaseRowStore(backend: b)
-        return SupabaseRemoteWriter(backend: b, afterWrite: { entry in
-          // Lỗi dựng lại không làm hỏng lượt gửi, nhưng phải tới được đội (R2-OPS-03): trước đây bị bỏ qua.
-          let failed = await DailyLog.rebuildAfterWrite(entry, store: rows)
+        return SupabaseRemoteWriter(backend: b, afterDrain: { entries in
+          let failed = await DailyLog.rebuildAfterWrites(entries, store: rows)
           if !failed.isEmpty {
-            let kind = entry.kind
-            await MainActor.run { Telemetry.reportRebuild(kind: kind, failedDays: failed.count) }
+            let sent = entries.count
+            await MainActor.run { Telemetry.reportRebuild(failedDays: failed.count, entries: sent) }
           }
           await widgets.refresh()
         })
@@ -844,6 +846,51 @@ final class AppServices {
   /// UI test: tạm nghỉ chỉ sống trong một lần mở app, để flow này không làm hỏng flow sau.
   @ObservationIgnored private var uiTestPauses: [String: Data] = [:]
 
+  // MARK: - Tạm nghỉ Koa: hợp đồng bền (R2-SYNC-05)
+
+  /// Tạm nghỉ KHÔNG qua hàng đợi outbox — nó có đường đồng bộ riêng, máy là
+  /// nguồn thật, server là bản sao:
+  ///
+  /// - Sự thật trên máy (UserDefaults, đều gắn `userId`): đợt đang có
+  ///   (`koa.pause.*`), sổ các đợt (`koa.pauselog.*`), ảnh sổ đã gửi được lần
+  ///   cuối (`koa.pauselog.synced.*`), cờ "đợt đang có chưa gửi"
+  ///   (`koa.pause.pending.*`).
+  /// - Đẩy hỏng thì KHÔNG đổi gì trên máy: cờ chờ vẫn còn, ảnh đã gửi vẫn cũ,
+  ///   nên lần đồng bộ sau gửi bù đúng phần còn thiếu (sổ gửi theo hiệu với
+  ///   ảnh đã gửi; đợt đang có gửi lại toàn bộ). Lỗi đẩy phải tới được đội
+  ///   (`reportKoaPausePushFailure` → Telemetry), không nuốt lặng.
+  /// - Lần đẩy lại chạy khi: sửa tạm nghỉ (`setKoaPause` — bắt đầu / kết thúc
+  ///   sớm ở màn Hôm nay), và khi màn Hôm nay nạp lại (`loadGains` →
+  ///   `syncKoaPause` + `syncKoaPauseLog`: lần nạp đầu, đổi ngày, nạp lại tay,
+  ///   sau đồng bộ HealthKit). Không có lịch đẩy riêng, không có ngân sách
+  ///   thử lại: lần đồng bộ sau gần nhất là lần thử kế.
+  /// - Đọc hỏng (mất mạng, bảng chưa deploy) thì giữ sổ trên máy, im lặng có
+  ///   chủ đích: đọc khi ngoại tuyến là chuyện thường, không phải sự cố.
+  /// - Kéo về: server thắng theo từng đợt, rồi ghép đợt đang có trên máy
+  ///   (`including`). Hai máy cùng sửa thì LWW, không có tín hiệu xung đột —
+  ///   chấp nhận được vì đây là trạng thái hiển thị / lịch, không phải bản ghi.
+  /// - Đăng xuất KHÔNG xoá các khoá này, có chủ đích: khoá gắn `userId` nên
+  ///   không rò sang tài khoản khác, và đợt chưa gửi được của chính chủ sẽ
+  ///   gửi bù khi họ đăng nhập lại. Khoá cũ tích lại theo tài khoản — sổ tự
+  ///   cắt ở `keepDays` ngày, đợt đang có chỉ một dòng.
+  ///
+  /// Test thay kho ghi bằng `koaStoreOverride` và đếm lỗi qua
+  /// `onKoaPausePushFailure`.
+  @ObservationIgnored var koaStoreOverride: (any RowStore)?
+  @ObservationIgnored var onKoaPausePushFailure: ((String) -> Void)?
+
+  private var koaStore: (any RowStore)? {
+    if let override = koaStoreOverride { return override }
+    return rows
+  }
+
+  /// Lỗi đẩy tạm nghỉ tới được đội (R2-SYNC-05): Telemetry ở bản thật, bộ đếm
+  /// của test qua hook. `stage`: `pause` hay `pause_log`.
+  private func reportKoaPausePushFailure(stage: String) {
+    onKoaPausePushFailure?(stage)
+    Telemetry.reportKoaPausePush(stage: stage)
+  }
+
   /// Tạm nghỉ đang có hiệu lực của tài khoản (Koa Ecosystem V2). Lưu trên máy trước, rồi
   /// đồng bộ với bảng `koa_pauses`.
   func koaPause(userId: String, today: LocalDate) -> KoaPause? {
@@ -901,7 +948,7 @@ final class AppServices {
   /// Gửi phần sổ server chưa có: so với bản đã gửi được lần cuối (`koa.pauselog.synced`), nên
   /// mất mạng hay bảng chưa deploy thì lần sau gửi bù, kể cả đợt đã huỷ.
   private func pushKoaPauseLog(userId: String) async {
-    guard !Self.uiTest, let rows else { return }
+    guard !Self.uiTest, let rows = koaStore else { return }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     let local = koaPauseLog(userId: userId, today: today)
     let synced = loadPauseLog("koa.pauselog.synced.\(userId)", userId: userId)
@@ -910,7 +957,11 @@ final class AppServices {
     do {
       try await rows.upsert(KoaPauseLogSync.table, changes, onConflict: KoaPauseLogSync.conflict)
       storePauseLog(local, "koa.pauselog.synced.\(userId)", userId: userId)
-    } catch {}
+    } catch {
+      // Đẩy hỏng: ảnh đã gửi giữ nguyên nên lần sau gửi bù đúng phần thiếu;
+      // lỗi phải tới được đội (R2-SYNC-05), không nuốt lặng như trước.
+      reportKoaPausePushFailure(stage: "pause_log")
+    }
   }
 
   /// Sổ tạm nghỉ: còn phần chưa gửi thì gửi trước; sau đó lấy bản trên server, ghép đợt đang có
@@ -918,7 +969,7 @@ final class AppServices {
   /// `true` khi sổ trên máy vừa đổi theo server.
   @discardableResult
   func syncKoaPauseLog(userId: String) async -> Bool {
-    guard !Self.uiTest, let rows else { return false }
+    guard !Self.uiTest, let rows = koaStore else { return false }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     await pushKoaPauseLog(userId: userId)
     let local = koaPauseLog(userId: userId, today: today)
@@ -987,13 +1038,17 @@ final class AppServices {
   }
 
   private func pushKoaPause(_ pause: KoaPause?, userId: String) async {
-    guard let rows else { return }
+    guard let rows = koaStore else { return }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     do {
       try await rows.upsert(
         KoaPauseSync.table, [KoaPauseSync.row(pause, userId: userId, today: today)], onConflict: "user_id")
       UserDefaults.standard.removeObject(forKey: "koa.pause.pending.\(userId)")
-    } catch {}
+    } catch {
+      // Đẩy hỏng: cờ chờ vẫn còn nên lần đồng bộ sau gửi lại; lỗi phải tới
+      // được đội (R2-SYNC-05), không nuốt lặng như trước.
+      reportKoaPausePushFailure(stage: "pause")
+    }
   }
 
   /// Đồng bộ tạm nghỉ với server: còn thay đổi chưa gửi thì gửi; không thì lấy bản trên server
@@ -1001,7 +1056,7 @@ final class AppServices {
   /// `true` khi đợt nghỉ trên máy vừa đổi theo server (bên gọi dựng lại việc chính).
   @discardableResult
   func syncKoaPause(userId: String) async -> Bool {
-    guard !Self.uiTest, let rows else { return false }
+    guard !Self.uiTest, let rows = koaStore else { return false }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     if UserDefaults.standard.bool(forKey: "koa.pause.pending.\(userId)") {
       await pushKoaPause(koaPause(userId: userId, today: today), userId: userId)

@@ -13,6 +13,20 @@ extension WriteFailure: Error {}
 /// bao giờ tới mất bản ghi.
 public protocol RemoteWriter: Sendable {
   func send(_ entry: OutboxEntry) async throws(WriteFailure)
+
+  /// Một lượt gửi kết thúc TỰ NHIÊN (hàng rỗng / chờ mạng) sau ít nhất một lần
+  /// gửi thành công: chỗ cho việc chỉ nên làm MỘT lần mỗi lượt — dựng lại
+  /// `daily_logs` theo ngày phân biệt, làm mới widget (AUD-50, R2-SYNC-04).
+  /// Không gọi khi lượt bị huỷ (đăng xuất) hay khi không gửi được gì: việc
+  /// cuối lượt của người vừa rời đi không chạy nữa, và lượt trống không có gì
+  /// để dựng lại. Chờ lịch thử lại thì lượt CHƯA xong (ngủ rồi gửi tiếp) nên
+  /// cũng chưa gọi. Mặc định không làm gì — writer không có việc cuối lượt
+  /// khỏi hiện thực.
+  func drainCompleted() async
+}
+
+extension RemoteWriter {
+  public func drainCompleted() async {}
 }
 
 /// Nơi lưu hàng đợi. `ASCNDStore.OutboxStore` hiện thực nó.
@@ -153,6 +167,9 @@ public final class SyncWorker {
   // MARK: - vòng
 
   private func run() async {
+    // Đã gửi thành ít nhất một entry trong lượt này: lượt kết thúc tự nhiên
+    // thì báo writer làm việc cuối lượt MỘT lần (AUD-50, R2-SYNC-04).
+    var sentAny = false
     while !Task.isCancelled {
       if kicked || !loaded {
         kicked = false
@@ -169,6 +186,7 @@ public final class SyncWorker {
           try await remote.send(entry)
           outbox.succeeded(id: entry.id)
           settled.insert(entry.id)
+          sentAny = true
         } catch {
           if case .dead(let reason)? = outbox.failed(id: entry.id, error, now: clock.nowMillis()) {
             let code: String? = if case .server(let c) = error { c } else { nil }
@@ -186,6 +204,10 @@ public final class SyncWorker {
         if dirty { await persist() }
         // Hàng mới tới trong lúc bước này chạy: nạp rồi xét lại, đừng ngủ quên.
         if kicked { continue }
+        // Lượt kết thúc tự nhiên: việc cuối lượt chạy MỘT lần, sau khi đĩa đã
+        // ghi xong các bước của lượt. Lượt bị huỷ (đăng xuất) thoát khỏi vòng
+        // `while` ở trên mà không qua đây — cố tình (xem `RemoteWriter`).
+        if sentAny { await remote.drainCompleted() }
         return
       }
     }

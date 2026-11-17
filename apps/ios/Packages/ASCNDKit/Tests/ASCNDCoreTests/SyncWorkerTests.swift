@@ -281,6 +281,53 @@ struct WorkoutToServerTests {
     #expect(row?["volume_load"] == .number(480))
     #expect(await outbox.pending.isEmpty)
   }
+
+  // MARK: - Việc cuối lượt (AUD-50, R2-SYNC-04)
+
+  /// Lượt gửi 5 entry thì `drainCompleted` chạy đúng MỘT lần, sau khi mọi
+  /// entry đã gửi.
+  @Test func drainCompletedFiresOncePerDrain() async {
+    let store = InMemoryOutboxStore([entry("a"), entry("b"), entry("c"), entry("d"), entry("e")])
+    let writer = CountingWriter()
+    let clock = ManualClock()
+    let w = SyncWorker(store: store, remote: writer, clock: clock, online: true, signedInUser: "u1", sleep: clock.sleeper)
+    await run(w)
+    #expect(await writer.sent == ["a", "b", "c", "d", "e"])
+    #expect(await writer.drainCompletions == 1)
+    // Lượt thứ hai (hàng mới tới sau) báo thêm một lần nữa.
+    await store.append(entry("f"))
+    w.kick()
+    await w.settle()
+    #expect(await writer.drainCompletions == 2)
+  }
+
+  /// Lượt trống hay ngoại tuyến (không gửi được gì) thì không báo xong lượt.
+  @Test func noDrainCompletedWithoutASend() async {
+    let empty = InMemoryOutboxStore([])
+    let writer = CountingWriter()
+    let clock = ManualClock()
+    let w = SyncWorker(store: empty, remote: writer, clock: clock, online: true, signedInUser: "u1", sleep: clock.sleeper)
+    await run(w)
+    #expect(await writer.drainCompletions == 0)
+
+    let held = InMemoryOutboxStore([entry("a")])
+    let offline = SyncWorker(
+      store: held, remote: writer, clock: clock, online: false, signedInUser: "u1", sleep: clock.sleeper)
+    await run(offline)
+    #expect(await writer.drainCompletions == 0)
+    offline.setOnline(true)
+    await offline.settle()
+    #expect(await writer.drainCompletions == 1)
+  }
+}
+
+/// Writer đếm lần gửi và lần báo xong lượt.
+private actor CountingWriter: RemoteWriter {
+  private(set) var sent: [String] = []
+  private(set) var drainCompletions = 0
+
+  func send(_ entry: OutboxEntry) async throws(WriteFailure) { sent.append(entry.id) }
+  func drainCompleted() async { drainCompletions += 1 }
 }
 
 /// `WorkoutStore` mà `commitFinish` đẩy hàng vào cùng `InMemoryOutboxStore` mà
