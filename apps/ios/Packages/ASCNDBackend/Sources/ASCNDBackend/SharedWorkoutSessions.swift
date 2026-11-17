@@ -44,7 +44,7 @@ actor SharedWorkoutSessions {
 
   init(
     fetch: @escaping @Sendable (String, EpochMillis) async throws -> [JSONValue],
-    ttlMillis: Int64 = Self.staleAfterMillis,
+    ttlMillis: Int64 = SharedWorkoutSessions.staleAfterMillis,
     now: @escaping @Sendable () -> EpochMillis = { EpochMillis(Int64(Date().timeIntervalSince1970 * 1000)) }
   ) {
     self.fetch = fetch
