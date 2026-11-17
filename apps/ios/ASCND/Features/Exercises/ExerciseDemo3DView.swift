@@ -32,7 +32,8 @@
     @State private var tipAnchors = TipAnchors()
     /// Bộ điều khiển phát (nhịp từng rep, xem chậm 0,5×; C1, 17/11).
     @State private var playback = DemoPlayback()
-    @State private var slowMotion = false
+    /// Kiệt 17/11: mặc định xem chậm 0,5× (chạm dải nhịp để về 1×).
+    @State private var slowMotion = true
     /// Clip lỗi sai đang xem (C2, 17/11); nil = động tác đúng.
     @State private var mistakeID: String?
     @State private var rig = DemoRig()
@@ -496,8 +497,10 @@
       .padding(.horizontal, DS.Spacing.md)
       .padding(.vertical, legendCollapsed ? DS.Spacing.sm : DS.Spacing.md)
       .frame(maxWidth: .infinity, alignment: .leading)
+      // Cắt nội dung (khi thu gọn / mở) theo đúng hình thẻ, TRƯỚC khi vẽ thẻ: `.clipped()` sau
+      // thẻ cắt vuông cả bóng đổ, lộ góc tối vuông ngoài viền bo (Kiệt 17/11).
+      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
       .todayCard()
-      .clipped()
     }
 
     /// Hàng thu gọn: nhãn "Chính" + chip cơ chính (chấm màu), một dòng, cắt

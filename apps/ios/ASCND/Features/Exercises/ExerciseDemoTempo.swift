@@ -24,6 +24,20 @@
       phases.first { ms >= $0.startMs && ms < $0.endMs }
     }
 
+    /// Cỡ chấm thở (0,55 = xẹp, 1 = phồng) tại `ms`: hít vào (pha Hạ) phồng dần, thở ra (pha Nâng)
+    /// xẹp dần, pha giữ đứng yên ở cỡ cuối pha trước. Tính liền theo thời gian nên luôn mượt.
+    func breathScale(at ms: Double) -> Double {
+      let low = 0.55
+      func eased(_ t: Double) -> Double { t * t * (3 - 2 * t) }
+      guard let p = phase(at: ms) else { return low }
+      let t = eased(min(max((ms - p.startMs) / max(p.endMs - p.startMs, 1), 0), 1))
+      switch p.breath {
+      case "inhale": return low + (1 - low) * t
+      case "exhale": return 1 - (1 - low) * t
+      default: return p.kind == "bottom_hold" ? 1 : low
+      }
+    }
+
     /// Pha dài hơn ngưỡng này mới đổi chữ trên dải (Kiệt 17/11: chữ nháy nhanh quá, đọc không kịp).
     static let minimumLabelMs: Double = 700
 
@@ -98,33 +112,47 @@
       // Đoạn nghỉ giữa / sau các rep: giữ rep vừa xong.
       let rep = phase?.rep ?? ms.flatMap { m in tempo.phases.last { $0.startMs <= m }?.rep } ?? 1
       let repPhases = tempo.phases.filter { $0.rep == rep }
-      Button(action: onToggleSpeed) {
+      let phaseTint = phase.map { tint($0.kind) }
+      let strip =
         VStack(spacing: 4) {
           HStack(spacing: 6) {
             Text("eg.demo3d.tempo.rep \(rep) \(tempo.reps)")
-              .font(DS.TextStyle.caption.weight(.semibold))
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .monospacedDigit()
-            Text(phase.map { label($0.kind) } ?? "eg.demo3d.tempo.ready")
-              .font(DS.TextStyle.footnote.weight(.bold))
-              .textCase(.uppercase)
-              .foregroundStyle(phase.map { tint($0.kind) } ?? DS.Color.foreground.swiftUI)
-              .contentTransition(.opacity)
-              // Chữ mờ dần sang pha mới thay vì nhảy; Giảm chuyển động thì đổi ngay.
-              .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: phase?.kind)
-            if let key = breath(phase?.breath) {
-              Text(verbatim: "·").foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              Text(key)
-                .font(DS.TextStyle.caption)
-                .foregroundStyle(DS.Color.foreground.swiftUI)
-            }
-            Text(slow ? "eg.demo3d.tempo.slow" : "eg.demo3d.tempo.normal")
               .font(DS.TextStyle.caption.weight(.bold))
+              // Kiệt 17/11: chữ rep màu chính (trắng ở chế độ tối) cho dễ đọc trên kính.
+              .foregroundStyle(DS.Color.foreground.swiftUI)
               .monospacedDigit()
-              .padding(.horizontal, 6)
-              .padding(.vertical, 2)
-              .background(Capsule().fill(slow ? AnyShapeStyle(lift) : AnyShapeStyle(.quaternary)))
-              .foregroundStyle(slow ? Color.white : DS.Color.foreground.swiftUI)
+              // Số rep cuộn khi đổi; Giảm chuyển động thì chỉ mờ dần.
+              .contentTransition(reduceMotion ? .opacity : .numericText())
+              .animation(reduceMotion ? .easeInOut(duration: 0.2) : .smooth(duration: 0.4), value: rep)
+            // Chữ pha cuộn lên khi đổi (chữ cũ trôi lên và mờ, chữ mới trồi lên) theo lò xo nhẹ;
+            // Giảm chuyển động: chỉ mờ dần.
+            ZStack {
+              Text(phase.map { label($0.kind) } ?? "eg.demo3d.tempo.ready")
+                .font(DS.TextStyle.footnote.weight(.bold))
+                .textCase(.uppercase)
+                .foregroundStyle(phase.map { tint($0.kind) } ?? DS.Color.foreground.swiftUI)
+                .id(phase?.kind ?? "ready")
+                .transition(reduceMotion ? .opacity : .push(from: .bottom))
+            }
+            .clipped()
+            .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.45, bounce: 0.18), value: phase?.kind)
+            if let key = breath(phase?.breath) {
+              // Chấm thở: phồng khi hít vào, xẹp khi thở ra, theo đúng thời gian clip.
+              // Giảm chuyển động: chấm đứng yên.
+              Circle()
+                .fill(phase.map { tint($0.kind) } ?? DS.Color.mutedForeground.swiftUI)
+                .frame(width: 9, height: 9)
+                .scaleEffect(reduceMotion ? 0.8 : (ms.map { tempo.breathScale(at: $0) } ?? 0.55))
+                .accessibilityHidden(true)
+              ZStack {
+                Text(key)
+                  .font(DS.TextStyle.caption)
+                  .foregroundStyle(DS.Color.foreground.swiftUI)
+                  .id(phase?.breath ?? "")
+                  .transition(.opacity)
+              }
+              .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: phase?.breath)
+            }
           }
           .lineLimit(1)
           .minimumScaleFactor(0.75)
@@ -133,12 +161,9 @@
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(Capsule().fill(.ultraThinMaterial))
-      }
-      .buttonStyle(.plain)
-      .accessibilityElement(children: .ignore)
-      .accessibilityLabel(accessibilityText(phase: phase, rep: rep))
-      .accessibilityHint(Text("eg.demo3d.tempo.hint"))
+      ExerciseTempoIsland(
+        strip: strip, phaseTint: phaseTint, slow: slow, reduceMotion: reduceMotion,
+        stripLabel: accessibilityText(phase: phase, rep: rep), onToggleSpeed: onToggleSpeed)
     }
 
     /// Một vạch cho mỗi pha của rep, dài theo thời lượng; phần đã qua tô màu pha.
@@ -163,7 +188,70 @@
       var t = Text("eg.demo3d.tempo.rep \(rep) \(tempo.reps)") + Text(verbatim: ", ")
         + Text(phase.map { label($0.kind) } ?? "eg.demo3d.tempo.ready")
       if let key = breath(phase?.breath) { t = t + Text(verbatim: ", ") + Text(key) }
-      return t + Text(verbatim: ", ") + Text(slow ? "eg.demo3d.tempo.slow" : "eg.demo3d.tempo.normal")
+      return t
+    }
+  }
+
+  /// Dải nhịp + viên tốc độ, hai khối kính tách / dính như Dynamic Island (Kiệt 17/11): 1× thì
+  /// viên tốc độ áp sát dải, hai khối hút thành một; 0,5× thì viên tách ra, nhuộm cam. Chạm khối
+  /// nào cũng đổi tốc độ, nên hai khối tách / dính theo nhau. iOS 26: Liquid Glass
+  /// (`GlassEffectContainer`, hiệu ứng giọt nước); máy cũ hơn: nền mờ hệ thống, chỉ đổi khoảng cách.
+  struct ExerciseTempoIsland<Strip: View>: View {
+    let strip: Strip
+    let phaseTint: Color?
+    let slow: Bool
+    let reduceMotion: Bool
+    let stripLabel: Text
+    var onToggleSpeed: () -> Void
+    @Namespace private var glass
+
+    private let orange = Color(red: 0.91, green: 0.33, blue: 0.17)
+    /// Khoảng hút của hai khối kính: gần hơn thì dính thành một.
+    private let mergeDistance: CGFloat = 14
+
+    private var speedLabel: some View {
+      Text(slow ? "eg.demo3d.tempo.slow" : "eg.demo3d.tempo.normal")
+        .font(DS.TextStyle.footnote.weight(.bold))
+        .monospacedDigit()
+        .foregroundStyle(slow ? Color.white : DS.Color.foreground.swiftUI)
+        .contentTransition(reduceMotion ? .opacity : .numericText())
+        .padding(.horizontal, 10)
+        .frame(minHeight: 36)
+    }
+
+    var body: some View {
+      Group {
+        if #available(iOS 26.0, *) {
+          GlassEffectContainer(spacing: mergeDistance) {
+            HStack(spacing: slow ? mergeDistance + 6 : 0) {
+              Button(action: onToggleSpeed) { strip }
+                .buttonStyle(.plain)
+                .glassEffect(.regular.tint(phaseTint?.opacity(0.18)).interactive(), in: Capsule())
+                .glassEffectID("strip", in: glass)
+              Button(action: onToggleSpeed) { speedLabel }
+                .buttonStyle(.plain)
+                .glassEffect(.regular.tint(slow ? orange.opacity(0.85) : nil).interactive(), in: Capsule())
+                .glassEffectID("speed", in: glass)
+            }
+          }
+        } else {
+          HStack(spacing: slow ? mergeDistance + 6 : 2) {
+            Button(action: onToggleSpeed) { strip }
+              .buttonStyle(.plain)
+              .background(Capsule().fill(.ultraThinMaterial))
+            Button(action: onToggleSpeed) { speedLabel }
+              .buttonStyle(.plain)
+              .background(Capsule().fill(slow ? AnyShapeStyle(orange) : AnyShapeStyle(.ultraThinMaterial)))
+          }
+        }
+      }
+      // Lò xo nảy nhẹ khi tách / dính; Giảm chuyển động: đổi ngay.
+      .animation(reduceMotion ? nil : .spring(duration: 0.5, bounce: 0.3), value: slow)
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel(stripLabel + Text(verbatim: ", ") + Text(slow ? "eg.demo3d.tempo.slow" : "eg.demo3d.tempo.normal"))
+      .accessibilityHint(Text("eg.demo3d.tempo.hint"))
+      .accessibilityAddTraits(.isButton)
+      .accessibilityAction { onToggleSpeed() }
     }
   }
 #endif
