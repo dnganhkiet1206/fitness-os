@@ -53,7 +53,7 @@ struct ModerationAppealsScreen: View {
         } else {
           ForEach(book.appeals) { item in
             Button { openTarget = ModTargetRef(type: item.type, id: item.targetId) } label: {
-              DSCard { ModAppealRow(item: item) }
+              DSCard { ModAppealRow(item: item, showStale: book.appealStatus == .open) }
             }
             .buttonStyle(.plain)
           }
@@ -74,6 +74,8 @@ struct ModerationAppealsScreen: View {
 /// số báo cáo và thời gian.
 struct ModAppealRow: View {
   let item: ModAppealItem
+  /// Chỉ hiện nhãn "chờ hơn 48 giờ" cho kháng nghị đang mở.
+  let showStale: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
@@ -108,6 +110,14 @@ struct ModAppealRow: View {
         Text(verbatim: ModQueueRow.countText(item.reports))
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        if showStale, ModStale.isStale(item.createdAt, now: Date()) {
+          Text("community.mod.queue.stale")
+            .font(DS.TextStyle.caption.weight(.semibold))
+            .foregroundStyle(DS.Color.readinessYellow.swiftUI)
+            .padding(.horizontal, DS.Spacing.sm)
+            .padding(.vertical, DS.Spacing.xs)
+            .background(DS.Color.readinessYellow.swiftUI.opacity(0.12), in: Capsule())
+        }
         Spacer(minLength: 0)
         if item.status == .open {
           Text("community.mod.appeals.open")
