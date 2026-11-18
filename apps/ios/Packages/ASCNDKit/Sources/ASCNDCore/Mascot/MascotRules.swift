@@ -4,8 +4,8 @@ import Foundation
 /// @ fac9ac2, chép từng con số. Golden: `mascot-golden.json`
 /// (`tools/insights-golden/gen-mascot.mjs`, sinh bằng CHÍNH mã RN).
 ///
-/// Quyền định giá nằm ở SERVER (`claim_quest_reward`, `buy_streak_freeze`,
-/// bảng `reward_prices` / `shop_prices`): app không bao giờ gửi số xu, không
+/// Quyền định giá nằm ở SERVER (`claim_quest_reward`, bảng `reward_prices` /
+/// `shop_prices`): app không bao giờ gửi số xu, không
 /// tự ghi sổ. Các con số ở đây chỉ để HIỆN và để tính XP / cấp từ sổ đã đọc
 /// — đúng như RN (`xpForRefKey`).
 public enum MascotRules {
@@ -86,8 +86,29 @@ public enum MascotRules {
     "ch:\(tier):\(weekStart):\(key)"
   }
 
-  /// `xpForRefKey`: XP của một dòng sổ, đọc từ chính `ref_key` của nó. Khoá
-  /// lạ (kể cả `welcome`, `buy:`, `freeze:`) không có XP.
+  /// `xpForRefKey`: XP của một dòng sổ, đọc từ chính `ref_key` của nó. BẢNG
+  /// DUY NHẤT của XP theo khoá — thêm không gian tên mới thì thêm luật và
+  /// test (`MascotXpTableTests`) ở đây, không thì nó lặng lẽ 0 XP.
+  ///
+  /// Xu và XP đi hai đường khác nhau (R2-ECO-06): xu do SERVER trả theo
+  /// `reward_prices` / `shop_prices`, XP do HÀM NÀY đọc từ `ref_key`. Đổi
+  /// giá xu không đổi XP; hàm không đọc `amount` — ví (`MascotWallet`) cộng
+  /// `xpCount * xpForRefKey` mỗi dòng. Các dòng dưới đây có xu nhưng 0 XP là
+  /// có chủ đích, không phải thiếu sót — đổi chúng là quyết định sản phẩm.
+  ///
+  /// | Khoá | XP | Nguồn số |
+  /// |---|---|---|
+  /// | `w:<id>` | 40 | `weeklyBonusXp` — thưởng tuần đường cũ, chỉ còn để định giá sổ cũ |
+  /// | `ch:<bậc>:<tuần>:<khoá>` | theo bậc | `challengeReward`: bronze 25, silver 50, gold 80, platinum 120. Chỉ đọc phần bậc; bậc lạ / thiếu bậc → 0. Thử thách tuần + Tuần của Koa (`ch:silver:…:koa_week` → 50) |
+  /// | `set:<id>` | theo bộ | `collectionXp`: gym 60, runner 90, tet / xmas / halloween 60. Bộ lạ → 0 |
+  /// | `d:YYYY-MM-DD:streak` | 15 | `streakXp` |
+  /// | `d:YYYY-MM-DD:<nhiệm vụ>` | theo nhiệm vụ | `dailyQuests`: workout 40, recovery 25, meal 10, water 8, sleep 8, steps 8. Ngày phải đúng dạng, chữ số ASCII; sai dạng → 0 |
+  /// | `d:YYYY-MM-DD:overload` | 0 | Tăng tải: +20 xu +3 Gains, không XP |
+  /// | `x:<việc>` | 0 | Khám phá app (`ExploreQuest`): chỉ xu, một lần |
+  /// | `cc:<id>` | 0 | Thử thách cộng đồng: server ghi thẳng vào sổ, chỉ xu. `cc:` không rơi vào nhánh `ch:` |
+  /// | `welcome` | 0 | Thưởng chào mừng: chỉ xu |
+  /// | `buy:<món>`, `freeze:<uuid>` | 0 | Dòng TRỪ xu khi mua; mua không cộng XP, tiêu xu không hạ cấp |
+  /// | Mọi khoá khác (kể cả `dev:`, rỗng) | 0 | So khớp phân biệt hoa thường (`D:` ≠ `d:`) |
   public static func xpForRefKey(_ refKey: String) -> Int {
     if refKey.hasPrefix("w:") { return weeklyBonusXp }
     if refKey.hasPrefix("ch:") {

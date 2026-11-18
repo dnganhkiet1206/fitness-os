@@ -1,0 +1,148 @@
+{
+  "id": "back_squat",
+  "title": "Barbell Back Squat",
+  "family_label": "squat",
+  "aliases": [
+    "squat",
+    "back squat",
+    "barbell back squat",
+    "barbell squat"
+  ],
+  "usdz": "back_squat_animation",
+  "loop": null,
+  "poster": "back_squat_poster",
+  "duration_s": 9.3,
+  "camera": {
+    "position": [
+      2.8566,
+      2.297,
+      2.7079
+    ],
+    "target": [
+      0.1091,
+      0.8827,
+      -0.0396
+    ]
+  },
+  "legend": [
+    {
+      "hex": "#E8552B",
+      "name_key": "eg.demo3d.legend.quadriceps",
+      "role_key": "eg.demo3d.legend.primary"
+    },
+    {
+      "hex": "#E8552B",
+      "name_key": "eg.demo3d.legend.gluteusMaximus",
+      "role_key": "eg.demo3d.legend.primary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.adductors",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.calves",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.erectorSpinae",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.hamstrings",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.rectusAbdominis",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.trapeziusUpper",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    }
+  ],
+  "roles": {
+    "primary": [
+      "quadriceps",
+      "gluteus_maximus"
+    ],
+    "secondary": [
+      "adductors",
+      "calves"
+    ],
+    "stabilizing": [
+      "erector_spinae",
+      "hamstrings",
+      "rectus_abdominis",
+      "trapezius_upper"
+    ]
+  },
+  "focus_prefix": "back_squat_focus",
+  "motion": "back_squat_motion",
+  "full_prefix": "back_squat_full",
+  "review": null,
+  "note": "Kiệt 16/11: vai/ngực/cơ thang phồng, tư thế chưa đúng. Làm lại theo 2 video (PureGym, Dave Watkeys) + Catalyst Athletics, Squat University: tay nắm ngoài vai 1 nắm tay, kép bả vai, khuỷu chĩa xuống, đòn trên cơ thang; nhân vật thêm xương phụ chia góc xoay cánh tay. QA 18/18. Chờ Kiệt xem lại",
+  "tips": [],
+  "tempo": {
+    "duration_ms": 9300,
+    "notation": "2-0.3-1.6-0.5",
+    "reps": 2,
+    "phases": [
+      {
+        "rep": 1,
+        "kind": "eccentric",
+        "start_ms": 600,
+        "end_ms": 2600,
+        "breath": "inhale"
+      },
+      {
+        "rep": 1,
+        "kind": "bottom_hold",
+        "start_ms": 2600,
+        "end_ms": 2900,
+        "breath": "hold"
+      },
+      {
+        "rep": 1,
+        "kind": "concentric",
+        "start_ms": 2900,
+        "end_ms": 4500,
+        "breath": "exhale"
+      },
+      {
+        "rep": 1,
+        "kind": "top_hold",
+        "start_ms": 4500,
+        "end_ms": 5000,
+        "breath": "hold"
+      },
+      {
+        "rep": 2,
+        "kind": "eccentric",
+        "start_ms": 5000,
+        "end_ms": 7000,
+        "breath": "inhale"
+      },
+      {
+        "rep": 2,
+        "kind": "bottom_hold",
+        "start_ms": 7000,
+        "end_ms": 7300,
+        "breath": "hold"
+      },
+      {
+        "rep": 2,
+        "kind": "concentric",
+        "start_ms": 7300,
+        "end_ms": 8900,
+        "breath": "exhale"
+      }
+    ]
+  },
+  "mistakes": []
+}

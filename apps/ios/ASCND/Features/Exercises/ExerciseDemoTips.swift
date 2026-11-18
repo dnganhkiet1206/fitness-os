@@ -1,66 +1,68 @@
 #if DEBUG
   import ASCNDDesignSystem
   import SwiftUI
+  import RealityKit
   import simd
 
-  /// Mẹo kỹ thuật trong trình xem 3D (Kiệt 13/11): nút "Mẹo" ở góc phải bật
-  /// các ô chữ, mỗi ô có đường chỉ tới đúng vùng cơ thể trên mô hình. Điểm
-  /// neo là toạ độ 3D (hệ Y-up của USDZ) ở vùng không chuyển động trong lần
-  /// đẩy; mỗi khung hình được chiếu lại theo máy quay hiện tại, nên quay
-  /// hướng nào đường chỉ cũng bám đúng chỗ. Ô chữ dạt về mép màn gần điểm neo.
-  /// Nội dung lấy từ các cue của `bench-press/exercise.json`; chuyển động vẫn
-  /// UNVERIFIED nên mẹo cũng chỉ ở bản Debug.
+  /// Mẹo kỹ thuật trong trình xem 3D (Kiệt 13/11): nút "Mẹo" ở góc phải bật các chấm có số trên
+  /// đúng vùng cơ thể; chạm một chấm để đọc mẹo (từ 17/11, trước đó là ô chữ + đường chỉ).
+  /// Từ 17/11 (B1) mẹo là dữ liệu: `app_demo.tips` trong `exercise.json` →
+  /// `<bài>_demo.json` (`pipeline/export_app_demos.py`); chữ vẫn trong
+  /// Localizable.xcstrings (`eg.demo3d.tip.<id>*`). Điểm neo bám theo một khớp
+  /// (`joint` + `offset`, `pipeline/tip_anchors.py`) nên đường chỉ đi theo người
+  /// khi động tác chạy; không có khớp = điểm cố định (dụng cụ đứng yên).
+  /// Chuyển động vẫn UNVERIFIED nên mẹo cũng chỉ ở bản Debug.
   struct ExerciseTip: Identifiable {
     let id: String
-    let titleKey: String
-    let bodyKey: String
+    var titleKey: String { "eg.demo3d.tip.\(id)" }
+    var bodyKey: String { "eg.demo3d.tip.\(id).body" }
     /// Chi tiết khi chạm nhãn: các bước, lý do, lỗi cần tránh (khoá i18n).
     var howKeys: [String] { ["eg.demo3d.tip.\(id).how1", "eg.demo3d.tip.\(id).how2"] }
     var whyKey: String { "eg.demo3d.tip.\(id).why" }
     var avoidKey: String { "eg.demo3d.tip.\(id).avoid" }
-    /// Điểm trên bề mặt cơ thể, mét, hệ Y-up (khớp `bench_press_animation.usdz`).
+    /// Điểm trên bề mặt cơ thể ở khung đầu, mét, hệ Y-up.
     let anchor: SIMD3<Float>
+    /// Khớp mà điểm neo đi theo (tên đầy đủ trong khung xương USD) + độ lệch tới da.
+    var joint: String?
+    var offset: SIMD3<Float>?
   }
 
-  enum ExerciseTips {
-    /// Toạ độ đo từ khớp xương của tư thế nằm ghế
-    /// (`bench-press/motion_metadata.json` / bản lấy mẫu kiểm định), đẩy ra
-    /// bề mặt da: vai trái, bụng, điểm thanh chạm ngực, bàn chân trái.
-    static let benchPress: [ExerciseTip] = [
-      ExerciseTip(id: "shoulders", titleKey: "eg.demo3d.tip.shoulders", bodyKey: "eg.demo3d.tip.shoulders.body",
-                  anchor: [0.24, 0.62, -0.10]),
-      ExerciseTip(id: "core", titleKey: "eg.demo3d.tip.core", bodyKey: "eg.demo3d.tip.core.body",
-                  anchor: [0.0, 0.66, 0.27]),
-      ExerciseTip(id: "chest", titleKey: "eg.demo3d.tip.chest", bodyKey: "eg.demo3d.tip.chest.body",
-                  anchor: [0.0, 0.69, 0.03]),
-      ExerciseTip(id: "feet", titleKey: "eg.demo3d.tip.feet", bodyKey: "eg.demo3d.tip.feet.body",
-                  anchor: [0.30, 0.04, 0.80]),
-    ]
+  /// Vị trí khớp của nhân vật đang chạy (mỗi khung), để điểm neo mẹo đi theo cơ thể.
+  @MainActor final class TipAnchors {
+    weak var body: ModelEntity?
+    private var parents: [Int?] = []
+    private var lookup: [String: Int] = [:]
 
-    /// Dumbbell Shoulder Press (Kiệt duyệt động tác 15/11). Nội dung từ các
-    /// video và trang đã đối chiếu (`dumbbell-shoulder-press/exercise.json`,
-    /// `motion_provenance`). Điểm neo đo từ xương ở khung 0 của
-    /// `dumbbell_shoulder_press_master.blend`, đổi sang Y-up (x, z, -y), đẩy
-    /// ra bề mặt: mép trên đệm lưng sau đầu, đỉnh vai trái, mặt trước vai phải,
-    /// cằm, bụng. Chỉ chọn vùng không di chuyển khi đẩy và không bị bảng cơ
-    /// che (bàn chân nằm dưới bảng cơ nên mẹo chân gộp vào mẹo bụng).
-    static let shoulderPress: [ExerciseTip] = [
-      ExerciseTip(id: "press_bench", titleKey: "eg.demo3d.tip.press_bench", bodyKey: "eg.demo3d.tip.press_bench.body",
-                  anchor: [0.12, 1.20, -0.38]),
-      ExerciseTip(id: "press_shoulders", titleKey: "eg.demo3d.tip.press_shoulders", bodyKey: "eg.demo3d.tip.press_shoulders.body",
-                  anchor: [0.14, 1.07, -0.12]),
-      ExerciseTip(id: "press_elbows", titleKey: "eg.demo3d.tip.press_elbows", bodyKey: "eg.demo3d.tip.press_elbows.body",
-                  anchor: [-0.21, 0.98, -0.04]),
-      ExerciseTip(id: "press_depth", titleKey: "eg.demo3d.tip.press_depth", bodyKey: "eg.demo3d.tip.press_depth.body",
-                  anchor: [0.0, 1.12, -0.05]),
-      ExerciseTip(id: "press_core", titleKey: "eg.demo3d.tip.press_core", bodyKey: "eg.demo3d.tip.press_core.body",
-                  anchor: [0.0, 0.70, 0.10]),
-    ]
+    func attach(_ body: ModelEntity) {
+      self.body = body
+      let names = body.jointNames
+      var index: [String: Int] = [:]
+      for (i, n) in names.enumerated() { index[n] = i }
+      parents = names.map { n in
+        guard let slash = n.lastIndex(of: "/") else { return nil }
+        return index[String(n[..<slash])]
+      }
+      lookup = index
+      for (i, n) in names.enumerated() where lookup[String(n.split(separator: "/").last ?? "")] == nil {
+        lookup[String(n.split(separator: "/").last ?? "")] = i
+      }
+    }
 
-    static func tips(for exerciseKey: String) -> [ExerciseTip] {
-      if ["bench press", "barbell bench press", "barbell bench press - medium grip"].contains(exerciseKey) { return benchPress }
-      if ["dumbbell shoulder press", "seated dumbbell shoulder press", "seated dumbbell press"].contains(exerciseKey) { return shoulderPress }
-      return []
+    /// Điểm neo hiện tại: khớp (đang chuyển động) + độ lệch; không có khớp thì điểm cố định.
+    func position(of tip: ExerciseTip) -> SIMD3<Float> {
+      guard let body, let joint = tip.joint, let offset = tip.offset,
+        let i = lookup[joint] ?? lookup[String(joint.split(separator: "/").last ?? "")]
+      else { return tip.anchor }
+      let local = body.jointTransforms
+      guard i < local.count else { return tip.anchor }
+      var m = matrix_identity_float4x4
+      var j: Int? = i
+      while let k = j, k < local.count {
+        m = local[k].matrix * m
+        j = k < parents.count ? parents[k] : nil
+      }
+      let world = body.transformMatrix(relativeTo: nil) * m
+      return SIMD3(world.columns.3.x, world.columns.3.y, world.columns.3.z) + offset
     }
   }
 
@@ -87,155 +89,114 @@
     }
   }
 
-  /// Nhãn + đường chỉ của mọi mẹo, vẽ trên cả màn hình. Nhãn (số + tên) xếp
-  /// hai hàng ở vùng phía trên mô hình, trượt ngang theo điểm neo khi máy
-  /// quay xoay, nên đường chỉ thả xuống luôn ngắn gọn và rõ. Chạm nhãn để
-  /// xem câu giải thích.
+  /// Chấm có số trên người, mỗi mẹo một chấm (Kiệt 17/11: "mỗi chấm đánh 1 số rồi người dùng
+  /// nhấn vào là mẹo hiện lên"). Không còn nhãn chữ và dây nối trên mô hình: chạm chấm thì thẻ
+  /// chi tiết (`ExerciseTipDetail`) hiện ở đáy màn, chấm đó sáng lên, các chấm khác mờ đi.
+  /// Chấm đi theo khớp khi động tác chạy. Hai chấm quá gần nhau được đẩy nhẹ ra để không chồng.
   struct ExerciseTipsOverlay: View {
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     let tips: [ExerciseTip]
     let camera: PinholeCamera
-    /// Mép trên của hàng nhãn đầu (dưới nút đóng / nút mẹo).
+    /// Vị trí 3D hiện tại của điểm neo (đi theo khớp khi động tác chạy).
+    var anchorOf: (ExerciseTip) -> SIMD3<Float> = { $0.anchor }
+    /// Mép trên vùng đặt chấm (dưới nút đóng / nút mẹo).
     let topLimit: CGFloat
     @Binding var selected: String?
 
-    private let pillHeight: CGFloat = 34
-    private let rowGap: CGFloat = 10
-    private let margin: CGFloat = 12
+    private let dot: CGFloat = 28
+    /// Chừa ở đáy cho thẻ nhóm cơ / dòng hướng dẫn (thẻ mẹo cao hơn che thêm, nhưng lúc đó máy
+    /// quay đã bay tới chấm đang xem).
+    var bottomReserve: CGFloat = 130
     private let accent = Color(red: 0.91, green: 0.33, blue: 0.17)
 
     private struct Placed: Identifiable {
       let tip: ExerciseTip
       let number: Int
-      let anchor: CGPoint
-      var x: CGFloat
-      var row: Int
-      let width: CGFloat
+      var point: CGPoint
       var id: String { tip.id }
     }
 
-    /// Bề rộng ước lượng của nhãn (số + tên một dòng).
-    private func width(_ tip: ExerciseTip) -> CGFloat {
-      let title = String(localized: String.LocalizationValue(tip.titleKey))
-      return min(190, CGFloat(title.count) * 7.4 + 44)
-    }
-
-    /// Dàn các nhãn của một hàng: gần điểm neo nhất có thể, không chồng
-    /// nhau, không ra khỏi màn. `nil` khi hàng không đủ chỗ.
-    private func resolve(_ row: [Placed], desired: [String: CGFloat]) -> [Placed]? {
-      let w = camera.size.width
-      let gap: CGFloat = 8
-      let total = row.reduce(0) { $0 + $1.width } + gap * CGFloat(max(row.count - 1, 0))
-      guard total <= w - 2 * margin else { return nil }
-      var r = row.sorted { desired[$0.id]! < desired[$1.id]! }
-      for i in r.indices { r[i].x = desired[r[i].id]! }
-      var left = margin
-      for i in r.indices {
-        r[i].x = max(r[i].x, left + r[i].width / 2)
-        left = r[i].x + r[i].width / 2 + gap
-      }
-      var limit = w - margin
-      for i in r.indices.reversed() {
-        r[i].x = min(r[i].x, limit - r[i].width / 2)
-        limit = r[i].x - r[i].width / 2 - gap
-      }
-      return r
-    }
-
+    /// Chiếu điểm neo ra màn hình rồi đẩy các chấm chồng nhau ra xa (vài vòng thả lỏng).
     private func layout() -> [Placed] {
-      let w = camera.size.width
-      let projected: [Placed] = tips.enumerated().compactMap { n, tip in
-        guard let a = camera.project(tip.anchor) else { return nil }
-        let pw = width(tip)
-        return Placed(tip: tip, number: n + 1, anchor: a, x: min(max(a.x, margin + pw / 2), w - margin - pw / 2), row: 0, width: pw)
+      var items: [Placed] = tips.enumerated().compactMap { n, tip in
+        guard let a = camera.project(anchorOf(tip)) else { return nil }
+        return Placed(tip: tip, number: n + 1, point: a)
       }
-      let desired = Dictionary(uniqueKeysWithValues: projected.map { ($0.id, $0.x) })
-      // Mỗi nhãn vào hàng đầu tiên còn chỗ, ở đó ít bị dời khỏi điểm neo
-      // nhất; không hàng nào đủ thì mở hàng mới. Kết quả: không bao giờ
-      // chồng nhau, dù máy quay xoay hướng nào.
-      var rows: [[Placed]] = []
-      for item in projected.sorted(by: { $0.anchor.x < $1.anchor.x }) {
-        var best: (row: Int, placed: [Placed], cost: CGFloat)?
-        for r in rows.indices {
-          guard let placed = resolve(rows[r] + [item], desired: desired) else { continue }
-          let cost = placed.reduce(0) { $0 + abs($1.x - desired[$1.id]!) }
-            - rows[r].reduce(0) { $0 + abs($1.x - desired[$1.id]!) }
-          if best == nil || cost < best!.cost - 0.5 { best = (r, placed, cost) }
-          if cost < 1 { break }
-        }
-        if let best, best.cost < w * 0.35 {
-          rows[best.row] = best.placed
-        } else {
-          rows.append(resolve([item], desired: desired) ?? [item])
-        }
+      // Vùng chấm được nằm: dưới thanh nút, trên thẻ đáy (Devin #949: khi phóng to chấm có thể
+      // rơi ra ngoài màn, không chạm được). Chấm ngoài vùng bị kẹp vào mép, chạm vẫn bay tới.
+      let r = dot / 2 + 4
+      let minY = topLimit + r
+      let maxY = max(minY, camera.size.height - bottomReserve - r)
+      func clamp(_ p: inout CGPoint) {
+        p.x = min(max(p.x, r), camera.size.width - r)
+        p.y = min(max(p.y, minY), maxY)
       }
-      return rows.enumerated().flatMap { r, row in row.map { var p = $0; p.row = r; return p } }
-    }
-
-    private func pillCenterY(_ row: Int) -> CGFloat {
-      topLimit + pillHeight / 2 + CGFloat(row) * (pillHeight + rowGap)
+      for i in items.indices { clamp(&items[i].point) }
+      // Tách chấm gần nhau, kẹp ngay trong mỗi vòng (Devin #949: kẹp sau cùng làm hai chấm sát mép
+      // chồng lại).
+      let gap = dot + 4
+      for _ in 0..<10 {
+        for i in items.indices {
+          for j in items.indices where j > i {
+            let dx = items[j].point.x - items[i].point.x
+            let dy = items[j].point.y - items[i].point.y
+            let d = max(hypot(dx, dy), 0.01)
+            guard d < gap else { continue }
+            let push = (gap - d) / 2
+            let ux = d < 0.1 ? 1 : dx / d
+            let uy = d < 0.1 ? 0 : dy / d
+            items[i].point.x -= ux * push
+            items[i].point.y -= uy * push
+            items[j].point.x += ux * push
+            items[j].point.y += uy * push
+          }
+        }
+        for i in items.indices { clamp(&items[i].point) }
+      }
+      return items
     }
 
     var body: some View {
-      let items = layout()
       ZStack(alignment: .topLeading) {
-        Canvas { ctx, _ in
-          for p in items {
-            let from = CGPoint(x: p.x, y: pillCenterY(p.row) + pillHeight / 2)
-            var path = Path()
-            path.move(to: from)
-            path.addLine(to: p.anchor)
-            let on = selected == nil || selected == p.id
-            ctx.stroke(path, with: .color(.black.opacity(on ? 0.35 : 0.15)), style: StrokeStyle(lineWidth: 4, lineCap: .round))
-            ctx.stroke(path, with: .color(.white.opacity(on ? 1 : 0.25)), style: StrokeStyle(lineWidth: on && selected != nil ? 2.4 : 1.8, lineCap: .round, dash: [5, 4]))
-            let ring = CGRect(x: p.anchor.x - 11, y: p.anchor.y - 11, width: 22, height: 22)
-            ctx.fill(Path(ellipseIn: ring), with: .color(accent.opacity(on ? 0.35 : 0.15)))
-            let dot = CGRect(x: p.anchor.x - 5, y: p.anchor.y - 5, width: 10, height: 10)
-            ctx.fill(Path(ellipseIn: dot), with: .color(.white))
-            ctx.stroke(Path(ellipseIn: dot), with: .color(accent), lineWidth: 2.5)
-          }
-        }
-        .allowsHitTesting(false)
-        ForEach(items) { p in
-          pill(p)
-            .position(x: p.x, y: pillCenterY(p.row))
+        ForEach(layout()) { p in
+          badge(p).position(p.point)
         }
       }
       .frame(width: camera.size.width, height: camera.size.height)
     }
 
-    private func pill(_ p: Placed) -> some View {
+    private func badge(_ p: Placed) -> some View {
       let on = selected == p.id
       let dimmed = selected != nil && !on
       return Button {
-        withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) { selected = on ? nil : p.id }
+        withAnimation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.86)) { selected = on ? nil : p.id }
       } label: {
-        HStack(spacing: 6) {
-          Text(verbatim: "\(p.number)")
-            .font(DS.TextStyle.caption.weight(.bold))
-            .foregroundStyle(.white)
-            .frame(width: 20, height: 20)
-            .background(Circle().fill(accent))
-          Text(LocalizedStringKey(p.tip.titleKey))
-            .font(DS.TextStyle.footnote.weight(.semibold))
-            .foregroundStyle(on ? Color.white : DS.Color.foreground.swiftUI)
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
-        }
-        .padding(.leading, 7)
-        .padding(.trailing, 12)
-        .frame(height: pillHeight)
-        .background {
-          Capsule().fill(on ? AnyShapeStyle(accent) : AnyShapeStyle(.ultraThinMaterial))
-        }
-        .overlay(Capsule().strokeBorder(.white.opacity(0.22)))
-        .shadow(color: .black.opacity(0.2), radius: 6, y: 2)
-        // Một nhãn đang chọn: các nhãn khác mờ đi (vẫn chạm được để đổi).
-        .opacity(dimmed ? 0.35 : 1)
-        .scaleEffect(on ? 1.04 : 1)
+        Text(verbatim: "\(p.number)")
+          .font(DS.TextStyle.footnote.weight(.bold))
+          .monospacedDigit()
+          .foregroundStyle(.white)
+          .frame(width: dot, height: dot)
+          .background(Circle().fill(accent))
+          .overlay(Circle().strokeBorder(.white, lineWidth: on ? 2.5 : 1.5))
+          .background(Circle().fill(accent.opacity(on ? 0.35 : 0.22)).padding(on ? -9 : -5))
+          .shadow(color: .black.opacity(0.35), radius: 4, y: 1)
+          .scaleEffect(on ? 1.15 : 1)
+          .opacity(dimmed ? 0.45 : 1)
+          // Vùng chạm 44 pt quanh chấm 28 pt.
+          .frame(width: 44, height: 44)
+          .contentShape(Circle())
       }
       .buttonStyle(.plain)
+      .accessibilityLabel(Text(LocalizedStringKey(p.tip.titleKey)))
       .accessibilityHint(Text(LocalizedStringKey(p.tip.bodyKey)))
+      .accessibilityAddTraits(on ? .isSelected : [])
+    }
+  }
+
+  private struct CardIf: ViewModifier {
+    let on: Bool
+    func body(content: Content) -> some View {
+      if on { content.todayCard() } else { content }
     }
   }
 
@@ -244,6 +205,8 @@
   struct ExerciseTipDetail: View {
     let tip: ExerciseTip
     let number: Int
+    /// false: không tự vẽ thẻ (nằm trong vỏ co giãn của trình xem).
+    var framed = true
     var onClose: () -> Void
 
     private let accent = Color(red: 0.91, green: 0.33, blue: 0.17)
@@ -301,7 +264,7 @@
       }
       .padding(DS.Spacing.md)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .todayCard()
+      .modifier(CardIf(on: framed))
       .accessibilityElement(children: .contain)
     }
 

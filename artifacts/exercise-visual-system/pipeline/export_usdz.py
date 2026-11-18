@@ -26,7 +26,7 @@ from pathlib import Path
 
 import bpy
 import numpy as np
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -274,6 +274,105 @@ def to_jpeg(out_dir: Path, prefix: str) -> None:
         print("[evs] split: ImageMagick not found, skin textures stay PNG (older JPEGs removed)")
 
 
+def geometry_hash(root) -> str:
+    """Hash of an implement model: every part's vertices and faces, and each
+    child's placement RELATIVE TO THE ROOT (moving a plate on the bar changes
+    the model; moving or animating the whole bar does not). PR #914 review."""
+    import hashlib
+    h = hashlib.md5()
+    inv = root.matrix_world.inverted()
+    parts = [root, *sorted((c for c in root.children_recursive if c.type == "MESH"), key=lambda o: o.name)]
+    for o in parts:
+        # +0.0 so -0.0 hashes like 0.0
+        h.update((np.round(np.array([v.co[:] for v in o.data.vertices]), 4) + 0.0).tobytes())
+        # The SET of faces, not their storage order: the same dumbbell is stored with its faces in a
+        # different order in different scenes (17/11, re-export of #914: one 12 kg dumbbell gave five
+        # hashes). Each face starts at its lowest vertex index (winding kept), then faces are sorted.
+        def canon(vs):
+            vs = list(vs)
+            k = vs.index(min(vs))
+            return tuple(vs[k:] + vs[:k])
+        faces = sorted(canon(p.vertices) for p in o.data.polygons)
+        h.update(np.array([i for f in faces for i in (*f, -1)], dtype=np.int64).tobytes())
+        if o is not root:
+            # 1 mm / 0.001 rad grid, and +0.0 so -0.0 hashes like 0.0.
+            h.update((np.round(np.array(inv @ o.matrix_world), 3) + 0.0).tobytes())
+    return h.hexdigest()[:6]
+
+
+def equipment_key(root) -> str:
+    """Stable name of an implement model: type + mass when the scene gives a
+    mass (dumbbell_12kg, barbell_60kg with its plates), else type + a short
+    hash of the geometry (bench parts differ per exercise)."""
+    kind = str(root.get("evs_equipment"))
+    mass = root.get("evs_total_mass_kg")
+    if mass:
+        return f"{kind}_{int(round(float(mass)))}kg"
+    return f"{kind}_{geometry_hash(root)}"
+
+
+def split_equipment(scene, equipment: list, eq_dir: Path, out_dir: Path, prefix: str) -> None:
+    """Each implement (a top-level equipment object with its equipment
+    children, e.g. the bar and its plates) is written ONCE as
+    ``equipment_<key>.usdz``: the model at the origin, no animation, its root
+    object named ``EQ_<key>``. In the scene the implement keeps its animated
+    transform but its meshes become a 1 mm triangle: that is the socket the
+    app fills with the model (``<prefix>_equipment.json`` maps socket names to
+    keys). Changing a model = rewriting one equipment file."""
+    import json as _json
+    eq_dir.mkdir(parents=True, exist_ok=True)
+    roots = [o for o in equipment if not (o.parent and o.parent.get("evs_equipment"))]
+    sockets = []
+    # One model per key across all exercises: a second, different geometry
+    # under the same key is an error, not a silent overwrite.
+    reg_path = eq_dir / "equipment_registry.json"
+    registry = _json.loads(reg_path.read_text()) if reg_path.exists() else {}
+    for root in roots:
+        key = equipment_key(root)
+        geo = geometry_hash(root)
+        if registry.get(key, geo) != geo:
+            raise ValueError(f"equipment key {key!r} already holds geometry {registry[key]}, this scene has {geo}: "
+                             "give the new model its own mass / type, or update every exercise together")
+        registry[key] = geo
+        target = eq_dir / f"equipment_{key}.usdz"
+        parts = [root, *[c for c in root.children_recursive if c.type == "MESH"]]
+        # Model copy at the origin: root identity, children keep their local placement.
+        copies = {}
+        coll = bpy.data.collections.new(f"EQ_{key}")
+        scene.collection.children.link(coll)
+        for o in parts:
+            c = o.copy()
+            c.data = o.data.copy()
+            c.animation_data_clear()
+            c.constraints.clear()
+            coll.objects.link(c)
+            copies[o] = c
+        for o, c in copies.items():
+            if o is root:
+                c.parent = None
+                c.matrix_world = Matrix.Identity(4)
+                c.name = f"EQ_{key}"
+            else:
+                c.parent = copies[o.parent]
+                c.matrix_parent_inverse = o.matrix_parent_inverse.copy()
+                c.matrix_basis = o.matrix_basis.copy()
+        bpy.context.view_layer.update()
+        select(list(copies.values()))
+        bpy.ops.wm.usd_export(filepath=str(target), export_animation=False, **USD_EXPORT)
+        for c in copies.values():
+            bpy.data.objects.remove(c, do_unlink=True)
+        bpy.data.collections.remove(coll)
+        # The scene keeps only the socket: same name, same animation, no model.
+        for o in parts:
+            tri = bpy.data.meshes.new(f"{o.name}_socket")
+            tri.from_pydata([(0.0, 0.0, 0.0), (0.001, 0.0, 0.0), (0.0, 0.001, 0.0)], [], [(0, 1, 2)])
+            o.data = tri
+        sockets.append({"socket": root.name, "key": key})
+        print(f"[evs] split: equipment {root.name} -> {target.name} {target.stat().st_size} bytes")
+    reg_path.write_text(_json.dumps(registry, indent=2, sort_keys=True) + "\n")
+    (out_dir / f"{prefix}_equipment.json").write_text(_json.dumps({"sockets": sockets}, indent=2) + "\n")
+
+
 def export_split(args, scene, rig, body, shorts, out_dir: Path, prefix: str, tmp: list) -> None:
     """Modular export (MODULAR_3D_PLAN.md, Kiệt 16/11): fix the character
     once and every exercise follows, no re-render.
@@ -297,11 +396,24 @@ def export_split(args, scene, rig, body, shorts, out_dir: Path, prefix: str, tmp
         if p.exists():
             (out_dir / f"{prefix}_{dst}.png").write_bytes(p.read_bytes())
     equipment = [o for o in scene.objects if o.type == "MESH" and o.get("evs_equipment")]
+    if args.equipment_out:
+        split_equipment(scene, equipment, Path(args.equipment_out), out_dir, prefix)
+    else:
+        # Equipment stays inside the motion file: an older socket manifest
+        # would make the app mount a second copy (PR #914 review).
+        (out_dir / f"{prefix}_equipment.json").unlink(missing_ok=True)
     if args.character_out:
         scene.frame_set(scene.frame_start)
-        select([rig, body, shorts])
+        # With --apparel-out the body ships alone and the shorts get their
+        # own file (same rig, so the same animation drives both).
+        select([rig, body] if args.apparel_out else [rig, body, shorts])
         bpy.ops.wm.usd_export(filepath=str(args.character_out), export_animation=False, **USD_EXPORT)
         print(f"[evs] split: character {args.character_out} {Path(args.character_out).stat().st_size} bytes")
+    if args.apparel_out:
+        scene.frame_set(scene.frame_start)
+        select([rig, shorts])
+        bpy.ops.wm.usd_export(filepath=str(args.apparel_out), export_animation=False, **USD_EXPORT)
+        print(f"[evs] split: apparel {args.apparel_out} {Path(args.apparel_out).stat().st_size} bytes")
     me = bpy.data.meshes.new("EVS_MotionProxy")
     me.from_pydata([(0.0, 0.0, 0.9), (0.001, 0.0, 0.9), (0.0, 0.001, 0.9)], [], [(0, 1, 2)])
     proxy = bpy.data.objects.new("EVS_MotionProxy", me)
@@ -329,6 +441,12 @@ def main(exercise_name: str | None = None) -> None:
     parser.add_argument("--split", action="store_true",
                         help="modular export (MODULAR_3D_PLAN.md): <prefix>_motion.usdz (skeleton + equipment + animation, "
                              "no body) and the skin textures as PNG; the app plays it on the shared character")
+    parser.add_argument("--equipment-out", default=None,
+                        help="with --split: write each implement once as equipment_<key>.usdz here and leave only "
+                             "its animated socket in the motion file (Kiệt 16/11: change a dumbbell once for all)")
+    parser.add_argument("--apparel-out", default=None,
+                        help="with --split: write the shorts alone (rig + shorts, rest pose) to this path; the shared "
+                             "character then has no shorts (Kiệt 16/11: outfits change without touching the body)")
     parser.add_argument("--character-out", default=None,
                         help="with --split: also write the shared character (rest pose, no animation) to this path")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:])

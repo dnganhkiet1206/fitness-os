@@ -199,7 +199,6 @@ struct MascotShopBookTests {
       source.entries.append(LedgerRow(amount: amount, refKey: refKey))
       return amount
     }
-    func buyStreakFreeze(requestId: UUID) async throws -> Int { 0 }
   }
 
   static func make(coins: Int, xp: Int = 0) -> (MascotShopBook, Source, Wardrobe, Economy) {

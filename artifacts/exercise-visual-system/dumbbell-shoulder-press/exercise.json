@@ -351,5 +351,97 @@
     "motion": "approved",
     "by": "Kiệt",
     "date": "2026-11-15"
+  },
+  "app_demo": {
+    "title": "Dumbbell Shoulder Press",
+    "family_label": "press_vertical (ngồi)",
+    "note": "Kiệt duyệt động tác 15/11. Bấm nút Mẹo (bóng đèn) trong trình xem để xem 5 mẹo kỹ thuật",
+    "review": {
+      "date": "16/11",
+      "checked": [
+        "QA tự động 19/19: xương, tay bám dụng cụ, chân không trượt, dụng cụ không xuyên da, dáng toàn thân, khớp nhịp tempo.json",
+        "Tờ soi xoay vòng 8 góc × 3 khung (đầu, giữa, cuối pha)",
+        "Tờ soi tầm mắt người đứng nhìn (1,6 m) 5 góc: ghế 70°, lưng và đầu tựa đệm, vai hạ, khuỷu dưới cổ tay ~35° ra trước, hạ tới ngang cằm, đẩy thẳng lên, hai tạ không chạm",
+        "Mở trong trình xem 3D của app (simulator iPhone 17), chú thích cơ đúng",
+        "Render lại 16/11 trên nhân vật 3.3: bản đồ cơ 48 phần, thớ cơ theo từng phần, tô 3 cấp Chính / Phụ / Ổn định (vai trò theo ExRx)",
+        "Đối chiếu 3 video YouTube người thật + ACE, Muscle & Strength, ExRx",
+        "Kiệt duyệt động tác 15/11",
+        "Mẹo: 5 ô (ghế, vai, khuỷu, độ sâu, bụng)"
+      ],
+      "remaining": []
+    },
+    "aliases": [
+      "dumbbell shoulder press",
+      "seated dumbbell shoulder press",
+      "seated dumbbell press"
+    ],
+    "catalog_order": 7,
+    "tips": [
+      {
+        "id": "press_bench",
+        "anchor": [
+          0.12,
+          1.2,
+          -0.38
+        ],
+        "fixed": true
+      },
+      {
+        "id": "press_shoulders",
+        "anchor": [
+          0.14,
+          1.07,
+          -0.12
+        ],
+        "joint": "Root/pelvis/spine_01/spine_02/spine_03/clavicle_l/scapula_l",
+        "offset": [
+          0.0165,
+          0.0423,
+          0.0008
+        ]
+      },
+      {
+        "id": "press_elbows",
+        "anchor": [
+          -0.21,
+          0.98,
+          -0.04
+        ],
+        "joint": "Root/pelvis/spine_01/spine_02/spine_03/clavicle_r/upperarm_swing_r",
+        "offset": [
+          0.0016,
+          0.0031,
+          0.069
+        ]
+      },
+      {
+        "id": "press_depth",
+        "anchor": [
+          0.0,
+          1.12,
+          -0.05
+        ],
+        "joint": "Root/pelvis/spine_01/spine_02/spine_03/neck_01",
+        "offset": [
+          0.0,
+          0.03,
+          0.1048
+        ]
+      },
+      {
+        "id": "press_core",
+        "anchor": [
+          0.0,
+          0.7,
+          0.1
+        ],
+        "joint": "Root/pelvis/spine_01/spine_02",
+        "offset": [
+          0.0,
+          0.0121,
+          0.1524
+        ]
+      }
+    ]
   }
 }

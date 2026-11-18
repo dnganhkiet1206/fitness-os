@@ -37,6 +37,11 @@ public enum RecordLine {
 
   /// `recordLine`: tạ qua `String(Math.round(displayWeight(v) * 10) / 10)`
   /// (`WeightUnit.text`), số lần qua `String(n)`.
+  ///
+  /// Số ở đây CỐ Ý không theo locale (luôn "."): `Parts` là hợp đồng chung
+  /// của mọi chỗ vẽ, và test chuẩn khoá đúng dạng này. Dấu thập phân của
+  /// ngôn ngữ app được đổi Ở CHỖ VẼ (`RecordCelebrationView.decimals`,
+  /// chi tiết buổi qua `localizedLoad`) — không đổi ở đây.
   public static func parts(_ r: PersonalRecord, unit: WeightUnit) -> Parts {
     let f = form(r)
     switch f {

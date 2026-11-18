@@ -174,6 +174,17 @@ targets:
         inputFiles:
           - "${SRCROOT}/tools/sentry-upload-dsyms.sh"
           - "${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}"
+      - name: Check telemetry keys (Release)
+        # Thiếu khoá thì chỉ cảnh báo, không hỏng build — đo lường tắt hẳn
+        # một cách lặng lẽ là lý do audit R2 thấy "zero error reporting".
+        # Debug thoát ngay như phase dSYM: hộp cát của Debug không cho đọc
+        # file script.
+        script: |
+          [ "$CONFIGURATION" = "Release" ] || exit 0
+          "${SRCROOT}/tools/check-telemetry-keys.sh"
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - "${SRCROOT}/tools/check-telemetry-keys.sh"
 
   # Widget extension: Live Activity / Dynamic Island của quãng nghỉ (#227) và
   # hai widget màn hình chính (#66).

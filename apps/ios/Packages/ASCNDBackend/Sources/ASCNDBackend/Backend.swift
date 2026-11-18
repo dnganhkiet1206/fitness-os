@@ -10,6 +10,9 @@ public import Supabase
 public final class Backend: Sendable {
   public let config: BackendConfig
   public let client: SupabaseClient
+  /// Lượt đọc `workout_sessions` chung của ba nguồn (R2-OPS-08) — một backend
+  /// một bộ đọc, ba nguồn tự chia sẻ.
+  let sharedSessions: SharedWorkoutSessions
   /// `URLSession` riêng của client (nil ở chế độ UI test — người gọi tự lo session).
   private let session: URLSession?
 
@@ -17,7 +20,7 @@ public final class Backend: Sendable {
     self.config = config
     let session = StallRecovery.makeSession()
     self.session = session
-    self.client = SupabaseClient(
+    let client = SupabaseClient(
       supabaseURL: config.url,
       supabaseKey: config.anonKey,
       options: SupabaseClientOptions(
@@ -30,6 +33,8 @@ public final class Backend: Sendable {
         global: SupabaseClientOptions.GlobalOptions(session: session)
       )
     )
+    self.client = client
+    self.sharedSessions = SharedWorkoutSessions.supabase(client: client)
   }
 
   /// Bỏ các kết nối đang mở — lượt gọi sau mở kết nối MỚI. Gọi khi app quay lại
@@ -45,7 +50,7 @@ public final class Backend: Sendable {
   public init(config: BackendConfig, session: URLSession) {
     self.config = config
     self.session = nil
-    self.client = SupabaseClient(
+    let client = SupabaseClient(
       supabaseURL: config.url,
       supabaseKey: config.anonKey,
       options: SupabaseClientOptions(
@@ -54,6 +59,8 @@ public final class Backend: Sendable {
         global: SupabaseClientOptions.GlobalOptions(session: session)
       )
     )
+    self.client = client
+    self.sharedSessions = SharedWorkoutSessions.supabase(client: client)
   }
 }
 

@@ -362,29 +362,42 @@ public enum MealLog {
   }
 
   /// Bản ghi outbox `meal` — cùng hình `OfflineWrite` của RN, phẳng thành một
-  /// hàng `meal_entries` (+ `items`). Id bữa và id món sinh lúc chạm.
+  /// hàng `meal_entries` (+ `items`). Id bữa và id món sinh lúc chạm. Mỗi món
+  /// làm tròn một lần sau khi nhân khẩu phần; tổng là tổng các món ĐÃ làm tròn
+  /// (cùng quy tắc `MealDiary.entryTotals`) — tổng hiện ra bằng tổng các số đã
+  /// hiện, không làm tròn lần nữa trên tổng thô (3 × 100.4 → 300).
   public static func entry(
     id: String, itemIds: [String], userId: String, mealType: String, dateTime: String, items: [Item],
     createdAt: EpochMillis
   ) -> OutboxEntry {
     let id = id.lowercased()
-    let t = totals(items)
-    let rows: [JSONValue] = zip(itemIds, items).map { iid, it in
-      .object([
+    let rounded: [Totals] = items.map {
+      Totals(
+        kcal: JS.round($0.kcal * $0.servings), protein: JS.round($0.protein * $0.servings),
+        carbs: JS.round($0.carbs * $0.servings), fat: JS.round($0.fat * $0.servings),
+        fiber: JS.round($0.fiber * $0.servings))
+    }
+    let rows: [JSONValue] = zip(zip(itemIds, items), rounded).map { pair, r in
+      let (iid, it) = pair
+      return .object([
         "id": .string(iid.lowercased()), "food_item_id": it.foodItemId.map(JSONValue.string) ?? .null,
         "food_name": .string(it.name), "servings": .number(it.servings),
-        "kcal": .number(JS.round(it.kcal * it.servings)), "protein_g": .number(JS.round(it.protein * it.servings)),
-        "carbs_g": .number(JS.round(it.carbs * it.servings)), "fat_g": .number(JS.round(it.fat * it.servings)),
-        "fiber_g": .number(JS.round(it.fiber * it.servings)),
+        "kcal": .number(r.kcal), "protein_g": .number(r.protein), "carbs_g": .number(r.carbs),
+        "fat_g": .number(r.fat), "fiber_g": .number(r.fiber),
       ])
+    }
+    let t = rounded.reduce(Totals(kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0)) { a, r in
+      Totals(
+        kcal: a.kcal + r.kcal, protein: a.protein + r.protein, carbs: a.carbs + r.carbs, fat: a.fat + r.fat,
+        fiber: a.fiber + r.fiber)
     }
     return OutboxEntry(
       id: id, userId: userId, kind: kind,
       payload: .object([
         "id": .string(id), "user_id": .string(userId), "date_time": .string(dateTime), "meal_type": .string(mealType),
-        "total_kcal": .number(JS.round(t.kcal)), "total_protein_g": .number(JS.round(t.protein)),
-        "total_carbs_g": .number(JS.round(t.carbs)), "total_fat_g": .number(JS.round(t.fat)),
-        "total_fiber_g": .number(JS.round(t.fiber)), "items": .array(rows),
+        "total_kcal": .number(t.kcal), "total_protein_g": .number(t.protein),
+        "total_carbs_g": .number(t.carbs), "total_fat_g": .number(t.fat),
+        "total_fiber_g": .number(t.fiber), "items": .array(rows),
       ]),
       createdAt: createdAt)
   }
