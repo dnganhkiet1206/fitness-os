@@ -225,20 +225,27 @@
                                        Self.distanceRange.upperBound)
                       })
               )
-              .onTapGesture(count: 2) {
-                viewBeforeTip = nil
-                let h = Self.home(of: demoInfo)
-                fly(yaw: h.yaw, pitch: h.pitch, distance: h.distance, target: Self.target(of: demoInfo), clearFocus: true)
-              }
               // Kiệt 17/11: thẻ đang mở thì chạm ra ngoài (vào cảnh 3D) để thu gọn: đóng thẻ mẹo,
-              // không có thẻ mẹo thì thu thẻ nhóm cơ về một dòng.
-              .onTapGesture {
-                if selectedTip != nil {
-                  withAnimation(collapseAnimation) { selectedTip = nil }
-                } else if !showTips, mistakeID == nil, !legendCollapsed {
-                  withAnimation(collapseAnimation) { legendCollapsed = true }
+              // không có thẻ mẹo thì thu thẻ nhóm cơ về một dòng. Chạm một lần chạy NGAY (Kiệt:
+              // "phản ứng chậm"): `.onTapGesture` đứng sau chạm đúp thì phải đợi ~0,3 s để chắc
+              // không phải chạm đúp. Chạm đúp (về góc mặc định) chạy song song; chạm đúp mà thẻ
+              // đang mở thì vừa thu thẻ vừa về góc, cả hai đều đúng ý.
+              .gesture(
+                TapGesture(count: 1).onEnded {
+                  if selectedTip != nil {
+                    withAnimation(collapseAnimation) { selectedTip = nil }
+                  } else if !showTips, mistakeID == nil, !legendCollapsed {
+                    withAnimation(collapseAnimation) { legendCollapsed = true }
+                  }
                 }
-              }
+              )
+              .simultaneousGesture(
+                TapGesture(count: 2).onEnded {
+                  viewBeforeTip = nil
+                  let h = Self.home(of: demoInfo)
+                  fly(yaw: h.yaw, pitch: h.pitch, distance: h.distance, target: Self.target(of: demoInfo), clearFocus: true)
+                }
+              )
               .onChange(of: selectedTip) { _, id in focusCamera(on: id) }
               .accessibilityLabel(
                 Text(verbatim: "\(name) — \(String(localized: "eg.demo3d.alt"))"))
