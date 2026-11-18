@@ -101,10 +101,10 @@ Dạng khối (từ 16–17/11, chi tiết ở `MODULAR_3D_PLAN.md`):
   - Không đặt ở **phần dưới màn**, vì bảng cơ che mất.
 - Thêm danh sách vào `ExerciseTips` và vào `tips(for:)` theo `PersonalRecords.exerciseKey`.
 - Kiểm trên simulator:
-  - bấm nút bóng đèn;
-  - mỗi đường chỉ phải chạm đúng vùng trên người;
-  - không có nhãn nào chồng nhau;
-  - chạm một nhãn và đọc đủ Cách làm / Vì sao / Tránh.
+  - bấm nút bóng đèn: trên người hiện các chấm có số, mỗi mẹo một chấm (Kiệt 17/11, không còn nhãn chữ và dây nối);
+  - mỗi chấm phải nằm đúng vùng trên người;
+  - không có chấm nào chồng nhau;
+  - chạm một chấm và đọc đủ Cách làm / Vì sao / Tránh trong thẻ ở đáy màn.
 
 ## 10. PR và báo cáo
 
