@@ -8,6 +8,7 @@ import { recoveryMeasured } from "../_shared/readiness.ts";
 import { exerciseProgress } from "../_shared/progress.ts";
 import { asleepMinutes } from "../_shared/sleep.ts";
 import { readWaterUnit, showWater, type WaterUnit, waterRule } from "../_shared/water.ts";
+import { allergyRule, buildProfileContext } from "./context.ts";
 
 /** Output ceiling. Unbounded generation is an unbounded bill.
     21/10: 1024 cut answers mid-sentence — the default model (gemini-3-flash)
@@ -333,19 +334,9 @@ serve(async (req) => {
       protein_avg_7d_g: protein_avg_7d,
       steps_avg_7d,
       weight_trend_kg_14d: weight_trend_kg,
-      profile: profile ? {
-        name: profile.name,
-        goal: profile.goal,
-        weight_kg: profile.weight_kg,
-        /* Đơn vị cân người dùng chọn — mức tạ trong câu trả lời viết theo nó (28/10). */
-        weight_unit: profile.units_weight === "lb" ? "lb" : "kg",
-        height_cm: profile.height_cm,
-        activity_level: profile.activity_level,
-        training_level: profile.training_level,
-        tdee_target: profile.tdee_target_kcal,
-        macro_targets: { protein: profile.macro_protein_g, carbs: profile.macro_carbs_g, fat: profile.macro_fat_g },
-        sleep_target_hours: profile.sleep_target_hours,
-      } : null,
+      /* Khối profile (dị ứng / món không thích / chế độ ăn / nước / chất xơ
+         ở trong đó — KOA-T02). Tách ra `context.ts` để test được. */
+      profile: buildProfileContext(profile),
       recent_nutrition: dailyLogs.map(d => ({
         date: d.date,
         kcal: d.kcal,
@@ -430,7 +421,8 @@ IMPORTANT PRINCIPLES:
 - ONLY suggest simple lifestyle habits that ordinary people know but forget (drink water, sleep enough, eat enough protein, rest after training, etc.)
 - Use the user's real data for personalized reminders
 - Low readiness means lower training capacity today, NOT that the user is poorly recovered. Recovery advice is appropriate only when recovery_measured is true and the recovery readings themselves point that way; when recovery_measured is false, never say or imply the user is tired, fatigued, under-recovered or has not recovered — the app did not measure it. Low readiness from training load alone may still justify conservative load advice, described as load rather than as fatigue
-- Never write the data's field names (readiness, recovery_measured, total_min, kcal…) — say what they mean in plain words`
+- Never write the data's field names (readiness, recovery_measured, total_min, kcal…) — say what they mean in plain words
+${allergyRule("en")}`
       : `Bạn là AI hỗ trợ theo dõi fitness, dinh dưỡng và phục hồi. Trả lời bằng tiếng Việt, ngắn gọn, thực tế và dựa trên dữ liệu.
 
 DỮ LIỆU NGƯỜI DÙNG (7 ngày gần nhất):
@@ -459,7 +451,8 @@ NGUYÊN TẮC QUAN TRỌNG:
 - CHỈ gợi ý những thói quen sinh hoạt đơn giản mà người bình thường đều biết nhưng hay quên (uống nước, ngủ đủ giấc, ăn đủ protein, nghỉ ngơi sau tập, v.v.)
 - Dựa trên dữ liệu thực của người dùng để nhắc nhở cá nhân hóa
 - Readiness thấp nghĩa là khả năng tập hôm nay thấp hơn, KHÔNG phải là người dùng chưa phục hồi. Chỉ khuyên về phục hồi khi recovery_measured là true và chính các chỉ số phục hồi nói vậy; khi recovery_measured là false, tuyệt đối không nói hay ám chỉ người dùng đang mệt, kiệt sức, chưa hồi hay hồi phục kém — app KHÔNG đo được điều đó. Readiness thấp chỉ do tải tập vẫn có thể dẫn tới lời khuyên giữ tải thận trọng, nhưng phải nói theo TẢI TẬP chứ không nói theo mệt mỏi
-- Không bao giờ viết tên trường dữ liệu (readiness, recovery_measured, total_min, kcal…) — nói ý nghĩa của nó bằng lời thường`;
+- Không bao giờ viết tên trường dữ liệu (readiness, recovery_measured, total_min, kcal…) — nói ý nghĩa của nó bằng lời thường
+${allergyRule("vi")}`;
 
     const response = await callAI({
         messages: [
