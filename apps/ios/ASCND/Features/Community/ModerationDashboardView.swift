@@ -104,8 +104,8 @@ struct ModerationDashboardScreen: View {
   @State private var openReports = false
   @State private var openAppeals = false
   @State private var openTarget: ModTargetRef?
-  /// Sổ quản trị — chỉ tạo khi admin chạm vào mục Quản trị (moderator không
-  /// thấy mục này, không tạo sổ, không gọi RPC admin nào).
+  /// Sổ quản trị — tạo trong `.task` khi mở bảng (xem `ensureAdmin`).
+  /// Moderator không thấy mục này, không tạo sổ, không gọi RPC admin nào.
   @State private var admin: AdminBook?
   @State private var adminDestination: AdminDestination?
 
@@ -120,7 +120,11 @@ struct ModerationDashboardScreen: View {
       .ascndPage()
       .navigationBarTitleDisplayMode(.inline)
       .refreshable { await book.load() }
-      .task { if book.phase == .loading { await book.load() } }
+      .task {
+        if book.phase == .loading { await book.load() }
+        ensureAdmin()
+      }
+      .onChange(of: book.role) { _, _ in ensureAdmin() }
       .navigationDestination(isPresented: $openReports) { ModerationReportsScreen(book: book) }
       .navigationDestination(isPresented: $openAppeals) { ModerationAppealsScreen(book: book) }
       .navigationDestination(item: $openTarget) { t in ModerationTargetScreen(book: book, type: t.type, id: t.id) }
@@ -131,8 +135,23 @@ struct ModerationDashboardScreen: View {
           case .audit: AdminAuditScreen(book: admin)
           case .art: AdminArtScreen(book: admin)
           }
+        } else {
+          // Lưới an toàn: sổ lẽ ra đã có từ `.task`; không bao giờ để
+          // màn trắng khi `makeAdmin` trả `nil`.
+          DSLoadingView()
         }
       }
+  }
+
+  /// Tạo sổ quản trị ngay khi mở bảng (sau khi biết vai trò) — KHÔNG tạo
+  /// trong cùng một lần chạm với `adminDestination`: đích điều hướng được
+  /// xử lý khi sổ còn `nil` nên màn trắng (E2E run 44255708452, flow 14).
+  /// `checkRole()` set `role` trước khi `load()` set `phase = .ready` nên
+  /// sổ luôn có trước khi mục Quản trị hiện ra cho người chạm vào.
+  private func ensureAdmin() {
+    if admin == nil, book.role == .admin, let a = services.makeAdmin(userId: book.userId) {
+      admin = a
+    }
   }
 
   @ViewBuilder private var content: some View {
@@ -226,10 +245,11 @@ struct ModerationDashboardScreen: View {
     }
   }
 
-  /// Một hàng của mục Quản trị: chạm thì tạo sổ (một lần) rồi mở màn.
+  /// Một hàng của mục Quản trị: chạm thì mở màn. Sổ đã tạo từ `.task` khi
+  /// mở bảng — không tạo ở đây: tạo + đặt đích trong cùng một action thì
+  /// đích được xử lý khi sổ còn `nil`, màn trắng (E2E run 44255708452).
   private func adminRow(label: String, icon: String, destination: AdminDestination) -> some View {
     Button {
-      if admin == nil, let a = services.makeAdmin(userId: book.userId) { admin = a }
       adminDestination = destination
     } label: {
       HStack(spacing: DS.Spacing.sm) {
