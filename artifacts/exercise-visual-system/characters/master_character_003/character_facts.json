@@ -2,12 +2,12 @@
   "eye_l": [
     0.03002511213429211,
     -0.12923291924243652,
-    1.6750050808923707
+    1.6750062065536808
   ],
   "eye_r": [
     -0.03002511213429211,
     -0.12923291924243652,
-    1.6750050808923707
+    1.6750062065536808
   ],
   "extra_bones": {
     "source_rig": "default",
@@ -30,51 +30,51 @@
   "faceless_patch_vertices": 403,
   "faceless_boundary_vertices": 90,
   "faceless_window": {
-    "z_low": 1.5636,
+    "z_low": 1.5637,
     "z_high": 1.733,
     "max_half_width": 0.0603
   },
-  "faceless_max_displacement_m": 0.1068,
+  "faceless_max_displacement_m": 0.1071,
   "nipple_vertices_faired": 128,
   "helper_bones": {
-    "cross_side_fixed": 692,
+    "cross_side_fixed": 691,
     "upperarm_swing_l": 727,
     "upperarm_swing_r": 768,
-    "hip_fold_l": 332,
-    "hip_fold_r": 330,
-    "knee_fold_l": 146,
-    "knee_fold_r": 146,
+    "hip_fold_l": 333,
+    "hip_fold_r": 332,
+    "knee_fold_l": 143,
+    "knee_fold_r": 143,
     "elbow_fold_l": 109,
     "elbow_fold_r": 115,
-    "shoulder_fold_l": 162,
-    "shoulder_fold_r": 162,
-    "thumb_fold_l": 102,
-    "thumb_fold_r": 102,
-    "wrist_fold_l": 131,
-    "wrist_fold_r": 131,
+    "shoulder_fold_l": 160,
+    "shoulder_fold_r": 160,
+    "thumb_fold_l": 105,
+    "thumb_fold_r": 105,
+    "wrist_fold_l": 134,
+    "wrist_fold_r": 134,
     "ankle_fold_l": 124,
     "ankle_fold_r": 119,
-    "neck_fold": 340,
-    "trap_l": 309,
-    "trap_r": 309,
+    "neck_fold": 342,
+    "trap_l": 313,
+    "trap_r": 313,
     "chest_fold_l": 0.25,
     "chest_fold_r": 0.25,
-    "scapula_skin_l": 173,
-    "scapula_skin_r": 173,
-    "front_chest_l": 255,
-    "front_chest_r": 255,
-    "crotch": 238
+    "scapula_skin_l": 185,
+    "scapula_skin_r": 185,
+    "front_chest_l": 253,
+    "front_chest_r": 253,
+    "crotch": 242
   },
   "grip_joint_angles_deg": {
     "index": {
       "angles_deg": [
         85.0,
-        32.25,
-        6.25
+        32.75,
+        5.25
       ],
       "skin_into_bar_m": 0.0,
       "skin_into_palm_m": 0.0,
-      "gap_score_m": 0.0317
+      "gap_score_m": 0.0312
     },
     "middle": {
       "angles_deg": [
@@ -84,7 +84,7 @@
       ],
       "skin_into_bar_m": 0.0,
       "skin_into_palm_m": 0.0,
-      "gap_score_m": 0.0145
+      "gap_score_m": 0.0146
     },
     "ring": {
       "angles_deg": [
@@ -94,7 +94,7 @@
       ],
       "skin_into_bar_m": 0.0,
       "skin_into_palm_m": 0.0,
-      "gap_score_m": 0.0088
+      "gap_score_m": 0.0089
     },
     "pinky": {
       "angles_deg": [
@@ -104,13 +104,13 @@
       ],
       "skin_into_bar_m": 0.0,
       "skin_into_palm_m": 0.0,
-      "gap_score_m": 0.001
+      "gap_score_m": 0.0011
     },
     "thumb": {
       "angles_deg": [
         54.54,
-        60.0,
-        1.75
+        48.0,
+        1.4
       ],
       "skin_into_bar_m": 0.0,
       "skin_into_palm_m": 0.0,
@@ -122,12 +122,12 @@
   "vertices": 11171,
   "faces": 11191,
   "triangles_after_triangulation": 22338,
-  "shoulder_joint_distance_m": 0.43,
-  "upper_arm_length_m": 0.2658,
+  "shoulder_joint_distance_m": 0.4322,
+  "upper_arm_length_m": 0.2635,
   "forearm_length_m": 0.2747,
-  "thigh_length_m": 0.4435,
+  "thigh_length_m": 0.4436,
   "shank_length_m": 0.4564,
-  "max_left_right_asymmetry_m": 2.5e-05,
+  "max_left_right_asymmetry_m": 1.3e-05,
   "deform_bone_count": 90,
   "bones": {
     "Root": {
@@ -141,587 +141,587 @@
     },
     "pelvis": {
       "parent": "Root",
-      "length_m": 0.09272,
+      "length_m": 0.09273,
       "head_rest_m": [
         0.0,
         -0.00341,
-        0.97335
+        0.97353
       ]
     },
     "spine_01": {
       "parent": "pelvis",
-      "length_m": 0.06143,
+      "length_m": 0.06144,
       "head_rest_m": [
         0.0,
         0.02903,
-        1.06021
+        1.06039
       ]
     },
     "spine_02": {
       "parent": "spine_01",
-      "length_m": 0.06268,
+      "length_m": 0.06269,
       "head_rest_m": [
         0.0,
         0.01956,
-        1.1209
+        1.1211
       ]
     },
     "spine_03": {
       "parent": "spine_02",
-      "length_m": 0.14185,
+      "length_m": 0.14187,
       "head_rest_m": [
         0.0,
         0.02803,
-        1.183
+        1.18321
       ]
     },
     "clavicle_l": {
       "parent": "spine_03",
-      "length_m": 0.1938,
+      "length_m": 0.19494,
       "head_rest_m": [
-        0.02335,
+        0.02336,
         -0.02422,
-        1.45802
+        1.45826
       ]
     },
     "upperarm_l": {
       "parent": "clavicle_l",
-      "length_m": 0.26578,
+      "length_m": 0.26346,
       "head_rest_m": [
-        0.215,
-        -0.01826,
-        1.42983
+        0.2161,
+        -0.01847,
+        1.42964
       ]
     },
     "lowerarm_l": {
       "parent": "upperarm_l",
-      "length_m": 0.27466,
+      "length_m": 0.2747,
       "head_rest_m": [
-        0.3931,
+        0.39115,
         -0.01714,
-        1.23256
+        1.23276
       ]
     },
     "hand_l": {
       "parent": "lowerarm_l",
-      "length_m": 0.03671,
+      "length_m": 0.03672,
       "head_rest_m": [
-        0.53115,
-        -0.21433,
-        1.10029
+        0.52922,
+        -0.21437,
+        1.10047
       ]
     },
     "index_01_l": {
       "parent": "hand_l",
       "length_m": 0.02913,
       "head_rest_m": [
-        0.56189,
-        -0.32233,
-        1.05831
+        0.55996,
+        -0.32238,
+        1.05849
       ]
     },
     "index_02_l": {
       "parent": "index_01_l",
       "length_m": 0.02611,
       "head_rest_m": [
-        0.56563,
-        -0.34632,
-        1.04222
+        0.5637,
+        -0.34637,
+        1.04239
       ]
     },
     "index_03_l": {
       "parent": "index_02_l",
       "length_m": 0.0299,
       "head_rest_m": [
-        0.56507,
-        -0.36555,
-        1.02457
+        0.56314,
+        -0.3656,
+        1.02474
       ]
     },
     "middle_01_l": {
       "parent": "hand_l",
       "length_m": 0.03791,
       "head_rest_m": [
-        0.58016,
-        -0.30307,
-        1.04505
+        0.57824,
+        -0.30311,
+        1.04522
       ]
     },
     "middle_02_l": {
       "parent": "middle_01_l",
       "length_m": 0.03082,
       "head_rest_m": [
-        0.58843,
-        -0.32709,
-        1.01691
+        0.5865,
+        -0.32714,
+        1.01709
       ]
     },
     "middle_03_l": {
       "parent": "middle_02_l",
-      "length_m": 0.03016,
+      "length_m": 0.03017,
       "head_rest_m": [
-        0.59149,
-        -0.34711,
-        0.99369
+        0.58956,
+        -0.34716,
+        0.99386
       ]
     },
     "pinky_01_l": {
       "parent": "hand_l",
       "length_m": 0.024,
       "head_rest_m": [
-        0.59053,
-        -0.26233,
-        1.02543
+        0.58861,
+        -0.26237,
+        1.02561
       ]
     },
     "pinky_02_l": {
       "parent": "pinky_01_l",
       "length_m": 0.01751,
       "head_rest_m": [
-        0.59722,
-        -0.27171,
-        1.00438
+        0.5953,
+        -0.27176,
+        1.00455
       ]
     },
     "pinky_03_l": {
       "parent": "pinky_02_l",
-      "length_m": 0.02226,
+      "length_m": 0.02227,
       "head_rest_m": [
-        0.59918,
-        -0.2787,
-        0.98845
+        0.59726,
+        -0.27874,
+        0.98862
       ]
     },
     "ring_01_l": {
       "parent": "hand_l",
-      "length_m": 0.03339,
+      "length_m": 0.0334,
       "head_rest_m": [
-        0.58882,
-        -0.28395,
-        1.03597
+        0.5869,
+        -0.28399,
+        1.03615
       ]
     },
     "ring_02_l": {
       "parent": "ring_01_l",
-      "length_m": 0.02791,
+      "length_m": 0.02792,
       "head_rest_m": [
-        0.59938,
-        -0.30079,
-        1.00914
+        0.59745,
+        -0.30084,
+        1.00931
       ]
     },
     "ring_03_l": {
       "parent": "ring_02_l",
       "length_m": 0.02984,
       "head_rest_m": [
-        0.60429,
-        -0.31594,
-        0.98621
+        0.60237,
+        -0.31599,
+        0.98638
       ]
     },
     "thumb_01_l": {
       "parent": "hand_l",
       "length_m": 0.03451,
       "head_rest_m": [
-        0.53214,
-        -0.2643,
-        1.09324
+        0.53021,
+        -0.26434,
+        1.09342
       ]
     },
     "thumb_02_l": {
       "parent": "thumb_01_l",
       "length_m": 0.04101,
       "head_rest_m": [
-        0.50894,
-        -0.28829,
-        1.08445
+        0.50701,
+        -0.28833,
+        1.08463
       ]
     },
     "thumb_03_l": {
       "parent": "thumb_02_l",
       "length_m": 0.031,
       "head_rest_m": [
-        0.49498,
-        -0.32405,
-        1.07005
+        0.49304,
+        -0.3241,
+        1.07023
       ]
     },
     "thumb_fold_l": {
       "parent": "hand_l",
       "length_m": 0.06,
       "head_rest_m": [
-        0.53214,
-        -0.2643,
-        1.09324
+        0.53021,
+        -0.26434,
+        1.09342
       ]
     },
     "lowerarm_twist_l": {
       "parent": "lowerarm_l",
-      "length_m": 0.13745,
+      "length_m": 0.1372,
       "head_rest_m": [
-        0.46884,
-        -0.11676,
-        1.17438
+        0.46533,
+        -0.11677,
+        1.1727
       ]
     },
     "wrist_fold_l": {
       "parent": "lowerarm_l",
       "length_m": 0.06,
       "head_rest_m": [
-        0.53115,
-        -0.21433,
-        1.10029
+        0.52922,
+        -0.21437,
+        1.10047
       ]
     },
     "upperarm_twist_l": {
       "parent": "upperarm_l",
-      "length_m": 0.1888,
+      "length_m": 0.18888,
       "head_rest_m": [
-        0.26374,
-        -0.01517,
-        1.37006
+        0.26186,
+        -0.01578,
+        1.37044
       ]
     },
     "elbow_fold_l": {
       "parent": "upperarm_l",
       "length_m": 0.06,
       "head_rest_m": [
-        0.3931,
+        0.39115,
         -0.01714,
-        1.23256
+        1.23276
       ]
     },
     "scapula_l": {
       "parent": "clavicle_l",
-      "length_m": 0.10238,
+      "length_m": 0.10353,
       "head_rest_m": [
-        0.12252,
-        -0.0236,
-        1.47342
+        0.12253,
+        -0.02361,
+        1.47366
       ]
     },
     "shoulder_fold_l": {
       "parent": "scapula_l",
       "length_m": 0.06,
       "head_rest_m": [
-        0.215,
-        -0.01826,
-        1.42983
+        0.2161,
+        -0.01847,
+        1.42964
       ]
     },
     "upperarm_swing_l": {
       "parent": "clavicle_l",
-      "length_m": 0.26578,
+      "length_m": 0.26346,
       "head_rest_m": [
-        0.215,
-        -0.01826,
-        1.42983
+        0.2161,
+        -0.01847,
+        1.42964
       ]
     },
     "upperarm_swing_l_1": {
       "parent": "clavicle_l",
-      "length_m": 0.13289,
+      "length_m": 0.13173,
       "head_rest_m": [
-        0.215,
-        -0.01826,
-        1.42983
+        0.2161,
+        -0.01847,
+        1.42964
       ]
     },
     "upperarm_swing_l_2": {
       "parent": "clavicle_l",
-      "length_m": 0.13289,
+      "length_m": 0.13173,
       "head_rest_m": [
-        0.215,
-        -0.01826,
-        1.42983
+        0.2161,
+        -0.01847,
+        1.42964
       ]
     },
     "upperarm_swing_l_3": {
       "parent": "clavicle_l",
-      "length_m": 0.13289,
+      "length_m": 0.13173,
       "head_rest_m": [
-        0.215,
-        -0.01826,
-        1.42983
+        0.2161,
+        -0.01847,
+        1.42964
       ]
     },
     "clavicle_r": {
       "parent": "spine_03",
-      "length_m": 0.1938,
+      "length_m": 0.19494,
       "head_rest_m": [
-        -0.02335,
+        -0.02336,
         -0.02422,
-        1.45802
+        1.45826
       ]
     },
     "upperarm_r": {
       "parent": "clavicle_r",
-      "length_m": 0.26578,
+      "length_m": 0.26346,
       "head_rest_m": [
-        -0.215,
-        -0.01826,
-        1.42983
+        -0.2161,
+        -0.01847,
+        1.42964
       ]
     },
     "lowerarm_r": {
       "parent": "upperarm_r",
-      "length_m": 0.27466,
+      "length_m": 0.2747,
       "head_rest_m": [
-        -0.3931,
+        -0.39115,
         -0.01714,
-        1.23256
+        1.23276
       ]
     },
     "hand_r": {
       "parent": "lowerarm_r",
-      "length_m": 0.03671,
+      "length_m": 0.03672,
       "head_rest_m": [
-        -0.53115,
-        -0.21433,
-        1.10029
+        -0.52922,
+        -0.21437,
+        1.10047
       ]
     },
     "index_01_r": {
       "parent": "hand_r",
       "length_m": 0.02913,
       "head_rest_m": [
-        -0.56189,
-        -0.32233,
-        1.05831
+        -0.55996,
+        -0.32238,
+        1.05849
       ]
     },
     "index_02_r": {
       "parent": "index_01_r",
       "length_m": 0.02611,
       "head_rest_m": [
-        -0.56563,
-        -0.34632,
-        1.04222
+        -0.5637,
+        -0.34637,
+        1.04239
       ]
     },
     "index_03_r": {
       "parent": "index_02_r",
       "length_m": 0.0299,
       "head_rest_m": [
-        -0.56507,
-        -0.36555,
-        1.02457
+        -0.56314,
+        -0.3656,
+        1.02474
       ]
     },
     "middle_01_r": {
       "parent": "hand_r",
       "length_m": 0.03791,
       "head_rest_m": [
-        -0.58016,
-        -0.30307,
-        1.04505
+        -0.57824,
+        -0.30311,
+        1.04522
       ]
     },
     "middle_02_r": {
       "parent": "middle_01_r",
       "length_m": 0.03082,
       "head_rest_m": [
-        -0.58843,
-        -0.32709,
-        1.01691
+        -0.5865,
+        -0.32714,
+        1.01709
       ]
     },
     "middle_03_r": {
       "parent": "middle_02_r",
-      "length_m": 0.03016,
+      "length_m": 0.03017,
       "head_rest_m": [
-        -0.59149,
-        -0.34711,
-        0.99369
+        -0.58956,
+        -0.34716,
+        0.99386
       ]
     },
     "pinky_01_r": {
       "parent": "hand_r",
       "length_m": 0.024,
       "head_rest_m": [
-        -0.59053,
-        -0.26233,
-        1.02543
+        -0.58861,
+        -0.26237,
+        1.02561
       ]
     },
     "pinky_02_r": {
       "parent": "pinky_01_r",
       "length_m": 0.01751,
       "head_rest_m": [
-        -0.59722,
-        -0.27171,
-        1.00438
+        -0.5953,
+        -0.27176,
+        1.00455
       ]
     },
     "pinky_03_r": {
       "parent": "pinky_02_r",
-      "length_m": 0.02226,
+      "length_m": 0.02227,
       "head_rest_m": [
-        -0.59918,
-        -0.2787,
-        0.98845
+        -0.59726,
+        -0.27874,
+        0.98862
       ]
     },
     "ring_01_r": {
       "parent": "hand_r",
-      "length_m": 0.03339,
+      "length_m": 0.0334,
       "head_rest_m": [
-        -0.58882,
-        -0.28395,
-        1.03597
+        -0.5869,
+        -0.28399,
+        1.03615
       ]
     },
     "ring_02_r": {
       "parent": "ring_01_r",
-      "length_m": 0.02791,
+      "length_m": 0.02792,
       "head_rest_m": [
-        -0.59938,
-        -0.30079,
-        1.00914
+        -0.59745,
+        -0.30084,
+        1.00931
       ]
     },
     "ring_03_r": {
       "parent": "ring_02_r",
       "length_m": 0.02984,
       "head_rest_m": [
-        -0.60429,
-        -0.31594,
-        0.98621
+        -0.60237,
+        -0.31599,
+        0.98638
       ]
     },
     "thumb_01_r": {
       "parent": "hand_r",
       "length_m": 0.03451,
       "head_rest_m": [
-        -0.53214,
-        -0.2643,
-        1.09324
+        -0.53021,
+        -0.26434,
+        1.09342
       ]
     },
     "thumb_02_r": {
       "parent": "thumb_01_r",
       "length_m": 0.04101,
       "head_rest_m": [
-        -0.50894,
-        -0.28829,
-        1.08445
+        -0.50701,
+        -0.28833,
+        1.08463
       ]
     },
     "thumb_03_r": {
       "parent": "thumb_02_r",
       "length_m": 0.031,
       "head_rest_m": [
-        -0.49498,
-        -0.32405,
-        1.07005
+        -0.49304,
+        -0.3241,
+        1.07023
       ]
     },
     "thumb_fold_r": {
       "parent": "hand_r",
       "length_m": 0.06,
       "head_rest_m": [
-        -0.53214,
-        -0.2643,
-        1.09324
+        -0.53021,
+        -0.26434,
+        1.09342
       ]
     },
     "lowerarm_twist_r": {
       "parent": "lowerarm_r",
-      "length_m": 0.13745,
+      "length_m": 0.1372,
       "head_rest_m": [
-        -0.46884,
-        -0.11676,
-        1.17438
+        -0.46533,
+        -0.11677,
+        1.1727
       ]
     },
     "wrist_fold_r": {
       "parent": "lowerarm_r",
       "length_m": 0.06,
       "head_rest_m": [
-        -0.53115,
-        -0.21433,
-        1.10029
+        -0.52922,
+        -0.21437,
+        1.10047
       ]
     },
     "upperarm_twist_r": {
       "parent": "upperarm_r",
-      "length_m": 0.1888,
+      "length_m": 0.18888,
       "head_rest_m": [
-        -0.26374,
-        -0.01517,
-        1.37006
+        -0.26186,
+        -0.01578,
+        1.37044
       ]
     },
     "elbow_fold_r": {
       "parent": "upperarm_r",
       "length_m": 0.06,
       "head_rest_m": [
-        -0.3931,
+        -0.39115,
         -0.01714,
-        1.23256
+        1.23276
       ]
     },
     "scapula_r": {
       "parent": "clavicle_r",
-      "length_m": 0.10238,
+      "length_m": 0.10353,
       "head_rest_m": [
-        -0.12252,
-        -0.0236,
-        1.47342
+        -0.12253,
+        -0.02361,
+        1.47366
       ]
     },
     "shoulder_fold_r": {
       "parent": "scapula_r",
       "length_m": 0.06,
       "head_rest_m": [
-        -0.215,
-        -0.01826,
-        1.42983
+        -0.2161,
+        -0.01847,
+        1.42964
       ]
     },
     "upperarm_swing_r": {
       "parent": "clavicle_r",
-      "length_m": 0.26578,
+      "length_m": 0.26346,
       "head_rest_m": [
-        -0.215,
-        -0.01826,
-        1.42983
+        -0.2161,
+        -0.01847,
+        1.42964
       ]
     },
     "upperarm_swing_r_1": {
       "parent": "clavicle_r",
-      "length_m": 0.13289,
+      "length_m": 0.13173,
       "head_rest_m": [
-        -0.215,
-        -0.01826,
-        1.42983
+        -0.2161,
+        -0.01847,
+        1.42964
       ]
     },
     "upperarm_swing_r_2": {
       "parent": "clavicle_r",
-      "length_m": 0.13289,
+      "length_m": 0.13173,
       "head_rest_m": [
-        -0.215,
-        -0.01826,
-        1.42983
+        -0.2161,
+        -0.01847,
+        1.42964
       ]
     },
     "upperarm_swing_r_3": {
       "parent": "clavicle_r",
-      "length_m": 0.13289,
+      "length_m": 0.13173,
       "head_rest_m": [
-        -0.215,
-        -0.01826,
-        1.42983
+        -0.2161,
+        -0.01847,
+        1.42964
       ]
     },
     "neck_01": {
       "parent": "spine_03",
-      "length_m": 0.10539,
+      "length_m": 0.10522,
       "head_rest_m": [
         0.0,
         -0.01178,
-        1.53407
+        1.53426
       ]
     },
     "head": {
@@ -735,20 +735,20 @@
     },
     "pec_l": {
       "parent": "spine_03",
-      "length_m": 0.21973,
+      "length_m": 0.21698,
       "head_rest_m": [
         0.0,
-        0.05034,
-        1.32308
+        0.05035,
+        1.32332
       ]
     },
     "pec_r": {
       "parent": "spine_03",
-      "length_m": 0.21973,
+      "length_m": 0.21698,
       "head_rest_m": [
         0.0,
-        0.05034,
-        1.32308
+        0.05035,
+        1.32332
       ]
     },
     "neck_fold": {
@@ -757,78 +757,78 @@
       "head_rest_m": [
         0.0,
         -0.01178,
-        1.53407
+        1.53426
       ]
     },
     "trap_l": {
       "parent": "spine_03",
       "length_m": 0.08,
       "head_rest_m": [
-        0.02335,
+        0.02336,
         -0.02422,
-        1.45802
+        1.45826
       ]
     },
     "trap_r": {
       "parent": "spine_03",
       "length_m": 0.08,
       "head_rest_m": [
-        -0.02335,
+        -0.02336,
         -0.02422,
-        1.45802
+        1.45826
       ]
     },
     "chest_fold_l": {
       "parent": "spine_03",
       "length_m": 0.06,
       "head_rest_m": [
-        0.215,
-        -0.01826,
-        1.42983
+        0.2161,
+        -0.01847,
+        1.42964
       ]
     },
     "chest_fold_r": {
       "parent": "spine_03",
       "length_m": 0.06,
       "head_rest_m": [
-        -0.215,
-        -0.01826,
-        1.42983
+        -0.2161,
+        -0.01847,
+        1.42964
       ]
     },
     "thigh_l": {
       "parent": "pelvis",
-      "length_m": 0.44347,
+      "length_m": 0.44358,
       "head_rest_m": [
-        0.11096,
+        0.11097,
         0.00733,
-        0.96736
+        0.96754
       ]
     },
     "calf_l": {
       "parent": "thigh_l",
-      "length_m": 0.45636,
+      "length_m": 0.45641,
       "head_rest_m": [
-        0.14832,
+        0.14834,
         -0.02766,
-        0.52685
+        0.52692
       ]
     },
     "foot_l": {
       "parent": "calf_l",
-      "length_m": 0.14537,
+      "length_m": 0.14539,
       "head_rest_m": [
-        0.20241,
-        -0.01385,
-        0.07392
+        0.20244,
+        -0.01384,
+        0.07393
       ]
     },
     "ball_l": {
       "parent": "foot_l",
-      "length_m": 0.07374,
+      "length_m": 0.07376,
       "head_rest_m": [
-        0.20651,
-        -0.1436,
+        0.20653,
+        -0.14361,
         0.0085
       ]
     },
@@ -836,62 +836,62 @@
       "parent": "calf_l",
       "length_m": 0.06,
       "head_rest_m": [
-        0.20241,
-        -0.01385,
-        0.07392
+        0.20244,
+        -0.01384,
+        0.07393
       ]
     },
     "thigh_twist_l": {
       "parent": "thigh_l",
-      "length_m": 0.33826,
+      "length_m": 0.34033,
       "head_rest_m": [
-        0.11846,
-        -0.01676,
-        0.86362
+        0.11915,
+        -0.01699,
+        0.86583
       ]
     },
     "knee_fold_l": {
       "parent": "thigh_l",
       "length_m": 0.06,
       "head_rest_m": [
-        0.14832,
+        0.14834,
         -0.02766,
-        0.52685
+        0.52692
       ]
     },
     "thigh_r": {
       "parent": "pelvis",
-      "length_m": 0.44347,
+      "length_m": 0.44358,
       "head_rest_m": [
-        -0.11096,
+        -0.11097,
         0.00733,
-        0.96736
+        0.96754
       ]
     },
     "calf_r": {
       "parent": "thigh_r",
-      "length_m": 0.45636,
+      "length_m": 0.45641,
       "head_rest_m": [
-        -0.14832,
+        -0.14834,
         -0.02766,
-        0.52685
+        0.52692
       ]
     },
     "foot_r": {
       "parent": "calf_r",
-      "length_m": 0.14537,
+      "length_m": 0.14539,
       "head_rest_m": [
-        -0.20241,
-        -0.01385,
-        0.07392
+        -0.20244,
+        -0.01384,
+        0.07393
       ]
     },
     "ball_r": {
       "parent": "foot_r",
-      "length_m": 0.07374,
+      "length_m": 0.07376,
       "head_rest_m": [
-        -0.20651,
-        -0.1436,
+        -0.20653,
+        -0.14361,
         0.0085
       ]
     },
@@ -899,54 +899,54 @@
       "parent": "calf_r",
       "length_m": 0.06,
       "head_rest_m": [
-        -0.20241,
-        -0.01385,
-        0.07392
+        -0.20244,
+        -0.01384,
+        0.07393
       ]
     },
     "thigh_twist_r": {
       "parent": "thigh_r",
-      "length_m": 0.33826,
+      "length_m": 0.34033,
       "head_rest_m": [
-        -0.11846,
-        -0.01676,
-        0.86362
+        -0.11915,
+        -0.01699,
+        0.86583
       ]
     },
     "knee_fold_r": {
       "parent": "thigh_r",
       "length_m": 0.06,
       "head_rest_m": [
-        -0.14832,
+        -0.14834,
         -0.02766,
-        0.52685
+        0.52692
       ]
     },
     "hip_fold_l": {
       "parent": "pelvis",
       "length_m": 0.06,
       "head_rest_m": [
-        0.11096,
+        0.11097,
         0.00733,
-        0.96736
+        0.96754
       ]
     },
     "hip_fold_r": {
       "parent": "pelvis",
       "length_m": 0.06,
       "head_rest_m": [
-        -0.11096,
+        -0.11097,
         0.00733,
-        0.96736
+        0.96754
       ]
     }
   },
   "master_character_id": "master_character_003",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "trapezius_volume": {
     "level": "E",
-    "vertices_moved_over_1mm": 654,
-    "max_offset_m": 0.0583
+    "vertices_moved_over_1mm": 561,
+    "max_offset_m": 0.0318
   },
   "uv_flat_points": [
     [
@@ -956,11 +956,11 @@
   ],
   "muscle_sculpt": {
     "parts": 108,
-    "outline_points": 48978,
-    "vertices_moved": 2070,
-    "max_displacement_m": 0.004,
+    "outline_points": 48804,
+    "vertices_moved": 2034,
+    "max_displacement_m": 0.0022,
     "geometry": {
-      "amplitude_m": 0.004,
+      "amplitude_m": 0.0022,
       "skip_near_apparel_m": 0.012,
       "profile": {
         "skin": {
@@ -981,7 +981,7 @@
       }
     },
     "texture": {
-      "relief": 2.2,
+      "relief": 1.2,
       "profile": {
         "skin": {
           "width_m": 0.03

@@ -5,7 +5,7 @@
     "OpenStax Anatomy and Physiology 2e (CC BY 4.0), chapter 11: axial and appendicular muscles."
   ],
   "geometry": {
-    "amplitude_m": 0.004,
+    "amplitude_m": 0.0022,
     "skip_near_apparel_m": 0.012,
     "profile": {
       "skin": {
@@ -26,7 +26,7 @@
     }
   },
   "texture": {
-    "relief": 2.2,
+    "relief": 1.2,
     "profile": {
       "skin": {
         "width_m": 0.03
@@ -79,5 +79,6 @@
       }
     ]
   },
-  "profile_comment": "Anatomy: separations between different muscles (deltoid/pectoral, deltoid/biceps, serratus/obliques) are the deepest; the linea alba and the spinal groove next; heads of one muscle (pectoral heads, quadriceps, triceps, gastrocnemius) and the abdominal tendinous intersections are shallow. Where a muscle ends in tendon (elbow, knee, wrist, ankle, sternum) it fades into the skin over 3 cm, never as a cut line."
+  "profile_comment": "Anatomy: separations between different muscles (deltoid/pectoral, deltoid/biceps, serratus/obliques) are the deepest; the linea alba and the spinal groove next; heads of one muscle (pectoral heads, quadriceps, triceps, gastrocnemius) and the abdominal tendinous intersections are shallow. Where a muscle ends in tendon (elbow, knee, wrist, ankle, sternum) it fades into the skin over 3 cm, never as a cut line.",
+  "build_2_comment": "17/11 (Kiệt, build 2): relief x0.55 (geometry 0.004 -> 0.0022 m, texture 2.2 -> 1.2) for a less bulky, more natural body."
 }
