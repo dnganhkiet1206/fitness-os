@@ -377,13 +377,4 @@ struct TodayWeekStrip: View {
     return String(localized: "today.status.unplanned")
   }
 
-  /// Bảy ngày (T2 → CN) của tuần chứa `today`, theo kế hoạch đã áp.
-  static func days(today: LocalDate, library: TemplateSnapshot?, trained: Set<LocalDate>) -> [Day] {
-    let monday = today.adding(days: -WorkoutPlanning.routineIndex(today))
-    return (0..<7).map { o in
-      let d = monday.adding(days: o)
-      let p = library?.plan(for: d, today: today)
-      return Day(date: d, trained: trained.contains(d), planned: p?.template != nil, rest: p?.status == .rest)
-    }
-  }
 }

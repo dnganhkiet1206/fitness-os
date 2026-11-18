@@ -225,13 +225,6 @@ struct TodayExtras<Plan: View>: View {
         TodayCoachSection(
           userId: userId, today: flow.today.today, refresh: dayVersion,
           waterMl: water?.loaded == true ? water.map { Double($0.totalMl) } : nil)
-        // Một khối: dải ngày và lời giải thích cùng chỗ (không thẻ thứ hai cùng tên).
-        TodayKoaWeekModule(
-          days: TodayWeekStrip.days(today: flow.today.today, library: flow.today.library, trained: flow.today.trained),
-          today: flow.today.today,
-          target: flow.today.library.flatMap { lib in KoaGains.Week(lib).planned.isEmpty ? nil : KoaGains.Week(lib).target },
-          state: koaWeekState,
-          claim: services.koaWeek(userId: userId)?.claim ?? .notYet)
       } else {
         // Thẻ buổi tập ngay dưới khối ngày, mang dòng sẵn sàng.
         VStack(alignment: .leading, spacing: DS.Spacing.md) { plan(readinessRow) }
