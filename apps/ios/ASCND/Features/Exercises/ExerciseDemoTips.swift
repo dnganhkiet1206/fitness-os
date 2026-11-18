@@ -182,11 +182,20 @@
     }
   }
 
+  private struct CardIf: ViewModifier {
+    let on: Bool
+    func body(content: Content) -> some View {
+      if on { content.todayCard() } else { content }
+    }
+  }
+
   /// Thẻ chi tiết của một mẹo, đặt ở đáy màn thay thẻ "Cơ hoạt động" để
   /// nhân vật vẫn để trống.
   struct ExerciseTipDetail: View {
     let tip: ExerciseTip
     let number: Int
+    /// false: không tự vẽ thẻ (nằm trong vỏ co giãn của trình xem).
+    var framed = true
     var onClose: () -> Void
 
     private let accent = Color(red: 0.91, green: 0.33, blue: 0.17)
@@ -244,7 +253,7 @@
       }
       .padding(DS.Spacing.md)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .todayCard()
+      .modifier(CardIf(on: framed))
       .accessibilityElement(children: .contain)
     }
 

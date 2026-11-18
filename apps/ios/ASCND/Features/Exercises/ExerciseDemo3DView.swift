@@ -33,6 +33,9 @@
     @State private var focus: SIMD3<Float>?
     @State private var viewBeforeTip: (yaw: Double, pitch: Double, distance: Double)?
     @State private var flight: Task<Void, Never>?
+    /// Kích thước đo được của từng nội dung trong vỏ co giãn ở đáy.
+    private enum IslandKind: Hashable { case legend, hint, tip }
+    @State private var islandSizes: [IslandKind: CGSize] = [:]
     /// Điểm neo mẹo đi theo khớp của nhân vật khi động tác chạy (B1, 17/11).
     @State private var tipAnchors = TipAnchors()
     /// Bộ điều khiển phát (nhịp từng rep, xem chậm 0,5×; C1, 17/11).
@@ -300,29 +303,10 @@
                 .padding(.horizontal, DS.Spacing.md)
                 .padding(.bottom, DS.Spacing.sm)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
-            } else if showTips, let id = selectedTip, let n = tips.firstIndex(where: { $0.id == id }) {
-              ExerciseTipDetail(tip: tips[n], number: n + 1) {
-                withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) { selectedTip = nil }
-              }
-              .matchedGeometryEffect(id: "bottomCard", in: zoomMorph)
-              .padding(.horizontal, DS.Spacing.md)
-              .padding(.bottom, DS.Spacing.sm)
-              .transition(.opacity)
-            } else if showTips, !tips.isEmpty {
-              // Kiệt 17/11: bật mẹo thì thẻ đáy chỉ ghi một dòng cách xem mẹo, thay thẻ nhóm cơ.
-              tipsHint
-                .matchedGeometryEffect(id: "bottomCard", in: zoomMorph)
+            } else if showTips ? !tips.isEmpty : !(demoInfo?.legend ?? []).isEmpty {
+              bottomIsland(tips: tips, legend: demoInfo?.legend ?? [])
                 .padding(.horizontal, DS.Spacing.md)
                 .padding(.bottom, DS.Spacing.sm)
-                .transition(.opacity)
-            } else if let legend = ExerciseDemo3D.demo(for: name)?.legend, !legend.isEmpty {
-              // Kiệt 17/11: bật / tắt mẹo thì thẻ nhóm cơ biến hình mượt sang dòng hướng dẫn mẹo
-              // (cùng một khung co giãn, chữ mờ dần), không nhảy cái một.
-              legendView(legend)
-                .matchedGeometryEffect(id: "bottomCard", in: zoomMorph)
-                .padding(.horizontal, DS.Spacing.md)
-                .padding(.bottom, DS.Spacing.sm)
-                .animation(collapseAnimation, value: legendCollapsed)
                 .transition(.opacity)
             }
           }
@@ -475,7 +459,7 @@
     /// render + tên cơ + vai trò. Tĩnh, không tương tác.
     static let roleOrder = ["eg.demo3d.legend.primary", "eg.demo3d.legend.secondary", "eg.demo3d.legend.stabilizer"]
 
-    private func legendView(_ legend: [ExerciseDemo3D.LegendEntry]) -> some View {
+    private func legendView(_ legend: [ExerciseDemo3D.LegendEntry], framed: Bool = true) -> some View {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         HStack(spacing: DS.Spacing.sm) {
           if legendCollapsed {
@@ -536,7 +520,14 @@
       // Cắt nội dung (khi thu gọn / mở) theo đúng hình thẻ, TRƯỚC khi vẽ thẻ: `.clipped()` sau
       // thẻ cắt vuông cả bóng đổ, lộ góc tối vuông ngoài viền bo (Kiệt 17/11).
       .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-      .todayCard()
+      .modifier(LegendCard(on: framed))
+    }
+
+    private struct LegendCard: ViewModifier {
+      let on: Bool
+      func body(content: Content) -> some View {
+        if on { content.todayCard() } else { content }
+      }
     }
 
     /// Hàng thu gọn: nhãn "Chính" + chip cơ chính (chấm màu), một dòng, cắt
@@ -686,11 +677,69 @@
         Spacer(minLength: 0)
       }
       .padding(.horizontal, DS.Spacing.md)
-      .padding(.vertical, DS.Spacing.sm)
-      .frame(minHeight: 48)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-      .todayCard()
+      .padding(.trailing, DS.Spacing.xs)
+      .frame(height: 48)
+      .fixedSize()
+    }
+
+    /// Kiệt 17/11 ("2 thẻ này chuyển động thu ra gọn lại … mượt như Dynamic Island"): thẻ nhóm cơ,
+    /// dòng hướng dẫn mẹo và thẻ mẹo dùng chung MỘT vỏ kính. Vỏ đo kích thước nội dung đang hiện
+    /// rồi lò xo tới đó (rộng lẫn cao: dòng hướng dẫn co thành viên thuốc ở giữa), nội dung cũ
+    /// mờ nhanh, nội dung mới hiện sau một nhịp, phóng nhẹ từ 0,94. Giảm chuyển động: đổi ngay.
+    private func bottomIsland(tips: [ExerciseTip], legend: [ExerciseDemo3D.LegendEntry]) -> some View {
+      let kind: IslandKind = !showTips ? .legend : (selectedTip == nil ? .hint : .tip)
+      let spring: Animation? = reduceMotion ? nil : .spring(response: 0.44, dampingFraction: 0.74)
+      let swap: AnyTransition = reduceMotion ? .identity : .asymmetric(
+        insertion: .opacity.combined(with: .scale(scale: 0.94, anchor: .bottom))
+          .animation(.spring(response: 0.36, dampingFraction: 0.86).delay(0.1)),
+        removal: .opacity.animation(.easeOut(duration: 0.12)))
+      let size = islandSizes[kind] ?? .zero
+      return ZStack(alignment: .bottom) {
+        if size != .zero {
+          Color.clear
+            .frame(width: size.width, height: size.height)
+            .todayCard()
+            .animation(spring, value: size)
+        }
+        Group {
+          switch kind {
+          case .legend:
+            legendView(legend, framed: false)
+              .frame(maxWidth: .infinity, alignment: .leading)
+          case .hint:
+            tipsHint
+          case .tip:
+            if let id = selectedTip, let n = tips.firstIndex(where: { $0.id == id }) {
+              ExerciseTipDetail(tip: tips[n], number: n + 1, framed: false) {
+                withAnimation(reduceMotion ? nil : .spring(response: 0.44, dampingFraction: 0.74)) { selectedTip = nil }
+              }
+              .id(id)
+            }
+          }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { islandSizes[kind] = $0 }
+        .transition(swap)
+        .id(kind)
+        // Chỉ cắt NỘI DUNG theo hình vỏ (nội dung cũ đang mờ đi không tràn ra ngoài khi vỏ co).
+        // Kiệt 17/11 ("bóng mờ cũ còn dư"): cắt cả khối thì bóng đổ của vỏ bị cắt vuông, để lại
+        // dải tối hai bên viên thuốc.
+        .mask(alignment: .bottom) {
+          RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous)
+            .frame(width: size.width > 0 ? size.width : nil, height: size.height > 0 ? size.height : nil)
+            .animation(spring, value: size)
+        }
+      }
+      .frame(maxWidth: .infinity)
+      // Đo trước dòng hướng dẫn (ẩn) để lần đầu bật mẹo vỏ co lại ngay, không khựng chờ đo.
+      .background {
+        if !tips.isEmpty, islandSizes[.hint] == nil {
+          tipsHint.hidden()
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { islandSizes[.hint] = $0 }
+        }
+      }
+      .frame(height: size.height > 0 ? size.height : nil, alignment: .bottom)
+      .animation(spring, value: size)
     }
 
     /// Bay máy quay tới mẹo `id` (hoặc về góc trước đó khi `id` = nil).
