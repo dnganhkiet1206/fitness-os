@@ -1,0 +1,102 @@
+# Bảng kiểm duyệt Cộng đồng (#915) ở chế độ UI test: máy chủ giả trả
+# `my_app_role` = admin, dữ liệu mẫu ở `UITestModerationSeed` — không cần tài
+# khoản staff hay dữ liệu thật. Ảnh `ux-mod-*` vào artifact ảnh UX cùng flow 13.
+# Chưa chụp: "Báo cáo của tôi" (cần mở hồ sơ của chính mình, đường đi dài) và
+# mục "Kiểm duyệt" trong menu ⋯ của bài (feed mẫu trống, không có bài).
+appId: com.ascnd.fitnessos.dev
+name: Moderation dashboard screenshots
+---
+- runFlow: subflows/launch.yaml
+# Tiến bộ → Cộng đồng (dòng cuối mục More).
+- tapOn: "Progress"
+- extendedWaitUntil:
+    visible:
+      id: progress.segment.training
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: "Community"
+    direction: DOWN
+    timeout: 30000
+    visibilityPercentage: 50
+- tapOn: "Community"
+# Nút khiên (nhãn "Moderation") chỉ hiện khi là staff.
+- extendedWaitUntil:
+    visible: "Moderation"
+    timeout: 15000
+- tapOn: "Moderation"
+- extendedWaitUntil:
+    visible: "Reports waiting.*"
+    timeout: 15000
+- takeScreenshot: ux-mod-dashboard
+# Hàng đợi báo cáo: bài spam đầu tiên (kháng nghị chờ + chờ hơn 48 giờ).
+- tapOn: "Reports waiting.*"
+- extendedWaitUntil:
+    visible: ".*Waiting over 48h.*"
+    timeout: 15000
+- takeScreenshot: ux-mod-reports
+- tapOn: ".*BUY 10K FOLLOWERS.*"
+- extendedWaitUntil:
+    visible: "Review"
+    timeout: 15000
+- takeScreenshot: ux-mod-target
+- scrollUntilVisible:
+    element:
+      text: "Actions"
+    direction: DOWN
+    timeout: 30000
+    visibilityPercentage: 50
+- takeScreenshot: ux-mod-target-actions
+- runFlow: subflows/back.yaml
+- runFlow: subflows/back.yaml
+# Hàng đợi kháng nghị.
+- tapOn: "Appeals waiting.*"
+- extendedWaitUntil:
+    visible: "Appeals"
+    timeout: 15000
+- takeScreenshot: ux-mod-appeals
+- runFlow: subflows/back.yaml
+# Quản trị: người dùng.
+- scrollUntilVisible:
+    element:
+      text: "Users"
+    direction: DOWN
+    timeout: 30000
+    visibilityPercentage: 50
+- tapOn: "Users"
+- extendedWaitUntil:
+    visible: ".*Mike Tran.*"
+    timeout: 15000
+- takeScreenshot: ux-mod-admin-users
+- tapOn: ".*Mike Tran.*"
+- extendedWaitUntil:
+    visible: ".*Mike Tran.*"
+    timeout: 15000
+- takeScreenshot: ux-mod-admin-user
+- runFlow: subflows/back.yaml
+- runFlow: subflows/back.yaml
+# Quản trị: nhật ký kiểm toán.
+- scrollUntilVisible:
+    element:
+      text: "Audit log"
+    direction: DOWN
+    timeout: 30000
+    visibilityPercentage: 50
+- tapOn: "Audit log"
+- extendedWaitUntil:
+    visible: ".*Hid post.*"
+    timeout: 15000
+- takeScreenshot: ux-mod-admin-audit
+- runFlow: subflows/back.yaml
+# Quản trị: thư viện ảnh.
+- scrollUntilVisible:
+    element:
+      text: "Art library"
+    direction: DOWN
+    timeout: 30000
+    visibilityPercentage: 50
+- tapOn: "Art library"
+- extendedWaitUntil:
+    visible: "Art library"
+    timeout: 15000
+- takeScreenshot: ux-mod-admin-art
