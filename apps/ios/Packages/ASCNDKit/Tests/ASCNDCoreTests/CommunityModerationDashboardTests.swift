@@ -215,6 +215,12 @@ struct CommunityModerationDashboardParseTests {
     #expect(!ModStale.isStale("2026-11-15T12:00:01Z", now: now))  // chưa tới 48 giờ
     #expect(!ModStale.isStale("không phải ngày", now: now))  // chuỗi lạ thì không gắn nhãn sai
     #expect(!ModStale.isStale("2026-11-18T12:00:00Z", now: now))  // tương lai
+    // Timestamp Supabase có phần lẻ giây — trước đây parse nil nên nhãn
+    // "Waiting over 48h" không bao giờ hiện (E2E flow 14 fail ở đây).
+    #expect(ModStale.isStale("2026-11-15T11:59:59.123Z", now: now))  // lẻ giây, quá 48 giờ
+    #expect(!ModStale.isStale("2026-11-15T12:00:00.000Z", now: now))  // lẻ giây, đúng 48 giờ
+    #expect(!ModStale.isStale("2026-11-15T12:00:00.999Z", now: now))  // lẻ giây, chưa tới 48 giờ
+    #expect(ModStale.isStale("2026-11-14T09:00:00.123456+00:00", now: now))  // dạng Postgres đầy đủ
   }
 
   @Test func presetsAreComplete() {

@@ -406,8 +406,15 @@ public enum ModStale {
   public static let threshold: TimeInterval = 48 * 3600
 
   /// Chuỗi ngày lạ / thiếu thì coi là chưa chờ lâu (không gắn nhãn sai).
+  /// Supabase trả timestamp có phần lẻ giây (`2026-11-14T09:00:00.123Z`) —
+  /// thử formatter có `.withFractionalSeconds` trước, rồi mới formatter mặc
+  /// định (formatter có phần lẻ giây không parse được chuỗi không có nó).
   public static func isStale(_ iso: String, now: Date) -> Bool {
-    guard let date = ISO8601DateFormatter().date(from: iso) else { return false }
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    if let date = formatter.date(from: iso) { return now.timeIntervalSince(date) > threshold }
+    formatter.formatOptions = [.withInternetDateTime]
+    guard let date = formatter.date(from: iso) else { return false }
     return now.timeIntervalSince(date) > threshold
   }
 }
