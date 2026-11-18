@@ -1049,7 +1049,7 @@ struct TodayExtras<Plan: View>: View {
     case .rest: workout = String(localized: "day.tile.restDay")
     default: workout = planName ?? todo
     }
-    return [
+    let tiles: [TodayDayCard.Tile] = [
       .init(
         item: .sleep, state: states[.sleep] ?? .todo,
         detail: sleepFromHealth && states[.sleep] == .done ? "\(sleep) · \(String(localized: "hs.title"))" : sleep),
@@ -1057,6 +1057,16 @@ struct TodayExtras<Plan: View>: View {
       .init(item: .water, state: states[.water] ?? .todo, detail: waterText),
       .init(item: .workout, state: states[.workout] ?? .todo, detail: workout),
     ]
+    // Kiệt 17/11: thẻ ưu tiên theo thói quen sinh hoạt — việc vừa tới giờ quen lên đầu, đã xong
+    // xuống cuối (`DayTileOrder`). Giờ quen học trên máy (`HabitHours`), chưa có thì giờ mặc định.
+    let parts = Calendar.current.dateComponents([.hour, .minute], from: Date())
+    let now = Double(parts.hour ?? 12) + Double(parts.minute ?? 0) / 60
+    let quest: [DayCheckIn.Item: MascotRules.Quest] = [.sleep: .sleep, .meal: .meal, .water: .water, .workout: .workout]
+    let order = DayTileOrder.order(
+      tiles.map(\.item), states: states,
+      habitHour: { item in quest[item].flatMap { services.habitHours.habit($0, userId: room.userId)?.hour } },
+      now: now)
+    return order.compactMap { item in tiles.first { $0.item == item } }
   }
 
   /// Dòng cân trong thẻ: chỉ khi đã lâu chưa cân (hoặc hôm nay vừa cân).
