@@ -1602,6 +1602,14 @@ final class AppServices {
     return CommunityFeedBook(userId: userId, remote: SupabaseCommunity(backend: backend))
   }
 
+  /// Bảng kiểm duyệt Cộng đồng (#915, giai đoạn 1): hàng đợi báo cáo / kháng
+  /// nghị qua RPC `mod_*`. Chỉ hỏi vai trò khi mở bảng — người thường không
+  /// thấy lối vào, không một lời gọi dữ liệu quản trị nào rời máy.
+  func makeModeration(userId: String) -> ModerationBook? {
+    guard let backend else { return nil }
+    return ModerationBook(userId: userId, remote: SupabaseModeration(backend: backend))
+  }
+
   /// Hồ sơ cộng đồng của mình (#527, lát 2): `community_profiles` (upsert theo
   /// `user_id`) + số buổi tập / bữa ăn để mở khoá linh vật.
   func makeCommunityProfile(userId: String) -> CommunityProfileBook? {

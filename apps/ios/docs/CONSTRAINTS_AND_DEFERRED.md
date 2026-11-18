@@ -72,6 +72,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 | Việc | Lý do hoãn | Điều kiện để làm lại | Từ |
 |---|---|---|---|
 | Mở rộng Cộng đồng (bảng tin, tương tác, trang người dùng) | Chưa có người dùng; QĐ 5 | Có người dùng thật + Kiệt quyết | V1 21/10 |
+| Bảng kiểm duyệt Cộng đồng (lát 1: moderator) | **Đang làm** (Kiệt quyết 16/11, #915, nhánh `agent/d/community-moderation-dashboard`): port bảng kiểm duyệt RN web sang SwiftUI — dashboard, hàng đợi báo cáo, chi tiết đích, kháng nghị, tạm khoá đăng. Không đợi người dùng thật: kiểm duyệt là điều kiện để mở cộng đồng, không phải mở rộng phía người dùng | — | 16/11 |
 | Nhắn tin riêng (DM) | Server chưa có (`MESSAGING-PLAN.md`); Release đang ẩn | Có backend đáng tin + có nhu cầu | 15/10 |
 | Thử thách cộng đồng | Lớp thử thách thứ ba; chưa có người. **Đã ẩn** ở Today và tab Cộng đồng (GĐ2, đã merge #642, Kiệt duyệt 21/10); code và dữ liệu giữ nguyên | Đủ người tham gia + Kiệt quyết | V1 21/10 |
 | Đổi tab Cộng đồng thành "Bạn tập" | Tính năng bạn bè chưa đủ thực chất | Có tính năng bạn tập thật | V1 21/10 |
