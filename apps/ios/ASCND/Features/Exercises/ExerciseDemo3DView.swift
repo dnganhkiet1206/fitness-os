@@ -28,6 +28,11 @@
     @State private var loadFailed = false
     @State private var showTips = false
     @State private var selectedTip: String?
+    /// Kiệt 17/11: chạm một chấm mẹo thì máy quay bay tới chấm đó ở góc dễ thấy nhất; đóng mẹo
+    /// thì bay về góc trước đó. `focus` thay tâm nhìn khi đang soi một mẹo.
+    @State private var focus: SIMD3<Float>?
+    @State private var viewBeforeTip: (yaw: Double, pitch: Double, distance: Double)?
+    @State private var flight: Task<Void, Never>?
     /// Điểm neo mẹo đi theo khớp của nhân vật khi động tác chạy (B1, 17/11).
     @State private var tipAnchors = TipAnchors()
     /// Bộ điều khiển phát (nhịp từng rep, xem chậm 0,5×; C1, 17/11).
@@ -69,7 +74,8 @@
     /// Góc mặc định của bài: preset three_quarter (`<bài>/usdz/usdz_report.json`
     /// → `default_camera`, hệ Y-up), mang trong `ExerciseDemo3D.Demo`.
     private var demoInfo: ExerciseDemo3D.Demo? { ExerciseDemo3D.demo(for: name) }
-    private var cameraTarget: SIMD3<Float> { Self.target(of: demoInfo) }
+    /// Điểm máy quay nhìn vào: điểm mẹo đang chọn (khi đã bay tới) hoặc tâm bài.
+    private var cameraTarget: SIMD3<Float> { focus ?? Self.target(of: demoInfo) }
     private static func target(of demo: ExerciseDemo3D.Demo?) -> SIMD3<Float> {
       demo?.cameraTarget ?? [0.1817, 0.6027, 0.0291]
     }
@@ -199,7 +205,10 @@
               .gesture(
                 DragGesture()
                   .updating($dragOffset) { value, state, _ in state = value.translation }
-                  .onChanged { _ in if showRotateHint { showRotateHint = false } }
+                  .onChanged { _ in
+                    flight?.cancel()
+                    if showRotateHint { showRotateHint = false }
+                  }
                   .onEnded { value in
                     yaw -= Double(value.translation.width) * Self.dragScale
                     pitch = min(max(pitch + Double(value.translation.height) * Self.dragScale, Self.pitchRange.lowerBound),
@@ -214,8 +223,20 @@
                       })
               )
               .onTapGesture(count: 2) {
-                withAnimation(reduceMotion ? nil : .smooth) { (yaw, pitch, distance) = Self.home(of: demoInfo) }
+                viewBeforeTip = nil
+                let h = Self.home(of: demoInfo)
+                fly(yaw: h.yaw, pitch: h.pitch, distance: h.distance, target: Self.target(of: demoInfo), clearFocus: true)
               }
+              // Kiệt 17/11: thẻ đang mở thì chạm ra ngoài (vào cảnh 3D) để thu gọn: đóng thẻ mẹo,
+              // không có thẻ mẹo thì thu thẻ nhóm cơ về một dòng.
+              .onTapGesture {
+                if selectedTip != nil {
+                  withAnimation(collapseAnimation) { selectedTip = nil }
+                } else if !showTips, mistakeID == nil, !legendCollapsed {
+                  withAnimation(collapseAnimation) { legendCollapsed = true }
+                }
+              }
+              .onChange(of: selectedTip) { _, id in focusCamera(on: id) }
               .accessibilityLabel(
                 Text(verbatim: "\(name) — \(String(localized: "eg.demo3d.alt"))"))
               .accessibilityHint(Text("eg.demo3d.rotateHint"))
@@ -283,14 +304,26 @@
               ExerciseTipDetail(tip: tips[n], number: n + 1) {
                 withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) { selectedTip = nil }
               }
+              .matchedGeometryEffect(id: "bottomCard", in: zoomMorph)
               .padding(.horizontal, DS.Spacing.md)
               .padding(.bottom, DS.Spacing.sm)
-              .transition(.move(edge: .bottom).combined(with: .opacity))
+              .transition(.opacity)
+            } else if showTips, !tips.isEmpty {
+              // Kiệt 17/11: bật mẹo thì thẻ đáy chỉ ghi một dòng cách xem mẹo, thay thẻ nhóm cơ.
+              tipsHint
+                .matchedGeometryEffect(id: "bottomCard", in: zoomMorph)
+                .padding(.horizontal, DS.Spacing.md)
+                .padding(.bottom, DS.Spacing.sm)
+                .transition(.opacity)
             } else if let legend = ExerciseDemo3D.demo(for: name)?.legend, !legend.isEmpty {
+              // Kiệt 17/11: bật / tắt mẹo thì thẻ nhóm cơ biến hình mượt sang dòng hướng dẫn mẹo
+              // (cùng một khung co giãn, chữ mờ dần), không nhảy cái một.
               legendView(legend)
+                .matchedGeometryEffect(id: "bottomCard", in: zoomMorph)
                 .padding(.horizontal, DS.Spacing.md)
                 .padding(.bottom, DS.Spacing.sm)
                 .animation(collapseAnimation, value: legendCollapsed)
+                .transition(.opacity)
             }
           }
         }
@@ -323,7 +356,7 @@
           ToolbarItem(placement: .primaryAction) {
             if !(demoInfo?.tips ?? []).isEmpty {
               Button {
-                withAnimation(reduceMotion ? nil : .smooth) {
+                withAnimation(collapseAnimation) {
                   showTips.toggle()
                   selectedTip = nil
                 }
@@ -639,6 +672,92 @@
         selectedTip = nil
       }
       rig.play(id ?? "", playback: playback, speed: slowMotion ? 0.5 : 1)
+    }
+
+    /// Một dòng thay thẻ nhóm cơ khi đang bật mẹo mà chưa chọn chấm nào.
+    private var tipsHint: some View {
+      HStack(spacing: DS.Spacing.sm) {
+        Image(systemName: "hand.tap.fill")
+          .foregroundStyle(Color(red: 0.91, green: 0.33, blue: 0.17))
+          .accessibilityHidden(true)
+        Text("eg.demo3d.tipsHint")
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+        Spacer(minLength: 0)
+      }
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.vertical, DS.Spacing.sm)
+      .frame(minHeight: 48)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+      .todayCard()
+    }
+
+    /// Bay máy quay tới mẹo `id` (hoặc về góc trước đó khi `id` = nil).
+    ///
+    /// Góc dễ thấy nhất: nhìn điểm neo theo hướng từ giữa người ra điểm đó (gần như pháp tuyến
+    /// của da ở đó, nên điểm không bị chính người che), giữ trong giới hạn góc ngẩng của phòng.
+    /// Đổi hướng theo đường ngắn nhất. Máy quay lùi về 2,1 m và tâm nhìn hạ xuống một chút để
+    /// chấm nằm ở nửa trên màn, không bị thẻ mẹo ở đáy che.
+    private func focusCamera(on id: String?) {
+      let base = Self.target(of: demoInfo)
+      guard let id, let tip = demoInfo?.tips.first(where: { $0.id == id }) else {
+        guard focus != nil else { return }
+        let back = viewBeforeTip ?? Self.home(of: demoInfo)
+        viewBeforeTip = nil
+        fly(yaw: back.yaw, pitch: back.pitch, distance: back.distance, target: base, clearFocus: true)
+        return
+      }
+      if viewBeforeTip == nil { viewBeforeTip = (yaw, pitch, distance) }
+      let anchor = tipAnchors.position(of: tip)
+      var out = anchor - base
+      // Điểm sát tâm (hướng không rõ): giữ hướng nhìn hiện tại.
+      if simd_length(SIMD2(out.x, out.z)) < 0.08 {
+        out = SIMD3(Float(sin(yaw)), out.y, Float(cos(yaw)))
+      }
+      let horizontal = Double(simd_length(SIMD2(out.x, out.z)))
+      // Gốc là góc 3/4 mặc định của bài (đã chọn để không bị ghế, khung, bánh tạ che), nghiêng
+      // 1/4 về hướng ra ngoài của điểm. Thử 17/11: nhìn theo hẳn hướng ra ngoài thì ở bench khung
+      // ghế và bánh tạ che vai. Đi đường ngắn nhất từ hướng đang nhìn.
+      let home = Self.home(of: demoInfo)
+      let outward = home.yaw + remainder(Double(atan2(out.x, out.z)) - home.yaw, 2 * .pi)
+      let aim = home.yaw + (outward - home.yaw) * 0.25
+      let newYaw = yaw + remainder(aim - yaw, 2 * .pi)
+      let newPitch = min(max(atan2(Double(out.y), horizontal), home.pitch), Self.pitchRange.upperBound)
+      let d = 2.5
+      // Hạ tâm nhìn theo trục "lên" của máy quay để chấm lên khoảng 1/3 trên màn.
+      let up = SIMD3<Float>(Float(-sin(newPitch) * sin(newYaw)), Float(cos(newPitch)), Float(-sin(newPitch) * cos(newYaw)))
+      let tanV = tan(Self.verticalFOV * .pi / 360)
+      let target = anchor - up * Float(0.35 * d) * tanV
+      fly(yaw: newYaw, pitch: newPitch, distance: d, target: target, clearFocus: false)
+    }
+
+    /// Chuyển máy quay mượt trong ~0,8 s (vào chậm, ra chậm). Giảm chuyển động: nhảy thẳng tới.
+    private func fly(yaw y1: Double, pitch p1: Double, distance d1: Double, target t1: SIMD3<Float>, clearFocus: Bool) {
+      flight?.cancel()
+      let y0 = yaw, p0 = pitch, d0 = distance, t0 = cameraTarget
+      func set(_ e: Double) {
+        yaw = y0 + (y1 - y0) * e
+        pitch = p0 + (p1 - p0) * e
+        distance = d0 + (d1 - d0) * e
+        focus = t0 + (t1 - t0) * Float(e)
+      }
+      guard !reduceMotion else {
+        set(1)
+        if clearFocus { focus = nil }
+        return
+      }
+      flight = Task { @MainActor in
+        let start = Date()
+        let duration = 0.8
+        while !Task.isCancelled {
+          let t = min(Date().timeIntervalSince(start) / duration, 1)
+          set(t < 0.5 ? 4 * t * t * t : 1 - pow(-2 * t + 2, 3) / 2)
+          if t >= 1 { break }
+          try? await Task.sleep(for: .milliseconds(16))
+        }
+        if !Task.isCancelled, clearFocus { focus = nil }
+      }
     }
 
     /// Lưới có khung xương của nhân vật (RealityKit gộp thân vào thực thể của khung xương).

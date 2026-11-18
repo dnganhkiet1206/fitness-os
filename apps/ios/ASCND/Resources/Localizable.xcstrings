@@ -74784,6 +74784,29 @@
         }
       }
     },
+    "eg.demo3d.tipsHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a number on the body to see the tip"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca un número en el cuerpo para ver el consejo"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chạm vào số trên người để xem mẹo"
+          }
+        }
+      }
+    },
     "eg.demo3d.tip.shoulders": {
       "extractionState": "manual",
       "localizations": {

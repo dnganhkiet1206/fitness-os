@@ -158,7 +158,7 @@
       let on = selected == p.id
       let dimmed = selected != nil && !on
       return Button {
-        withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) { selected = on ? nil : p.id }
+        withAnimation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.86)) { selected = on ? nil : p.id }
       } label: {
         Text(verbatim: "\(p.number)")
           .font(DS.TextStyle.footnote.weight(.bold))
