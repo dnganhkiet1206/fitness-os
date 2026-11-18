@@ -104,6 +104,9 @@
     @Binding var selected: String?
 
     private let dot: CGFloat = 28
+    /// Chừa ở đáy cho thẻ nhóm cơ / dòng hướng dẫn (thẻ mẹo cao hơn che thêm, nhưng lúc đó máy
+    /// quay đã bay tới chấm đang xem).
+    var bottomReserve: CGFloat = 130
     private let accent = Color(red: 0.91, green: 0.33, blue: 0.17)
 
     private struct Placed: Identifiable {
@@ -119,8 +122,20 @@
         guard let a = camera.project(anchorOf(tip)) else { return nil }
         return Placed(tip: tip, number: n + 1, point: a)
       }
+      // Vùng chấm được nằm: dưới thanh nút, trên thẻ đáy (Devin #949: khi phóng to chấm có thể
+      // rơi ra ngoài màn, không chạm được). Chấm ngoài vùng bị kẹp vào mép, chạm vẫn bay tới.
+      let r = dot / 2 + 4
+      let minY = topLimit + r
+      let maxY = max(minY, camera.size.height - bottomReserve - r)
+      func clamp(_ p: inout CGPoint) {
+        p.x = min(max(p.x, r), camera.size.width - r)
+        p.y = min(max(p.y, minY), maxY)
+      }
+      for i in items.indices { clamp(&items[i].point) }
+      // Tách chấm gần nhau, kẹp ngay trong mỗi vòng (Devin #949: kẹp sau cùng làm hai chấm sát mép
+      // chồng lại).
       let gap = dot + 4
-      for _ in 0..<6 {
+      for _ in 0..<10 {
         for i in items.indices {
           for j in items.indices where j > i {
             let dx = items[j].point.x - items[i].point.x
@@ -136,11 +151,7 @@
             items[j].point.y += uy * push
           }
         }
-      }
-      let r = dot / 2 + 4
-      for i in items.indices {
-        items[i].point.x = min(max(items[i].point.x, r), camera.size.width - r)
-        items[i].point.y = max(items[i].point.y, topLimit + r)
+        for i in items.indices { clamp(&items[i].point) }
       }
       return items
     }
