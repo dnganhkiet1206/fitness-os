@@ -39,7 +39,9 @@ extension AssistantSuggestions.Signal {
       daysSinceWorkout: days,
       // `typeof profile?.name === 'string' ? profile.name.trim() : ''`.
       name: profile?["name"]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
-      hasRecovery: recovery(log?["readiness_explain"]?.stringValue))
+      hasRecovery: recovery(log?["readiness_explain"]?.stringValue),
+      // Ô trống / null là chưa ghi; chỉ số > 0 mới là đã ghi (KOA-T03).
+      hasNutrition: or0(JS.number(log?["kcal"])) > 0 || or0(JS.number(log?["protein_g"])) > 0)
   }
 
   /// `Number(x) || 0`.

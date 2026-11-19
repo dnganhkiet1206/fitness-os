@@ -181,14 +181,17 @@ public enum CoachQuickReply {
     var items: [String] = []
     switch intent {
     case .readiness: if let r = s.scoredReadiness { items = [item(n.readiness, Double(r), 100, "", "readiness")] }
-    case .calories: items = [item(n.kcal, s.kcal, s.kcalTarget, "kcal", "meal")]
-    case .protein: items = [item(n.protein, s.proteinG, s.proteinTarget, "g", "protein")]
+    // Chưa ghi ăn uống: không vẽ "0 / 2200 kcal" như thể đã ăn 0 (KOA-T03).
+    case .calories: if s.hasNutrition { items = [item(n.kcal, s.kcal, s.kcalTarget, "kcal", "meal")] }
+    case .protein: if s.hasNutrition { items = [item(n.protein, s.proteinG, s.proteinTarget, "g", "protein")] }
     case .steps: if s.steps > 0 { items = [item(n.steps, s.steps, nil, "", "steps")] }
     case .sleep: break  // dựng riêng bên dưới (cần một chữ số thập phân)
     case .today:
       if let r = s.scoredReadiness { items.append(item(n.readiness, Double(r), 100, "", "readiness")) }
-      items.append(item(n.kcal, s.kcal, s.kcalTarget, "kcal", "meal"))
-      items.append(item(n.protein, s.proteinG, s.proteinTarget, "g", "protein"))
+      if s.hasNutrition {
+        items.append(item(n.kcal, s.kcal, s.kcalTarget, "kcal", "meal"))
+        items.append(item(n.protein, s.proteinG, s.proteinTarget, "g", "protein"))
+      }
       if s.steps > 0 { items.append(item(n.steps, s.steps, nil, "", "steps")) }
     default: break
     }

@@ -59,6 +59,10 @@ public enum AssistantSuggestions {
     /// Điểm hôm nay có dựa trên đo hồi phục (ngủ / HRV / RHR) không
     /// (`hasRecoverySignal`) — chỉ lời tóm tắt đọc.
     public var hasRecovery: Bool
+    /// Hôm nay đã ghi ăn uống chưa (KOA-T03, 19/11). `false` thì `kcal` / `proteinG`
+    /// bằng 0 nghĩa là CHƯA ĐO, không phải "đã ăn 0 kcal" — Koa nói "chưa ghi" như
+    /// bước chân và giấc ngủ (cùng luật null ≠ 0 của server).
+    public var hasNutrition: Bool
 
     /// Điểm / trạng thái được phép NÓI RA (19/10): chỉ khi có chiều phục hồi.
     /// Điểm chỉ dựa vào tải tập là "chưa đủ dữ liệu để chấm" ở mọi màn
@@ -69,8 +73,11 @@ public enum AssistantSuggestions {
     public init(
       readiness: Int? = nil, status: String? = nil, acwr: Double? = nil, sleepMin: Double = 0, kcal: Double = 0,
       kcalTarget: Double = 2200, proteinG: Double = 0, proteinTarget: Double = 140, steps: Double = 0,
-      daysSinceWorkout: Int? = nil, name: String = "", hasRecovery: Bool = false
+      daysSinceWorkout: Int? = nil, name: String = "", hasRecovery: Bool = false, hasNutrition: Bool? = nil
     ) {
+      // Không truyền: suy từ số (có calo hoặc đạm > 0 là đã ghi). An toàn cho chỗ
+      // dựng tay: tín hiệu rỗng `Signal()` là "chưa ghi", không phải "0 kcal".
+      self.hasNutrition = hasNutrition ?? (kcal > 0 || proteinG > 0)
       self.readiness = readiness
       self.status = status
       self.acwr = acwr

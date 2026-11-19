@@ -86,8 +86,9 @@ extension CoachOverview.Item {
     func close(_ a: Double, _ b: Double) -> Bool { abs(a - b) <= max(1, 0.1 * max(abs(a), abs(b))) }
     let actual: Double?, target: Double?
     switch tone {
-    case .meal: (actual, target) = (s.kcal, s.kcalTarget)
-    case .protein: (actual, target) = (s.proteinG, s.proteinTarget)
+    // Chưa ghi ăn uống: không có số thật để đối chiếu → model đưa số nào cũng bỏ (KOA-T03).
+    case .meal: (actual, target) = (s.hasNutrition ? s.kcal : nil, s.kcalTarget)
+    case .protein: (actual, target) = (s.hasNutrition ? s.proteinG : nil, s.proteinTarget)
     case .readiness: (actual, target) = (s.scoredReadiness.map(Double.init), 100)
     case .steps: (actual, target) = (s.steps > 0 ? s.steps : nil, nil)
     case .sleep:
