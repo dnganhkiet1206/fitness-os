@@ -333,6 +333,9 @@
         .onChange(of: zoomCollapsed) { _, v in zoomCollapsedStored = v }
         // Màu tường / sàn của phòng, thấy trong lúc phòng 3D đang tải.
         .background { GymStage() }
+        // Kiệt 19/11: chạm ra ngoài ở dải ngay dưới các nút trên cùng không thu thẻ. Không đặt kiểu
+        // tiêu đề thì thanh điều hướng giữ chỗ cho tiêu đề lớn (~52 pt) và nuốt chạm ở dải đó.
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
           if let onFullGuide {
             ToolbarItem(placement: .primaryAction) {
