@@ -85,6 +85,8 @@ struct RootTabView: View {
     // "Ghi món khác" trên thông báo nhắc bữa (Kiệt 01/11): mở màn ghi bữa như Ghi nhanh.
     .onChange(of: services.mealLogRequest) { _, _ in linked = .logMeal(date: nil, meal: nil) }
     .onChange(of: services.coachRequest) { _, _ in
+      // Mở chat: kết luận "coach có" đã cũ thì dò lại ngầm (KOA-T08).
+      Task { await services.probeAI() }
       guard services.isAIDeployed(.coach) else { return }
       openCoachFromHere()
     }

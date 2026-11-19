@@ -1,53 +1,57 @@
 @testable import ASCNDCore
+import Foundation
 import Testing
 
-/// Cờ deploy theo từng function AI (#527): một function sập chỉ chặn lối vào
-/// của chính nó, không chặn mọi tính năng AI.
+/// KOA-T08: trạng thái dò function AI — chưa biết / có / trục trặc / không có, kèm hạn dò lại.
 struct AIFunctionAvailabilityTests {
-  @Test func oneFunctionDownGatesOnlyItsFeature() {
-    var availability = AIFunctionAvailability()
-    for fn in AIFunctionAvailability.probed { availability.set(fn, deployed: true) }
-    availability.set(.coach, deployed: false)
-    #expect(!availability.isDeployed(.coach))
-    #expect(availability.isDeployed(.coachMemory))
-    #expect(availability.isDeployed(.mealSuggest))
-    #expect(availability.isDeployed(.scanFood))
-    #expect(availability.isDeployed(.weeklyReview))
-    #expect(availability.isDeployed(.smartNudges))
+  let t0 = Date(timeIntervalSince1970: 1_000_000)
+
+  @Test func statusMapsToState() {
+    #expect(AIFunctionAvailability.state(forStatus: 401) == .available)
+    #expect(AIFunctionAvailability.state(forStatus: 400) == .available)
+    #expect(AIFunctionAvailability.state(forStatus: 429) == .available)
+    #expect(AIFunctionAvailability.state(forStatus: 404) == .missing)
+    #expect(AIFunctionAvailability.state(forStatus: 500) == .unhealthy)
+    #expect(AIFunctionAvailability.state(forStatus: 503) == .unhealthy)
   }
 
-  @Test func allHealthyUngatesEveryFeature() {
-    var availability = AIFunctionAvailability()
-    availability.markAllDeployed()
-    for fn in AIFunctionAvailability.probed { #expect(availability.isDeployed(fn)) }
+  @Test func offlineAtLaunchIsAPlaceholderNotAVanishedEntry() {
+    var a = AIFunctionAvailability()
+    #expect(a.state(.coach) == .unknown)
+    a.record(.coach, status: nil, at: t0)
+    #expect(a.state(.coach) == .unknown)
+    #expect(!a.isDeployed(.coach))
+    #expect(a.showsPlaceholder(.coach))
+    #expect(a.needsProbe(.coach, now: t0), "chưa biết: dò lại ngay khi có dịp (chạm thử lại / tiền cảnh)")
+    // Mạng trở lại, dò lại → hiện.
+    a.record(.coach, status: 401, at: t0.addingTimeInterval(5))
+    #expect(a.isDeployed(.coach))
+    #expect(!a.showsPlaceholder(.coach))
   }
 
-  @Test func unknownGatesLikeNotDeployed() {
-    // Chưa dò / mất mạng: lối vào ẩn, như `false` — không hiện màn lỗi.
-    let availability = AIFunctionAvailability()
-    for fn in AIFunctionAvailability.probed { #expect(!availability.isDeployed(fn)) }
+  @Test func aBlipDoesNotHideAKnownGoodFunction() {
+    var a = AIFunctionAvailability()
+    a.record(.coach, status: 401, at: t0)
+    a.record(.coach, status: nil, at: t0.addingTimeInterval(60))
+    #expect(a.isDeployed(.coach))
   }
 
-  @Test func probedSetIsExactlyTheSixGatedFunctions() {
-    #expect(
-      Set(AIFunctionAvailability.probed)
-        == [.coach, .coachMemory, .mealSuggest, .scanFood, .weeklyReview, .smartNudges])
-    #expect(AIFunctionAvailability.probed.count == 6)
+  @Test func unhealthyIsAPlaceholderAndMissingIsHidden() {
+    var a = AIFunctionAvailability()
+    a.record(.coach, status: 500, at: t0)
+    #expect(a.state(.coach) == .unhealthy)
+    #expect(!a.isDeployed(.coach) && a.showsPlaceholder(.coach))
+    a.record(.scanFood, status: 404, at: t0)
+    #expect(!a.isDeployed(.scanFood) && !a.showsPlaceholder(.scanFood))
   }
 
-  @Test func logParseIsNeverProbedOrGated() {
-    // Đường ghi bằng câu kể không bị chặn bao giờ: AI hỏng thì luật trên máy
-    // vẫn đọc câu (`TellKoaSheet`), nên `ai-log-parse` không có cờ dò và
-    // không lối vào nào nhìn nó.
-    #expect(!AIFunctionAvailability.probed.contains(.logParse))
-  }
-
-  @Test func bodyCheckAndNonAIFunctionsAreNotProbed() {
-    // `body-check` không bị ẩn lối vào; bốn function còn lại không phải AI.
-    #expect(!AIFunctionAvailability.probed.contains(.bodyCheck))
-    #expect(!AIFunctionAvailability.probed.contains(.verifyPurchase))
-    #expect(!AIFunctionAvailability.probed.contains(.storeWebhook))
-    #expect(!AIFunctionAvailability.probed.contains(.deleteAccount))
-    #expect(!AIFunctionAvailability.probed.contains(.adminArt))
+  @Test func staleVerdictsAreReprobed() {
+    var a = AIFunctionAvailability()
+    a.record(.coach, status: 401, at: t0)
+    #expect(!a.needsProbe(.coach, now: t0.addingTimeInterval(29 * 60)))
+    #expect(a.needsProbe(.coach, now: t0.addingTimeInterval(31 * 60)), "đã biết là có thì vẫn dò lại khi cũ")
+    a.record(.coach, status: 500, at: t0)
+    #expect(!a.needsProbe(.coach, now: t0.addingTimeInterval(60)), "không dội function đang hỏng")
+    #expect(a.needsProbe(.coach, now: t0.addingTimeInterval(121)))
   }
 }

@@ -67355,6 +67355,98 @@
         }
       }
     },
+    "askkoa.unavailable.offline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa can't connect right now. Check your connection, then tap to try again."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa chưa kết nối được. Kiểm tra mạng rồi chạm để thử lại."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa no puede conectarse ahora. Revisa tu conexión y toca para reintentar."
+          }
+        }
+      }
+    },
+    "askkoa.unavailable.unhealthy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa is having a little trouble. Tap to try again shortly."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa đang trục trặc một chút. Chạm để thử lại sau ít phút."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa tiene un pequeño problema. Toca para reintentar en un momento."
+          }
+        }
+      }
+    },
+    "askkoa.checking": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang kiểm tra…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprobando…"
+          }
+        }
+      }
+    },
+    "askkoa.retry.a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checks whether Koa is reachable again"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kiểm tra lại xem Koa đã kết nối được chưa"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprueba de nuevo si Koa está disponible"
+          }
+        }
+      }
+    },
     "logMeal.savedInto %@": {
       "extractionState": "manual",
       "localizations": {

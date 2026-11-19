@@ -412,20 +412,40 @@ final class AppServices {
   /// Server deploy xong → lần mở app / quay lại tiền cảnh sau tự hiện.
   private(set) var aiAvailability = AIFunctionAvailability()
 
-  /// Function AI đã deploy thì lối vào của nó mới hiện.
+  /// Function AI đã deploy (và đang khoẻ) thì lối vào của nó mới hiện đầy đủ.
   func isAIDeployed(_ fn: EdgeFunction.Name) -> Bool { aiAvailability.isDeployed(fn) }
 
+  /// KOA-T08: chưa dò được / đang trục trặc → lối vào hiện giữ chỗ có lý do + dò lại.
+  func aiState(_ fn: EdgeFunction.Name) -> AIFunctionAvailability.State { aiAvailability.state(fn) }
+
+  /// Đang dò (để thẻ giữ chỗ hiện "đang kiểm tra…" thay vì nút).
+  private(set) var aiProbing = false
+
   /// Một lượt hỏi gateway cho từng function, không đăng nhập: function có → 401
-  /// (chưa chạy gì), không có → 404. Lỗi mạng: giữ "chưa biết", thử lại lần ra
-  /// tiền cảnh sau. Sáu function dò song song; mỗi function giữ nguyên ngữ nghĩa
-  /// cũ: timeout 8 giây, thử lại ba lần cách 2 giây, đã biết là có thì không dò lại.
-  func probeAI() async {
+  /// (chưa chạy gì), không có → 404, đang hỏng → 5xx. Lỗi mạng: "chưa biết" (lối vào
+  /// hiện giữ chỗ, chạm để dò lại). Chỉ dò function cần dò (`needsProbe`: chưa biết,
+  /// hoặc kết luận đã cũ — KOA-T08); `force` dò lại mọi function chưa khoẻ (nút thử
+  /// lại). Mỗi function: timeout 8 giây, thử lại ba lần cách 2 giây.
+  func probeAI(force: Bool = false) async {
     // UI test: máy chủ giả trả lời edge function — lối vào AI hiện như khi đã deploy.
-    if Self.uiTest { aiAvailability.markAllDeployed() }
-    guard let base = Self.supabaseURL, let key = Self.supabaseKey else { return }
-    let pending = AIFunctionAvailability.probed.filter { !aiAvailability.isDeployed($0) }
-    guard !pending.isEmpty else { return }
-    await withTaskGroup(of: (EdgeFunction.Name, Bool?).self) { group in
+    if Self.uiTest, !Self.uiTestAIOffline {
+      aiAvailability.markAllDeployed()
+      return
+    }
+    let now = Date()
+    let pending = AIFunctionAvailability.probed.filter {
+      aiAvailability.needsProbe($0, now: now) || (force && !aiAvailability.isDeployed($0))
+    }
+    guard !pending.isEmpty, !aiProbing else { return }
+    aiProbing = true
+    defer { aiProbing = false }
+    guard let base = Self.supabaseURL, let key = Self.supabaseKey, !Self.uiTestAIOffline else {
+      // Không có cấu hình (hoặc UI test giả mất mạng): ghi "chưa biết" để lối vào giữ chỗ.
+      if Self.uiTest { try? await Task.sleep(for: .milliseconds(600)) }
+      for fn in pending { aiAvailability.record(fn, status: nil, at: Date()) }
+      return
+    }
+    await withTaskGroup(of: (EdgeFunction.Name, Int?).self) { group in
       for fn in pending {
         group.addTask {
           var req = URLRequest(url: base.appendingPathComponent("functions/v1/\(fn.rawValue)"))
@@ -435,22 +455,31 @@ final class AppServices {
           req.setValue("application/json", forHTTPHeaderField: "Content-Type")
           req.httpBody = Data("{}".utf8)
           // Mở app lúc mạng chưa sẵn (16/10: dải "Offline" lúc khởi động) thì lần dò
-          // đầu hỏng và mọi lối AI ẩn cả phiên. Thử lại ba lần, cách 2 giây; quay lại
-          // tiền cảnh cũng dò lại (`didBecomeActive`).
+          // đầu hỏng. Thử lại ba lần, cách 2 giây; quay lại tiền cảnh / mở chat / chạm
+          // "thử lại" cũng dò lại.
           for attempt in 0..<3 {
             if attempt > 0 { try? await Task.sleep(for: .seconds(2)) }
             if let (_, resp) = try? await URLSession.shared.data(for: req), let http = resp as? HTTPURLResponse {
-              let deployed: Bool? = http.statusCode != 404
-              return (fn, deployed)
+              return (fn, http.statusCode)
             }
           }
           return (fn, nil)
         }
       }
-      for await (fn, deployed) in group {
-        if let deployed { aiAvailability.set(fn, deployed: deployed) }
+      for await (fn, status) in group {
+        aiAvailability.record(fn, status: status, at: Date())
       }
     }
+  }
+
+  /// UI test + công tắc `Documents/uitest-ai-offline`: lượt dò AI coi như không tới
+  /// được — để chụp thẻ "Hỏi Koa" giữ chỗ (KOA-T08).
+  private static var uiTestAIOffline: Bool {
+    #if DEBUG
+      uiTest && (UITestMode.aiOffline || UITestMode.offline)
+    #else
+      false
+    #endif
   }
 
   private static var supabaseURL: URL? {
