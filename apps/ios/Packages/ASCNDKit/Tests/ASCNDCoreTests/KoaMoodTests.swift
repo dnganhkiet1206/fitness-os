@@ -144,6 +144,76 @@ struct QuestAutoClaimTests {
     #expect(got.all.isEmpty, "trùng: không ăn mừng")
   }
 
+  /// KOA-T16: sổ xu đọc hỏng = chưa biết đã nhận gì → không gửi lệnh nhận nào.
+  @Test func aFailedLedgerReadClaimsNothing() async {
+    let s = Fake()
+    s.ledgerError = URLError(.timedOut)
+    s.signals = QuestHabitProducerTests.signals(workout: true, meal: true)
+    let e = MascotRoomControllerTests.FakeEconomy(source: s)
+    let got = Got()
+    let o = Self.observer(s, e, clock: Clock("2026-10-08T09:00:00Z"), got: got)
+    await o.refresh()
+    try? await Task.sleep(for: .milliseconds(30))
+    #expect(e.claims.isEmpty)
+    // Đọc được lại thì nhận như thường.
+    s.ledgerError = nil
+    s.ledgerRows = MascotRoomControllerTests.welcomed
+    await o.refresh()
+    await Self.settle { e.claims.count == 2 }
+    #expect(Set(e.claims) == ["d:2026-10-08:meal", "d:2026-10-08:workout"])
+  }
+
+  /// KOA-T16: trần ngày → không gõ lại trong ngày; lỗi tạm thời → thử lại rồi được.
+  @Test func ceilingWaitsForTomorrowAndTransientErrorsAreRetried() async {
+    let s = Fake()
+    s.ledgerRows = MascotRoomControllerTests.welcomed
+    s.signals = QuestHabitProducerTests.signals(meal: true)
+    let e = MascotRoomControllerTests.FakeEconomy(source: s)
+    e.claimError = MascotFailure.dailyCeiling
+    let got = Got()
+    let clock = Clock("2026-10-08T09:00:00Z")
+    let o = Self.observer(s, e, clock: clock, got: got)
+    await o.refresh()
+    await Self.settle { e.claims.count == 1 }
+    await o.refresh()
+    try? await Task.sleep(for: .milliseconds(30))
+    #expect(e.claims.count == 1, "trần ngày: không gửi lại khoá ấy trong ngày")
+    // Devin #964: khoá KHÁC (rẻ hơn, còn vừa trần) vẫn được gửi.
+    e.claimError = nil
+    s.signals = QuestHabitProducerTests.signals(workout: true, meal: true)
+    await o.refresh()
+    await Self.settle { e.claims.count == 2 }
+    try? await Task.sleep(for: .milliseconds(30))
+    #expect(e.claims == ["d:2026-10-08:meal", "d:2026-10-08:workout"])
+    // Lỗi tạm thời (Postgres hết giờ 57014) được thử lại ở lượt đọc sau.
+    let s2 = Fake()
+    s2.ledgerRows = MascotRoomControllerTests.welcomed
+    s2.signals = QuestHabitProducerTests.signals(meal: true)
+    let e2 = MascotRoomControllerTests.FakeEconomy(source: s2)
+    e2.claimError = MascotFailure.server(code: "57014")
+    let got2 = Got()
+    let o2 = Self.observer(s2, e2, clock: Clock("2026-10-08T09:00:00Z"), got: got2)
+    await o2.refresh()
+    await Self.settle { e2.claims.count == 1 }
+    e2.claimError = nil
+    await o2.refresh()
+    await Self.settle { got2.all.count == 1 }
+    #expect(e2.claims.count == 2)
+    #expect(got2.all.map(\.quest) == [.meal])
+    // Từ chối hẳn (khoá lạ): không thử lại.
+    let s3 = Fake()
+    s3.ledgerRows = MascotRoomControllerTests.welcomed
+    s3.signals = QuestHabitProducerTests.signals(meal: true)
+    let e3 = MascotRoomControllerTests.FakeEconomy(source: s3)
+    e3.claimError = MascotFailure.unknownReward
+    let o3 = Self.observer(s3, e3, clock: Clock("2026-10-08T09:00:00Z"), got: Got())
+    await o3.refresh()
+    await Self.settle { e3.claims.count == 1 }
+    await o3.refresh()
+    try? await Task.sleep(for: .milliseconds(30))
+    #expect(e3.claims.count == 1)
+  }
+
   @Test func aRefusedClaimIsRetriedOnTheNextReadingEvenAfterMidnight() async {
     let s = Fake()
     s.ledgerRows = MascotRoomControllerTests.welcomed

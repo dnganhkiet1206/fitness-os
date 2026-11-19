@@ -112,6 +112,8 @@ public final class KoaWeekBook {
   public private(set) var claim: Claim = .notYet
   @ObservationIgnored private let economy: any MascotEconomy
   @ObservationIgnored private let defaults: UserDefaults
+  /// Khoá đang có lượt nhận chạy (KOA-T17: phòng / Hôm nay / có mạng lại gọi chồng nhau).
+  @ObservationIgnored private var inFlight: Set<String> = []
 
   public init(userId: String, economy: any MascotEconomy, defaults: UserDefaults = .standard) {
     self.userId = userId
@@ -123,42 +125,60 @@ public final class KoaWeekBook {
 
   /// Đủ tuần mà chưa nhận → nhận. Gọi lại bao nhiêu lần cũng chỉ một giao dịch:
   /// máy nhớ đã nhận, và server bỏ trùng theo `ref_key` (trả 0 = đã nhận, KOA-T01).
-  public func claimIfComplete(_ state: KoaWeek.State?) async {
+  /// Trả số xu khi VỪA nhận mới ở lượt này (số server trả), `nil` khi đã nhận / chưa
+  /// đủ / hỏng / đang có lượt khác nhận. Màn chỉ ăn mừng theo giá trị trả về — trạng
+  /// thái `.justClaimed` giữ cho thẻ hiện "vừa nhận", nhưng tải lại Hôm nay không mừng
+  /// lần hai (KOA-T05). Nhiều nơi gọi cùng lúc (phòng, Hôm nay, có mạng lại) chỉ gửi một
+  /// lượt (KOA-T17).
+  @discardableResult
+  public func claimIfComplete(_ state: KoaWeek.State?) async -> Int? {
     guard let state else {
       claim = .notYet
-      return
+      return nil
     }
     let ref = state.refKey
     if defaults.bool(forKey: seenKey(ref)) {
-      if case .justClaimed = claim { return }
+      if case .justClaimed = claim { return nil }
       claim = .claimed
-      return
+      return nil
     }
     guard state.complete else {
       claim = .notYet
-      return
+      return nil
     }
+    guard !inFlight.contains(ref) else { return nil }
+    inFlight.insert(ref)
+    defer { inFlight.remove(ref) }
     do {
       let amount = try await economy.claimReward(refKey: ref, reason: "koa week \(state.weekStart)")
       defaults.set(true, forKey: seenKey(ref))
-      claim = MascotRules.isDuplicateClaim(amount) ? .claimed : .justClaimed(coins: KoaWeek.rewardCoins)
+      if MascotRules.isDuplicateClaim(amount) {
+        claim = .claimed
+        return nil
+      }
+      claim = .justClaimed(coins: amount)
+      return amount
     } catch {
       claim = .failed
+      return nil
     }
   }
 
   /// Nhận bù tuần TRƯỚC (đủ tuần lúc mất mạng, sang tuần mới mới có mạng): không đổi
-  /// `claim` của tuần này. Trả số xu khi vừa nhận ở lượt này.
+  /// `claim` của tuần này. Trả số xu (server trả) khi vừa nhận ở lượt này.
   public func claimMissed(_ state: KoaWeek.State?) async -> Int? {
     guard let state, state.complete else { return nil }
     let ref = state.refKey
-    guard !defaults.bool(forKey: seenKey(ref)) else { return nil }
+    guard !defaults.bool(forKey: seenKey(ref)), !inFlight.contains(ref) else { return nil }
+    inFlight.insert(ref)
+    defer { inFlight.remove(ref) }
     do {
       let amount = try await economy.claimReward(refKey: ref, reason: "koa week \(state.weekStart)")
       defaults.set(true, forKey: seenKey(ref))
-      return MascotRules.isDuplicateClaim(amount) ? nil : KoaWeek.rewardCoins
+      return MascotRules.isDuplicateClaim(amount) ? nil : amount
     } catch {
       return nil
     }
   }
+
 }

@@ -51,17 +51,48 @@ struct KoaWeekTests {
   final class Economy: MascotEconomy, @unchecked Sendable {
     var claims: [String] = []
     var failWith: MascotFailure?
+    /// Số xu server trả (mặc định giá hiện tại) và độ trễ (thử chạy chồng).
+    var amount = KoaWeek.rewardCoins
+    var delayMs = 0
     func claimReward(refKey: String, reason: String) async throws -> Int {
+      if delayMs > 0 { try? await Task.sleep(for: .milliseconds(delayMs)) }
       if let failWith { throw failWith }
       if claims.contains(refKey) { return 0 }  // server mới: trùng → 0 (KOA-T01)
       claims.append(refKey)
-      return KoaWeek.rewardCoins
+      return amount
     }
   }
 
   static func complete() -> KoaWeek.State {
     let days = [Self.mon, Self.mon.adding(days: 2), Self.mon.adding(days: 4)]
     return KoaWeek.state(today: days[2], library: Self.lib(), trained: Set(days))!
+  }
+
+  /// KOA-T05: tải lại Hôm nay không mừng lần hai — chỉ lượt vừa nhận trả số xu; số đó là
+  /// số server trả, không phải hằng 50.
+  @Test func onlyAFreshClaimReturnsCoinsAndItUsesTheServerAmount() async throws {
+    let defaults = try #require(UserDefaults(suiteName: "koaweek-\(UUID())"))
+    let econ = Economy()
+    econ.amount = 70
+    let book = KoaWeekBook(userId: "u", economy: econ, defaults: defaults)
+    #expect(await book.claimIfComplete(Self.complete()) == 70)
+    #expect(book.claim == .justClaimed(coins: 70))
+    #expect(await book.claimIfComplete(Self.complete()) == nil, "tải lại: không có tín hiệu mừng")
+    #expect(book.claim == .justClaimed(coins: 70), "thẻ vẫn hiện 'vừa nhận'")
+    #expect(econ.claims.count == 1)
+  }
+
+  /// KOA-T17: phòng, Hôm nay và lượt "có mạng lại" gọi chồng nhau → một lượt nhận.
+  @Test func overlappingClaimsSendOneRequest() async throws {
+    let defaults = try #require(UserDefaults(suiteName: "koaweek-\(UUID())"))
+    let econ = Economy()
+    econ.delayMs = 80
+    let book = KoaWeekBook(userId: "u", economy: econ, defaults: defaults)
+    async let a = book.claimIfComplete(Self.complete())
+    async let b = book.claimIfComplete(Self.complete())
+    let got = await [a, b]
+    #expect(econ.claims.count == 1)
+    #expect(got.compactMap { $0 } == [50], "chỉ một lượt mừng")
   }
 
   @Test func claimsOncePerWeekEvenWhenCalledAgainOrFromAnotherDevice() async throws {

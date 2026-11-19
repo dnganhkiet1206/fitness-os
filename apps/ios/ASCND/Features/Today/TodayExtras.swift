@@ -855,8 +855,9 @@ struct TodayExtras<Plan: View>: View {
         paused: services.koaPausedDay(userId: flow.today.userId, today: flow.today.today))
       coins += await week.claimMissed(lastWeek) ?? 0
     }
-    await week.claimIfComplete(koaWeekState)
-    if case .justClaimed(let c) = week.claim { coins += c }
+    // Chỉ lượt VỪA nhận mới mới mừng (KOA-T05) — `.justClaimed` còn giữ để thẻ hiện,
+    // không phải tín hiệu mừng lại mỗi lần tải lại Hôm nay.
+    coins += await week.claimIfComplete(koaWeekState) ?? 0
     guard coins > 0 else { return }
     services.noteKoaReward(userId: userId, amount: coins, seen: dayLoaded, source: KoaWeek.key)
     await mascot?.refreshWallet()

@@ -201,6 +201,10 @@ public final class MascotRoomController {
   /// Thưởng chuỗi vừa tự về (Koa đợt 1) — màn ăn mừng một lần rồi gọi
   /// `streakAutoClaimShown()`.
   public private(set) var streakAutoClaim: ClaimOutcome?
+  /// Sổ xu lần này đọc hỏng, đang hiện số của lần trước (KOA-T17) — màn nói ra + thử lại.
+  public private(set) var walletStale = false
+  @ObservationIgnored private var loadGeneration = 0
+  @ObservationIgnored private var frozenDays: [LocalDate] = []
 
   @ObservationIgnored private let source: any MascotSource
   @ObservationIgnored private let economy: any MascotEconomy
@@ -233,6 +237,9 @@ public final class MascotRoomController {
 
   /// Đọc tất cả, song song. Sổ xu là bắt buộc; phần khác lỗi thì phần đó ẩn.
   public func load() async {
+    // Lượt tải chồng nhau: chỉ lượt bắt đầu sau cùng được áp (KOA-T17).
+    loadGeneration += 1
+    let mine = loadGeneration
     let uid = userId, day = today, src = source
     let token = questObserver?.begin()
     let weekStart = day.adding(days: -WorkoutPlanning.routineIndex(day))
@@ -243,17 +250,28 @@ public final class MascotRoomController {
     async let awards = capture { try await src.awardCount(userId: uid) }
     async let daily = capture { try await src.dailySignals(userId: uid, date: day) }
     let (l, d, f, w, a, s) = await (ledger, dates, freezes, weekly, awards, daily)
-    guard !closed else { return }
+    guard !closed, mine == loadGeneration else { return }
 
     switch l {
-    case .success(let rows): wallet = MascotWallet(rows: rows)
-    case .failure(let e): if wallet == nil { phase = .failed(TodayController.failure([e]) ?? .unavailable) }
+    case .success(let rows):
+      wallet = MascotWallet(rows: rows)
+      walletStale = false
+    case .failure(let e):
+      if wallet == nil {
+        phase = .failed(TodayController.failure([e]) ?? .unavailable)
+      } else {
+        // Đã có số cũ: giữ, nhưng NÓI là số cũ (KOA-T17 — trước đây im lặng như mới).
+        walletStale = true
+      }
     }
-    // Băng đọc lỗi thì coi như không có (RN: lỗi `streak_freezes` → []).
-    let frozenRows = (try? f.get()) ?? []
-    let used = frozenRows.compactMap(\.usedOn)
-    freezesHeld = frozenRows.count - used.count
-    freezesUsed = used.count
+    // Băng đọc lỗi: giữ số đã biết (KOA-T17 — trước đây về 0, như thể mất hết băng).
+    if let frozenRows = try? f.get() {
+      let used = frozenRows.compactMap(\.usedOn)
+      freezesHeld = frozenRows.count - used.count
+      freezesUsed = used.count
+      frozenDays = used
+    }
+    let used = frozenDays
     if let logged = try? d.get() {
       // `streakFrom` — cùng một bản port với widget (#66).
       streak = Streak.from(logged.map(\.description), today: day.description, frozen: used.map(\.description))
@@ -263,7 +281,8 @@ public final class MascotRoomController {
     if let sig = try? s.get() {
       signals = sig
       // Một lượt `useDailyQuests` đã `ready`.
-      if let token { questObserver?.observe(token: token, day: day, signals: sig, claimed: wallet?.claimed ?? []) }
+      // Sổ xu chưa đọc được thì `nil`: bộ quan sát không nhận gì lượt này (KOA-T16).
+      if let token { questObserver?.observe(token: token, day: day, signals: sig, claimed: wallet?.claimed) }
     }
     if wallet != nil { phase = .ready }
     await grantWelcomeIfNeeded()

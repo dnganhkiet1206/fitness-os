@@ -55,3 +55,20 @@ struct AIFunctionAvailabilityTests {
     #expect(a.needsProbe(.coach, now: t0.addingTimeInterval(121)))
   }
 }
+
+/// KOA-T16: lỗi nào đáng thử lại khi nhận thưởng.
+struct QuestRetryClassificationTests {
+  @Test func transientIsRetriedPermanentIsNot() {
+    #expect(QuestRetry.shouldRetry(.offline))
+    #expect(QuestRetry.shouldRetry(.server(code: nil)))
+    for code in ["57014", "40001", "40P01", "08006", "53300", "55P03", "PGRST000", "PGRST002", "503", "429"] {
+      #expect(QuestRetry.shouldRetry(.server(code: code)), "\(code)")
+    }
+    for code in ["23505", "42501", "P0001", "PGRST116", "404"] {
+      #expect(!QuestRetry.shouldRetry(.server(code: code)), "\(code)")
+    }
+    for f in [MascotFailure.dailyCeiling, .unknownReward, .notSignedIn, .insufficientCoins] {
+      #expect(!QuestRetry.shouldRetry(f), "\(f)")
+    }
+  }
+}

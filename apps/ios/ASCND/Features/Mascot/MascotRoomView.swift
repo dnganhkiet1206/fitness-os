@@ -343,19 +343,28 @@ struct MascotRoomView: View {
       .padding(.top, DS.Spacing.sm)
   }
 
-  private var coinPill: some View {
+  @ViewBuilder private var coinPill: some View {
     // như ô số dư của `ShopView`: `Label` + `.titleAndIcon`, không gói thành
     // `accessibilityElement(children: .ignore)` — gói như thế thì thanh công cụ
     // iOS 26 chỉ còn vẽ biểu tượng; số xu phải hiện như ô `Coin` của RN.
-    Label {
+    let pill = Label {
       Text(verbatim: room.balance.formatted(.number.locale(.app)))
     } icon: {
-      Image(systemName: "circle.circle.fill").foregroundStyle(DS.Color.readinessYellowGraphic.swiftUI)
+      Image(systemName: room.walletStale ? "exclamationmark.arrow.circlepath" : "circle.circle.fill")
+        .foregroundStyle(room.walletStale ? DS.Color.mutedForeground.swiftUI : DS.Color.readinessYellowGraphic.swiftUI)
     }
     .labelStyle(.titleAndIcon)
     .font(DS.TextStyle.footnote.weight(.semibold).monospacedDigit())
     .accessibilityLabel(
       Text(room.balance == 1 ? String(localized: "mr.balance.one") : String(localized: "mr.balance.other \(room.balance)")))
+    if room.walletStale {
+      // Sổ xu lần này đọc hỏng: số đang hiện là số cũ — nói ra, chạm để tải lại (KOA-T17).
+      Button { Task { await room.load() } } label: { pill }
+        .accessibilityValue(Text("mr.balance.stale"))
+        .accessibilityIdentifier("room.balance.stale")
+    } else {
+      pill
+    }
   }
 
   #if DEBUG
@@ -1041,7 +1050,11 @@ struct MascotRoomView: View {
   /// "Tuần của Koa" (GĐ2) thay thẻ thử thách tuần chung.
   @ViewBuilder private var weeklyCard: some View {
     if let state = koaWeekState {
-      KoaWeekCard(state: state, claim: services.koaWeek(userId: room.userId)?.claim ?? .notYet)
+      KoaWeekCard(state: state, claim: services.koaWeek(userId: room.userId)?.claim ?? .notYet) {
+        Task {
+          if await services.koaWeek(userId: room.userId)?.claimIfComplete(koaWeekState) != nil { await room.load() }
+        }
+      }
     }
   }
 
