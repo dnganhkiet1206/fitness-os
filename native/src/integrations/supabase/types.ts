@@ -500,6 +500,7 @@ export type Database = {
           id: string
           kind: string
           milestone: number | null
+          payload: Json
           post_id: string | null
           read_at: string | null
           user_id: string
@@ -512,6 +513,7 @@ export type Database = {
           id?: string
           kind: string
           milestone?: number | null
+          payload?: Json
           post_id?: string | null
           read_at?: string | null
           user_id: string
@@ -524,6 +526,7 @@ export type Database = {
           id?: string
           kind?: string
           milestone?: number | null
+          payload?: Json
           post_id?: string | null
           read_at?: string | null
           user_id?: string

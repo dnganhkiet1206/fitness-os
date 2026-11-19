@@ -23,12 +23,13 @@
   ],
   "secondary_muscles": [
     "adductors",
-    "erector_spinae"
+    "calves"
   ],
   "stabilizing_muscles": [
+    "erector_spinae",
+    "hamstrings",
     "rectus_abdominis",
-    "obliques",
-    "hamstrings"
+    "trapezius_upper"
   ],
   "master_character_id": "master_character_003",
   "motion_source_id": "motionlab_squat_v1",
@@ -59,7 +60,11 @@
     "reps": 2,
     "end_hold": 0.4
   },
-  "technique": {},
+  "technique": {
+    "grip_width_between_hand_centres_m": 0.74,
+    "scapular_retraction_deg": 15.0,
+    "clavicle_elevation_deg": 3.0
+  },
   "motion_provenance": [
     {
       "what": "motion",
@@ -68,7 +73,7 @@
     },
     {
       "what": "depth, knee/ankle/trunk angles at the bottom",
-      "source": "Schoenfeld 2010, JSCR 24(12):3497-3506; Escamilla 2001, MSSE 33(1):127-141",
+      "source": "Schoenfeld 2010, JSCR 24(12):3497-3506; Escamilla 2001, MSSE 33(6):984-998",
       "license": "facts"
     },
     {
@@ -80,6 +85,21 @@
       "what": "tempo shape",
       "source": "minimum-jerk model, Flash and Hogan 1985",
       "license": "facts"
+    },
+    {
+      "what": "reference measurements 2026-11-14 (knee/hip angles, tempo) - evaluation only, not approval",
+      "source": "YMove Barbell Back Squat video, measured with MediaPipe Pose Landmarker heavy; see back-squat/reference_measurements.json",
+      "license": "YMove royalty-free commercial use, credit required (Exercise video by Your Move, ymove.app); measurements only, no footage used"
+    },
+    {
+      "what": "muscle roles (target -> primary, synergists -> secondary, stabilizers -> stabilizing)",
+      "source": "ExRx https://exrx.net/WeightExercises/Quadriceps/BBSquat",
+      "license": "facts"
+    },
+    {
+      "what": "16/11 re-check after Kiệt (shoulders ballooned, posture not right): hands about a fist outside the shoulders, forearms near parallel, elbows pointing down and a little behind the bar, shoulder blades squeezed to build the trapezius shelf, bar on the meaty part of the upper traps; bottom: torso ~40-45 deg, thighs at or just below parallel, knees over the toes, bar over mid-foot",
+      "source": "YouTube 'How To Do A Barbell Back Squat' (PureGym, rrJIyZGlK8c, back view 0:01-0:20) and 'Form Fix - Barbell Back Squat (Side on View)' (Dave Watkeys, Xu7HycdqJnc, 0:02-0:10); Catalyst Athletics 'Back Squat Bar Placement', Squat University high-bar squat, EliteFTS squat setup",
+      "license": "facts (watched only, nothing downloaded or copied)"
     }
   ],
   "exercise_phases": [
@@ -258,7 +278,9 @@
     "Bar over the middle of the foot the whole way",
     "Knees follow the toes",
     "Chest up, back neutral",
-    "Thighs at least parallel"
+    "Thighs at least parallel",
+    "Hands just outside the shoulders, elbows pointing down",
+    "Squeeze the shoulder blades: the bar sits on the upper traps, not the neck"
   ],
   "common_mistakes": [
     "Knees caving in",
@@ -272,9 +294,36 @@
   "brand_profile_id": "placeholder",
   "highlight_roles": [
     "primary",
-    "secondary"
+    "secondary",
+    "stabilizing"
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Quadriceps and gluteus maximus are the prime movers of the squat; adductors and erector spinae assist (Schoenfeld 2010)."
+  "muscle_roles_note": "Three levels (Kiệt 15/11): primary = carries the load and produces the main force; secondary = directly assists the movement; stabilizing = holds posture and keeps joints stable. The load is moved by knee extension (quadriceps) and hip extension (gluteus maximus), which by the definition both produce the main force (ExRx lists the gluteus as synergist; at full depth it is a prime hip extensor). Adductor magnus and soleus assist. Erector spinae and the abdominals brace the trunk, hamstrings act as dynamic stabilisers, the upper trapezius carries the bar shelf.",
+  "agent_review": {
+    "date": "2026-11-16",
+    "by": "agent (not an expert review)",
+    "checked": [
+      "qa_report.json 18/18",
+      "review_sheet.png",
+      "close-ups of shoulders, chest and traps front/back/side/top at the top and the bottom vs the 16/11 build",
+      "upper-arm radius at mid-arm 54 mm posed vs 56 mm at rest (was 34 mm with a single swing bone)",
+      "simulator iPhone 17"
+    ],
+    "remaining": [],
+    "note": "Redone after Kiệt 16/11 (shoulders ballooned, posture not right); waiting for Kiệt to look again. Status stays DRAFT."
+  },
+  "app_demo": {
+    "title": "Barbell Back Squat",
+    "family_label": "squat",
+    "note": "Kiệt 16/11: vai/ngực/cơ thang phồng, tư thế chưa đúng. Làm lại theo 2 video (PureGym, Dave Watkeys) + Catalyst Athletics, Squat University: tay nắm ngoài vai 1 nắm tay, kép bả vai, khuỷu chĩa xuống, đòn trên cơ thang; nhân vật thêm xương phụ chia góc xoay cánh tay. QA 18/18. Chờ Kiệt xem lại",
+    "review": null,
+    "aliases": [
+      "squat",
+      "back squat",
+      "barbell back squat",
+      "barbell squat"
+    ],
+    "catalog_order": 1
+  }
 }

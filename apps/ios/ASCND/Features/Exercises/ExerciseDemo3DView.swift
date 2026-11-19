@@ -28,9 +28,40 @@
     @State private var loadFailed = false
     @State private var showTips = false
     @State private var selectedTip: String?
+    /// Kiệt 17/11: chạm một chấm mẹo thì máy quay bay tới chấm đó ở góc dễ thấy nhất; đóng mẹo
+    /// thì bay về góc trước đó. `focus` thay tâm nhìn khi đang soi một mẹo.
+    @State private var focus: SIMD3<Float>?
+    @State private var viewBeforeTip: (yaw: Double, pitch: Double, distance: Double)?
+    @State private var flight: Task<Void, Never>?
+    /// Kích thước đo được của từng nội dung trong vỏ co giãn ở đáy.
+    private enum IslandKind: Hashable { case legend, hint, tip }
+    @State private var islandSizes: [IslandKind: CGSize] = [:]
+    /// Điểm neo mẹo đi theo khớp của nhân vật khi động tác chạy (B1, 17/11).
+    @State private var tipAnchors = TipAnchors()
+    /// Bộ điều khiển phát (nhịp từng rep, xem chậm 0,5×; C1, 17/11).
+    @State private var playback = DemoPlayback()
+    /// Kiệt 17/11: mặc định xem chậm 0,5× (chạm dải nhịp để về 1×).
+    @State private var slowMotion = true
+    /// Clip lỗi sai đang xem (C2, 17/11); nil = động tác đúng.
+    @State private var mistakeID: String?
+    /// Gợi ý "Kéo để xoay" chỉ hiện lúc đầu (Kiệt 17/11: đáy có 3 hàng, gọn lại).
+    @State private var showRotateHint = true
+    @State private var rig = DemoRig()
     /// Ẩn vùng tô sáng của cơ phụ để tập trung vào cơ chính (Kiệt 13/11).
-    @State private var hideSecondary = false
+    /// Mặc định chỉ hiện cơ chính (Kiệt 16/11); nút "Hiện cơ phụ" bật Phụ + Ổn định.
+    @State private var hideSecondary = true
     @State private var bodySkins = BodySkins()
+    /// Thu gọn thẻ chú thích / thanh zoom (Kiệt 16/11), nhớ cho lần mở sau.
+    /// Lưu bằng AppStorage, nhưng vẽ theo @State: thay đổi AppStorage không
+    /// nằm trong transaction của withAnimation nên thẻ / thanh nhảy cái một
+    /// (Kiệt 16/11: "cho mượt").
+    @AppStorage("demo3d.legendCollapsed") private var legendCollapsedStored = false
+    @AppStorage("demo3d.zoomCollapsed") private var zoomCollapsedStored = false
+    @State private var legendCollapsed = false
+    @State private var zoomCollapsed = false
+    @Namespace private var zoomMorph
+    /// Lò xo nhẹ cho thu gọn / mở (Kiệt 16/11: "cho mượt"); tắt khi Giảm chuyển động.
+    private var collapseAnimation: Animation? { reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.86) }
     @GestureState private var dragOffset: CGSize = .zero
     @GestureState private var pinch: CGFloat = 1
 
@@ -46,7 +77,8 @@
     /// Góc mặc định của bài: preset three_quarter (`<bài>/usdz/usdz_report.json`
     /// → `default_camera`, hệ Y-up), mang trong `ExerciseDemo3D.Demo`.
     private var demoInfo: ExerciseDemo3D.Demo? { ExerciseDemo3D.demo(for: name) }
-    private var cameraTarget: SIMD3<Float> { Self.target(of: demoInfo) }
+    /// Điểm máy quay nhìn vào: điểm mẹo đang chọn (khi đã bay tới) hoặc tâm bài.
+    private var cameraTarget: SIMD3<Float> { focus ?? Self.target(of: demoInfo) }
     private static func target(of demo: ExerciseDemo3D.Demo?) -> SIMD3<Float> {
       demo?.cameraTarget ?? [0.1817, 0.6027, 0.0291]
     }
@@ -62,7 +94,10 @@
     private static let dragScale = 0.006
     /// Giới hạn bay: không chui xuống sàn, không chạm trần hay tường của
     /// phòng (12 m vuông, trần 5 m — `pipeline/build_gym_room.py`).
-    private static let pitchRange = 0.06...0.95
+    /// Trần góc 0,55 rad (≈ 31°, 16/11): ở 0,95 rad mà zoom sát thì máy quay chúc
+    /// thẳng xuống đỉnh đầu, chân co ngắn, nền phòng mất — Kiệt tưởng hình hỏng.
+    /// Góc mặc định của các bài ≈ 0,35 rad; 31° vẫn thấy được vai, lưng trên.
+    private static let pitchRange = 0.06...0.55
     /// Gần nhất 1,6 m để soi được sợi cơ (thanh zoom, Kiệt 13/11).
     private static let distanceRange = 1.6...5.4
 
@@ -99,20 +134,67 @@
                 content.camera = .virtual  // dùng thực thể có PerspectiveCameraComponent ở trên
                 do {
                   // Phòng tập 3D, ánh sáng đã nướng sẵn: vẽ không cần đèn.
-                  let roomName = scheme == .dark ? "gym_room_dark" : "gym_room_light"
-                  if let room = try? await Entity(named: roomName, in: .main) {
+                  if let room = await Self.loadRoom(look: scheme == .dark ? "dark" : "light") {
                     Self.makeUnlit(room, dark: scheme == .dark)
+                    // Sau makeUnlit: tạ trên kệ giữ vật liệu PBR, được đèn chiếu như dụng cụ của bài.
+                    await Self.mountRackItems(in: room, look: scheme == .dark ? "dark" : "light")
                     content.add(room)
                   }
-                  let scene = try await Entity(named: demoInfo?.usdzFile ?? "bench_press_animation", in: .main)
+                  // Bài dạng khối: nhân vật dùng chung + file chuyển động
+                  // (khung xương, dụng cụ). Bài cũ: một USDZ chứa tất cả.
+                  let motionFile = demoInfo?.motionFile
+                  let scene = try await Entity(
+                    named: motionFile == nil ? (demoInfo?.usdzFile ?? "bench_press_animation") : ExerciseDemo3D.sharedCharacterFile,
+                    in: .main)
                   content.add(scene)
-                  if let prefix = ExerciseDemo3D.demo(for: name)?.focusTexturePrefix {
-                    await bodySkins.prepare(scene: scene, prefix: prefix)
+                  if let body = Self.skinnedBody(in: scene) { tipAnchors.attach(body) }
+                  let motion: Entity? = if let motionFile { try await Entity(named: motionFile, in: .main) } else { nil }
+                  // Quần áo là khối riêng (Kiệt 16/11); bản nhân vật cũ còn quần
+                  // trong thân thì không có file này.
+                  let apparel: Entity? = motionFile == nil ? nil : try? await Entity(named: ExerciseDemo3D.sharedApparelFile, in: .main)
+                  if let apparel { content.add(apparel) }
+                  if let motion, let motionFile {
+                    content.add(motion)
+                    await Self.mountEquipment(on: motion, manifest: motionFile.replacingOccurrences(of: "_motion", with: "_equipment"))
                   }
-                  Self.addLights(to: content, target: cameraTarget)
-                  // Tự chạy và lặp vô hạn, không dừng ở cuối.
-                  if let animation = scene.availableAnimations.first {
-                    scene.playAnimation(animation.repeat())
+                  // Dạng khối có vai trò cơ: tô cơ lúc chạy từ bộ ảnh dùng chung (17/11); thiếu tệp
+                  // thì lùi về texture nướng sẵn như trước.
+                  let painted: Bool =
+                    if motionFile != nil, let roles = demoInfo?.roles, !roles.isEmpty {
+                      await bodySkins.prepareShader(scene: scene, apparel: apparel, roles: roles)
+                    } else { false }
+                  if painted {
+                    bodySkins.apply(focus: hideSecondary, force: true)
+                  } else if let prefix = demoInfo?.focusTexturePrefix {
+                    await bodySkins.prepare(scene: scene, apparel: apparel, prefix: prefix, fullPrefix: demoInfo?.fullTexturePrefix)
+                    // update{} không chạy lại khi texture nạp xong: gán ngay.
+                    bodySkins.apply(focus: hideSecondary, force: true)
+                  }
+                  Self.addLights(to: content, target: cameraTarget, look: scheme == .dark ? "dark" : "light")
+                  // Phòng nướng sẵn không còn bóng của bài nào (dùng chung,
+                  // 16/11): bóng tiếp xúc mềm dưới nhân vật + dụng cụ.
+                  if let shadow = Self.contactShadow(under: [scene] + [motion, apparel].compactMap { $0 }) {
+                    content.add(shadow)
+                  }
+                  // Tự chạy và lặp vô hạn, không dừng ở cuối. Dạng khối: cùng
+                  // một chuyển động phát trên nhân vật và trên file chuyển động
+                  // (dụng cụ), bắt đầu cùng khung hình nên khớp nhau.
+                  if let animation = (motion ?? scene).availableAnimations.first {
+                    let controllers = [scene, motion, apparel].compactMap { $0?.playAnimation(animation.repeat()) }
+                    playback.duration = animation.definition.duration
+                    playback.controllers = controllers
+                    playback.setSpeed(slowMotion ? 0.5 : 1)
+                  }
+                  // Clip lỗi sai: nạp sẵn, tắt; nút "Sai thường gặp" đổi sang (C2, 17/11).
+                  rig.character = scene
+                  rig.apparel = apparel
+                  if let motion { rig.motions[""] = motion }
+                  for m in demoInfo?.mistakes ?? [] {
+                    guard let e = try? await Entity(named: m.motionFile, in: .main) else { continue }
+                    e.isEnabled = false
+                    content.add(e)
+                    await Self.mountEquipment(on: e, manifest: m.motionFile.replacingOccurrences(of: "_motion", with: "_equipment"))
+                    rig.motions[m.id] = e
                   }
                 } catch {
                   await MainActor.run { loadFailed = true }
@@ -126,6 +208,10 @@
               .gesture(
                 DragGesture()
                   .updating($dragOffset) { value, state, _ in state = value.translation }
+                  .onChanged { _ in
+                    flight?.cancel()
+                    if showRotateHint { showRotateHint = false }
+                  }
                   .onEnded { value in
                     yaw -= Double(value.translation.width) * Self.dragScale
                     pitch = min(max(pitch + Double(value.translation.height) * Self.dragScale, Self.pitchRange.lowerBound),
@@ -139,9 +225,28 @@
                                        Self.distanceRange.upperBound)
                       })
               )
-              .onTapGesture(count: 2) {
-                withAnimation(reduceMotion ? nil : .smooth) { (yaw, pitch, distance) = Self.home(of: demoInfo) }
-              }
+              // Kiệt 17/11: thẻ đang mở thì chạm ra ngoài (vào cảnh 3D) để thu gọn: đóng thẻ mẹo,
+              // không có thẻ mẹo thì thu thẻ nhóm cơ về một dòng. Chạm một lần chạy NGAY (Kiệt:
+              // "phản ứng chậm"): `.onTapGesture` đứng sau chạm đúp thì phải đợi ~0,3 s để chắc
+              // không phải chạm đúp. Chạm đúp (về góc mặc định) chạy song song; chạm đúp mà thẻ
+              // đang mở thì vừa thu thẻ vừa về góc, cả hai đều đúng ý.
+              .gesture(
+                TapGesture(count: 1).onEnded {
+                  if selectedTip != nil {
+                    withAnimation(collapseAnimation) { selectedTip = nil }
+                  } else if !showTips, mistakeID == nil, !legendCollapsed {
+                    withAnimation(collapseAnimation) { legendCollapsed = true }
+                  }
+                }
+              )
+              .simultaneousGesture(
+                TapGesture(count: 2).onEnded {
+                  viewBeforeTip = nil
+                  let h = Self.home(of: demoInfo)
+                  fly(yaw: h.yaw, pitch: h.pitch, distance: h.distance, target: Self.target(of: demoInfo), clearFocus: true)
+                }
+              )
+              .onChange(of: selectedTip) { _, id in focusCamera(on: id) }
               .accessibilityLabel(
                 Text(verbatim: "\(name) — \(String(localized: "eg.demo3d.alt"))"))
               .accessibilityHint(Text("eg.demo3d.rotateHint"))
@@ -150,41 +255,66 @@
               }
           }
           if showTips {
+            // Vẽ lại mỗi khung: điểm neo đi theo khớp khi động tác chạy. Bật Giảm chuyển động thì
+            // chỉ cập nhật 4 lần/giây (nhãn nhảy theo bước, không trượt).
+            TimelineView(.animation(minimumInterval: reduceMotion ? 0.25 : nil)) { _ in
             GeometryReader { geo in
               ExerciseTipsOverlay(
-                tips: ExerciseTips.tips(for: PersonalRecords.exerciseKey(name)),
+                tips: demoInfo?.tips ?? [],
                 camera: PinholeCamera(
                   position: cameraPosition, target: cameraTarget, verticalFOVDegrees: Self.verticalFOV,
                   size: geo.size),
+                anchorOf: { tipAnchors.position(of: $0) },
                 // Lớp này tràn qua vùng an toàn (lề = 0): đặt hàng nhãn dưới
                 // thanh nút (đảo Dynamic Island + nút đóng / mẹo).
                 topLimit: (UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }
                   .first?.safeAreaInsets.top ?? 59) + 58,
                 selected: $selectedTip)
             }
+            }
             .ignoresSafeArea()
             .transition(.opacity)
           }
+          if let id = mistakeID, let m = (demoInfo?.mistakes ?? []).first(where: { $0.id == id }) {
+            // Vòng đỏ đi theo khớp; Giảm chuyển động: 4 lần/giây.
+            TimelineView(.animation(minimumInterval: reduceMotion ? 0.25 : nil)) { _ in
+              GeometryReader { geo in
+                let cam = PinholeCamera(
+                  position: cameraPosition, target: cameraTarget, verticalFOVDegrees: Self.verticalFOV, size: geo.size)
+                ExerciseMistakeMarkers(points: m.joints.compactMap { j in
+                  cam.project(tipAnchors.position(of: ExerciseTip(id: j, anchor: .zero, joint: j, offset: .zero)))
+                })
+              }
+            }
+            .ignoresSafeArea()
+          }
           VStack(spacing: DS.Spacing.sm) {
             Spacer()
-            Label("eg.demo3d.rotateHint", systemImage: "hand.draw")
-              .font(DS.TextStyle.caption.weight(.medium))
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .padding(.horizontal, DS.Spacing.sm)
-              .padding(.vertical, 6)
-              .background(.ultraThinMaterial, in: Capsule())
-            let tips = ExerciseTips.tips(for: PersonalRecords.exerciseKey(name))
-            if showTips, let id = selectedTip, let n = tips.firstIndex(where: { $0.id == id }) {
-              ExerciseTipDetail(tip: tips[n], number: n + 1) {
-                withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) { selectedTip = nil }
-              }
-              .padding(.horizontal, DS.Spacing.md)
-              .padding(.bottom, DS.Spacing.sm)
-              .transition(.move(edge: .bottom).combined(with: .opacity))
-            } else if let legend = ExerciseDemo3D.demo(for: name)?.legend, !legend.isEmpty {
-              legendView(legend)
+            if showRotateHint {
+              Label("eg.demo3d.rotateHint", systemImage: "hand.draw")
+                .font(DS.TextStyle.caption.weight(.medium))
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                .padding(.horizontal, DS.Spacing.sm)
+                .padding(.vertical, 6)
+                .background(.ultraThinMaterial, in: Capsule())
+                .transition(.opacity)
+                .task {
+                  try? await Task.sleep(for: .seconds(3))
+                  withAnimation(.easeOut(duration: 0.4)) { showRotateHint = false }  // reduce-motion: chỉ mờ dần
+                }
+            }
+            let tips = demoInfo?.tips ?? []
+            let mistakes = demoInfo?.mistakes ?? []
+            if let id = mistakeID, let m = mistakes.first(where: { $0.id == id }) {
+              ExerciseMistakeCard(mistake: m) { showMistake(nil) }
                 .padding(.horizontal, DS.Spacing.md)
                 .padding(.bottom, DS.Spacing.sm)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else if showTips ? !tips.isEmpty : !(demoInfo?.legend ?? []).isEmpty {
+              bottomIsland(tips: tips, legend: demoInfo?.legend ?? [])
+                .padding(.horizontal, DS.Spacing.md)
+                .padding(.bottom, DS.Spacing.sm)
+                .transition(.opacity)
             }
           }
         }
@@ -193,7 +323,14 @@
           zoomSlider
             .padding(.trailing, DS.Spacing.sm)
             .offset(y: -60)
+            .animation(collapseAnimation, value: zoomCollapsed)
         }
+        .onAppear {
+          legendCollapsed = legendCollapsedStored
+          zoomCollapsed = zoomCollapsedStored
+        }
+        .onChange(of: legendCollapsed) { _, v in legendCollapsedStored = v }
+        .onChange(of: zoomCollapsed) { _, v in zoomCollapsedStored = v }
         // Màu tường / sàn của phòng, thấy trong lúc phòng 3D đang tải.
         .background { GymStage() }
         .toolbar {
@@ -208,9 +345,9 @@
             }
           }
           ToolbarItem(placement: .primaryAction) {
-            if !ExerciseTips.tips(for: PersonalRecords.exerciseKey(name)).isEmpty {
+            if !(demoInfo?.tips ?? []).isEmpty {
               Button {
-                withAnimation(reduceMotion ? nil : .smooth) {
+                withAnimation(collapseAnimation) {
                   showTips.toggle()
                   selectedTip = nil
                 }
@@ -220,6 +357,25 @@
                   .frame(minWidth: 44, minHeight: 44)
               }
               .accessibilityLabel(Text("eg.demo3d.tips"))
+            }
+          }
+          if let tempo = demoInfo?.tempo {
+            ToolbarItem(placement: .principal) {
+              // Vẽ lại mỗi khung để theo kịp chuyển động; Giảm chuyển động: 4 lần/giây.
+              TimelineView(.animation(minimumInterval: reduceMotion ? 0.25 : nil)) { _ in
+                ExerciseTempoStrip(
+                  tempo: tempo,
+                  ms: playback.time.map { $0 / max(playback.duration, 0.001) * tempo.durationMs },
+                  slow: slowMotion,
+                  mistake: mistakeID != nil,
+                  hasMistake: !(demoInfo?.mistakes ?? []).isEmpty,
+                  onShowMistake: { if let m = demoInfo?.mistakes.first { showMistake(m.id) } },
+                  onToggleSpeed: {
+                    slowMotion.toggle()
+                    playback.setSpeed(slowMotion ? 0.5 : 1)
+                  },
+                  onExitMistake: { showMistake(nil) })
+              }
             }
           }
           ToolbarItem(placement: .cancellationAction) {
@@ -246,7 +402,49 @@
 
     /// Thanh zoom dọc ở mép phải (Kiệt 13/11): kéo lên để lại gần soi sợi cơ.
     private var zoomSlider: some View {
+      Group {
+        if zoomCollapsed {
+          // Thu gọn: một nút kính lúp; chụm hai ngón vẫn zoom được.
+          Button {
+            withAnimation(collapseAnimation) { zoomCollapsed = false }
+          } label: {
+            Image(systemName: "plus.magnifyingglass")
+              .font(.system(size: 15, weight: .semibold))
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+              .frame(width: 44, height: 44)
+              .background { zoomShell }
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel(Text("eg.demo3d.expandZoom"))
+          .transition(.opacity)
+        } else {
+          zoomBar.transition(.opacity)
+        }
+      }
+    }
+
+    /// Vỏ kính chung của thanh zoom và nút thu gọn: hai trạng thái cùng một
+    /// hình (matchedGeometryEffect), nên thanh co lại thành nút tròn liền mạch.
+    private var zoomShell: some View {
+      RoundedRectangle(cornerRadius: 22, style: .continuous)
+        .fill(.ultraThinMaterial)
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
+        .matchedGeometryEffect(id: "zoomShell", in: zoomMorph)
+    }
+
+    private var zoomBar: some View {
       VStack(spacing: DS.Spacing.sm) {
+        Button {
+          withAnimation(collapseAnimation) { zoomCollapsed = true }
+        } label: {
+          Image(systemName: "chevron.right")
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(width: 30, height: 28)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("eg.demo3d.collapseZoom"))
         Image(systemName: "plus.magnifyingglass")
         Slider(value: zoom, in: 0...1)
           .tint(Color(red: 0.91, green: 0.33, blue: 0.17))
@@ -260,24 +458,33 @@
       .foregroundStyle(DS.Color.foreground.swiftUI)
       .padding(.vertical, DS.Spacing.sm + 2)
       .padding(.horizontal, 6)
-      .background(.ultraThinMaterial, in: Capsule())
-      .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
+      .background { zoomShell }
     }
 
     /// Chú thích cơ đang tô sáng (Kiệt 13/11: bắt buộc phải có, đặt dưới
     /// khung viewer gần dòng chú thích xoay): mỗi hàng là chấm màu đúng màu
     /// render + tên cơ + vai trò. Tĩnh, không tương tác.
-    private func legendView(_ legend: [ExerciseDemo3D.LegendEntry]) -> some View {
+    static let roleOrder = ["eg.demo3d.legend.primary", "eg.demo3d.legend.secondary", "eg.demo3d.legend.stabilizer"]
+
+    private func legendView(_ legend: [ExerciseDemo3D.LegendEntry], framed: Bool = true) -> some View {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        HStack {
-          Text("eg.demo3d.legend.title")
-            .font(DS.TextStyle.caption.weight(.semibold))
-            .textCase(.uppercase)
-            .tracking(0.8)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .accessibilityAddTraits(.isHeader)
+        HStack(spacing: DS.Spacing.sm) {
+          if legendCollapsed {
+            // Thu gọn (Kiệt 16/11: "nhìn hơi kì"): một hàng như hàng Chính của
+            // thẻ đầy đủ: nhãn vai trò + chip cơ chính, nút mở ở cuối.
+            collapsedPrimary(legend)
+              .transition(.opacity)
+          } else {
+            Text("eg.demo3d.legend.title")
+              .font(DS.TextStyle.caption.weight(.semibold))
+              .textCase(.uppercase)
+              .tracking(0.8)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .accessibilityAddTraits(.isHeader)
+              .transition(.opacity)
+          }
           Spacer(minLength: DS.Spacing.sm)
-          if bodySkins.ready, legend.contains(where: { !$0.roleKey.hasSuffix(".primary") }) {
+          if bodySkins.ready, !legendCollapsed, legend.contains(where: { !$0.roleKey.hasSuffix(".primary") }) {
             Button {
               withAnimation(reduceMotion ? nil : .smooth(duration: 0.2)) { hideSecondary.toggle() }
             } label: {
@@ -294,37 +501,112 @@
             .buttonStyle(.plain)
             .accessibilityAddTraits(hideSecondary ? [.isButton, .isSelected] : .isButton)
           }
-        }
-        ForEach(Array(legend.enumerated()), id: \.offset) { _, entry in
-          let tint = Color(hex: entry.hex)
-          let primary = entry.roleKey.hasSuffix(".primary")
-          let hidden = hideSecondary && !primary
-          HStack(spacing: DS.Spacing.sm) {
-            Circle()
-              .fill(tint)
-              .frame(width: 10, height: 10)
-              .shadow(color: tint.opacity(0.8), radius: 5)
-              .accessibilityHidden(true)
-            Text(LocalizedStringKey(entry.nameKey))
-              .font(DS.TextStyle.body.weight(.semibold))
+          Button {
+            withAnimation(collapseAnimation) { legendCollapsed.toggle() }
+          } label: {
+            Image(systemName: "chevron.down")
+              .rotationEffect(.degrees(legendCollapsed ? 180 : 0))
+              .font(.system(size: 13, weight: .bold))
               .foregroundStyle(DS.Color.foreground.swiftUI)
-            Spacer(minLength: DS.Spacing.sm)
-            Text(LocalizedStringKey(entry.roleKey))
-              .font(DS.TextStyle.caption.weight(.semibold))
-              .foregroundStyle(primary ? Color.white : DS.Color.metricOrange.swiftUI)
-              .padding(.horizontal, 10)
-              .padding(.vertical, 4)
-              .background {
-                Capsule().fill(primary ? tint : tint.opacity(0.14))
-              }
+              .frame(width: 30, height: 30)
+              .background(DS.Color.foreground.swiftUI.opacity(0.08), in: Circle())
+              .frame(minWidth: 44, minHeight: 44)
+              .contentShape(Rectangle())
           }
-          .opacity(hidden ? 0.35 : 1)
-          .accessibilityElement(children: .combine)
+          .buttonStyle(.plain)
+          .accessibilityLabel(Text(legendCollapsed ? "eg.demo3d.expandLegend" : "eg.demo3d.collapseLegend"))
+        }
+        if !legendCollapsed {
+          VStack(alignment: .leading, spacing: DS.Spacing.sm) { legendRows(legend) }
+            .transition(.opacity.combined(with: .offset(y: 14)))
         }
       }
-      .padding(DS.Spacing.md)
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.vertical, legendCollapsed ? DS.Spacing.sm : DS.Spacing.md)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .todayCard()
+      // Cắt nội dung (khi thu gọn / mở) theo đúng hình thẻ, TRƯỚC khi vẽ thẻ: `.clipped()` sau
+      // thẻ cắt vuông cả bóng đổ, lộ góc tối vuông ngoài viền bo (Kiệt 17/11).
+      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+      .modifier(LegendCard(on: framed))
+    }
+
+    private struct LegendCard: ViewModifier {
+      let on: Bool
+      func body(content: Content) -> some View {
+        if on { content.todayCard() } else { content }
+      }
+    }
+
+    /// Hàng thu gọn: nhãn "Chính" + chip cơ chính (chấm màu), một dòng, cắt
+    /// bằng dấu … khi quá dài.
+    private func collapsedPrimary(_ legend: [ExerciseDemo3D.LegendEntry]) -> some View {
+      let primary = legend.filter { $0.roleKey.hasSuffix(".primary") }
+      let tint = Color(hex: primary.first?.hex ?? "#E8552B")
+      return HStack(spacing: DS.Spacing.sm) {
+        Text(LocalizedStringKey(Self.roleOrder[0]))
+          .font(DS.TextStyle.caption.weight(.semibold))
+          .foregroundStyle(Color.white)
+          .padding(.horizontal, 10)
+          .padding(.vertical, 4)
+          .background { Capsule().fill(tint) }
+        HStack(spacing: 6) {
+          Circle().fill(tint).frame(width: 8, height: 8)
+            .shadow(color: tint.opacity(0.8), radius: 4)
+            .accessibilityHidden(true)
+          Text(primary.map { String(localized: String.LocalizationValue($0.nameKey)) }.joined(separator: " · "))
+            .font(DS.TextStyle.footnote.weight(.semibold))
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .lineLimit(1)
+            .truncationMode(.tail)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(DS.Color.foreground.swiftUI.opacity(0.06), in: Capsule())
+      }
+      .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private func legendRows(_ legend: [ExerciseDemo3D.LegendEntry]) -> some View {
+        // Ba cấp (Kiệt 15/11): Chính = chịu tải, tạo lực chính; Phụ = hỗ trợ
+        // trực tiếp chuyển động; Ổn định = giữ tư thế, ổn định khớp. Mỗi cấp
+        // một hàng: nhãn màu + chip tên cơ xuống dòng tự do, để 10+ cơ vẫn
+        // gọn và không che mô hình.
+        ForEach(Self.roleOrder, id: \.self) { role in
+          let entries = legend.filter { $0.roleKey == role }
+          if let first = entries.first {
+            let tint = Color(hex: first.hex)
+            let primary = role.hasSuffix(".primary")
+            HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
+              Text(LocalizedStringKey(role))
+                .font(DS.TextStyle.caption.weight(.semibold))
+                .foregroundStyle(primary ? Color.white : tint)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background { Capsule().fill(primary ? tint : tint.opacity(0.16)) }
+                .frame(minWidth: 72, alignment: .leading)
+              FlowRows(spacing: 6, centered: false) {
+                ForEach(Array(entries.enumerated()), id: \.offset) { _, entry in
+                  HStack(spacing: 6) {
+                    Circle()
+                      .fill(tint)
+                      .frame(width: 8, height: 8)
+                      .shadow(color: tint.opacity(0.8), radius: 4)
+                      .accessibilityHidden(true)
+                    Text(LocalizedStringKey(entry.nameKey))
+                      .font(DS.TextStyle.footnote.weight(.semibold))
+                      .foregroundStyle(DS.Color.foreground.swiftUI)
+                  }
+                  .padding(.horizontal, 8)
+                  .padding(.vertical, 4)
+                  .background(DS.Color.foreground.swiftUI.opacity(0.06), in: Capsule())
+                }
+              }
+            }
+            .opacity(hideSecondary && !primary ? 0.35 : 1)
+            .accessibilityElement(children: .combine)
+          }
+        }
     }
 
     /// USDZ không nạp được thì nói thẳng, kèm poster của bài.
@@ -380,6 +662,169 @@
       visit(root, insideLogo: false)
     }
 
+    /// Đổi giữa động tác đúng (nil) và một clip lỗi sai, tại chỗ (C2, 17/11).
+    private func showMistake(_ id: String?) {
+      withAnimation(reduceMotion ? nil : .smooth(duration: 0.25)) {
+        mistakeID = id
+        showTips = false
+        selectedTip = nil
+      }
+      rig.play(id ?? "", playback: playback, speed: slowMotion ? 0.5 : 1)
+    }
+
+    /// Một dòng thay thẻ nhóm cơ khi đang bật mẹo mà chưa chọn chấm nào.
+    private var tipsHint: some View {
+      HStack(spacing: DS.Spacing.sm) {
+        Image(systemName: "hand.tap.fill")
+          .foregroundStyle(Color(red: 0.91, green: 0.33, blue: 0.17))
+          .accessibilityHidden(true)
+        Text("eg.demo3d.tipsHint")
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+        Spacer(minLength: 0)
+      }
+      .padding(.horizontal, DS.Spacing.md)
+      .padding(.trailing, DS.Spacing.xs)
+      .frame(height: 48)
+      .fixedSize()
+    }
+
+    /// Kiệt 17/11 ("2 thẻ này chuyển động thu ra gọn lại … mượt như Dynamic Island"): thẻ nhóm cơ,
+    /// dòng hướng dẫn mẹo và thẻ mẹo dùng chung MỘT vỏ kính. Vỏ đo kích thước nội dung đang hiện
+    /// rồi lò xo tới đó (rộng lẫn cao: dòng hướng dẫn co thành viên thuốc ở giữa), nội dung cũ
+    /// mờ nhanh, nội dung mới hiện sau một nhịp, phóng nhẹ từ 0,94. Giảm chuyển động: đổi ngay.
+    private func bottomIsland(tips: [ExerciseTip], legend: [ExerciseDemo3D.LegendEntry]) -> some View {
+      let kind: IslandKind = !showTips ? .legend : (selectedTip == nil ? .hint : .tip)
+      let spring: Animation? = reduceMotion ? nil : .spring(response: 0.44, dampingFraction: 0.74)
+      let swap: AnyTransition = reduceMotion ? .identity : .asymmetric(
+        insertion: .opacity.combined(with: .scale(scale: 0.94, anchor: .bottom))
+          .animation(.spring(response: 0.36, dampingFraction: 0.86).delay(0.1)),
+        removal: .opacity.animation(.easeOut(duration: 0.12)))
+      let size = islandSizes[kind] ?? .zero
+      return ZStack(alignment: .bottom) {
+        if size != .zero {
+          Color.clear
+            .frame(width: size.width, height: size.height)
+            .todayCard()
+            .animation(spring, value: size)
+        }
+        Group {
+          switch kind {
+          case .legend:
+            legendView(legend, framed: false)
+              .frame(maxWidth: .infinity, alignment: .leading)
+          case .hint:
+            tipsHint
+          case .tip:
+            if let id = selectedTip, let n = tips.firstIndex(where: { $0.id == id }) {
+              ExerciseTipDetail(tip: tips[n], number: n + 1, framed: false) {
+                withAnimation(reduceMotion ? nil : .spring(response: 0.44, dampingFraction: 0.74)) { selectedTip = nil }
+              }
+              .id(id)
+            }
+          }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { islandSizes[kind] = $0 }
+        .transition(swap)
+        .id(kind)
+        // Chỉ cắt NỘI DUNG theo hình vỏ (nội dung cũ đang mờ đi không tràn ra ngoài khi vỏ co).
+        // Kiệt 17/11 ("bóng mờ cũ còn dư"): cắt cả khối thì bóng đổ của vỏ bị cắt vuông, để lại
+        // dải tối hai bên viên thuốc.
+        .mask(alignment: .bottom) {
+          RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous)
+            .frame(width: size.width > 0 ? size.width : nil, height: size.height > 0 ? size.height : nil)
+            .animation(spring, value: size)
+        }
+      }
+      .frame(maxWidth: .infinity)
+      // Đo trước dòng hướng dẫn (ẩn) để lần đầu bật mẹo vỏ co lại ngay, không khựng chờ đo.
+      .background {
+        if !tips.isEmpty, islandSizes[.hint] == nil {
+          tipsHint.hidden()
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { islandSizes[.hint] = $0 }
+        }
+      }
+      .frame(height: size.height > 0 ? size.height : nil, alignment: .bottom)
+      .animation(spring, value: size)
+    }
+
+    /// Bay máy quay tới mẹo `id` (hoặc về góc trước đó khi `id` = nil).
+    ///
+    /// Góc dễ thấy nhất: nhìn điểm neo theo hướng từ giữa người ra điểm đó (gần như pháp tuyến
+    /// của da ở đó, nên điểm không bị chính người che), giữ trong giới hạn góc ngẩng của phòng.
+    /// Đổi hướng theo đường ngắn nhất. Máy quay lùi về 2,1 m và tâm nhìn hạ xuống một chút để
+    /// chấm nằm ở nửa trên màn, không bị thẻ mẹo ở đáy che.
+    private func focusCamera(on id: String?) {
+      let base = Self.target(of: demoInfo)
+      guard let id, let tip = demoInfo?.tips.first(where: { $0.id == id }) else {
+        guard focus != nil else { return }
+        let back = viewBeforeTip ?? Self.home(of: demoInfo)
+        viewBeforeTip = nil
+        fly(yaw: back.yaw, pitch: back.pitch, distance: back.distance, target: base, clearFocus: true)
+        return
+      }
+      if viewBeforeTip == nil { viewBeforeTip = (yaw, pitch, distance) }
+      let anchor = tipAnchors.position(of: tip)
+      var out = anchor - base
+      // Điểm sát tâm (hướng không rõ): giữ hướng nhìn hiện tại.
+      if simd_length(SIMD2(out.x, out.z)) < 0.08 {
+        out = SIMD3(Float(sin(yaw)), out.y, Float(cos(yaw)))
+      }
+      let horizontal = Double(simd_length(SIMD2(out.x, out.z)))
+      // Gốc là góc 3/4 mặc định của bài (đã chọn để không bị ghế, khung, bánh tạ che), nghiêng
+      // 1/4 về hướng ra ngoài của điểm. Thử 17/11: nhìn theo hẳn hướng ra ngoài thì ở bench khung
+      // ghế và bánh tạ che vai. Đi đường ngắn nhất từ hướng đang nhìn.
+      let home = Self.home(of: demoInfo)
+      let outward = home.yaw + remainder(Double(atan2(out.x, out.z)) - home.yaw, 2 * .pi)
+      let aim = home.yaw + (outward - home.yaw) * 0.25
+      let newYaw = yaw + remainder(aim - yaw, 2 * .pi)
+      let newPitch = min(max(atan2(Double(out.y), horizontal), home.pitch), Self.pitchRange.upperBound)
+      let d = 2.5
+      // Hạ tâm nhìn theo trục "lên" của máy quay để chấm lên khoảng 1/3 trên màn.
+      let up = SIMD3<Float>(Float(-sin(newPitch) * sin(newYaw)), Float(cos(newPitch)), Float(-sin(newPitch) * cos(newYaw)))
+      let tanV = tan(Self.verticalFOV * .pi / 360)
+      let target = anchor - up * Float(0.35 * d) * tanV
+      fly(yaw: newYaw, pitch: newPitch, distance: d, target: target, clearFocus: false)
+    }
+
+    /// Chuyển máy quay mượt trong ~0,8 s (vào chậm, ra chậm). Giảm chuyển động: nhảy thẳng tới.
+    private func fly(yaw y1: Double, pitch p1: Double, distance d1: Double, target t1: SIMD3<Float>, clearFocus: Bool) {
+      flight?.cancel()
+      let y0 = yaw, p0 = pitch, d0 = distance, t0 = cameraTarget
+      func set(_ e: Double) {
+        yaw = y0 + (y1 - y0) * e
+        pitch = p0 + (p1 - p0) * e
+        distance = d0 + (d1 - d0) * e
+        focus = t0 + (t1 - t0) * Float(e)
+      }
+      guard !reduceMotion else {
+        set(1)
+        if clearFocus { focus = nil }
+        return
+      }
+      flight = Task { @MainActor in
+        let start = Date()
+        let duration = 0.8
+        while !Task.isCancelled {
+          let t = min(Date().timeIntervalSince(start) / duration, 1)
+          set(t < 0.5 ? 4 * t * t * t : 1 - pow(-2 * t + 2, 3) / 2)
+          if t >= 1 { break }
+          try? await Task.sleep(for: .milliseconds(16))
+        }
+        if !Task.isCancelled, clearFocus { focus = nil }
+      }
+    }
+
+    /// Lưới có khung xương của nhân vật (RealityKit gộp thân vào thực thể của khung xương).
+    private static func skinnedBody(in entity: Entity) -> ModelEntity? {
+      if let model = entity as? ModelEntity, !model.jointNames.isEmpty { return model }
+      for child in entity.children {
+        if let hit = skinnedBody(in: child) { return hit }
+      }
+      return nil
+    }
+
     private static func makeCamera(position cameraPosition: SIMD3<Float>, target cameraTarget: SIMD3<Float>) -> Entity {
       var camera = Entity()
       camera.name = cameraName
@@ -389,17 +834,210 @@
       return camera
     }
 
-    /// USDZ không kèm đèn: một đèn chính + một đèn phụ, đủ thấy khối cơ và
-    /// sợi cơ phát sáng mà không cần ảnh môi trường.
-    private static func addLights(to content: RealityViewCameraContent, target cameraTarget: SIMD3<Float>) {
-      var key = Entity()
-      key.components.set(DirectionalLightComponent(color: .white, intensity: 1200))
-      key.look(at: cameraTarget, from: cameraTarget + [2, 4, 2], relativeTo: nil)
-      content.add(key)
-      var fill = Entity()
-      fill.components.set(DirectionalLightComponent(color: .white, intensity: 400))
-      fill.look(at: cameraTarget, from: cameraTarget + [-3, 1, -2], relativeTo: nil)
-      content.add(fill)
+    /// Phòng dạng khối (Kiệt 16/11): `room_manifest_<look>.json` liệt kê từng
+    /// phần (sàn, tường, trần, thanh gỗ, kệ, LED, biển logo), mỗi phần một
+    /// USDZ, cùng các điểm neo cho đồ trang trí. Đổi một phần = thay một file.
+    /// Không có manifest thì dùng file phòng gộp như trước.
+    private struct RoomManifest: Decodable {
+      /// `texture`: ảnh ánh sáng nướng của bản này thay cho ảnh trong file dùng chung (17/11:
+      /// hai bản sáng / tối dùng chung hình học, chỉ khác ảnh, `pipeline/slim_app_usdz.py`).
+      struct Part: Decodable { let part: String; let file: String; let texture: String? }
+      /// Đèn chiếu nhân vật (B2, 17/11): `from` là độ lệch từ điểm máy quay nhìn tới.
+      struct Light: Decodable { let color: String?; let intensity: Float; let from: [Float] }
+      /// Dụng cụ trên kệ (Kiệt 17/11): mẫu dùng chung `equipment_<key>.usdz`, đặt theo tâm / trục /
+      /// cỡ, nên đổi mẫu tạ là phòng đổi theo cùng các bài tập.
+      struct RackItem: Decodable { let key: String; let position: [Float]; let axis: [Float]; let radius_m: Float; let length_m: Float }
+      let parts: [Part]
+      let anchors: [String: [Float]]
+      let lights: [Light]?
+      let rack_items: [RackItem]?
+      /// Độ sáng của dụng cụ trên kệ (phòng là ảnh nướng; tạ được đèn chiếu nên phòng tối cần dịu đi).
+      let rack_item_brightness: Float?
+    }
+
+    private static func roomManifest(look: String) -> RoomManifest? {
+      guard let url = Bundle.main.url(forResource: "room_manifest_\(look)", withExtension: "json"),
+        let data = try? Data(contentsOf: url)
+      else { return nil }
+      return try? JSONDecoder().decode(RoomManifest.self, from: data)
+    }
+
+    private static func loadRoom(look: String) async -> Entity? {
+      guard let manifest = roomManifest(look: look)
+      else { return try? await Entity(named: "gym_room_\(look)", in: .main) }
+      let room = Entity()
+      room.name = "GymRoom"
+      for part in manifest.parts {
+        guard let e = try? await Entity(named: part.file, in: .main) else { continue }
+        if let name = part.texture, let texture = await bakedTexture(name) { retexture(e, with: texture) }
+        room.addChild(e)
+      }
+      return room
+    }
+
+    /// Mẫu tạ trong kho dụng cụ (`equipment_dumbbell_12kg.usdz`): tay cầm dọc trục X, dài 0,30 m,
+    /// đầu tạ bán kính 0,0675 m. Gắn mỗi món trên kệ theo manifest, co giãn theo cỡ của món.
+    private static let equipmentLength: Float = 0.30
+    private static let equipmentHeadRadius: Float = 0.0675
+
+    private static func mountRackItems(in room: Entity, look: String) async {
+      guard let items = roomManifest(look: look)?.rack_items, !items.isEmpty else { return }
+      let holder = Entity()
+      holder.name = "RackItems"
+      var models: [String: Entity] = [:]
+      for item in items where item.position.count == 3 && item.axis.count == 3 {
+        if models[item.key] == nil, let file = try? await Entity(named: "equipment_\(item.key)", in: .main) {
+          models[item.key] = file
+        }
+        guard let model = models[item.key] else { continue }
+        let e = model.clone(recursive: true)
+        let axis = SIMD3(item.axis[0], item.axis[1], item.axis[2])
+        e.orientation = simd_quatf(angle: atan2(-axis.z, axis.x), axis: [0, 1, 0])
+        let r = item.radius_m / equipmentHeadRadius
+        e.scale = [item.length_m / equipmentLength, r, r]
+        e.position = SIMD3(item.position[0], item.position[1], item.position[2])
+        holder.addChild(e)
+      }
+      if let k = roomManifest(look: look)?.rack_item_brightness, k < 0.999 { dim(holder, by: CGFloat(k)) }
+      room.addChild(holder)
+    }
+
+    private static func dim(_ entity: Entity, by k: CGFloat) {
+      if var model = entity.components[ModelComponent.self] {
+        model.materials = model.materials.map { material in
+          guard var pbr = material as? PhysicallyBasedMaterial else { return material }
+          var (r, g, b, a): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+          pbr.baseColor.tint.getRed(&r, green: &g, blue: &b, alpha: &a)
+          pbr.baseColor.tint = UIColor(red: r * k, green: g * k, blue: b * k, alpha: a)
+          return pbr
+        }
+        entity.components.set(model)
+      }
+      for child in entity.children { dim(child, by: k) }
+    }
+
+    private static func bakedTexture(_ name: String) async -> TextureResource? {
+      guard let url = Bundle.main.url(forResource: name, withExtension: "jpg")
+        ?? Bundle.main.url(forResource: name, withExtension: "png")
+      else { return nil }
+      return try? await TextureResource(contentsOf: url, options: .init(semantic: .color))
+    }
+
+    /// Đặt ảnh màu cho mọi vật liệu PBR của một phần phòng; `makeUnlit` đổi sang vật liệu không
+    /// chiếu sáng ngay sau đó.
+    private static func retexture(_ entity: Entity, with texture: TextureResource) {
+      if var model = entity.components[ModelComponent.self] {
+        model.materials = model.materials.map { material in
+          guard var pbr = material as? PhysicallyBasedMaterial else { return material }
+          pbr.baseColor.texture = .init(texture)
+          return pbr
+        }
+        entity.components.set(model)
+      }
+      for child in entity.children { retexture(child, with: texture) }
+    }
+
+    private struct EquipmentManifest: Decodable {
+      struct Socket: Decodable { let socket: String; let key: String }
+      let sockets: [Socket]
+    }
+
+    /// Dụng cụ dạng khối (Kiệt 16/11): file chuyển động chỉ có "ổ cắm" (vật
+    /// trống cùng tên, vẫn chuyển động); mẫu dụng cụ nằm ở
+    /// `equipment_<key>.usdz`, dùng chung mọi bài. Đổi mẫu tạ = thay một file.
+    /// Bài không có `<bài>_equipment.json` thì dụng cụ đã nằm sẵn trong file.
+    private static func mountEquipment(on motion: Entity, manifest name: String) async {
+      guard let url = Bundle.main.url(forResource: name, withExtension: "json"),
+        let data = try? Data(contentsOf: url),
+        let manifest = try? JSONDecoder().decode(EquipmentManifest.self, from: data)
+      else { return }
+      var models: [String: Entity] = [:]
+      for s in manifest.sockets {
+        guard let socket = motion.findEntity(named: s.socket) else { continue }
+        var model = models[s.key]
+        if model == nil, let file = try? await Entity(named: "equipment_\(s.key)", in: .main),
+          let root = file.findEntity(named: "EQ_\(s.key)")
+        {
+          root.removeFromParent()
+          models[s.key] = root
+          model = root
+        }
+        guard let model else { continue }
+        // Cùng khung toạ độ với ổ cắm: mẫu xuất ở gốc, ổ cắm mang vị trí.
+        let instance = model.clone(recursive: true)
+        instance.transform = .identity
+        socket.addChild(instance)
+      }
+    }
+
+    /// Bóng tiếp xúc mềm trên sàn (y = 0) dưới khung bao của nhân vật và
+    /// dụng cụ: mặt phẳng không chiếu sáng, texture dải mờ tròn sinh lúc chạy.
+    /// Thay cho bóng nướng vào sàn phòng, vốn chỉ đúng với một bài.
+    private static func contactShadow(under entities: [Entity]) -> Entity? {
+      var bounds: BoundingBox?
+      for e in entities {
+        let b = e.visualBounds(relativeTo: nil)
+        guard b.isEmpty == false else { continue }
+        bounds = bounds.map { $0.union(b) } ?? b
+      }
+      guard let bounds, let texture = shadowTexture() else { return nil }
+      let w = max(bounds.extents.x * 1.15, 0.9), d = max(bounds.extents.z * 1.15, 0.9)
+      var material = UnlitMaterial()
+      // Texture đen có kênh alpha = độ đậm của bóng.
+      material.color = .init(tint: .white, texture: .init(texture))
+      material.blending = .transparent(opacity: .init(floatLiteral: 1.0))
+      let plane = ModelEntity(mesh: .generatePlane(width: w, depth: d), materials: [material])
+      plane.position = [bounds.center.x, 0.003, bounds.center.z]
+      plane.name = "ContactShadow"
+      return plane
+    }
+
+    /// Bóng đen, alpha 55 % ở tâm, tắt dần ra mép (smoothstep), alpha nhân sẵn.
+    private static func shadowTexture() -> TextureResource? {
+      let n = 128
+      var px = [UInt8](repeating: 0, count: n * n * 4)
+      for y in 0..<n {
+        for x in 0..<n {
+          let dx = (Double(x) + 0.5) / Double(n) * 2 - 1, dy = (Double(y) + 0.5) / Double(n) * 2 - 1
+          let r = min((dx * dx + dy * dy).squareRoot(), 1)
+          let t = 1 - r
+          let a = 0.55 * t * t * (3 - 2 * t)
+          px[(y * n + x) * 4 + 3] = UInt8(a * 255)  // RGB 0 = đen (nhân sẵn)
+        }
+      }
+      guard let provider = CGDataProvider(data: Data(px) as CFData),
+        let image = CGImage(
+          width: n, height: n, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: n * 4,
+          space: CGColorSpaceCreateDeviceRGB(),
+          bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+          provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent)
+      else { return nil }
+      return try? TextureResource(image: image, options: .init(semantic: .color))
+    }
+
+    /// USDZ không kèm đèn: đèn định hướng chiếu nhân vật, đọc từ `room_manifest_<look>.json`
+    /// (B2, 17/11: đổi ánh sáng theo phòng hay theo mùa không sửa code). Thiếu thì dùng một
+    /// đèn chính + một đèn phụ như trước, đủ thấy khối cơ và sợi cơ phát sáng.
+    private static func addLights(to content: RealityViewCameraContent, target cameraTarget: SIMD3<Float>, look: String) {
+      let fallback: [(UIColor, Float, SIMD3<Float>)] = [(.white, 1200, [2, 4, 2]), (.white, 400, [-3, 1, -2])]
+      let lights: [(UIColor, Float, SIMD3<Float>)] =
+        roomManifest(look: look)?.lights?.compactMap { l in
+          guard l.from.count == 3 else { return nil }
+          return (l.color.flatMap(color(hex:)) ?? .white, l.intensity, SIMD3(l.from[0], l.from[1], l.from[2]))
+        } ?? fallback
+      for (color, intensity, from) in lights {
+        let light = Entity()
+        light.components.set(DirectionalLightComponent(color: color, intensity: intensity))
+        light.look(at: cameraTarget, from: cameraTarget + from, relativeTo: nil)
+        content.add(light)
+      }
+    }
+
+    private static func color(hex: String) -> UIColor? {
+      guard let v = UInt32(hex.trimmingCharacters(in: CharacterSet(charactersIn: "#")), radix: 16) else { return nil }
+      return UIColor(
+        red: CGFloat((v >> 16) & 0xFF) / 255, green: CGFloat((v >> 8) & 0xFF) / 255, blue: CGFloat(v & 0xFF) / 255,
+        alpha: 1)
     }
   }
 
@@ -412,8 +1050,17 @@
       normal: PhysicallyBasedMaterial.Texture?
     )
     @ObservationIgnored private weak var body: ModelEntity?
+    /// Lưới mang quần: chính thân (file gộp) hoặc khối quần riêng
+    /// (`apparel_shorts.usdz`, dạng khối từ 16/11).
+    @ObservationIgnored private weak var apparelBody: ModelEntity?
     @ObservationIgnored private var full: Skin = (nil, nil, nil)
     @ObservationIgnored private var focus: Skin = (nil, nil, nil)
+    /// Quần (vật liệu không có normal map) cũng tô cơ bên dưới, nên có bộ
+    /// texture "chỉ cơ chính" riêng (`<prefix>_apparel_*`, từ 16/11). Bài cũ
+    /// không có thì quần giữ nguyên.
+    @ObservationIgnored private var apparelIndex: Int?
+    @ObservationIgnored private var fullApparel: Skin = (nil, nil, nil)
+    @ObservationIgnored private var focusApparel: Skin = (nil, nil, nil)
     @ObservationIgnored private var shownFocus = false
     private(set) var ready = false
 
@@ -421,37 +1068,201 @@
     /// xương (`config/master_character.json` → `armature_object`).
     private static let bodyName = "MasterRig"
 
-    func prepare(scene: Entity, prefix: String) async {
+    func prepare(scene: Entity, apparel: Entity? = nil, prefix: String, fullPrefix: String? = nil) async {
       guard let body = Self.find(in: scene), let model = body.model,
         let bodyMaterial = model.materials.lazy.compactMap({ $0 as? PhysicallyBasedMaterial })
           .first(where: { $0.normal.texture != nil }),
-        let albedoURL = Bundle.main.url(forResource: "\(prefix)_albedo", withExtension: "png"),
-        let emissionURL = Bundle.main.url(forResource: "\(prefix)_emission", withExtension: "png"),
-        let normalURL = Bundle.main.url(forResource: "\(prefix)_normal", withExtension: "png"),
-        let albedo = try? await TextureResource(contentsOf: albedoURL, options: .init(semantic: .color)),
-        let emission = try? await TextureResource(contentsOf: emissionURL, options: .init(semantic: .color)),
-        let normal = try? await TextureResource(contentsOf: normalURL, options: .init(semantic: .normal))
+        let albedo = await Self.texture("\(prefix)_albedo", .color),
+        let emission = await Self.texture("\(prefix)_emission", .color),
+        let normal = await Self.texture("\(prefix)_normal", .normal)
       else { return }
       full = (bodyMaterial.baseColor.texture, bodyMaterial.emissiveColor.texture, bodyMaterial.normal.texture)
       focus = (.init(albedo), .init(emission), .init(normal))
+      // Dạng khối: nhân vật dùng chung không mang texture của bài, nên bộ
+      // "đủ vai trò" cũng nạp từ PNG.
+      if let fullPrefix,
+        let fa = await Self.texture("\(fullPrefix)_albedo", .color),
+        let fe = await Self.texture("\(fullPrefix)_emission", .color),
+        let fn = await Self.texture("\(fullPrefix)_normal", .normal)
+      {
+        full = (.init(fa), .init(fe), .init(fn))
+      }
+      let apparelModel = apparel.flatMap { Self.find(in: $0) } ?? body
+      if let index = apparelModel.model?.materials.firstIndex(where: {
+        guard let pbr = $0 as? PhysicallyBasedMaterial else { return false }
+        return pbr.normal.texture == nil && pbr.baseColor.texture != nil
+      }),
+        let apparelMaterial = apparelModel.model?.materials[index] as? PhysicallyBasedMaterial,
+        let apparelAlbedo = await Self.texture("\(prefix)_apparel_albedo", .color),
+        let apparelEmission = await Self.texture("\(prefix)_apparel_emission", .color)
+      {
+        apparelIndex = index
+        apparelBody = apparelModel
+        fullApparel = (apparelMaterial.baseColor.texture, apparelMaterial.emissiveColor.texture, nil)
+        focusApparel = (.init(apparelAlbedo), .init(apparelEmission), nil)
+        if let fullPrefix,
+          let fa = await Self.texture("\(fullPrefix)_apparel_albedo", .color),
+          let fe = await Self.texture("\(fullPrefix)_apparel_emission", .color)
+        {
+          fullApparel = (.init(fa), .init(fe), nil)
+        }
+      }
       self.body = body
       ready = true
     }
 
-    /// Gán bộ texture vào vật liệu thân hiện tại (vật liệu duy nhất có normal
-    /// map — quần giữ nguyên). Gán lại mảng vật liệu cũ thì RealityKit không
-    /// vẽ lại, nên luôn dựng vật liệu mới.
-    func apply(focus on: Bool) {
-      guard ready, on != shownFocus, let body, let model = body.model else { return }
-      let skin = on ? focus : full
-      body.model?.materials = model.materials.map { material in
-        guard var pbr = material as? PhysicallyBasedMaterial, pbr.normal.texture != nil else { return material }
-        pbr.baseColor.texture = skin.base
-        pbr.emissiveColor.texture = skin.emissive
-        pbr.normal.texture = skin.normal
-        return pbr
+    /// Tô cơ lúc chạy (17/11, `MuscleShader`): da pha từ bộ ảnh dùng chung theo vai trò cơ của bài,
+    /// thay texture nướng sẵn từng bài. false = thiếu tệp hay không tìm thấy lưới thân, để bên gọi
+    /// lùi về texture nướng sẵn.
+    func prepareShader(scene: Entity, apparel: Entity?, roles: [String: [String]]) async -> Bool {
+      guard let body = Self.find(in: scene), body.model != nil else { return false }
+      var gpuAllowed = true
+      #if DEBUG
+        // So hai đường: chạy với biến môi trường ASCND_MUSCLE_CPU=1 để ép đường CPU.
+        gpuAllowed = ProcessInfo.processInfo.environment["ASCND_MUSCLE_CPU"] == nil
+      #endif
+      if gpuAllowed, await prepareGPU(body: body, apparel: apparel, roles: roles) { return true }
+      let skins = await Task.detached(priority: .userInitiated) { () -> MuscleShader.Skins? in
+        let start = Date()
+        guard let shared = MuscleShader.shared() else { return nil }
+        let skins = MuscleShader.skins(roles: roles, shared: shared)
+        #if DEBUG
+          NSLog("[muscle] CPU composed in %d ms", Int(Date().timeIntervalSince(start) * 1000))
+        #endif
+        return skins
+      }.value
+      guard let skins else { return false }
+      func tex(_ image: CGImage?, _ semantic: TextureResource.Semantic = .color) -> PhysicallyBasedMaterial.Texture? {
+        image.flatMap { try? TextureResource(image: $0, options: .init(semantic: semantic)) }.map { .init($0) }
+      }
+      guard let fa = tex(skins.fullBody.albedo), let fe = tex(skins.fullBody.emission),
+        let fn = tex(skins.fullBody.normal, .normal),
+        let ca = tex(skins.focusBody.albedo), let ce = tex(skins.focusBody.emission),
+        let cn = tex(skins.focusBody.normal, .normal)
+      else { return false }
+      full = (fa, fe, fn)
+      focus = (ca, ce, cn)
+      let apparelModel = apparel.flatMap { Self.find(in: $0) } ?? body
+      if let index = apparelModel.model?.materials.firstIndex(where: {
+        guard let pbr = $0 as? PhysicallyBasedMaterial else { return false }
+        return pbr.normal.texture == nil && pbr.baseColor.texture != nil
+      }),
+        let afa = tex(skins.fullApparel.albedo), let afe = tex(skins.fullApparel.emission),
+        let aca = tex(skins.focusApparel.albedo), let ace = tex(skins.focusApparel.emission)
+      {
+        apparelIndex = index
+        apparelBody = apparelModel
+        fullApparel = (afa, afe, nil)
+        focusApparel = (aca, ace, nil)
+      }
+      self.body = body
+      ready = true
+      return true
+    }
+
+    /// Tô cơ trên GPU (17/11, `MuscleMaterial`): vật liệu gốc giữ lại, mỗi lần đổi chỉ dựng
+    /// `CustomMaterial` với bảng màu đủ / chỉ cơ chính. false = không dựng được (lùi về đường CPU).
+    private struct GPUSkin {
+      let textures: MuscleMaterial.Textures
+      let full: TextureResource
+      let focus: TextureResource
+      let bodyIndex: Int
+      let bodyOriginal: PhysicallyBasedMaterial
+      let apparelOriginal: PhysicallyBasedMaterial?
+    }
+    @ObservationIgnored private var gpu: GPUSkin?
+
+    private func prepareGPU(body: ModelEntity, apparel: Entity?, roles: [String: [String]]) async -> Bool {
+      #if DEBUG
+        let start = Date()
+      #endif
+      guard let parts = MuscleMaterial.parts(), let textures = await MuscleMaterial.textures(),
+        let full = MuscleMaterial.palette(roles: roles, parts: parts, primaryOnly: false),
+        let focus = MuscleMaterial.palette(roles: roles, parts: parts, primaryOnly: true),
+        let materials = body.model?.materials,
+        let bodyIndex = materials.firstIndex(where: { ($0 as? PhysicallyBasedMaterial)?.normal.texture != nil }),
+        let bodyOriginal = materials[bodyIndex] as? PhysicallyBasedMaterial,
+        MuscleMaterial.material(replacing: bodyOriginal, body: true, textures: textures, palette: full) != nil
+      else { return false }
+      let apparelModel = apparel.flatMap { Self.find(in: $0) } ?? body
+      var apparelOriginal: PhysicallyBasedMaterial?
+      if let index = apparelModel.model?.materials.firstIndex(where: {
+        guard let pbr = $0 as? PhysicallyBasedMaterial else { return false }
+        return pbr.normal.texture == nil && pbr.baseColor.texture != nil
+      }) {
+        apparelIndex = index
+        apparelBody = apparelModel
+        apparelOriginal = apparelModel.model?.materials[index] as? PhysicallyBasedMaterial
+      }
+      gpu = GPUSkin(
+        textures: textures, full: full, focus: focus, bodyIndex: bodyIndex, bodyOriginal: bodyOriginal,
+        apparelOriginal: apparelOriginal)
+      #if DEBUG
+        NSLog("[muscle] GPU material ready in %d ms", Int(Date().timeIntervalSince(start) * 1000))
+      #endif
+      self.body = body
+      ready = true
+      return true
+    }
+
+    private func applyGPU(_ g: GPUSkin, focus on: Bool, body: ModelEntity) {
+      let palette = on ? g.focus : g.full
+      func swap(_ entity: ModelEntity, _ index: Int, _ original: PhysicallyBasedMaterial, isBody: Bool) {
+        guard var materials = entity.model?.materials, index < materials.count,
+          let m = MuscleMaterial.material(replacing: original, body: isBody, textures: g.textures, palette: palette)
+        else { return }
+        materials[index] = m
+        entity.model?.materials = materials
+      }
+      swap(body, g.bodyIndex, g.bodyOriginal, isBody: true)
+      if let apparelBody, let apparelIndex, let original = g.apparelOriginal {
+        swap(apparelBody, apparelIndex, original, isBody: false)
       }
       shownFocus = on
+    }
+
+    private static func texture(_ name: String, _ semantic: TextureResource.Semantic) async -> TextureResource? {
+      // Bài dạng khối xuất JPEG (nhẹ hơn ~3 lần), bài cũ PNG.
+      guard let url = Bundle.main.url(forResource: name, withExtension: "jpg")
+        ?? Bundle.main.url(forResource: name, withExtension: "png") else { return nil }
+      return try? await TextureResource(contentsOf: url, options: .init(semantic: semantic))
+    }
+
+    /// Gán bộ texture vào vật liệu thân (vật liệu duy nhất có normal map) và
+    /// quần. Gán lại mảng vật liệu cũ thì RealityKit không vẽ lại, nên luôn
+    /// dựng vật liệu mới.
+    func apply(focus on: Bool, force: Bool = false) {
+      guard ready, force || on != shownFocus, let body else { return }
+      if let gpu { return applyGPU(gpu, focus: on, body: body) }
+      let skin = on ? focus : full
+      let apparelSkin = on ? focusApparel : fullApparel
+      Self.retexture(body) { index, pbr in
+        if pbr.normal.texture != nil {
+          pbr.baseColor.texture = skin.base
+          pbr.emissiveColor.texture = skin.emissive
+          pbr.normal.texture = skin.normal
+          return true
+        }
+        return false
+      }
+      if let apparelBody, let apparelIndex {
+        Self.retexture(apparelBody) { index, pbr in
+          guard index == apparelIndex, pbr.normal.texture == nil else { return false }
+          pbr.baseColor.texture = apparelSkin.base
+          pbr.emissiveColor.texture = apparelSkin.emissive
+          return true
+        }
+      }
+      shownFocus = on
+    }
+
+    /// Dựng mảng vật liệu mới (gán lại mảng cũ thì RealityKit không vẽ lại).
+    private static func retexture(_ entity: ModelEntity, _ change: (Int, inout PhysicallyBasedMaterial) -> Bool) {
+      guard let model = entity.model else { return }
+      entity.model?.materials = model.materials.enumerated().map { index, material in
+        guard var pbr = material as? PhysicallyBasedMaterial, change(index, &pbr) else { return material }
+        return pbr
+      }
     }
 
     private static func find(in entity: Entity) -> ModelEntity? {

@@ -225,13 +225,6 @@ struct TodayExtras<Plan: View>: View {
         TodayCoachSection(
           userId: userId, today: flow.today.today, refresh: dayVersion,
           waterMl: water?.loaded == true ? water.map { Double($0.totalMl) } : nil)
-        // Một khối: dải ngày và lời giải thích cùng chỗ (không thẻ thứ hai cùng tên).
-        TodayKoaWeekModule(
-          days: TodayWeekStrip.days(today: flow.today.today, library: flow.today.library, trained: flow.today.trained),
-          today: flow.today.today,
-          target: flow.today.library.flatMap { lib in KoaGains.Week(lib).planned.isEmpty ? nil : KoaGains.Week(lib).target },
-          state: koaWeekState,
-          claim: services.koaWeek(userId: userId)?.claim ?? .notYet)
       } else {
         // Thẻ buổi tập ngay dưới khối ngày, mang dòng sẵn sàng.
         VStack(alignment: .leading, spacing: DS.Spacing.md) { plan(readinessRow) }
@@ -514,7 +507,7 @@ struct TodayExtras<Plan: View>: View {
   /// HIỂU — ở tab Tiến bộ. GĐ3 (Kiệt 21/10): thực phẩm bổ sung chỉ còn ở
   /// Dinh dưỡng › Thêm.
   /// Thẻ "Hỏi Koa" chỉ khi Koa Coach có trên máy chủ.
-  private var askKoa: Bool { services.aiDeployed == true }
+  private var askKoa: Bool { services.isAIDeployed(.coach) }
 
   private var moreRows: [TodayMore.Row] {
     var rows: [TodayMore.Row] = []
@@ -1049,7 +1042,7 @@ struct TodayExtras<Plan: View>: View {
     case .rest: workout = String(localized: "day.tile.restDay")
     default: workout = planName ?? todo
     }
-    return [
+    let tiles: [TodayDayCard.Tile] = [
       .init(
         item: .sleep, state: states[.sleep] ?? .todo,
         detail: sleepFromHealth && states[.sleep] == .done ? "\(sleep) · \(String(localized: "hs.title"))" : sleep),
@@ -1057,6 +1050,16 @@ struct TodayExtras<Plan: View>: View {
       .init(item: .water, state: states[.water] ?? .todo, detail: waterText),
       .init(item: .workout, state: states[.workout] ?? .todo, detail: workout),
     ]
+    // Kiệt 17/11: thẻ ưu tiên theo thói quen sinh hoạt — việc vừa tới giờ quen lên đầu, đã xong
+    // xuống cuối (`DayTileOrder`). Giờ quen học trên máy (`HabitHours`), chưa có thì giờ mặc định.
+    let parts = Calendar.current.dateComponents([.hour, .minute], from: Date())
+    let now = Double(parts.hour ?? 12) + Double(parts.minute ?? 0) / 60
+    let quest: [DayCheckIn.Item: MascotRules.Quest] = [.sleep: .sleep, .meal: .meal, .water: .water, .workout: .workout]
+    let order = DayTileOrder.order(
+      tiles.map(\.item), states: states,
+      habitHour: { item in quest[item].flatMap { services.habitHours.habit($0, userId: room.userId)?.hour } },
+      now: now)
+    return order.compactMap { item in tiles.first { $0.item == item } }
   }
 
   /// Dòng cân trong thẻ: chỉ khi đã lâu chưa cân (hoặc hôm nay vừa cân).

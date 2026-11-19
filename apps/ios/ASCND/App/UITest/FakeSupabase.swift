@@ -321,10 +321,25 @@
       let value: JSONValue =
         switch name {
         case "current_tier": .string("free")
-        case "claim_quest_reward", "buy_streak_freeze": .number(10)
+        case "claim_quest_reward": .number(10)
         case "buy_mascot_item": .number(0)
         case "dm_open": .string(UUID().uuidString.lowercased())
         case "community_user_stats": .object([:])
+        // Kiểm duyệt Cộng đồng (#915): người test là ADMIN, dữ liệu mẫu ở
+        // `UITestModerationSeed`. Ghi (mod_hide / mod_decide_appeal / …) không
+        // cần trả gì — client chỉ `.execute()` — nên rơi về `[]` mặc định.
+        case "my_app_role": .string("admin")
+        case "mod_dashboard": UITestModerationSeed.dashboard()
+        case "mod_reports": UITestModerationSeed.reports(status: params?["p_status"]?.stringValue)
+        case "mod_appeals": UITestModerationSeed.appeals(status: params?["p_status"]?.stringValue)
+        case "mod_target": UITestModerationSeed.target(
+          type: params?["p_type"]?.stringValue, id: params?["p_id"]?.stringValue)
+        case "mod_user_restriction": UITestModerationSeed.restriction(user: params?["p_user"]?.stringValue)
+        case "admin_users": UITestModerationSeed.users(query: params?["p_query"]?.stringValue)
+        case "admin_user": UITestModerationSeed.userDetail(id: params?["p_user"]?.stringValue)
+        case "admin_audit": UITestModerationSeed.audit(action: params?["p_action"]?.stringValue)
+        case "admin_art": UITestModerationSeed.art()
+        case "community_my_reports": UITestModerationSeed.myReports()
         // Ví gộp (round 3, AUD-28): như `mascot_wallet()` — số dư, XP theo loại khoá, khoá đã nhận.
         case "mascot_wallet": Self.wallet(rows("mascot_transactions"))
         default: .array([])

@@ -1,0 +1,176 @@
+{
+  "schema": "ascnd.tempo/1",
+  "exercise_id": "stiff_leg_dumbbell_deadlift",
+  "frame_rate": 24,
+  "duration_ms": 9700,
+  "starts_at": "top",
+  "notation": "2.2-0.3-1.6-0.5",
+  "reps": [
+    {
+      "index": 1,
+      "phases": [
+        {
+          "kind": "eccentric",
+          "start_ms": 600,
+          "end_ms": 2800,
+          "from": 1.0,
+          "to": 0.0,
+          "breath": "inhale"
+        },
+        {
+          "kind": "bottom_hold",
+          "start_ms": 2800,
+          "end_ms": 3100,
+          "from": 0.0,
+          "to": 0.0,
+          "breath": "hold"
+        },
+        {
+          "kind": "concentric",
+          "start_ms": 3100,
+          "end_ms": 4700,
+          "from": 0.0,
+          "to": 1.0,
+          "breath": "exhale"
+        },
+        {
+          "kind": "top_hold",
+          "start_ms": 4700,
+          "end_ms": 5200,
+          "from": 1.0,
+          "to": 1.0,
+          "breath": "hold"
+        }
+      ],
+      "start_ms": 600,
+      "end_ms": 5200
+    },
+    {
+      "index": 2,
+      "phases": [
+        {
+          "kind": "eccentric",
+          "start_ms": 5200,
+          "end_ms": 7400,
+          "from": 1.0,
+          "to": 0.0,
+          "breath": "inhale"
+        },
+        {
+          "kind": "bottom_hold",
+          "start_ms": 7400,
+          "end_ms": 7700,
+          "from": 0.0,
+          "to": 0.0,
+          "breath": "hold"
+        },
+        {
+          "kind": "concentric",
+          "start_ms": 7700,
+          "end_ms": 9300,
+          "from": 0.0,
+          "to": 1.0,
+          "breath": "exhale"
+        }
+      ],
+      "start_ms": 5200,
+      "end_ms": 9300
+    }
+  ],
+  "marks": [
+    {
+      "at_ms": 2800,
+      "type": "turn",
+      "rep": 1
+    },
+    {
+      "at_ms": 4700,
+      "type": "rep_complete",
+      "rep": 1
+    },
+    {
+      "at_ms": 7400,
+      "type": "turn",
+      "rep": 2
+    },
+    {
+      "at_ms": 9300,
+      "type": "rep_complete",
+      "rep": 2
+    }
+  ],
+  "cues": [
+    {
+      "at_ms": 0,
+      "rep": 0,
+      "phase": "start_position",
+      "text": "Stand tall, dumbbells in front of the thighs"
+    },
+    {
+      "at_ms": 0,
+      "rep": 0,
+      "phase": "start_position",
+      "text": "Knees soft, back flat"
+    },
+    {
+      "at_ms": 600,
+      "rep": 1,
+      "phase": "eccentric",
+      "text": "Push the hips back, slide the weights down the legs"
+    },
+    {
+      "at_ms": 600,
+      "rep": 1,
+      "phase": "eccentric",
+      "text": "Keep the back flat"
+    },
+    {
+      "at_ms": 2800,
+      "rep": 1,
+      "phase": "bottom_hold",
+      "text": "Feel the stretch in the back of the thighs"
+    },
+    {
+      "at_ms": 3100,
+      "rep": 1,
+      "phase": "concentric",
+      "text": "Drive the hips forward to stand up"
+    },
+    {
+      "at_ms": 3100,
+      "rep": 1,
+      "phase": "concentric",
+      "text": "Squeeze the glutes at the top"
+    },
+    {
+      "at_ms": 5200,
+      "rep": 2,
+      "phase": "eccentric",
+      "text": "Push the hips back, slide the weights down the legs"
+    },
+    {
+      "at_ms": 5200,
+      "rep": 2,
+      "phase": "eccentric",
+      "text": "Keep the back flat"
+    },
+    {
+      "at_ms": 7400,
+      "rep": 2,
+      "phase": "bottom_hold",
+      "text": "Feel the stretch in the back of the thighs"
+    },
+    {
+      "at_ms": 7700,
+      "rep": 2,
+      "phase": "concentric",
+      "text": "Drive the hips forward to stand up"
+    },
+    {
+      "at_ms": 7700,
+      "rep": 2,
+      "phase": "concentric",
+      "text": "Squeeze the glutes at the top"
+    }
+  ]
+}

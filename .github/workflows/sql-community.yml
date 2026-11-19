@@ -21,6 +21,18 @@
 #
 # Không `sudo` cho hai bước: cả hai rẽ theo quyền (root thì hạ sang `postgres`,
 # người dùng thường chạy thẳng), vì `initdb` từ chối chạy dưới root.
+#
+# ── hai job nữa trong cùng tệp, để cùng `paths` lọc `supabase/` ──
+#
+# `all-migrations` (AUD-13): hai bộ của job `sql` tách đôi migration —
+# cộng đồng chỉ áp `*_community_*`, lõi áp phần còn lại — nên không bộ nào
+# thấy hai nửa đụng nhau. Job này áp TẤT CẢ lên một cụm Postgres 16 tạm
+# duy nhất, theo thứ tự tên tệp như production.
+#
+# `deno` (R2-OPS-07): `supabase/functions/` có đúng một tệp test Deno
+# (`ai-log-parse/parse_test.ts`) mà không workflow nào chạy. Job này chạy
+# `deno test` trên cả thư mục, Deno ghim bản cố định, nên tệp `*_test.ts`
+# mới tự được chạy mà không ai phải sửa workflow.
 
 name: Test SQL Cộng đồng
 
@@ -68,3 +80,41 @@ jobs:
 
       - name: Bảng lõi — thử ngược (core/reverse.py)
         run: python3 supabase/tests/core/reverse.py
+
+  # AUD-13: hai bộ trên tách đôi migration (cộng đồng / lõi) — không bộ nào
+  # áp TẤT CẢ lên một cụm. Job này áp mọi migration theo thứ tự tên tệp lên
+  # một cụm Postgres 16 tạm duy nhất; đỏ là schema production không dựng
+  # được từ đầu. Chạy trên mọi PR chạm `supabase/` như job `sql`.
+  all-migrations:
+    # Ghim 24.04 như job `sql`: `postgresql-16` là gói của noble.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PostgreSQL 16
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-16
+
+      - name: Mọi migration trên một cụm (all-migrations/run.sh)
+        run: bash supabase/tests/all-migrations/run.sh
+
+  # R2-OPS-07: tệp test Deno duy nhất (`ai-log-parse/parse_test.ts`) không
+  # workflow nào chạy. Job này chạy `deno test` trên toàn `supabase/functions/`
+  # nên tệp `*_test.ts` mới tự được chạy mà không ai phải sửa workflow.
+  # Deno ghim đúng bản đã kiểm local (3/3 xanh, Deno 2.9.8).
+  deno:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.8
+
+      - name: Deno test (supabase/functions)
+        run: deno test supabase/functions/

@@ -14,7 +14,8 @@ exercise: equipment that depends on the body (rack height, bar on the back)
 is re-checked by the generators.
 
 build = build_scene -> generate_exercise -> validate_motion -> review sheet
--> export_usdz, with the time of each step. Exercises without a Motion Lab
+-> export_usdz (+ tempo.json and the poster next to the USDZ), with the time
+of each step. Exercises without a Motion Lab
 template (movement.template) keep their own animate script and validator.
 An exercise with an approval_date is approved: it is never rebuilt unless
 --force is given, so regeneration cannot silently replace approved assets.
@@ -22,8 +23,10 @@ Each build appends to <exercise>/factory_log.json (version, timings, QA).
 
 sheet renders the review sheet with measured-angle overlays and
 flagged-frame marks, and writes <exercise>/flagged_frames.json listing
-every frame the gates flagged. Blender is $EVS_BLENDER, defaulting to the
-Mac app path.
+every frame the gates flagged.
+
+Blender is taken from $EVS_BLENDER when set, else the macOS install path,
+so the factory also runs on Linux/CI without editing this file.
 """
 
 from __future__ import annotations
@@ -38,7 +41,9 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-BLENDER = os.environ.get("EVS_BLENDER", "/Applications/Blender.app/Contents/MacOS/Blender")
+BLENDER = os.environ.get(
+    "EVS_BLENDER", "/Applications/Blender.app/Contents/MacOS/Blender"
+)
 # Whole-body review (Kiệt 14/11): orbit the character every 60 degrees at
 # the start, middle and end of the first repetition, plus two high views, so
 # arms, back, head, legs and the implement are checked from every side.
@@ -54,7 +59,8 @@ def blender(script: str, *args: str) -> tuple[bool, str, float]:
     return p.returncode == 0 and "Traceback" not in out, out, round(time.time() - t, 1)
 
 
-CHARACTER_CHAIN = ("pipeline/build_character.py --no-preview", "pipeline/bake_muscle_atlas.py", "pipeline/bake_fiber_fields.py",
+CHARACTER_CHAIN = ("pipeline/build_character.py --no-preview", "pipeline/bake_muscle_atlas.py", "pipeline/sculpt_trapezius.py",
+                   "pipeline/bake_fiber_fields.py",
                    "pipeline/bake_fiber_directions.py", "pipeline/sculpt_muscles.py", "pipeline/build_character.py --preview-only")
 
 
@@ -318,6 +324,60 @@ def sheet(ex: Path, spec: dict) -> tuple[bool, float]:
     return ok, t
 
 
+EYE = (0, 45, 90, 135, 180)
+
+
+def eye_sheet(ex: Path, spec: dict) -> tuple[bool, float]:
+    """What a person standing and watching sees (Kiệt 14/11): camera at eye
+    height (1.6 m) from the front, three-quarter, side, rear three-quarter
+    and back, at the start, middle and end of the first moving phase.
+    Writes <exercise>/observer_sheet.png. Check the technique here: joint
+    angles, bar/dumbbell path, trunk, head, feet, as a coach would."""
+    phases = {p["id"]: p for p in spec.get("exercise_phases", [])}
+    fps = int(spec["frame_rate"])
+    mid = next((p for k, p in phases.items() if k in ("concentric", "eccentric")), None)
+    a = int(round(mid["start_s"] * fps)) if mid else 0
+    b = int(round((mid["start_s"] + 0.5 * (mid["end_s"] - mid["start_s"])) * fps)) if mid else 30
+    c = int(round(mid["end_s"] * fps)) if mid else 60
+    out_dir = ex / "_eye"
+    keys = [f"eye{d}" for d in EYE]
+    shots = " ".join(f"{k}:{a}:a,{b}:b,{c}:c" for k in keys)
+    ok, _o, t = blender("pipeline/render_stills.py", "--exercise", ex.name, "--out-dir", str(out_dir),
+                        "--shots", shots, "--width", "360", "--height", "540")
+    if ok:
+        rows = []
+        for label in ("a", "b", "c"):
+            files = [out_dir / f"still_{k}_{label}.png" for k in keys]
+            row = out_dir / f"_row_{label}.png"
+            cmd = ["ffmpeg", "-loglevel", "error", "-y"]
+            for f in files:
+                cmd += ["-i", str(f)]
+            cmd += ["-filter_complex", f"hstack=inputs={len(files)}", str(row)]
+            ok = ok and subprocess.run(cmd).returncode == 0
+            rows.append(row)
+        cmd = ["ffmpeg", "-loglevel", "error", "-y"]
+        for r in rows:
+            cmd += ["-i", str(r)]
+        cmd += ["-filter_complex", "vstack=inputs=3", str(ex / "observer_sheet.png")]
+        ok = ok and subprocess.run(cmd).returncode == 0
+    return ok, t
+
+
+def poster(ex: Path, spec: dict) -> tuple[bool, float]:
+    """The card image the app shows before the 3D viewer opens: the
+    three-quarter view (the viewer's default angle) halfway through the
+    first moving phase, 960x540 JPEG, next to the USDZ."""
+    phases = {p["id"]: p for p in spec.get("exercise_phases", [])}
+    mid = next((p for k, p in phases.items() if k in ("concentric", "eccentric")), None)
+    f = int(round((mid["start_s"] + 0.5 * (mid["end_s"] - mid["start_s"])) * int(spec["frame_rate"]))) if mid else 0
+    tmp = ex / "_poster"
+    ok, _o, t = blender("pipeline/render_stills.py", "--exercise", ex.name, "--out-dir", str(tmp),
+                        "--shots", f"three_quarter:{f}:poster", "--width", "960", "--height", "540")
+    out = ex / "usdz" / f"{ex.name.replace('-', '_')}_poster.jpg"
+    ok = ok and subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(tmp / "still_3q_poster.png"), "-q:v", "4", str(out)]).returncode == 0
+    return ok, t
+
+
 def build(names: list[str], export: bool, force: bool) -> list[dict]:
     results = []
     for name in names:
@@ -352,8 +412,15 @@ def build(names: list[str], export: bool, force: bool) -> list[dict]:
             if export:
                 (ex / "usdz").mkdir(exist_ok=True)
                 eok, _o, t = blender("pipeline/export_usdz.py", "--exercise", name, "--out-dir", str(ex / "usdz"))
+                tempo_file = ex / "tempo.json"
+                if eok and tempo_file.exists():  # P5: the app reads it next to the USDZ
+                    (ex / "usdz" / f"{name.replace('-', '_')}_tempo.json").write_text(tempo_file.read_text(encoding="utf-8"), encoding="utf-8")
                 steps["export"] = {"ok": eok, "seconds": t}
                 print(f"[factory] {name}: export    {'ok' if eok else 'FAILED'} in {t}s")
+                if eok:
+                    pok, t = poster(ex, spec)
+                    steps["poster"] = {"ok": pok, "seconds": t}
+                    print(f"[factory] {name}: poster    {'ok' if pok else 'FAILED'} in {t}s")
         log_path = ex / "factory_log.json"
         log = json.loads(log_path.read_text(encoding="utf-8")) if log_path.exists() else []
         entry = {"version": len(log) + 1, "when": datetime.datetime.now().isoformat(timespec="seconds"), "template": template,
@@ -372,6 +439,7 @@ def main() -> None:
     b = sub.add_parser("build"); b.add_argument("names", nargs="+"); b.add_argument("--no-export", action="store_true"); b.add_argument("--force", action="store_true")
     bt = sub.add_parser("batch"); bt.add_argument("--no-export", action="store_true"); bt.add_argument("--force", action="store_true")
     s = sub.add_parser("sheet"); s.add_argument("name")
+    e = sub.add_parser("eye"); e.add_argument("names", nargs="+")
     sub.add_parser("character")
     args = ap.parse_args()
     if args.cmd == "status":
@@ -383,6 +451,10 @@ def main() -> None:
         t = time.time()
         res = build(names, not args.no_export, args.force)
         print(f"[factory] batch: {len(res)} exercises in {round(time.time() - t, 1)}s")
+    elif args.cmd == "eye":
+        for n in args.names:
+            ok, t = eye_sheet(ROOT / n, load(ROOT / n))
+            print(f"[factory] {n}: observer sheet {'ok' if ok else 'FAILED'} in {t}s -> {ROOT / n / 'observer_sheet.png'}")
     elif args.cmd == "character":
         character(args)
     elif args.cmd == "sheet":

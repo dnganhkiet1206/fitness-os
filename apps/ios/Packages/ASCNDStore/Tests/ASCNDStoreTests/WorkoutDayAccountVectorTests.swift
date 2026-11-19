@@ -17,7 +17,6 @@ import Testing
 /// - `signIn {user}` / `signOut` — mở / đóng chốt (`AccountScope`). Lúc vừa mở
 ///   tệp, chốt ở chế độ không chốt (mặc định của `ASCNDDatabase`).
 /// - `reopen` — đóng tệp, mở lại; chốt đóng như `AppServices` lúc khởi động.
-/// - `clearAll {expect: n}` — dọn của phiên (`clearAll`), trả về số ngày bỏ.
 /// - `save {day, done, expect}` — `saveDay` ngày chưa chốt.
 /// - `finish {day, session, done, expect}` — `commitFinish`; hàng outbox id
 ///   `session`.
@@ -167,9 +166,6 @@ private final class Run {
       db = try ASCNDDatabase(path: path)
       db.accounts.signOut()
       store = GRDBWorkoutStore(db)
-    case "clearAll":
-      let n = try await store.clearAll()
-      check(n == expect?.intValue, i, op, "dọn \(n), chờ \(expect.map { "\($0)" } ?? "?")")
     case "save":
       let k = try key(s["day"]?.stringValue ?? "")
       let got = await outcome { try await self.store.saveDay(k, DayState(progress: ticks(strings(s["done"]))), userId: writer ?? self.lastUser) }

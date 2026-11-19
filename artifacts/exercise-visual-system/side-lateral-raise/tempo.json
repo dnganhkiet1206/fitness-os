@@ -1,0 +1,164 @@
+{
+  "schema": "ascnd.tempo/1",
+  "exercise_id": "side_lateral_raise",
+  "frame_rate": 24,
+  "duration_ms": 9000,
+  "starts_at": "bottom",
+  "notation": "2-0.4-1.4-0.4",
+  "reps": [
+    {
+      "index": 1,
+      "phases": [
+        {
+          "kind": "concentric",
+          "start_ms": 600,
+          "end_ms": 2000,
+          "from": 0.0,
+          "to": 1.0,
+          "breath": "exhale"
+        },
+        {
+          "kind": "top_hold",
+          "start_ms": 2000,
+          "end_ms": 2400,
+          "from": 1.0,
+          "to": 1.0,
+          "breath": "hold"
+        },
+        {
+          "kind": "eccentric",
+          "start_ms": 2400,
+          "end_ms": 4400,
+          "from": 1.0,
+          "to": 0.0,
+          "breath": "inhale"
+        },
+        {
+          "kind": "bottom_hold",
+          "start_ms": 4400,
+          "end_ms": 4800,
+          "from": 0.0,
+          "to": 0.0,
+          "breath": "hold"
+        }
+      ],
+      "start_ms": 600,
+      "end_ms": 4800
+    },
+    {
+      "index": 2,
+      "phases": [
+        {
+          "kind": "concentric",
+          "start_ms": 4800,
+          "end_ms": 6200,
+          "from": 0.0,
+          "to": 1.0,
+          "breath": "exhale"
+        },
+        {
+          "kind": "top_hold",
+          "start_ms": 6200,
+          "end_ms": 6600,
+          "from": 1.0,
+          "to": 1.0,
+          "breath": "hold"
+        },
+        {
+          "kind": "eccentric",
+          "start_ms": 6600,
+          "end_ms": 8600,
+          "from": 1.0,
+          "to": 0.0,
+          "breath": "inhale"
+        }
+      ],
+      "start_ms": 4800,
+      "end_ms": 8600
+    }
+  ],
+  "marks": [
+    {
+      "at_ms": 2000,
+      "type": "turn",
+      "rep": 1
+    },
+    {
+      "at_ms": 4400,
+      "type": "rep_complete",
+      "rep": 1
+    },
+    {
+      "at_ms": 6200,
+      "type": "turn",
+      "rep": 2
+    },
+    {
+      "at_ms": 8600,
+      "type": "rep_complete",
+      "rep": 2
+    }
+  ],
+  "cues": [
+    {
+      "at_ms": 0,
+      "rep": 0,
+      "phase": "start_position",
+      "text": "Dumbbells in front of the thighs, elbows slightly bent"
+    },
+    {
+      "at_ms": 0,
+      "rep": 0,
+      "phase": "start_position",
+      "text": "Lean forward slightly, hips and knees slightly bent"
+    },
+    {
+      "at_ms": 600,
+      "rep": 1,
+      "phase": "concentric",
+      "text": "Raise the upper arms out to the sides, elbows pointing back"
+    },
+    {
+      "at_ms": 600,
+      "rep": 1,
+      "phase": "concentric",
+      "text": "Stop when the elbows reach shoulder height"
+    },
+    {
+      "at_ms": 2000,
+      "rep": 1,
+      "phase": "top_hold",
+      "text": "Elbows directly out to the sides, forearms angled slightly forward"
+    },
+    {
+      "at_ms": 2400,
+      "rep": 1,
+      "phase": "eccentric",
+      "text": "Lower slowly back in front of the thighs"
+    },
+    {
+      "at_ms": 4800,
+      "rep": 2,
+      "phase": "concentric",
+      "text": "Raise the upper arms out to the sides, elbows pointing back"
+    },
+    {
+      "at_ms": 4800,
+      "rep": 2,
+      "phase": "concentric",
+      "text": "Stop when the elbows reach shoulder height"
+    },
+    {
+      "at_ms": 6200,
+      "rep": 2,
+      "phase": "top_hold",
+      "text": "Elbows directly out to the sides, forearms angled slightly forward"
+    },
+    {
+      "at_ms": 6600,
+      "rep": 2,
+      "phase": "eccentric",
+      "text": "Lower slowly back in front of the thighs"
+    }
+  ]
+}

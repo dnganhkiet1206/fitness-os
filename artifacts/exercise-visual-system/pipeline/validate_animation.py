@@ -137,7 +137,7 @@ def main(exercise_name: str | None = None) -> None:
     cameras = config.camera_presets()["presets"]
 
     results = []
-    problems = report.validate_exercise_config(exercise, list(muscle_map["groups"]), list(cameras))
+    problems = report.validate_exercise_config(exercise, config.muscle_names(), list(cameras))
     results.append(checks.record("exercise_config", "configuration", "exercise.json has every required field and consistent phases",
                                  "PASS" if not problems else "FAIL", detail="; ".join(problems)))
     clip = checks.Clip(samples, exercise)
@@ -182,7 +182,8 @@ def main(exercise_name: str | None = None) -> None:
         "validation_profile": profile["profile_id"],
         "allowed_statuses": ["PASS", "FAIL", "NOT_TESTED", "REQUIRES_MANUAL_REVIEW", "UNVERIFIED"],
         "what_this_report_is": "Automated quality control of animation data, files and renders. It is not a biomechanical review. "
-                               "Expert approval is recorded separately and is PENDING until a qualified person signs off.",
+                               "Reference-comparison approval is recorded separately and is PENDING until the motion has been compared "
+                               "against measured reference movement and a reviewer and approval date are recorded. It is not an expert review.",
         "summary": summary,
         "checks": results,
     }
@@ -197,7 +198,7 @@ def main(exercise_name: str | None = None) -> None:
 
     print(f"[evs] {summary['counts']}")
     print(f"[evs] technical QA: {summary['technical_qa']}; recommended status: {summary['recommended_exercise_status']}; "
-          f"expert approval: {summary['expert_approval']}; publication: {summary['publication_status']}")
+          f"reference-comparison approval: {summary['reference_comparison_approval']}; publication: {summary['publication_status']}")
     for c in results:
         if c["status"] != "PASS":
             print(f"[evs]   {c['status']:22s} {c['category']:11s} {c['id']}: measured {json.dumps(c['measured'])[:150]} limit {json.dumps(c['limit'])[:90]}")

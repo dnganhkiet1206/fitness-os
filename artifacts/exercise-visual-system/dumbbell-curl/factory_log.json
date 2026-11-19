@@ -139,5 +139,220 @@
     },
     "total_seconds": 157.4,
     "qa": "{\"PASS\": 17}"
+  },
+  {
+    "version": 6,
+    "when": "2026-11-14T22:12:08",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.5
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 3.7
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.6
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 22.0
+      }
+    },
+    "total_seconds": 32.7,
+    "qa": "{\"PASS\": 18}"
+  },
+  {
+    "version": 7,
+    "when": "2026-11-14T23:22:11",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 8.6
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 4.4
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.6
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 29.3
+      }
+    },
+    "total_seconds": 44.8,
+    "qa": "{\"PASS\": 18}"
+  },
+  {
+    "version": 8,
+    "when": "2026-11-15T16:44:09",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 20.7
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 47.2
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 19.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 93.6
+      },
+      "export": {
+        "ok": true,
+        "seconds": 274.3
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 42.7
+      }
+    },
+    "total_seconds": 516.6,
+    "qa": "{\"PASS\": 19}"
+  },
+  {
+    "version": 9,
+    "when": "2026-11-15T17:52:03",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.6
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 4.8
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 3.5
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 43.7
+      },
+      "export": {
+        "ok": true,
+        "seconds": 49.0
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 11.6
+      }
+    },
+    "total_seconds": 118.3,
+    "qa": "{\"PASS\": 19}"
+  },
+  {
+    "version": 10,
+    "when": "2026-11-16T00:05:33",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 18.4
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 30.2
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 8.7
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 90.9
+      },
+      "export": {
+        "ok": true,
+        "seconds": 543.7
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 22.9
+      }
+    },
+    "total_seconds": 718.8,
+    "qa": "{\"PASS\": 19}"
+  },
+  {
+    "version": 11,
+    "when": "2026-11-16T15:23:10",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.1
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 3.1
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.1
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 26.3
+      },
+      "export": {
+        "ok": true,
+        "seconds": 44.0
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 3.8
+      }
+    },
+    "total_seconds": 83.3,
+    "qa": "{\"PASS\": 19}"
+  },
+  {
+    "version": 12,
+    "when": "2026-11-16T16:03:58",
+    "template": "curl",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.4
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 3.4
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.0
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 27.5
+      },
+      "export": {
+        "ok": true,
+        "seconds": 42.2
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 3.6
+      }
+    },
+    "total_seconds": 83.0,
+    "qa": "{\"PASS\": 19}"
   }
 ]

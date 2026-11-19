@@ -1,0 +1,111 @@
+{
+  "parts": [
+    "pectoralis_major_clavicular",
+    "pectoralis_major_sternocostal",
+    "pectoralis_major_abdominal",
+    "deltoid_anterior",
+    "deltoid_lateral",
+    "deltoid_posterior",
+    "triceps_long_head",
+    "triceps_lateral_head",
+    "triceps_medial_head",
+    "biceps_long_head",
+    "biceps_short_head",
+    "brachioradialis",
+    "wrist_extensors",
+    "wrist_flexors",
+    "rectus_abdominis",
+    "obliques",
+    "serratus_anterior",
+    "latissimus_dorsi",
+    "trapezius_upper",
+    "trapezius_middle",
+    "trapezius_lower",
+    "rhomboid_minor",
+    "rhomboid_major",
+    "infraspinatus",
+    "teres_minor",
+    "erector_spinalis",
+    "erector_longissimus",
+    "erector_iliocostalis",
+    "gluteus_maximus",
+    "gluteus_medius",
+    "rectus_femoris",
+    "vastus_lateralis",
+    "vastus_medialis",
+    "adductor_longus",
+    "gracilis",
+    "adductor_magnus",
+    "biceps_femoris",
+    "semitendinosus",
+    "semimembranosus",
+    "gastrocnemius_medial",
+    "gastrocnemius_lateral",
+    "soleus",
+    "tibialis_anterior",
+    "brachialis",
+    "sartorius",
+    "tensor_fasciae_latae",
+    "teres_major",
+    "fibularis_longus"
+  ],
+  "aggregates": {
+    "pectoralis_major": [
+      "pectoralis_major_clavicular",
+      "pectoralis_major_sternocostal",
+      "pectoralis_major_abdominal"
+    ],
+    "trapezius": [
+      "trapezius_upper",
+      "trapezius_middle",
+      "trapezius_lower"
+    ],
+    "rhomboids": [
+      "rhomboid_minor",
+      "rhomboid_major"
+    ],
+    "rotator_cuff_posterior": [
+      "infraspinatus",
+      "teres_minor"
+    ],
+    "erector_spinae": [
+      "erector_spinalis",
+      "erector_longissimus",
+      "erector_iliocostalis"
+    ],
+    "biceps_brachii": [
+      "biceps_long_head",
+      "biceps_short_head"
+    ],
+    "triceps_brachii": [
+      "triceps_long_head",
+      "triceps_lateral_head",
+      "triceps_medial_head"
+    ],
+    "forearm_muscles": [
+      "brachioradialis",
+      "wrist_extensors",
+      "wrist_flexors"
+    ],
+    "quadriceps": [
+      "rectus_femoris",
+      "vastus_lateralis",
+      "vastus_medialis"
+    ],
+    "hamstrings": [
+      "biceps_femoris",
+      "semitendinosus",
+      "semimembranosus"
+    ],
+    "adductors": [
+      "adductor_longus",
+      "gracilis",
+      "adductor_magnus"
+    ],
+    "calves": [
+      "gastrocnemius_medial",
+      "gastrocnemius_lateral",
+      "soleus"
+    ]
+  }
+}

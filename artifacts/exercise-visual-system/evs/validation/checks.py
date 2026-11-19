@@ -5,7 +5,9 @@ tests). Every check returns one record with a status from the five allowed
 values. These checks find defects in animation DATA: jumps, slides,
 penetration, asymmetry, broken contact. They cannot tell whether the
 technique shown is right for a human body; that question is answered by the
-approval records in report.py and is never PASS without a qualified reviewer."""
+approval records in report.py and is never PASS without a recorded
+reference-comparison approval (a reviewer and an approval date). Approval by
+reference comparison is not an expert review."""
 
 from __future__ import annotations
 

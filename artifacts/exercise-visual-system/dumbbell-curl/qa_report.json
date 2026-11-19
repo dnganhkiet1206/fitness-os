@@ -1,13 +1,12 @@
 {
   "tool": "pipeline/validate_motion.py",
-  "date": "2026-11-14",
+  "date": "2026-11-16",
   "exercise_id": "dumbbell_biceps_curl",
   "frames": 237,
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 17,
-      "NOT_TESTED": 1
+      "PASS": 19
     },
     "technically_validated": true,
     "states": {
@@ -63,7 +62,7 @@
       "limit": 0.004,
       "where": {
         "implement": "SOCKET_hand_r",
-        "frame": 64
+        "frame": 63
       },
       "detail": "m wrist to grip socket"
     },
@@ -164,16 +163,47 @@
       "detail": "deg, + = chin towards chest"
     },
     {
+      "id": "tempo_sync",
+      "stage": "B",
+      "title": "Animation follows tempo.json (rep timeline shipped to the app)",
+      "status": "PASS",
+      "measured": {
+        "shift_frames": 0,
+        "correlation": 0.9987
+      },
+      "limit": {
+        "max_shift_frames": 1,
+        "min_correlation": 0.9
+      },
+      "where": {
+        "joint": "knuckle_r"
+      },
+      "detail": "best alignment of the farthest-travelling joint with the progress rebuilt from tempo.json"
+    },
+    {
+      "id": "implement_clash",
+      "stage": "C",
+      "title": "Implements do not pass through each other",
+      "status": "PASS",
+      "measured": 0,
+      "limit": 0,
+      "where": {
+        "pair": null,
+        "frame": null
+      },
+      "detail": "overlapping triangle pairs"
+    },
+    {
       "id": "skin_stretch",
       "stage": "C",
       "title": "Skin stretch stays within limits",
       "status": "PASS",
-      "measured": 2.175,
+      "measured": 2.206,
       "limit": 2.6,
       "where": {
-        "frame": 118
+        "frame": 59
       },
-      "detail": "p99.9 edge stretch per frame: f0 2.175, f59 2.175, f118 2.175"
+      "detail": "p99.9 edge stretch"
     },
     {
       "id": "movement_elbow_min_deg",
@@ -186,7 +216,7 @@
         60
       ],
       "where": null,
-      "detail": "ROM envelope only: AAOS reference values (elbow flexion 140-150 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound requires >=120 deg flexion, inside the envelope; no curl kinematics study read."
+      "detail": "provisional bound"
     },
     {
       "id": "movement_elbow_max_deg",
@@ -199,7 +229,7 @@
         null
       ],
       "where": null,
-      "detail": "ROM envelope only: AAOS reference values (elbow extension 0 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound sits inside the envelope; no curl kinematics study read."
+      "detail": "provisional bound"
     },
     {
       "id": "movement_arm_elev_max_deg",
@@ -239,16 +269,6 @@
       ],
       "where": null,
       "detail": "provisional bound"
-    },
-    {
-      "id": "reference_measurements",
-      "stage": "D",
-      "title": "Golden measurements: reference comparison",
-      "status": "NOT_TESTED",
-      "measured": null,
-      "limit": null,
-      "where": null,
-      "detail": "No reference measurements: this exercise has no reference_measurements.json and declares no reference_checks. Golden measurements are not established yet; this is neither a pass nor a fail."
     }
   ]
 }

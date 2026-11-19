@@ -6,6 +6,8 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
 
 **Trước khi làm bài mới: đọc `MOTION_KIT_LESSONS.md` (sổ lỗi). Gặp lỗi mới thì ghi vào đó trong cùng PR sửa.**
 
+Bài toán production rút ra từ phân tích ngược các app fitness (Apple Fitness+ Gym Strength, Ladder, Fitbod, Muscle & Motion, Peloton IQ…): `MARKET_REVERSE_ANALYSIS.md` (P1–P10, thứ tự ưu tiên).
+
 ## Một bài tập = một file mô tả
 
 `artifacts/exercise-visual-system/<bài>/exercise.json`. Các trường của kit:
@@ -22,6 +24,8 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
 | `technical_cues`, `common_mistakes` | Mẹo và lỗi thường gặp (hiện ở trình xem) |
 
 ## Quy trình
+
+> Quy trình đầy đủ từng bước cho một bài (video → tìm kiếm → mô phỏng → simulator → Kiệt duyệt → mẹo): **`EXERCISE_WORKFLOW.md`**.
 
 ```
 1. Nghiên cứu   tìm nguồn kỹ thuật (NSCA/ACE/ExRx: dữ kiện) + số liệu động học (nghiên cứu)
@@ -41,9 +45,19 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
                   (factory.py sheet), mỗi ảnh có chú thích góc khớp đo được
                   (pipeline/sheet_data.py) + viền đỏ ở khung bị cổng flag, viền vàng ở
                   khung gần khung bị flag; flagged_frames.json liệt kê khung bị flag để
-                  soi kỹ. BẮT BUỘC soi tay, lưng, đầu, chân, dụng cụ ở mọi góc,
+                  soi kỹ; + tờ tầm mắt người đứng nhìn 1,6 m (factory.py eye).
+                  BẮT BUỘC soi tay, lưng, đầu, chân, dụng cụ ở mọi góc,
                   đối chiếu nguồn kỹ thuật, trước khi báo xong (MOTION_KIT_LESSONS.md luật 1)
-6. Xuất         pipeline/export_usdz.py (sợi cơ vẽ, bản chỉ cơ chính) → app
+                - CI tự động (.github/workflows/motion-kit.yml) chạy trên mọi PR chạm kit:
+                  unit test + kiểm provenance/blocklist nguồn cấm + kiểm UV suy biến trên
+                  USDZ đã xuất + validate_motion cho bài template + cổng chặn hồi quy
+                  (check_qa_gate.py). Bench không qua cổng validate của CI (validator
+                  riêng + 3 FAIL đã biết); USDZ của bench vẫn qua kiểm UV.
+   Ghi kết quả: exercise.json → agent_review (đã kiểm gì, còn lỗi gì) và
+                  ExerciseDemo3D.catalog trong app (dấu tích xanh ở tab Lab 3D).
+6. Xuất         pipeline/export_usdz.py (sợi cơ vẽ, bản chỉ cơ chính) + tempo.json + poster → app
+                bài mới: `python3 pipeline/catalogue.py new "<tên trong catalogue>" --from <bài cùng họ>`
+                rồi `factory.py build <thư mục>`; ghi production.human_minutes khi duyệt xong
 ```
 
 ## Thành phần đã có (14/11)
@@ -62,7 +76,12 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
 | Trình xem 3D (zoom, mẹo, ẩn cơ phụ) | `apps/ios/.../ExerciseDemo3DView.swift` | xong; đọc USDZ, góc máy, chú thích theo từng bài |
 | **Bộ tạo chung theo template** | `motionlab/` (timing min-jerk, primitives, families: `curl`, `squat`), `pipeline/generate_exercise.py` | xong cho 2 họ; dumbbell-curl QA 12/12, back-squat 10/11 |
 | **Bộ kiểm chung 4 tầng (A–D), lỗi chỉ đúng khung/khớp** | `evs/motion_qa.py`, `pipeline/validate_motion.py` | xong; giãn da đo trên mesh gốc (tắt `Subdivision` khi lấy mẫu) + thêm khung chậu thấp nhất, ghi số từng khung; bench thêm khung lockout (14/11) |
+| **Sổ sản xuất (P1, 14/11)**: 43 bài trong chương trình tập của app, xếp theo số set mỗi tuần; độ phủ tính theo set; tốc độ (phút máy, phút người); `new` dựng khung spec cho bài kế tiếp | `config/catalogue.json`, `pipeline/catalogue.py` (`refresh`, `coverage`, `new`) | xong; 6/43 bài đã dựng |
+| **Họ `raise_lateral`, `hinge` (14/11)**: lateral raise (mặt phẳng xương bả vai, khuỷu hơi gập, lòng bàn tay xoay theo tay); hip hinge (trọng tâm toàn thân giữ yên theo khối lượng đoạn Winter 2009, tay treo thẳng trước da chân) | `motionlab/families/raise_lateral.py`, `hinge.py` | xong; lateral raise 17/17, hammer curl 18/18, deadlift chân thẳng tạ đơn 16/17 (giãn da hông) |
+| **Họ `row`, `press_vertical` + nhịp vai–cánh tay (14/11, lô 2)**: row cúi người (tư thế hinge, cẳng tay thẳng đứng, khuỷu dẫn); đẩy vai ngồi ghế tựa (template đặt ghế theo lưng, chân ngồi); xương đòn và bả vai xoay theo độ nâng tay (Inman 1944) | `motionlab/families/row.py`, `press_vertical.py`, `primitives.scapulohumeral`, `generate_exercise.pose_girdle`, ghế `utility_bench_upright` | row 15/16, shoulder press 17/18 (cả hai còn giãn da háng) |
+| **Nhịp từng rep cho app (P5, 14/11)**: `tempo.json` (`ascnd.tempo/1`): các pha ms, mốc đổi chiều / xong rep, thở ra–hít vào, lời nhắc theo pha; cổng `tempo_sync` bảo đảm hoạt cảnh lệch ≤ 1 khung so với tệp | `motionlab/tempo.py`, `evs/motion_qa.tempo_sync`, chép cạnh USDZ khi xuất | xong; app chưa đọc (cần mock rung / đếm rep cho Kiệt) |
 | **Giải theo mục tiêu** | `pipeline/solve_targets.py`, `pipeline/measure_animation.py` | xong; bench press: khuỷu 104° / dang vai 60° sau 24 lần thử |
+| **CI tự động cho kit** | `.github/workflows/motion-kit.yml`, `pipeline/check_provenance.py`, `pipeline/check_qa_gate.py`, `pipeline/check_usdz_uv.py` | xong 14/11; chạy trên mọi PR chạm kit/docs/bản USDZ trong app; bench không qua cổng validate (xem quy trình bước 5) |
 
 ## Đã học từ dữ liệu (bench press)
 
@@ -75,9 +94,10 @@ Dữ liệu tạo ra là **tài sản của ASCND**. Chính sách nguồn ở `O
 1. **Bộ giải theo mục tiêu (ưu tiên cao nhất):** bộ giải nhận mục tiêu đo được (ví dụ gập khuỷu 95° ở đáy, cánh tay so với mặt phẳng ngực ≥ −15°) rồi tự tìm tay cầm, điểm chạm, cong lưng, ép vai. Hết cảnh người vặn số.
 2. **Bộ giải chung theo họ:** tách `animate_bench_press.py` thành `evs/families/press_horizontal.py` cùng giao diện chung (`solve(spec, character, equipment) → keyframes`). Biến thể (ghế dốc, tay hẹp, tạ đơn, chống đẩy) chỉ là thông số.
 3. **Nhịp tự nhiên:** đường cong tốc độ của từng pha lấy từ số đo video (tăng tốc, chậm ở đáy, khoá tay), thay vì chỉ một hàm làm mượt.
-4. **Bả vai tự động:** nhịp vai–cánh tay (scapulohumeral rhythm) theo nghiên cứu, gắn bả vai theo độ nâng và đưa của cánh tay, để mọi bài có vai chuyển động như người thật.
+4. **Bả vai tự động (14/11: bản đầu xong, `scapulohumeral` + `pose_girdle`, mới dùng ở press_vertical; chưa có co rút bả vai cho row):** nhịp vai–cánh tay (scapulohumeral rhythm) theo nghiên cứu, gắn bả vai theo độ nâng và đưa của cánh tay, để mọi bài có vai chuyển động như người thật.
 5. **Tờ ảnh duyệt nhanh:** 4 góc × đỉnh/giữa/đáy, kèm bảng điểm cổng, trong một ảnh mỗi bài.
 6. **Lane dữ liệu sở hữu được:** UI-PRMD (PDDL, Vicon) cho squat/lunge làm mẫu nhịp và phối hợp khớp; Mesh2Motion (CC0) cho đi bộ, chạy, chống đẩy.
 7. **Tạc khối cơ theo giải phẫu:** phồng bụng cơ, rãnh giữa các cơ, vạch gân bụng (3 cặp ở mỏm mũi kiếm, giữa, rốn), rãnh delta–ngực. Làm theo bản đồ cơ, trước khi làm hàng loạt.
 8. **Dụng cụ:** thư viện tạ đơn, cáp, máy, ghế dốc, có kích thước theo nguồn (`config/equipment.json`).
 9. **Danh sách 20 bài đầu:** chọn theo tần suất trong lịch tập của app; mỗi bài có file mô tả và trích nguồn.
+10. **Bài toán production từ phân tích thị trường (14/11, `MARKET_REVERSE_ANALYSIS.md`):** P1 xuất xưởng 350 bài (≤ 30 phút công người/bài), P2 biến thể theo dụng cụ + `alternatives.json` để đổi bài khi máy bận, P3 một lần dựng nhiều định dạng (USDZ, vòng lặp 3 góc, hình bóng cho đồng hồ), P5 `tempo.json` nhịp từng rep. Sau mock cho Kiệt: P4 bản đồ cơ 2D dùng lại, P6 chuỗi dễ → khó cho người mới. Sau đó: P7 clip lỗi sai có QA đảo chiều, P8 quỹ đạo khớp chuẩn (33 mốc MediaPipe), P9 thiết kế giao tài sản.

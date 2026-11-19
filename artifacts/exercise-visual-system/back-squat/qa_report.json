@@ -1,18 +1,16 @@
 {
   "tool": "pipeline/validate_motion.py",
-  "date": "2026-11-14",
+  "date": "2026-11-16",
   "exercise_id": "barbell_back_squat",
   "frames": 225,
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 15,
-      "FAIL": 1,
-      "NOT_TESTED": 1
+      "PASS": 18
     },
-    "technically_validated": false,
+    "technically_validated": true,
     "states": {
-      "technically_validated": false,
+      "technically_validated": true,
       "biomechanically_reviewed": false,
       "human_approved": false,
       "production_approved": false
@@ -34,7 +32,7 @@
       "stage": "B",
       "title": "No joint moves faster than a human joint plausibly does",
       "status": "PASS",
-      "measured": 0.822,
+      "measured": 0.833,
       "limit": 2.5,
       "where": {
         "joint": "head_top",
@@ -47,10 +45,10 @@
       "stage": "B",
       "title": "No sudden bone rotation between frames",
       "status": "PASS",
-      "measured": 5.371,
+      "measured": 5.372,
       "limit": 12.0,
       "where": {
-        "bone": "calf_l",
+        "bone": "calf_r",
         "frame": 89
       },
       "detail": "deg per frame"
@@ -60,11 +58,11 @@
       "stage": "B",
       "title": "Hands stay on the implements in every frame",
       "status": "PASS",
-      "measured": 1e-05,
+      "measured": 2e-05,
       "limit": 0.004,
       "where": {
-        "implement": "SOCKET_hand_r",
-        "frame": 106
+        "implement": "SOCKET_hand_l",
+        "frame": 43
       },
       "detail": "m wrist to grip socket"
     },
@@ -82,8 +80,8 @@
         "lift_m": 0.005
       },
       "where": {
-        "foot": "foot_l",
-        "frame": 64
+        "foot": "foot_r",
+        "frame": 62
       },
       "detail": ""
     },
@@ -95,8 +93,8 @@
       "measured": 0.0,
       "limit": 0.003,
       "where": {
-        "joint": "wrist",
-        "frame": 16
+        "joint": "ankle",
+        "frame": 188
       },
       "detail": "m"
     },
@@ -105,11 +103,11 @@
       "stage": "C",
       "title": "Implements do not pass through the body",
       "status": "PASS",
-      "measured": 0.0,
+      "measured": 0.0038,
       "limit": 0.004,
       "where": {
-        "implement": null,
-        "frame": null
+        "implement": "Barbell",
+        "frame": 0
       },
       "detail": "m inside"
     },
@@ -118,11 +116,11 @@
       "stage": "C",
       "title": "Wrists stay near straight (forearm to hand)",
       "status": "PASS",
-      "measured": 21.166,
+      "measured": 22.258,
       "limit": 25.0,
       "where": {
-        "side": "r",
-        "frame": 19
+        "side": "l",
+        "frame": 107
       },
       "detail": "deg"
     },
@@ -131,11 +129,11 @@
       "stage": "C",
       "title": "Elbow flexion inside the soft-tissue limit",
       "status": "PASS",
-      "measured": 133.225,
+      "measured": 139.155,
       "limit": 145.0,
       "where": {
         "side": "r",
-        "frame": 82
+        "frame": 203
       },
       "detail": "deg"
     },
@@ -157,24 +155,55 @@
       "stage": "C",
       "title": "Head stays near neutral (not dropped to the chest)",
       "status": "PASS",
-      "measured": 2.38,
+      "measured": 1.46,
       "limit": 30.0,
       "where": {
-        "frame": 110
+        "frame": 108
       },
       "detail": "deg, + = chin towards chest"
+    },
+    {
+      "id": "tempo_sync",
+      "stage": "B",
+      "title": "Animation follows tempo.json (rep timeline shipped to the app)",
+      "status": "PASS",
+      "measured": {
+        "shift_frames": 0,
+        "correlation": 0.9963
+      },
+      "limit": {
+        "max_shift_frames": 1,
+        "min_correlation": 0.9
+      },
+      "where": {
+        "joint": "head_top"
+      },
+      "detail": "best alignment of the farthest-travelling joint with the progress rebuilt from tempo.json"
+    },
+    {
+      "id": "implement_clash",
+      "stage": "C",
+      "title": "Implements do not pass through each other",
+      "status": "PASS",
+      "measured": 0,
+      "limit": 0,
+      "where": {
+        "pair": null,
+        "frame": null
+      },
+      "detail": "overlapping triangle pairs"
     },
     {
       "id": "skin_stretch",
       "stage": "C",
       "title": "Skin stretch stays within limits",
-      "status": "FAIL",
-      "measured": 3.82,
+      "status": "PASS",
+      "measured": 2.457,
       "limit": 2.6,
       "where": {
-        "frame": 168
+        "frame": 56
       },
-      "detail": "p99.9 edge stretch per frame: f0 3.039, f56 3.818, f112 3.039, f168 3.820"
+      "detail": "p99.9 edge stretch"
     },
     {
       "id": "movement_knee_min_deg",
@@ -187,7 +216,7 @@
         100
       ],
       "where": null,
-      "detail": "Schoenfeld 2010 JSCR 24(12):3497-3506: half squats 70-100 deg knee flexion, deep squats >100 deg; Escamilla et al. 2001 MSSE 33(6):984-998 (PMID 11404665): competition squats analysed at 90 deg knee flexion and maximum knee flexion. Bound requires >=80 deg flexion (interior <=100 deg), inside the half-squat band."
+      "detail": "provisional bound"
     },
     {
       "id": "movement_hip_drop_m",
@@ -207,7 +236,7 @@
       "stage": "D",
       "title": "squat: torso_lean_max_deg inside the family bounds",
       "status": "PASS",
-      "measured": 36.549,
+      "measured": 39.83,
       "limit": [
         null,
         55
@@ -227,16 +256,6 @@
       ],
       "where": null,
       "detail": "provisional bound"
-    },
-    {
-      "id": "reference_measurements",
-      "stage": "D",
-      "title": "Golden measurements: reference comparison",
-      "status": "NOT_TESTED",
-      "measured": null,
-      "limit": null,
-      "where": null,
-      "detail": "No reference measurements: this exercise has no reference_measurements.json and declares no reference_checks. Golden measurements are not established yet; this is neither a pass nor a fail."
     }
   ]
 }

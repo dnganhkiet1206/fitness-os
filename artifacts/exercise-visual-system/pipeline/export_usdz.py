@@ -26,7 +26,7 @@ from pathlib import Path
 
 import bpy
 import numpy as np
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -62,7 +62,7 @@ def painted_textures(exercise: dict, roles: list[str] | None = None) -> tuple[np
     # feathering it into the skin.
     crisp = {k: (fiber_lic.crisp_mask(v) * 255.0 + 0.5).astype(np.uint8) for k, v in masks.items()}
     solid = muscle_eval.compose_highlight(crisp, primary, secondary, stabilizing)
-    groups = list(dict.fromkeys(primary + secondary + stabilizing))
+    groups = config.expand_muscles(primary + secondary + stabilizing)  # fibres are per part
     dir_path = atlas / "fiber_dir.npz"
     angles = dict(np.load(dir_path)) if dir_path.exists() else None
     if angles is None:
@@ -178,16 +178,15 @@ def default_camera(scene, exercise, aspect):
     so the whole repetition stays in a 9:16 frame. Returned in RealityKit
     Y-up coordinates with the vertical field of view for the Swift camera."""
     presets = config.camera_presets()
-    preset = presets["presets"]["three_quarter"]
+    preset = dict(presets["presets"]["three_quarter"])
+    # Exercises whose prime movers are on the back of the body (hinge,
+    # rows) open from behind, or the highlighted muscle is hidden in the
+    # default view (14/11 review: hamstrings and lats invisible).
+    if exercise.get("viewer_azimuth_deg") is not None:
+        preset["azimuth_deg"] = float(exercise["viewer_azimuth_deg"])
     sensor_mm = presets["sensor_width_mm"]
-    fps = int(exercise["frame_rate"])
-    phases = {p["id"]: p for p in exercise["exercise_phases"]}
-    frames = [0]
-    for name in ("start_position", "bottom"):
-        phase = phases.get(name)
-        if phase is not None:
-            frames.append(int(round(phase["start_s"] * fps)))
-    points = sample_subject_points(scene, frames)
+    from evs.studio import fit_frames
+    points = sample_subject_points(scene, fit_frames(exercise))
     focus, distance = fit_view(points, preset["azimuth_deg"], preset["elevation_deg"],
                                preset["focal_length_mm"], sensor_mm, aspect, preset["margin"])
     direction = Vector((math.cos(math.radians(preset["elevation_deg"])) * math.sin(math.radians(preset["azimuth_deg"])),
@@ -222,11 +221,234 @@ def reimport(path: str) -> dict:
             "materials": len(bpy.data.materials)}
 
 
+def write_focus_textures(exercise: dict, prefix: str, out_dir: Path, colors: dict) -> None:
+    """"Focus" textures with the primary muscles only (Kiệt 13/11: a switch in
+    the viewer hides the secondary and stabilizer groups; 16/11: hidden by
+    default). Same UVs as the USDZ, so the app swaps them at runtime: body
+    (albedo, emission, normal) and shorts (albedo, emission), because the
+    shorts show the muscles underneath and would keep the hidden groups."""
+    f_small, f_shade, f_normal, f_rim = painted_textures(exercise, roles=["primary"])
+    for key, base_key, gain in (("", "character_body_viewer", 1.0), ("_apparel", "character_apparel", 0.8)):
+        albedo = apply_shade(muscle_eval.albedo_from_highlight(
+            f_small, colors[base_key], colors["muscle_primary"], colors["muscle_secondary"],
+            colors["muscle_stabilizer"], gain), f_shade)
+        emission = painted_emission(muscle_eval.emission_from_highlight(
+            f_small, colors["muscle_primary"], colors["muscle_secondary"], colors["muscle_stabilizer"], gain), f_shade, f_rim)
+        pngio.write_png(out_dir / f"{prefix}_focus{key}_albedo.png", albedo)
+        pngio.write_png(out_dir / f"{prefix}_focus{key}_emission.png", emission)
+    # Without it the hidden groups would keep their fibre relief on bare skin.
+    pngio.write_png(out_dir / f"{prefix}_focus_normal.png", f_normal)
+    print(f"[evs] usdz: focus textures {prefix}_focus[_apparel]_albedo/emission + _focus_normal.png")
+
+
+USD_EXPORT = dict(selected_objects_only=True, export_armatures=True, only_deform_bones=True, export_shapekeys=False,
+                  export_materials=True, generate_preview_surface=True, export_textures_mode="NEW", relative_paths=True,
+                  convert_orientation=True, export_global_forward_selection="NEGATIVE_Z", export_global_up_selection="Y",
+                  convert_scene_units="METERS", export_lights=False, export_cameras=False, evaluation_mode="RENDER",
+                  check_existing=False)
+
+
+JPEG_QUALITY = 92
+
+
+def to_jpeg(out_dir: Path, prefix: str) -> None:
+    """Skin textures of a modular export as JPEG (16/11: PNG albedo 781 KB,
+    emission 869 KB, normal 2.5 MB per exercise; JPEG q92 224 / 238 / 843 KB,
+    no visible change on the simulator). ImageMagick when installed, else the
+    PNGs stay (the app reads either)."""
+    import shutil
+    import subprocess
+    magick = shutil.which("magick")
+    for png in sorted(out_dir.glob(f"{prefix}_f*_*.png")):
+        if not png.stem.startswith((f"{prefix}_full", f"{prefix}_focus")):
+            continue
+        jpg = png.with_suffix(".jpg")
+        if magick is None:
+            # The app prefers .jpg: a JPEG left from an earlier export would
+            # hide this new PNG (PR #911 review), so it goes.
+            jpg.unlink(missing_ok=True)
+            continue
+        subprocess.run([magick, str(png), "-quality", str(JPEG_QUALITY), str(jpg)], check=True)
+        png.unlink()
+    if magick is None:
+        print("[evs] split: ImageMagick not found, skin textures stay PNG (older JPEGs removed)")
+
+
+def geometry_hash(root) -> str:
+    """Hash of an implement model: every part's vertices and faces, and each
+    child's placement RELATIVE TO THE ROOT (moving a plate on the bar changes
+    the model; moving or animating the whole bar does not). PR #914 review."""
+    import hashlib
+    h = hashlib.md5()
+    inv = root.matrix_world.inverted()
+    parts = [root, *sorted((c for c in root.children_recursive if c.type == "MESH"), key=lambda o: o.name)]
+    for o in parts:
+        # +0.0 so -0.0 hashes like 0.0
+        h.update((np.round(np.array([v.co[:] for v in o.data.vertices]), 4) + 0.0).tobytes())
+        # The SET of faces, not their storage order: the same dumbbell is stored with its faces in a
+        # different order in different scenes (17/11, re-export of #914: one 12 kg dumbbell gave five
+        # hashes). Each face starts at its lowest vertex index (winding kept), then faces are sorted.
+        def canon(vs):
+            vs = list(vs)
+            k = vs.index(min(vs))
+            return tuple(vs[k:] + vs[:k])
+        faces = sorted(canon(p.vertices) for p in o.data.polygons)
+        h.update(np.array([i for f in faces for i in (*f, -1)], dtype=np.int64).tobytes())
+        if o is not root:
+            # 1 mm / 0.001 rad grid, and +0.0 so -0.0 hashes like 0.0.
+            h.update((np.round(np.array(inv @ o.matrix_world), 3) + 0.0).tobytes())
+    return h.hexdigest()[:6]
+
+
+def equipment_key(root) -> str:
+    """Stable name of an implement model: type + mass when the scene gives a
+    mass (dumbbell_12kg, barbell_60kg with its plates), else type + a short
+    hash of the geometry (bench parts differ per exercise)."""
+    kind = str(root.get("evs_equipment"))
+    mass = root.get("evs_total_mass_kg")
+    if mass:
+        return f"{kind}_{int(round(float(mass)))}kg"
+    return f"{kind}_{geometry_hash(root)}"
+
+
+def split_equipment(scene, equipment: list, eq_dir: Path, out_dir: Path, prefix: str) -> None:
+    """Each implement (a top-level equipment object with its equipment
+    children, e.g. the bar and its plates) is written ONCE as
+    ``equipment_<key>.usdz``: the model at the origin, no animation, its root
+    object named ``EQ_<key>``. In the scene the implement keeps its animated
+    transform but its meshes become a 1 mm triangle: that is the socket the
+    app fills with the model (``<prefix>_equipment.json`` maps socket names to
+    keys). Changing a model = rewriting one equipment file."""
+    import json as _json
+    eq_dir.mkdir(parents=True, exist_ok=True)
+    roots = [o for o in equipment if not (o.parent and o.parent.get("evs_equipment"))]
+    sockets = []
+    # One model per key across all exercises: a second, different geometry
+    # under the same key is an error, not a silent overwrite.
+    reg_path = eq_dir / "equipment_registry.json"
+    registry = _json.loads(reg_path.read_text()) if reg_path.exists() else {}
+    for root in roots:
+        key = equipment_key(root)
+        geo = geometry_hash(root)
+        if registry.get(key, geo) != geo:
+            raise ValueError(f"equipment key {key!r} already holds geometry {registry[key]}, this scene has {geo}: "
+                             "give the new model its own mass / type, or update every exercise together")
+        registry[key] = geo
+        target = eq_dir / f"equipment_{key}.usdz"
+        parts = [root, *[c for c in root.children_recursive if c.type == "MESH"]]
+        # Model copy at the origin: root identity, children keep their local placement.
+        copies = {}
+        coll = bpy.data.collections.new(f"EQ_{key}")
+        scene.collection.children.link(coll)
+        for o in parts:
+            c = o.copy()
+            c.data = o.data.copy()
+            c.animation_data_clear()
+            c.constraints.clear()
+            coll.objects.link(c)
+            copies[o] = c
+        for o, c in copies.items():
+            if o is root:
+                c.parent = None
+                c.matrix_world = Matrix.Identity(4)
+                c.name = f"EQ_{key}"
+            else:
+                c.parent = copies[o.parent]
+                c.matrix_parent_inverse = o.matrix_parent_inverse.copy()
+                c.matrix_basis = o.matrix_basis.copy()
+        bpy.context.view_layer.update()
+        select(list(copies.values()))
+        bpy.ops.wm.usd_export(filepath=str(target), export_animation=False, **USD_EXPORT)
+        for c in copies.values():
+            bpy.data.objects.remove(c, do_unlink=True)
+        bpy.data.collections.remove(coll)
+        # The scene keeps only the socket: same name, same animation, no model.
+        for o in parts:
+            tri = bpy.data.meshes.new(f"{o.name}_socket")
+            tri.from_pydata([(0.0, 0.0, 0.0), (0.001, 0.0, 0.0), (0.0, 0.001, 0.0)], [], [(0, 1, 2)])
+            o.data = tri
+        sockets.append({"socket": root.name, "key": key})
+        print(f"[evs] split: equipment {root.name} -> {target.name} {target.stat().st_size} bytes")
+    reg_path.write_text(_json.dumps(registry, indent=2, sort_keys=True) + "\n")
+    (out_dir / f"{prefix}_equipment.json").write_text(_json.dumps({"sockets": sockets}, indent=2) + "\n")
+
+
+def export_split(args, scene, rig, body, shorts, out_dir: Path, prefix: str, tmp: list) -> None:
+    """Modular export (MODULAR_3D_PLAN.md, Kiệt 16/11): fix the character
+    once and every exercise follows, no re-render.
+
+    * ``<prefix>_motion.usdz``: the skeleton, the equipment and the animation.
+      The body is replaced by a one-triangle proxy bound to the pelvis, so the
+      skeleton and its animation still export (UsdSkel needs a bound mesh)
+      while the file carries no character mesh or skin textures.
+    * ``<prefix>_full_*.png``: the exercise's skin textures (all roles), which
+      the app puts on the shared character, like the focus textures.
+    * with ``--character-out``: the shared character (rig, body, shorts) in the
+      rest pose without animation.
+    The app plays the motion file's animation on both the motion entity
+    (equipment) and the shared character: the joint names and the hierarchy
+    match because both come from the same rig (checked on the simulator,
+    16/11: a squat clip played on the curl file's character)."""
+    for src, dst in (("_usdz_body_albedo", "full_albedo"), ("_usdz_body_emission", "full_emission"),
+                     ("_usdz_body_normal", "full_normal"), ("_usdz_apparel_albedo", "full_apparel_albedo"),
+                     ("_usdz_apparel_emission", "full_apparel_emission")):
+        p = out_dir / f"{src}.png"
+        if p.exists():
+            (out_dir / f"{prefix}_{dst}.png").write_bytes(p.read_bytes())
+    equipment = [o for o in scene.objects if o.type == "MESH" and o.get("evs_equipment")]
+    if args.equipment_out:
+        split_equipment(scene, equipment, Path(args.equipment_out), out_dir, prefix)
+    else:
+        # Equipment stays inside the motion file: an older socket manifest
+        # would make the app mount a second copy (PR #914 review).
+        (out_dir / f"{prefix}_equipment.json").unlink(missing_ok=True)
+    if args.character_out:
+        scene.frame_set(scene.frame_start)
+        # With --apparel-out the body ships alone and the shorts get their
+        # own file (same rig, so the same animation drives both).
+        select([rig, body] if args.apparel_out else [rig, body, shorts])
+        bpy.ops.wm.usd_export(filepath=str(args.character_out), export_animation=False, **USD_EXPORT)
+        print(f"[evs] split: character {args.character_out} {Path(args.character_out).stat().st_size} bytes")
+    if args.apparel_out:
+        scene.frame_set(scene.frame_start)
+        select([rig, shorts])
+        bpy.ops.wm.usd_export(filepath=str(args.apparel_out), export_animation=False, **USD_EXPORT)
+        print(f"[evs] split: apparel {args.apparel_out} {Path(args.apparel_out).stat().st_size} bytes")
+    me = bpy.data.meshes.new("EVS_MotionProxy")
+    me.from_pydata([(0.0, 0.0, 0.9), (0.001, 0.0, 0.9), (0.0, 0.001, 0.9)], [], [(0, 1, 2)])
+    proxy = bpy.data.objects.new("EVS_MotionProxy", me)
+    scene.collection.objects.link(proxy)
+    proxy.parent = rig
+    mod = proxy.modifiers.new("Armature", "ARMATURE")
+    mod.object = rig
+    proxy.vertex_groups.new(name="pelvis").add([0, 1, 2], 1.0, "REPLACE")
+    select([rig, proxy, *equipment])
+    scene.frame_set(scene.frame_start)
+    motion = out_dir / f"{prefix}_motion.usdz"
+    bpy.ops.wm.usd_export(filepath=str(motion), export_animation=True, **USD_EXPORT)
+    for p in tmp:
+        p.unlink()
+    to_jpeg(out_dir, prefix)
+    print(f"[evs] split: motion {motion.name} {motion.stat().st_size} bytes; reimport {reimport(str(motion))}")
+
+
 def main(exercise_name: str | None = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--exercise", default=exercise_name, required=exercise_name is None)
     parser.add_argument("--out-dir", default=None)
     parser.add_argument("--size", type=int, default=TEXTURE_SIZE)
+    parser.add_argument("--focus-only", action="store_true", help="only rewrite the focus textures (no scene, no USDZ)")
+    parser.add_argument("--split", action="store_true",
+                        help="modular export (MODULAR_3D_PLAN.md): <prefix>_motion.usdz (skeleton + equipment + animation, "
+                             "no body) and the skin textures as PNG; the app plays it on the shared character")
+    parser.add_argument("--equipment-out", default=None,
+                        help="with --split: write each implement once as equipment_<key>.usdz here and leave only "
+                             "its animated socket in the motion file (Kiệt 16/11: change a dumbbell once for all)")
+    parser.add_argument("--apparel-out", default=None,
+                        help="with --split: write the shorts alone (rig + shorts, rest pose) to this path; the shared "
+                             "character then has no shorts (Kiệt 16/11: outfits change without touching the body)")
+    parser.add_argument("--character-out", default=None,
+                        help="with --split: also write the shared character (rest pose, no animation) to this path")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:])
 
     exercise_path = config.exercise_dir(args.exercise)
@@ -238,6 +460,12 @@ def main(exercise_name: str | None = None) -> None:
     out_dir = Path(args.out_dir) if args.out_dir else exercise_path
     out_dir.mkdir(parents=True, exist_ok=True)
     prefix = exercise_path.name.replace("-", "_")
+    if args.focus_only:
+        write_focus_textures(exercise, prefix, out_dir, colors)
+        # Same format rule as the split export: never leave an older JPEG
+        # next to the new PNG (the app reads the JPEG first).
+        to_jpeg(out_dir, prefix)
+        return
 
     bpy.ops.wm.open_mainfile(filepath=str(exercise_path / exercise["animation_file"]))
     scene = bpy.context.scene
@@ -285,20 +513,11 @@ def main(exercise_name: str | None = None) -> None:
                                                   normal_image if key == "Body" else None))
 
     if painted:
-        # "Focus" body textures with the primary muscles only (Kiệt 13/11: a
-        # switch in the viewer hides the secondary groups). Same UVs as the
-        # USDZ body, so the app swaps them onto the body material at runtime.
-        f_small, f_shade, f_normal, f_rim = painted_textures(exercise, roles=["primary"])
-        f_albedo = apply_shade(muscle_eval.albedo_from_highlight(
-            f_small, colors["character_body_viewer"], colors["muscle_primary"], colors["muscle_secondary"],
-            colors["muscle_stabilizer"], 1.0), f_shade)
-        f_emission = painted_emission(muscle_eval.emission_from_highlight(
-            f_small, colors["muscle_primary"], colors["muscle_secondary"], colors["muscle_stabilizer"], 1.0), f_shade, f_rim)
-        pngio.write_png(out_dir / f"{prefix}_focus_albedo.png", f_albedo)
-        pngio.write_png(out_dir / f"{prefix}_focus_emission.png", f_emission)
-        # Without it the hidden groups would keep their fibre relief on bare skin.
-        pngio.write_png(out_dir / f"{prefix}_focus_normal.png", f_normal)
-        print(f"[evs] usdz: focus textures {prefix}_focus_albedo/emission/normal.png")
+        write_focus_textures(exercise, prefix, out_dir, colors)
+
+    if args.split:
+        export_split(args, scene, rig, body, shorts, out_dir, prefix, tmp)
+        return
 
     equipment_objects = [o for o in scene.objects if o.type == "MESH" and o.get("evs_equipment")]
     select([rig, body, shorts, *equipment_objects])

@@ -1,0 +1,46 @@
+{
+  "pipeline_version": "0.1.0",
+  "exercise_id": "dumbbell_shoulder_press",
+  "master_character_id": "master_character_003",
+  "usdz": "dumbbell_shoulder_press_animation.usdz",
+  "size_bytes": 6064492,
+  "zip_members": [
+    "dumbbell_shoulder_press_animation.usdc",
+    "textures/_usdz_body_emission.png",
+    "textures/_usdz_body_normal.png",
+    "textures/_usdz_body_albedo.png",
+    "textures/_usdz_apparel_emission.png",
+    "textures/_usdz_apparel_albedo.png"
+  ],
+  "default_camera": {
+    "preset_id": "three_quarter",
+    "position_m": [
+      1.7982,
+      1.6958,
+      1.9101
+    ],
+    "target_m": [
+      0.0102,
+      0.7754,
+      0.1221
+    ],
+    "distance_m": 2.6909,
+    "vertical_fov_deg": 41.26,
+    "aspect": 0.5625
+  },
+  "expectations": {
+    "deform_bones": 90,
+    "animation_duration_s": 8.8333,
+    "animation_frames": 213
+  },
+  "reimport": {
+    "armatures": 1,
+    "bones": 90,
+    "mesh_objects": 6,
+    "skinned_mesh_objects": 2,
+    "mesh_vertices": 14364,
+    "actions": 1,
+    "last_animation_frame": 202.0,
+    "materials": 6
+  }
+}

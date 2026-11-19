@@ -32,7 +32,10 @@
     "forearm_muscles"
   ],
   "stabilizing_muscles": [
-    "deltoid_anterior"
+    "deltoid_anterior",
+    "trapezius_upper",
+    "trapezius_middle",
+    "trapezius_lower"
   ],
   "master_character_id": "master_character_003",
   "motion_source_id": "motionlab_curl_v1",
@@ -80,6 +83,16 @@
     {
       "what": "tempo shape",
       "source": "minimum-jerk model, Flash and Hogan 1985",
+      "license": "facts"
+    },
+    {
+      "what": "reference measurements 2026-11-14 (elbow range, tempo; hammer-grip variant - see reference_notes.json) - evaluation only, not approval",
+      "source": "YMove Hammer Curls video, measured with MediaPipe Pose Landmarker heavy; see dumbbell-curl/reference_measurements.json",
+      "license": "YMove royalty-free commercial use, credit required (Exercise video by Your Move, ymove.app); measurements only, no footage used"
+    },
+    {
+      "what": "muscle roles (target -> primary, synergists -> secondary, stabilizers -> stabilizing)",
+      "source": "ExRx https://exrx.net/WeightExercises/Biceps/DBCurl",
       "license": "facts"
     }
   ],
@@ -273,9 +286,46 @@
   "brand_profile_id": "placeholder",
   "highlight_roles": [
     "primary",
-    "secondary"
+    "secondary",
+    "stabilizing"
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Biceps brachii is the prime mover of elbow flexion with a supinated grip; brachioradialis and forearm flexors assist (ACE)."
+  "muscle_roles_note": "Three levels (Kiệt 15/11): primary = carries the load and produces the main force; secondary = directly assists the movement; stabilizing = holds posture and keeps joints stable. Elbow flexion with a supinated grip: biceps (ExRx target), brachioradialis assists (brachialis is hidden). Anterior deltoid, upper/middle trapezius and the wrist muscles stabilise.",
+  "agent_review": {
+    "date": "2026-11-14",
+    "by": "agent (not an expert review)",
+    "checked": [
+      "qa_report.json (tất cả cổng tự động)",
+      "review_sheet.png (xoay vòng 8 góc × 3 khung)",
+      "observer_sheet.png (tầm mắt 1,6 m, 5 góc) đối chiếu nguồn kỹ thuật",
+      "mở trong trình xem 3D của app (simulator iPhone 17)"
+    ],
+    "remaining": [],
+    "note": "Agent self-check only; status stays DRAFT until a qualified reviewer approves."
+  },
+  "app_demo": {
+    "title": "Dumbbell Biceps Curl",
+    "family_label": "curl",
+    "note": null,
+    "review": {
+      "date": "16/11",
+      "checked": [
+        "QA tự động 19/19: xương, tay bám dụng cụ, chân không trượt, dụng cụ không xuyên da, dáng toàn thân, khớp nhịp tempo.json",
+        "Tờ soi xoay vòng 8 góc × 3 khung (đầu, giữa, cuối pha)",
+        "Tờ soi tầm mắt người đứng nhìn (1,6 m) 5 góc: cánh tay trên sát thân, khuỷu gập ~138°, lòng bàn tay ngửa, thân đứng yên",
+        "Mở trong trình xem 3D của app (simulator iPhone 17), chú thích cơ đúng",
+        "Render lại 16/11 trên nhân vật 3.3: bản đồ cơ 48 phần, thớ cơ theo từng phần, tô 3 cấp Chính / Phụ / Ổn định (vai trò theo ExRx)"
+      ],
+      "remaining": []
+    },
+    "aliases": [
+      "bicep curl",
+      "biceps curl",
+      "dumbbell curl",
+      "dumbbell bicep curl",
+      "dumbbell biceps curl"
+    ],
+    "catalog_order": 2
+  }
 }

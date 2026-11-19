@@ -138,8 +138,11 @@ def posture(j: dict, prof: dict) -> list[dict]:
     return out
 
 
-def penetration(depths: dict, limit_m: float) -> dict:
-    """depths: implement -> per-frame deepest skin point inside the implement (m)."""
+def penetration(depths: dict, limit_m: float, frames: list | None = None) -> dict:
+    """depths: implement -> deepest skin point inside the implement (m) at
+    each sampled frame. ``frames``: the animation frame of each sample, so
+    the report names the real frame (14/11: it named the sample index, and
+    the reviewer looked at the wrong frame)."""
     worst = (0.0, None, None)
     for name, arr in depths.items():
         arr = np.asarray(arr, float)
@@ -147,7 +150,8 @@ def penetration(depths: dict, limit_m: float) -> dict:
         if arr[i] > worst[0]:
             worst = (float(arr[i]), name, i)
     return rec("implement_penetration", "C", "Implements do not pass through the body", PASS if worst[0] <= limit_m else FAIL,
-               round(worst[0], 4), limit_m, {"implement": worst[1], "frame": worst[2]}, "m inside")
+               round(worst[0], 4), limit_m,
+               {"implement": worst[1], "frame": (frames[worst[2]] if frames is not None and worst[2] is not None else worst[2])}, "m inside")
 
 
 def summary(records: list[dict]) -> dict:
@@ -158,3 +162,54 @@ def summary(records: list[dict]) -> dict:
     return {"counts": counts, "technically_validated": technical == "PASS",
             "states": {"technically_validated": technical == "PASS", "biomechanically_reviewed": False,
                        "human_approved": False, "production_approved": False}}
+
+
+def tempo_sync(j: dict, expected: list, max_shift_frames: int = 1, min_corr: float = 0.9) -> dict:
+    """The animation follows tempo.json within ``max_shift_frames`` (P5).
+
+    ``expected``: family progress per frame rebuilt from tempo.json alone.
+    The joint that travels farthest is projected on its main direction and
+    normalised; the integer shift that best lines it up with the expected
+    progress (either sign: a squat's hip goes down while progress goes up)
+    must be within the limit, and the curves must agree (correlation)."""
+    e = np.asarray(expected, float)
+    best = None
+    for k, v in j.items():
+        v = np.asarray(v, float)[: len(e)]
+        c = v - v.mean(axis=0)
+        _u, _s, vt = np.linalg.svd(c, full_matrices=False)
+        x = c @ vt[0]
+        rng = float(x.max() - x.min())
+        if best is None or rng > best[0]:
+            best = (rng, k, x)
+    rng, joint, x = best
+    if rng < 1e-3 or e.max() - e.min() < 1e-6:
+        return rec("tempo_sync", "B", "Animation follows tempo.json", NOT_TESTED, detail="no motion")
+    x = (x - x.min()) / rng
+    en = (e - e.min()) / (e.max() - e.min())
+    n = len(en)
+    scores = []
+    for shift in range(-6, 7):
+        a = x[max(shift, 0): n + min(shift, 0)]
+        b = en[max(-shift, 0): n - max(shift, 0)]
+        corr = float(np.corrcoef(a, b)[0, 1]) if a.std() > 0 and b.std() > 0 else 0.0
+        scores.append((abs(corr), shift, corr))
+    score, shift, corr = max(scores)
+    ok = abs(shift) <= max_shift_frames and score >= min_corr
+    return rec("tempo_sync", "B", "Animation follows tempo.json (rep timeline shipped to the app)", PASS if ok else FAIL,
+               {"shift_frames": shift, "correlation": round(score, 4)}, {"max_shift_frames": max_shift_frames, "min_correlation": min_corr},
+               {"joint": joint}, "best alignment of the farthest-travelling joint with the progress rebuilt from tempo.json")
+
+
+def implement_clash(overlaps: dict, frames: list) -> dict:
+    """Two implements must never pass through each other (14/11 Kiệt's
+    recording: the two dumbbells of the shoulder press overlapped at the
+    top and no check caught it). ``overlaps``: "A|B" -> per-frame count of
+    overlapping triangle pairs."""
+    worst = (0, None, None)
+    for pair, arr in overlaps.items():
+        for i, n in enumerate(arr):
+            if n > worst[0]:
+                worst = (int(n), pair, frames[i])
+    return rec("implement_clash", "C", "Implements do not pass through each other", PASS if worst[0] == 0 else FAIL,
+               worst[0], 0, {"pair": worst[1], "frame": worst[2]}, "overlapping triangle pairs")

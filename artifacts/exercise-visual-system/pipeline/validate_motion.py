@@ -34,7 +34,10 @@ DEFAULTS = {"max_joint_speed_m_s": 2.5, "max_frame_to_frame_joint_jump_deg": 12.
             # under load, no elbow folding behind the shoulder line, head not
             # dropped to the chest; no implement inside the skin.
             "max_wrist_bend_deg": 25.0, "max_elbow_flexion_deg": 145.0, "max_elbow_medial_m": 0.02,
-            "max_neck_flexion_deg": 30.0, "max_implement_penetration_m": 0.004}
+            "max_neck_flexion_deg": 30.0, "max_implement_penetration_m": 0.004,
+            # P5: the rep timeline shipped to the app may differ from the
+            # animation by at most one frame.
+            "max_tempo_shift_frames": 1}
 
 
 def main() -> None:
@@ -117,7 +120,8 @@ def main() -> None:
     ids = [e["id"].capitalize() for e in ex.get("equipment", []) if not any(k in e["id"] for k in ("bench", "rack", "machine"))]
     implements = [o for o in scene.objects if o.type == "MESH" and any(o.name.startswith(i) for i in ids)]
     depths = {o.name: [] for o in implements}
-    for f in sorted({stretch_f for _s, stretch_f in stretch} | {frames[low]}):
+    pen_frames = sorted({stretch_f for _s, stretch_f in stretch} | {frames[low]})
+    for f in pen_frames:
         scene.frame_set(f)
         dg = bpy.context.evaluated_depsgraph_get()
         # Implement vertices inside the skin. Tested from the implement's
@@ -145,6 +149,37 @@ def main() -> None:
             o.evaluated_get(dg).to_mesh_clear()
             depths[o.name].append(deep)
 
+    # Implements against each other, every 2nd frame (dumbbells are small).
+    clash_frames = frames[::2]
+    overlaps = {}
+    if len(implements) > 1:
+        for f in clash_frames:
+            scene.frame_set(f)
+            dg = bpy.context.evaluated_depsgraph_get()
+            trees = []
+            for o in implements:
+                bm = bmesh.new()
+                bm.from_object(o, dg)
+                bm.transform(o.matrix_world)
+                trees.append((o.name, BVHTree.FromBMesh(bm)))
+                bm.free()
+            for ia in range(len(trees)):
+                for ib in range(ia + 1, len(trees)):
+                    # Plates sit on their own bar by design (15/11: the squat
+                    # failed on Barbell|Barbell_Plate_L1); only separate
+                    # implements may not overlap.
+                    a_name, b_name = trees[ia][0], trees[ib][0]
+                    if b_name.startswith(a_name + "_Plate") or a_name.startswith(b_name + "_Plate"):
+                        continue  # a bar and its own plate (plate against plate is still checked)
+                    key = f"{trees[ia][0]}|{trees[ib][0]}"
+                    overlaps.setdefault(key, []).append(len(trees[ia][1].overlap(trees[ib][1])))
+    tempo_file = path / "tempo.json"
+    if tempo_file.exists():
+        from motionlab import tempo as tempo_tl
+        tl = config.load_json(tempo_file)
+        tempo_check = Q.tempo_sync(j, tempo_tl.progress_curve(tl, len(frames)), int(prof["max_tempo_shift_frames"]))
+    else:
+        tempo_check = Q.rec("tempo_sync", "B", "Animation follows tempo.json", Q.NOT_TESTED, detail="no tempo.json")
     records = [
         Q.rec("frames", "A", "Animation has frames and finite joint data",
               Q.PASS if len(frames) > 1 and all(np.isfinite(v).all() for v in j.values()) else Q.FAIL, len(frames)),
@@ -153,8 +188,10 @@ def main() -> None:
         Q.contact(dist, prof["max_hand_to_socket_m"]) if dist else Q.rec("hand_implement_contact", "B", "Hands on implements", Q.NOT_TESTED),
         Q.planted(feet, prof["max_foot_slide_m"], prof["max_foot_lift_m"]),
         Q.symmetry(j, prof["max_left_right_position_difference_m"]),
-        Q.penetration(depths, prof["max_implement_penetration_m"]) if depths else Q.rec("implement_penetration", "C", "Implements do not pass through the body", Q.NOT_TESTED),
+        Q.penetration(depths, prof["max_implement_penetration_m"], pen_frames) if depths else Q.rec("implement_penetration", "C", "Implements do not pass through the body", Q.NOT_TESTED),
         *Q.posture(j, prof),
+        tempo_check,
+        Q.implement_clash(overlaps, clash_frames) if overlaps else Q.rec("implement_clash", "C", "Implements do not pass through each other", Q.NOT_TESTED, detail="fewer than two implements"),
         Q.rec("skin_stretch", "C", "Skin stretch stays within limits", Q.PASS if worst_stretch[0] <= prof["max_p999_edge_stretch"] else Q.FAIL,
               round(worst_stretch[0], 3), prof["max_p999_edge_stretch"], {"frame": worst_stretch[1]}, stretch_detail),
     ]

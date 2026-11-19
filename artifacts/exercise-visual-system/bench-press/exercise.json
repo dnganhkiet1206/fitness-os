@@ -267,6 +267,11 @@
       "what": "rep timing and bar path check",
       "source": "Pexels video 20672105, measured with MediaPipe Pose Landmarker heavy (Apache 2.0)",
       "license": "Pexels License (measurements only; no footage used)"
+    },
+    {
+      "what": "medium-grip reference measurements 2026-11-14 (grip, tempo; bottom elbow angles unreliable - see reference_notes.json) - evaluation only, not approval",
+      "source": "Wikimedia Commons Bench press exercise demonstration video (FitnessScape) + YMove Barbell Bench Press (grip cross-check), measured with MediaPipe Pose Landmarker heavy; see bench-press/reference_measurements_medium_grip.json",
+      "license": "CC BY 3.0 (FitnessScape) / YMove royalty-free, credit required; measurements only, no footage used"
     }
   ],
   "camera_presets": [
@@ -387,5 +392,92 @@
   ],
   "fiber_highlight": true,
   "fiber_style": "painted",
-  "muscle_roles_note": "Pectoralis major, anterior deltoid and triceps brachii are the agonists in the systematic review by Stastny et al. 2017 (reference_notes.json). Stabilisers are listed from the same review's discussion, where the evidence is thinner; they are recorded here but not highlighted in the render (highlight_roles)."
+  "muscle_roles_note": "Pectoralis major, anterior deltoid and triceps brachii are the agonists in the systematic review by Stastny et al. 2017 (reference_notes.json). Stabilisers are listed from the same review's discussion, where the evidence is thinner; they are recorded here but not highlighted in the render (highlight_roles).",
+  "app_demo": {
+    "title": "Barbell Bench Press",
+    "family_label": "press_horizontal (script riêng)",
+    "note": "Chưa kiểm lại: bản trong app là bản cũ; dựng lại trên nhân vật 003 đang chờ chọn phương án đáy A/B",
+    "review": null,
+    "aliases": [
+      "bench press",
+      "barbell bench press",
+      "barbell bench press - medium grip"
+    ],
+    "catalog_order": 0,
+    "usdz": "bench_press_animation",
+    "loop": "bench_press_45_loop",
+    "poster": "bench_press_45_poster",
+    "duration_s": 8.5,
+    "camera": {
+      "position_m": [
+        3.5378,
+        2.3302,
+        3.3852
+      ],
+      "target_m": [
+        0.1817,
+        0.6027,
+        0.0291
+      ]
+    },
+    "legacy_comment": "Bench press is still the 14/11 full USDZ in the app (A/B bottom choice pending): these overrides describe that file, not the current pipeline report.",
+    "tips": [
+      {
+        "id": "shoulders",
+        "anchor": [
+          0.24,
+          0.62,
+          -0.1
+        ],
+        "joint": "Root/pelvis/spine_01/spine_02/spine_03/clavicle_l/upperarm_l",
+        "offset": [
+          0.0459,
+          0.0435,
+          0.0299
+        ]
+      },
+      {
+        "id": "core",
+        "anchor": [
+          0.0,
+          0.66,
+          0.27
+        ],
+        "joint": "Root/pelvis/spine_01/spine_02",
+        "offset": [
+          0.0,
+          0.1391,
+          0.0573
+        ]
+      },
+      {
+        "id": "chest",
+        "anchor": [
+          0.0,
+          0.69,
+          0.03
+        ],
+        "joint": "Root/pelvis/spine_01/spine_02/spine_03",
+        "offset": [
+          0.0,
+          0.1715,
+          -0.1194
+        ]
+      },
+      {
+        "id": "feet",
+        "anchor": [
+          0.3,
+          0.04,
+          0.8
+        ],
+        "joint": "Root/pelvis/thigh_l/calf_l/foot_l",
+        "offset": [
+          0.03,
+          -0.0338,
+          0.0547
+        ]
+      }
+    ]
+  }
 }

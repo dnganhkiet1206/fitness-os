@@ -17,7 +17,8 @@ phase timeline is written back into exercise.json (exercise_phases) so the
 validator, the cameras and the viewer share one timeline. Every camera in
 camera_presets watches the same animation.
 
-Writes <exercise>/<animation_file> and motion_metadata.json.
+Writes <exercise>/<animation_file>, motion_metadata.json and tempo.json
+(per-repetition timeline for the app, motionlab/tempo.py).
 """
 
 from __future__ import annotations
@@ -35,7 +36,7 @@ import numpy as np  # noqa: E402
 from mathutils import Matrix, Vector  # noqa: E402
 
 from evs import PIPELINE_VERSION, bl_util, config, rig as evs_rig, scene as evs_scene  # noqa: E402
-from motionlab import FAMILIES, families, timing  # noqa: E402,F401
+from motionlab import FAMILIES, families, tempo as tempo_tl, timing  # noqa: E402,F401
 
 
 def rest_skeleton(rig) -> dict:
@@ -48,6 +49,13 @@ def rest_skeleton(rig) -> dict:
         sk[f"hip_{s}"] = head(f"thigh_{s}")
         sk[f"knee_{s}"] = head(f"calf_{s}")
         sk[f"ankle_{s}"] = head(f"foot_{s}")
+    # Trunk chain heads, so templates can predict exactly where pose_body
+    # puts the shoulders for a given lean (pelvis + spine split).
+    for b in ("pelvis",) + SPINE:
+        sk[f"{b}_head"] = head(b)
+    for s_ in ("l", "r"):
+        if f"clavicle_{s_}" in rig.pose.bones:
+            sk[f"clavicle_{s_}_head"] = head(f"clavicle_{s_}")
     sk["upper_arm_m"] = float(np.linalg.norm(sk["elbow_l"] - sk["shoulder_l"]))
     sk["forearm_m"] = float(np.linalg.norm(sk["wrist_l"] - sk["elbow_l"]))
     sk["thigh_m"] = float(np.linalg.norm(sk["knee_l"] - sk["hip_l"]))
@@ -66,6 +74,23 @@ def rest_skeleton(rig) -> dict:
             if len(band):
                 prof.append([float(z), float(band[:, 1].max())])
         sk["back_profile"] = prof
+        # Front skin of the left leg relative to its bones (14/11 hinge:
+        # dumbbells sliding down the legs went 4 cm into the thigh when the
+        # clearance was guessed from the joint line). For every 5 % of the
+        # thigh (hip -> knee) and the shank (knee -> ankle): how far the
+        # front skin is in front of the bone line, perpendicular to it in the
+        # sagittal plane. Templates rebuild the skin on the posed leg.
+        legs = {}
+        for seg, (a, b) in (("thigh", ("hip_l", "knee_l")), ("shank", ("knee_l", "ankle_l"))):
+            pa, pb = sk[a], sk[b]
+            rows = []
+            for u in np.linspace(0.0, 1.0, 21):
+                c = pa + u * (pb - pa)
+                band = co[(np.abs(co[:, 2] - c[2]) < 0.006) & (co[:, 0] > 0.0) & (np.abs(co[:, 0] - c[0]) < 0.09)]
+                if len(band):
+                    rows.append([float(u), float(c[1] - band[:, 1].min())])
+            legs[seg] = rows
+        sk["leg_front_profile"] = legs
     return sk
 
 
@@ -112,6 +137,36 @@ def pose_body(rig, body: dict, frame: int) -> None:
         rig.pose.bones[b].keyframe_insert("rotation_quaternion", frame=frame)
 
 
+def pose_girdle(rig, girdle: dict, frame: int) -> None:
+    """Shoulder girdle following the arm (scapulohumeral rhythm, motionlab
+    primitives.scapulohumeral): per side, the clavicle elevates (its lateral
+    end rises, which lifts the shoulder joint) and the shoulder blade turns
+    upward on it. Rotations are about the armature's front-back axis through
+    each bone's head; left and right mirror. Keys both bones."""
+    from mathutils import Quaternion
+    from evs import motion
+    for side, sign in (("l", 1.0), ("r", -1.0)):
+        g = girdle.get(side)
+        if not g:
+            continue
+        # Elevation (lateral end up, about front-back Y) then retraction
+        # (lateral end back, about vertical Z: shoulder blades squeezed).
+        for bone, turns in ((f"clavicle_{side}", ((Vector((0, 1, 0)), -sign * g.get("clavicle_elevation_deg", 0.0)),
+                                                   (Vector((0, 0, 1)), sign * g.get("clavicle_retraction_deg", 0.0)))),
+                            (f"scapula_{side}", ((Vector((0, 1, 0)), -sign * g.get("scapula_upward_deg", 0.0)),))):
+            if bone not in rig.pose.bones:
+                continue
+            pb = rig.pose.bones[bone]
+            pb.rotation_mode = "QUATERNION"
+            pb.rotation_quaternion = Quaternion()
+            bpy.context.view_layer.update()
+            for axis, deg in turns:
+                if deg:
+                    motion.rotate_bone_about_armature_axis(rig, bone, axis, deg)
+            pb.keyframe_insert("rotation_quaternion", frame=frame)
+    bpy.context.view_layer.update()
+
+
 def to_matrix(m: np.ndarray) -> Matrix:
     return Matrix([list(r) for r in m])
 
@@ -141,6 +196,8 @@ def main() -> None:
     exercise["exercise_phases"] = timing.exercise_phases(phases, exercise.get("phase_cues"))
     exercise["animation_duration"] = round(timing.duration(phases), 3)
     config.save_json(path / "exercise.json", exercise)
+    # Rep timeline for the app (P5): same phases as the animation.
+    config.save_json(path / "tempo.json", tempo_tl.timeline(phases, exercise["tempo"], exercise["exercise_id"], fps, exercise.get("phase_cues")))
 
     static = template.static()
     # Implements that ride on a bone (a bar on the upper back).
@@ -152,6 +209,13 @@ def main() -> None:
         obj.parent_bone = v["bone"]
         bpy.context.view_layer.update()
         obj.matrix_world = to_matrix(v["matrix"])
+    # Equipment that does not move but must sit against the body (a bench
+    # placed under the seated character): the template gives its matrix.
+    for key, m in static.get("place", {}).items():
+        prefix = key.capitalize()
+        for obj in bpy.data.objects:
+            if obj.name == prefix or obj.name.startswith(prefix + "_"):
+                obj.matrix_world = to_matrix(m)
     # Feet planted, knees forward.
     for key, v in static.items():
         if not isinstance(v, dict) or key in ("attached", "grips"):
@@ -217,6 +281,8 @@ def main() -> None:
         body = fr.get("body")
         if body:
             pose_body(rig, body, f)
+        if fr.get("girdle"):
+            pose_girdle(rig, fr["girdle"], f)
         if fr.get("poles_trunk"):
             # Offsets given in the trunk's rest frame: rotate with spine_03.
             pb3 = rig.pose.bones["spine_03"]

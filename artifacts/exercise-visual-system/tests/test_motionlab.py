@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from evs import motion_qa, muscle_sculpt  # noqa: E402
-from motionlab import FAMILIES, families, timing  # noqa: E402,F401
+from motionlab import FAMILIES, families, tempo, timing  # noqa: E402,F401
 from motionlab.primitives import arm_directions, rotation, two_bone_knee  # noqa: E402
 
 SKELETON = {
@@ -130,25 +130,34 @@ class PostureTests(unittest.TestCase):
 
 
 class SquatArmTests(unittest.TestCase):
-    SK = {"shoulder_l": np.array([0.2, 0.0, 1.42]), "shoulder_r": np.array([-0.2, 0, 1.42]),
+    # Character 003 (16/11): shoulders, clavicle heads and the back profile
+    # with the trapezius volume (the bar sits ~0.11 m behind the shoulders).
+    SK = {"shoulder_l": np.array([0.215, -0.018, 1.43]), "shoulder_r": np.array([-0.215, -0.018, 1.43]),
+          "clavicle_l_head": np.array([0.023, -0.024, 1.458]), "clavicle_r_head": np.array([-0.023, -0.024, 1.458]),
           "hip_l": np.array([0.1, 0.0, 0.95]), "hip_r": np.array([-0.1, 0, 0.95]),
           "ankle_l": np.array([0.1, 0.02, 0.08]), "ankle_r": np.array([-0.1, 0.02, 0.08]),
           "upper_arm_m": 0.266, "forearm_m": 0.275, "thigh_m": 0.44, "shin_m": 0.42,
-          "back_profile": [[1.44, 0.06], [1.47, 0.065], [1.50, 0.05]]}
+          "back_profile": [[1.42, 0.114], [1.45, 0.109], [1.48, 0.091], [1.51, 0.082]]}
 
     def test_elbow_down_outside_wrist_straight(self):
         tpl = FAMILIES["squat"]({}, self.SK)
         arm = tpl.arms["l"]
         self.assertLess(arm["elbow"][2], self.SK["shoulder_l"][2] - 0.15)   # elbow below the shoulder
-        self.assertGreater(arm["elbow"][0], self.SK["shoulder_l"][0])        # not folded in
-        self.assertLess(arm["elbow_flexion_deg"], 145)
+        # Not folded in: same 2 cm tolerance as the QA gate elbow_inside_shoulder
+        # (elbows straight down under a retracted shoulder sit ~4 mm inside).
+        self.assertGreater(arm["elbow"][0], tpl.girdle_shoulder("l")[0] - 0.02)
+        # The planned angle runs ~8 deg above the posed rig (0.68 m grip:
+        # plan 153, validate_motion elbow_flexion_anatomical 145.1); that QA
+        # gate on the posed rig is the anatomical check, this one catches a
+        # grip that closes the elbow far past it.
+        self.assertLess(arm["elbow_flexion_deg"], 150)
         fore = arm["grip"] - arm["elbow"]
         self.assertAlmostEqual(float(np.dot(arm["palm"], fore / np.linalg.norm(fore))), 0.0, places=6)
 
     def test_bar_rests_on_skin(self):
         tpl = FAMILIES["squat"]({}, self.SK)
         r = tpl.t["bar_shaft_radius_m"] - tpl.t["bar_into_soft_tissue_m"]
-        self.assertAlmostEqual(tpl.bar_rest[1], 0.065 + r, places=6)
+        self.assertAlmostEqual(tpl.bar_rest[1], 0.091 + r, places=6)  # profile at bar height 1.48
 
 
 class MuscleSculptTests(unittest.TestCase):
@@ -173,6 +182,108 @@ class MuscleSculptTests(unittest.TestCase):
         a = np.array([1_000_000, 1_000_000, 1_000_000, 0])
         b = np.array([2_000_000, 1_000_001, 1_000_002, 1_000_000])
         self.assertEqual(muscle_sculpt.boundary_kind(a, b).tolist(), [0, 1, 2, 3])
+
+
+CURL_TEMPO = {"start_at": 0.0, "start_hold": 0.6, "concentric": 1.6, "top_hold": 0.4, "eccentric": 2.2,
+              "bottom_hold": 0.4, "reps": 2, "end_hold": 0.4}
+SQUAT_TEMPO = {"start_at": 1.0, "start_hold": 0.6, "eccentric": 2.0, "bottom_hold": 0.3, "concentric": 1.6,
+               "top_hold": 0.5, "reps": 2, "end_hold": 0.4}
+
+
+class TempoTimelineTests(unittest.TestCase):
+    def tl(self, t, cues=None):
+        return tempo.timeline(timing.build(t), t, "x", 30, cues)
+
+    def test_reps_cover_the_moving_phases_in_order(self):
+        tl = self.tl(CURL_TEMPO)
+        self.assertEqual(tl["schema"], "ascnd.tempo/1")
+        self.assertEqual(len(tl["reps"]), 2)
+        self.assertEqual([p["kind"] for p in tl["reps"][0]["phases"]], ["concentric", "top_hold", "eccentric", "bottom_hold"])
+        self.assertEqual([p["kind"] for p in tl["reps"][1]["phases"]], ["concentric", "top_hold", "eccentric"])
+        self.assertEqual(tl["reps"][0]["start_ms"], 600)
+        self.assertEqual(tl["reps"][1]["start_ms"], tl["reps"][0]["end_ms"])
+        self.assertEqual(tl["duration_ms"], int(round(timing.duration(timing.build(CURL_TEMPO)) * 1000)))
+
+    def test_squat_starts_at_the_top_with_the_lowering(self):
+        tl = self.tl(SQUAT_TEMPO)
+        self.assertEqual(tl["starts_at"], "top")
+        first = tl["reps"][0]["phases"][0]
+        self.assertEqual((first["kind"], first["from"], first["to"], first["breath"]), ("eccentric", 1.0, 0.0, "inhale"))
+        self.assertEqual(tl["notation"], "2-0.3-1.6-0.5")
+
+    def test_marks_turn_then_complete_per_rep(self):
+        tl = self.tl(CURL_TEMPO)
+        self.assertEqual([(m["type"], m["rep"]) for m in tl["marks"]], [("turn", 1), ("rep_complete", 1), ("turn", 2), ("rep_complete", 2)])
+        conc = tl["reps"][0]["phases"][0]
+        self.assertEqual(tl["marks"][0]["at_ms"], conc["end_ms"])
+        self.assertEqual(conc["breath"], "exhale")
+
+    def test_cues_land_at_phase_starts(self):
+        tl = self.tl(CURL_TEMPO, {"start_position": ["Stand tall"], "concentric": ["Elbows by the sides"]})
+        self.assertEqual(tl["cues"][0], {"at_ms": 0, "rep": 0, "phase": "start_position", "text": "Stand tall"})
+        self.assertEqual([c["at_ms"] for c in tl["cues"][1:]], [p["start_ms"] for r in tl["reps"] for p in r["phases"] if p["kind"] == "concentric"])
+
+    def test_progress_curve_matches_the_generator(self):
+        phases = timing.build(CURL_TEMPO)
+        tl = tempo.timeline(phases, CURL_TEMPO, "x", 30)
+        n = int(timing.duration(phases) * 30) + 1
+        curve = tempo.progress_curve(tl, n)
+        ref = [timing.progress_at(phases, f / 30) for f in range(n)]
+        self.assertLess(max(abs(a - b) for a, b in zip(curve, ref)), 0.01)
+
+
+class ScapulohumeralTests(unittest.TestCase):
+    def test_rhythm(self):
+        from motionlab.primitives import scapulohumeral
+        self.assertEqual(scapulohumeral(20)["upward_rotation_deg"], 0.0)
+        top = scapulohumeral(180)
+        self.assertAlmostEqual(top["upward_rotation_deg"], 60.0)
+        self.assertAlmostEqual(top["clavicle_elevation_deg"] + top["scapula_upward_deg"], 60.0)
+        self.assertLessEqual(top["clavicle_elevation_deg"], 15.0)
+
+
+class ImplementClashTests(unittest.TestCase):
+    def test_overlap_fails_with_frame(self):
+        r = motion_qa.implement_clash({"Dumbbell_l|Dumbbell_r": [0, 0, 12, 3]}, [0, 2, 4, 6])
+        self.assertEqual(r["status"], motion_qa.FAIL)
+        self.assertEqual(r["where"], {"pair": "Dumbbell_l|Dumbbell_r", "frame": 4})
+        self.assertEqual(motion_qa.implement_clash({"a|b": [0, 0]}, [0, 2])["status"], motion_qa.PASS)
+
+
+class PenetrationFrameTests(unittest.TestCase):
+    def test_reports_the_animation_frame_not_the_sample_index(self):
+        r = motion_qa.penetration({"Dumbbell_r": [0.0, 0.006, 0.001]}, 0.004, [0, 57, 115])
+        self.assertEqual(r["status"], motion_qa.FAIL)
+        self.assertEqual(r["where"]["frame"], 57)
+
+
+class TempoSyncTests(unittest.TestCase):
+    def setUp(self):
+        phases = timing.build(CURL_TEMPO)
+        self.tl = tempo.timeline(phases, CURL_TEMPO, "x", 30)
+        self.n = int(timing.duration(phases) * 30) + 1
+        self.p = np.array(tempo.progress_curve(self.tl, self.n))
+
+    def joints(self, p):
+        # wrist on an arc (non-linear in progress), elbow still
+        ang = np.radians(12 + 126 * p)
+        wrist = np.stack([np.full_like(p, 0.2), -0.26 * np.sin(ang), 1.1 - 0.26 * np.cos(ang)], axis=1)
+        return {"hand_l": wrist, "lowerarm_l": np.tile([0.2, 0.0, 1.1], (len(p), 1))}
+
+    def test_in_sync_passes(self):
+        r = motion_qa.tempo_sync(self.joints(self.p), self.p)
+        self.assertEqual(r["status"], motion_qa.PASS, r)
+        self.assertEqual(r["measured"]["shift_frames"], 0)
+
+    def test_three_frames_late_fails(self):
+        late = np.concatenate([np.full(3, self.p[0]), self.p[:-3]])
+        r = motion_qa.tempo_sync(self.joints(late), self.p)
+        self.assertEqual(r["status"], motion_qa.FAIL)
+        self.assertEqual(r["measured"]["shift_frames"], 3)
+
+    def test_inverted_signal_is_fine(self):
+        r = motion_qa.tempo_sync({"pelvis": np.stack([np.zeros(self.n), np.zeros(self.n), 1.0 - 0.4 * self.p], axis=1)}, self.p)
+        self.assertEqual(r["status"], motion_qa.PASS, r)
 
 
 if __name__ == "__main__":

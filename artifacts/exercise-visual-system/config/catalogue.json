@@ -1,0 +1,523 @@
+{
+  "comment": "Which exercises the factory builds, ranked by how many sets a week a member meets them in the app's starter programs (gym, home with dumbbells, bodyweight). 'refresh' recounts program_sets and keeps family / equipment / folder (hand-written). The bench press solver is still its own script (press_horizontal has no Motion Lab template yet). See pipeline/catalogue.py and docs/exercise-visual-system/MARKET_REVERSE_ANALYSIS.md (P1).",
+  "entries": {
+    "Dumbbell Shoulder Press": {
+      "family": "press_vertical",
+      "equipment": "dumbbells",
+      "folder": "dumbbell-shoulder-press",
+      "program_sets": {
+        "gym": 5,
+        "home_dumbbell": 14,
+        "bodyweight": 0,
+        "days": 7
+      },
+      "weekly_sets_total": 19
+    },
+    "Incline Dumbbell Press": {
+      "family": "press_horizontal",
+      "equipment": "dumbbells + incline bench",
+      "folder": null,
+      "program_sets": {
+        "gym": 9,
+        "home_dumbbell": 9,
+        "bodyweight": 0,
+        "days": 6
+      },
+      "weekly_sets_total": 18
+    },
+    "One-Arm Dumbbell Row": {
+      "family": "row",
+      "equipment": "dumbbell + bench",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 18,
+        "bodyweight": 0,
+        "days": 6
+      },
+      "weekly_sets_total": 18
+    },
+    "Dumbbell Lunges": {
+      "family": "lunge",
+      "equipment": "dumbbells",
+      "folder": null,
+      "program_sets": {
+        "gym": 8,
+        "home_dumbbell": 8,
+        "bodyweight": 0,
+        "days": 6
+      },
+      "weekly_sets_total": 16
+    },
+    "Stiff-Legged Dumbbell Deadlift": {
+      "family": "hinge",
+      "equipment": "dumbbells",
+      "folder": "stiff-leg-dumbbell-deadlift",
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 15,
+        "bodyweight": 0,
+        "days": 5
+      },
+      "weekly_sets_total": 15
+    },
+    "Goblet Squat": {
+      "family": "squat",
+      "equipment": "dumbbell",
+      "folder": null,
+      "program_sets": {
+        "gym": 2,
+        "home_dumbbell": 12,
+        "bodyweight": 0,
+        "days": 5
+      },
+      "weekly_sets_total": 14
+    },
+    "Side Lateral Raise": {
+      "family": "raise_lateral",
+      "equipment": "dumbbells",
+      "folder": "side-lateral-raise",
+      "program_sets": {
+        "gym": 3,
+        "home_dumbbell": 8,
+        "bodyweight": 0,
+        "days": 4
+      },
+      "weekly_sets_total": 11
+    },
+    "Barbell Full Squat": {
+      "family": "squat",
+      "equipment": "barbell",
+      "folder": "back-squat",
+      "program_sets": {
+        "gym": 10,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 3
+      },
+      "weekly_sets_total": 10
+    },
+    "Barbell Bench Press - Medium Grip": {
+      "family": "press_horizontal",
+      "equipment": "barbell + bench",
+      "folder": "bench-press",
+      "program_sets": {
+        "gym": 10,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 3
+      },
+      "weekly_sets_total": 10
+    },
+    "Dumbbell Floor Press": {
+      "family": "press_horizontal",
+      "equipment": "dumbbells",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 10,
+        "bodyweight": 0,
+        "days": 3
+      },
+      "weekly_sets_total": 10
+    },
+    "Dumbbell Bicep Curl": {
+      "family": "curl",
+      "equipment": "dumbbells",
+      "folder": "dumbbell-curl",
+      "program_sets": {
+        "gym": 5,
+        "home_dumbbell": 5,
+        "bodyweight": 0,
+        "days": 4
+      },
+      "weekly_sets_total": 10
+    },
+    "Standing Calf Raises": {
+      "family": "calf_raise",
+      "equipment": "machine",
+      "folder": null,
+      "program_sets": {
+        "gym": 10,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 3
+      },
+      "weekly_sets_total": 10
+    },
+    "Standing Dumbbell Calf Raise": {
+      "family": "calf_raise",
+      "equipment": "dumbbells",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 10,
+        "bodyweight": 0,
+        "days": 3
+      },
+      "weekly_sets_total": 10
+    },
+    "Bent Over Barbell Row": {
+      "family": "row",
+      "equipment": "barbell",
+      "folder": null,
+      "program_sets": {
+        "gym": 9,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 3
+      },
+      "weekly_sets_total": 9
+    },
+    "Bent Over Two-Dumbbell Row": {
+      "family": "row",
+      "equipment": "dumbbells",
+      "folder": "bent-over-two-dumbbell-row",
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 9,
+        "bodyweight": 0,
+        "days": 3
+      },
+      "weekly_sets_total": 9
+    },
+    "Barbell Deadlift": {
+      "family": "hinge",
+      "equipment": "barbell",
+      "folder": null,
+      "program_sets": {
+        "gym": 9,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 3
+      },
+      "weekly_sets_total": 9
+    },
+    "Standing Military Press": {
+      "family": "press_vertical",
+      "equipment": "barbell",
+      "folder": null,
+      "program_sets": {
+        "gym": 9,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 3
+      },
+      "weekly_sets_total": 9
+    },
+    "Single Leg Glute Bridge": {
+      "family": "bridge",
+      "equipment": "bodyweight",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 6,
+        "bodyweight": 2,
+        "days": 3
+      },
+      "weekly_sets_total": 8
+    },
+    "Hammer Curls": {
+      "family": "curl",
+      "equipment": "dumbbells",
+      "folder": "hammer-curl",
+      "program_sets": {
+        "gym": 4,
+        "home_dumbbell": 4,
+        "bodyweight": 0,
+        "days": 4
+      },
+      "weekly_sets_total": 8
+    },
+    "Standing Dumbbell Triceps Extension": {
+      "family": "tricep_extension",
+      "equipment": "dumbbell",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 7,
+        "bodyweight": 0,
+        "days": 3
+      },
+      "weekly_sets_total": 7
+    },
+    "Dumbbell Step Ups": {
+      "family": "lunge",
+      "equipment": "dumbbells + box",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 7,
+        "bodyweight": 0,
+        "days": 3
+      },
+      "weekly_sets_total": 7
+    },
+    "Wide-Grip Lat Pulldown": {
+      "family": "pull_vertical",
+      "equipment": "cable machine",
+      "folder": null,
+      "program_sets": {
+        "gym": 6,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 2
+      },
+      "weekly_sets_total": 6
+    },
+    "Front Barbell Squat": {
+      "family": "squat",
+      "equipment": "barbell",
+      "folder": null,
+      "program_sets": {
+        "gym": 6,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 2
+      },
+      "weekly_sets_total": 6
+    },
+    "Dumbbell Squat": {
+      "family": "squat",
+      "equipment": "dumbbells",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 6,
+        "bodyweight": 0,
+        "days": 2
+      },
+      "weekly_sets_total": 6
+    },
+    "Seated Cable Rows": {
+      "family": "row",
+      "equipment": "cable machine",
+      "folder": null,
+      "program_sets": {
+        "gym": 6,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 2
+      },
+      "weekly_sets_total": 6
+    },
+    "Barbell Hip Thrust": {
+      "family": "bridge",
+      "equipment": "barbell + bench",
+      "folder": null,
+      "program_sets": {
+        "gym": 6,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 2
+      },
+      "weekly_sets_total": 6
+    },
+    "Stiff-Legged Barbell Deadlift": {
+      "family": "hinge",
+      "equipment": "barbell",
+      "folder": null,
+      "program_sets": {
+        "gym": 6,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 2
+      },
+      "weekly_sets_total": 6
+    },
+    "Pullups": {
+      "family": "pull_vertical",
+      "equipment": "bar",
+      "folder": null,
+      "program_sets": {
+        "gym": 6,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 2
+      },
+      "weekly_sets_total": 6
+    },
+    "Bodyweight Squat": {
+      "family": "squat",
+      "equipment": "bodyweight",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 0,
+        "bodyweight": 6,
+        "days": 2
+      },
+      "weekly_sets_total": 6
+    },
+    "Pushups": {
+      "family": "push_up",
+      "equipment": "bodyweight",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 0,
+        "bodyweight": 6,
+        "days": 2
+      },
+      "weekly_sets_total": 6
+    },
+    "Face Pull": {
+      "family": "row",
+      "equipment": "cable machine",
+      "folder": null,
+      "program_sets": {
+        "gym": 5,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 2
+      },
+      "weekly_sets_total": 5
+    },
+    "Triceps Pushdown": {
+      "family": "tricep_extension",
+      "equipment": "cable machine",
+      "folder": null,
+      "program_sets": {
+        "gym": 5,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 2
+      },
+      "weekly_sets_total": 5
+    },
+    "Lying Leg Curls": {
+      "family": "knee_isolation",
+      "equipment": "machine",
+      "folder": null,
+      "program_sets": {
+        "gym": 5,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 2
+      },
+      "weekly_sets_total": 5
+    },
+    "Bodyweight Walking Lunge": {
+      "family": "lunge",
+      "equipment": "bodyweight",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 0,
+        "bodyweight": 5,
+        "days": 2
+      },
+      "weekly_sets_total": 5
+    },
+    "Crunches": {
+      "family": "trunk_flexion",
+      "equipment": "bodyweight",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 0,
+        "bodyweight": 4,
+        "days": 2
+      },
+      "weekly_sets_total": 4
+    },
+    "Inverted Row": {
+      "family": "row",
+      "equipment": "bar",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 0,
+        "bodyweight": 3,
+        "days": 1
+      },
+      "weekly_sets_total": 3
+    },
+    "Push-Ups - Close Triceps Position": {
+      "family": "push_up",
+      "equipment": "bodyweight",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 0,
+        "bodyweight": 3,
+        "days": 1
+      },
+      "weekly_sets_total": 3
+    },
+    "Superman": {
+      "family": "trunk_extension",
+      "equipment": "bodyweight",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 0,
+        "bodyweight": 3,
+        "days": 1
+      },
+      "weekly_sets_total": 3
+    },
+    "Bench Dips": {
+      "family": "dip",
+      "equipment": "bench",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 0,
+        "bodyweight": 3,
+        "days": 1
+      },
+      "weekly_sets_total": 3
+    },
+    "Butt Lift (Bridge)": {
+      "family": "bridge",
+      "equipment": "bodyweight",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 0,
+        "bodyweight": 3,
+        "days": 1
+      },
+      "weekly_sets_total": 3
+    },
+    "Triceps Pushdown - Rope Attachment": {
+      "family": "tricep_extension",
+      "equipment": "cable machine",
+      "folder": null,
+      "program_sets": {
+        "gym": 2,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 1
+      },
+      "weekly_sets_total": 2
+    },
+    "Leg Extensions": {
+      "family": "knee_isolation",
+      "equipment": "machine",
+      "folder": null,
+      "program_sets": {
+        "gym": 2,
+        "home_dumbbell": 0,
+        "bodyweight": 0,
+        "days": 1
+      },
+      "weekly_sets_total": 2
+    },
+    "Mountain Climbers": {
+      "family": "plank_dynamic",
+      "equipment": "bodyweight",
+      "folder": null,
+      "program_sets": {
+        "gym": 0,
+        "home_dumbbell": 0,
+        "bodyweight": 2,
+        "days": 1
+      },
+      "weekly_sets_total": 2
+    }
+  },
+  "source": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/StarterPrograms.swift",
+  "counted": "2026-11-14"
+}

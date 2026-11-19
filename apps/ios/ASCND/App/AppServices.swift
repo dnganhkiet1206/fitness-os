@@ -152,8 +152,9 @@ final class AppServices {
   /// thử thách vừa xong — gốc Hôm nay hiện từng cái một; đăng xuất thì bỏ hết.
   let celebrations = CelebrationQueue()
   /// Lớp Trạng thái (#161, `state-write.ts`): cờ "chỉ giá trị cuối có nghĩa"
-  /// — "đã uống hôm nay" của thực phẩm bổ sung. Chỉ trong phiên (chủ dự án
-  /// chọn), đăng xuất thì bỏ; có mạng lại thì gửi các ý còn chờ.
+  /// — "đã uống hôm nay" của thực phẩm bổ sung. Ý chờ gửi lưu xuống đĩa
+  /// (AUD-29): mở app lại thì ý vẫn còn, màn của chủ nó nhận lại rồi gửi khi
+  /// có mạng; đăng xuất thì bỏ cả trên đĩa.
   let stateWriter = StateWriter(environment: .init(online: { false }, isOffline: { NetworkFailure.isOffline($0) }))
   /// Đường mạng + phép dò internet của NetInfo (#530) — nuôi `net` và vòng sync.
   @ObservationIgnored private(set) var network: NetworkObserver!
@@ -161,6 +162,8 @@ final class AppServices {
   /// Hàng đợi trên đĩa — vòng sync gửi từ đây; lệnh sửa kế hoạch (#401) ghi
   /// vào đây và Today đọc lại phần chưa gửi.
   @ObservationIgnored let outbox: OutboxStore
+  /// Ý chờ gửi của lớp Trạng thái trên đĩa (AUD-29) — `stateWriter` ghi qua đây.
+  @ObservationIgnored let stateIntents: StateIntentStore
   /// Kế hoạch tuần + template thật, local-first (#270).
   @ObservationIgnored let templates: TodayRepository
   @ObservationIgnored let history: any TrainingHistory
@@ -235,6 +238,11 @@ final class AppServices {
     workouts = GRDBWorkoutStore(database)
     let outboxStore = OutboxStore(database)
     outbox = outboxStore
+    let stateIntentStore = StateIntentStore(database)
+    stateIntents = stateIntentStore
+    // Chốt tài khoản còn đóng lúc này nên chưa nạp được ý nào — ý của phiên
+    // nạp ở `forgetOtherAccounts`, sau khi chốt mở cho đúng người.
+    stateWriter.attachPersistence(stateIntentStore)
     let templateCache = GRDBTemplateCache(database)
     templates = TodayRepository(
       source: backend.map { SupabaseTemplateSource(backend: $0) as any TemplateSource } ?? UnconfiguredTemplates(),
@@ -285,17 +293,19 @@ final class AppServices {
     sync = SyncWorker(
       store: outboxStore,
       remote: backend.map { b -> any RemoteWriter in
-        // Server đã nhận một lệnh buổi tập → dựng lại `daily_logs` của ngày ấy
-        // (+ hôm nay), như `rebuildAfterReplay` của RN (#266), rồi làm mới
-        // widget (điểm sẵn sàng / buổi hôm nay vừa đổi). Lỗi dựng lại không
-        // làm hỏng lượt gửi — ghi đã thành rồi.
+        // Lượt gửi xong (AUD-50, R2-SYNC-04): dựng lại `daily_logs` của các
+        // ngày phân biệt trong lượt (+ hôm nay, như `rebuildAfterReplay` của
+        // RN #266), rồi làm mới widget (điểm sẵn sàng / buổi hôm nay vừa đổi)
+        // — MỖI VIỆC MỘT LẦN mỗi lượt, không phải mỗi entry một lần. Lỗi dựng
+        // lại không làm hỏng lượt gửi — ghi đã thành rồi. Lượt bị huỷ (đăng
+        // xuất) hay app chết giữa lượt thì việc cuối lượt không chạy: ngày
+        // tạm lệch, tự sửa ở lần ghi kế vào ngày ấy.
         let rows = SupabaseRowStore(backend: b)
-        return SupabaseRemoteWriter(backend: b, afterWrite: { entry in
-          // Lỗi dựng lại không làm hỏng lượt gửi, nhưng phải tới được đội (R2-OPS-03): trước đây bị bỏ qua.
-          let failed = await DailyLog.rebuildAfterWrite(entry, store: rows)
+        return SupabaseRemoteWriter(backend: b, afterDrain: { entries in
+          let failed = await DailyLog.rebuildAfterWrites(entries, store: rows)
           if !failed.isEmpty {
-            let kind = entry.kind
-            await MainActor.run { Telemetry.reportRebuild(kind: kind, failedDays: failed.count) }
+            let sent = entries.count
+            await MainActor.run { Telemetry.reportRebuild(failedDays: failed.count, entries: sent) }
           }
           await widgets.refresh()
         })
@@ -319,16 +329,18 @@ final class AppServices {
       self?.forgetKoaSession()
       // Pháo hoa của người vừa rời đi không hiện cho người sau (`onUserScopedReset`).
       celebrations.clear()
-      // Ý "đã uống" chưa gửi thuộc về người vừa rời đi (`onUserScopedReset`).
+      // Ý "đã uống" chưa gửi thuộc về người vừa rời đi (`onUserScopedReset`) —
+      // bỏ cả trong bộ nhớ lẫn trên đĩa, trước khi chốt đóng.
       stateWriter.clear()
       // Người của phiên mới khi đổi thẳng tài khoản; `nil` khi đăng xuất.
       let next = session?.session?.userId
       // Đóng chốt TRƯỚC khi dọn: lượt làm mới / lượt ghi muộn của người vừa
       // rời đi về sau đó không ghi lại được gì lên đĩa (#431, #454). Rồi ĐỖ
       // hàng đợi chưa gửi — không xoá (round 3, AUD-06; #241 (b)): bản ghi chỉ
-      // gửi khi chính chủ đăng nhập lại, không ai khác thấy. Rồi dọn điểm quay lại
-      // `routine-day:*` (`clearUserScopedStorage`) và read model — trừ của
-      // người mới, có thể đã ghi trong lúc lượt dọn này nhường (#455).
+      // gửi khi chính chủ đăng nhập lại, không ai khác thấy. Điểm quay lại
+      // `routine-day:*` cũng đỗ lại theo chủ như thế (R3-DATA-01): chính chủ
+      // quay lại thì tập tiếp được; chỉ read model bị dọn — trừ của người
+      // mới, có thể đã ghi trong lúc lượt dọn này nhường (#455).
       await lifecycle.sessionEnded(next: next) { @MainActor in
         _ = await sync.signOut()
       }
@@ -376,42 +388,67 @@ final class AppServices {
   }
 
   /// App mở / quay lại tiền cảnh: đọc phiên, thử gửi hàng đợi. Dọn ngày cũ
-  /// KHÔNG ở đây (#469): lúc này chốt còn đóng — nó chạy khi phiên mở, cho
-  /// đúng người (`forgetOtherAccounts`).
+  /// của người đang đăng nhập KHÔNG ở đây (#469): nó chạy khi phiên mở, cho
+  /// đúng người (`forgetOtherAccounts`). Ngoại lệ: ngày đỗ quá hạn của người
+  /// KHÁC thì dọn ở đây — chỉ hàng quá 14 ngày của chủ khác, không chạm dữ
+  /// liệu của người của phiên vừa khôi phục (`pruneParkedStaleDays`).
   func start() async {
     await session.start()
+    // Ngoại lệ #469 (xem `AccountLifecycle.pruneParkedStaleDays`): chỉ ngày
+    // đỗ quá hạn của chủ khác với phiên vừa khôi phục; không có phiên thì
+    // dọn của mọi người — ngày trong cửa sổ 14 ngày không bao giờ bị chạm.
+    await lifecycle.pruneParkedStaleDays(
+      except: session.session?.userId, today: LocalDate(SystemWallClock().nowMillis(), in: .current))
     sync.kick()
     autoSyncHealth()
     await reminders.refreshPermission()
     await probeAI()
   }
 
-  /// Edge function AI đã deploy chưa (15/10: server trả 404 "function not found" cho
-  /// MỌI function). `true` mới hiện lối vào AI (Coach, tổng kết tuần, Insight, gợi ý
-  /// bữa, chụp ảnh món); `nil` (chưa biết / không có mạng) và `false` → ẩn, không để
-  /// người dùng chạm vào một màn lỗi. Server deploy xong → lần mở app sau tự hiện.
-  private(set) var aiDeployed: Bool?
+  /// Edge function AI đã deploy chưa, theo từng function (17/11: trước đây một
+  /// `Bool?` duy nhất dò chỉ `ai-coach` — coach sập thì mọi lối vào AI ẩn dù
+  /// function của chính nó vẫn chạy). Mỗi lối vào chỉ nhìn cờ của function nó
+  /// gọi (`isAIDeployed`); vắng = chưa biết / không có mạng → ẩn, như `false`.
+  /// Server deploy xong → lần mở app / quay lại tiền cảnh sau tự hiện.
+  private(set) var aiAvailability = AIFunctionAvailability()
 
-  /// Một lượt hỏi gateway, không đăng nhập: function có → 401 (chưa chạy gì), không
-  /// có → 404. Lỗi mạng: giữ `nil`, thử lại lần ra tiền cảnh sau.
+  /// Function AI đã deploy thì lối vào của nó mới hiện.
+  func isAIDeployed(_ fn: EdgeFunction.Name) -> Bool { aiAvailability.isDeployed(fn) }
+
+  /// Một lượt hỏi gateway cho từng function, không đăng nhập: function có → 401
+  /// (chưa chạy gì), không có → 404. Lỗi mạng: giữ "chưa biết", thử lại lần ra
+  /// tiền cảnh sau. Sáu function dò song song; mỗi function giữ nguyên ngữ nghĩa
+  /// cũ: timeout 8 giây, thử lại ba lần cách 2 giây, đã biết là có thì không dò lại.
   func probeAI() async {
     // UI test: máy chủ giả trả lời edge function — lối vào AI hiện như khi đã deploy.
-    if Self.uiTest { aiDeployed = true }
-    guard aiDeployed != true, let base = Self.supabaseURL, let key = Self.supabaseKey else { return }
-    var req = URLRequest(url: base.appendingPathComponent("functions/v1/ai-coach"))
-    req.httpMethod = "POST"
-    req.timeoutInterval = 8
-    req.setValue(key, forHTTPHeaderField: "apikey")
-    req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    req.httpBody = Data("{}".utf8)
-    // Mở app lúc mạng chưa sẵn (16/10: dải "Offline" lúc khởi động) thì lần dò
-    // đầu hỏng và mọi lối AI ẩn cả phiên. Thử lại ba lần, cách 2 giây; quay lại
-    // tiền cảnh cũng dò lại (`didBecomeActive`).
-    for attempt in 0..<3 {
-      if attempt > 0 { try? await Task.sleep(for: .seconds(2)) }
-      if let (_, resp) = try? await URLSession.shared.data(for: req), let http = resp as? HTTPURLResponse {
-        aiDeployed = http.statusCode != 404
-        return
+    if Self.uiTest { aiAvailability.markAllDeployed() }
+    guard let base = Self.supabaseURL, let key = Self.supabaseKey else { return }
+    let pending = AIFunctionAvailability.probed.filter { !aiAvailability.isDeployed($0) }
+    guard !pending.isEmpty else { return }
+    await withTaskGroup(of: (EdgeFunction.Name, Bool?).self) { group in
+      for fn in pending {
+        group.addTask {
+          var req = URLRequest(url: base.appendingPathComponent("functions/v1/\(fn.rawValue)"))
+          req.httpMethod = "POST"
+          req.timeoutInterval = 8
+          req.setValue(key, forHTTPHeaderField: "apikey")
+          req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+          req.httpBody = Data("{}".utf8)
+          // Mở app lúc mạng chưa sẵn (16/10: dải "Offline" lúc khởi động) thì lần dò
+          // đầu hỏng và mọi lối AI ẩn cả phiên. Thử lại ba lần, cách 2 giây; quay lại
+          // tiền cảnh cũng dò lại (`didBecomeActive`).
+          for attempt in 0..<3 {
+            if attempt > 0 { try? await Task.sleep(for: .seconds(2)) }
+            if let (_, resp) = try? await URLSession.shared.data(for: req), let http = resp as? HTTPURLResponse {
+              let deployed: Bool? = http.statusCode != 404
+              return (fn, deployed)
+            }
+          }
+          return (fn, nil)
+        }
+      }
+      for await (fn, deployed) in group {
+        if let deployed { aiAvailability.set(fn, deployed: deployed) }
       }
     }
   }
@@ -438,6 +475,17 @@ final class AppServices {
   func forgetOtherAccounts(keeping userId: String) async {
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     await lifecycle.sessionStarted(userId: userId, today: today)
+    // Chốt đã mở cho người này: nạp các ý chờ gửi còn lại từ lần mở app
+    // trước (AUD-29). Ý nạp về chưa có `send` — màn của chủ nó nhận lại khi
+    // mở (`reattach`), rồi `flush()` gửi khi có mạng lại.
+    stateWriter.restore()
+  }
+
+  /// Tài khoản đã xoá trên server: bỏ ngày tập của nó khỏi máy, đi cùng
+  /// `sync.purge` bỏ hàng đợi của nó. Kết thúc phiên thường thì giữ ngày lại
+  /// cho lần đăng nhập sau (R3-DATA-01).
+  func purgeWorkoutDays(userId: String) async {
+    await lifecycle.accountDeleted(userId: userId)
   }
 
   /// Việc dọn thêm khi phiên kết thúc, của những thứ không do AppServices
@@ -844,11 +892,66 @@ final class AppServices {
   /// UI test: tạm nghỉ chỉ sống trong một lần mở app, để flow này không làm hỏng flow sau.
   @ObservationIgnored private var uiTestPauses: [String: Data] = [:]
 
+  // MARK: - Tạm nghỉ Koa: hợp đồng bền (R2-SYNC-05)
+
+  /// Tạm nghỉ KHÔNG qua hàng đợi outbox — nó có đường đồng bộ riêng, máy là
+  /// nguồn thật, server là bản sao:
+  ///
+  /// - Sự thật trên máy (UserDefaults, đều gắn `userId`): đợt đang có
+  ///   (`koa.pause.*`), sổ các đợt (`koa.pauselog.*`), ảnh sổ đã gửi được lần
+  ///   cuối (`koa.pauselog.synced.*`), cờ "đợt đang có chưa gửi"
+  ///   (`koa.pause.pending.*`).
+  /// - Đẩy hỏng thì KHÔNG đổi gì trên máy: cờ chờ vẫn còn, ảnh đã gửi vẫn cũ,
+  ///   nên lần đồng bộ sau gửi bù đúng phần còn thiếu (sổ gửi theo hiệu với
+  ///   ảnh đã gửi; đợt đang có gửi lại toàn bộ). Lỗi đẩy phải tới được đội
+  ///   (`reportKoaPausePushFailure` → Telemetry), không nuốt lặng.
+  /// - Lần đẩy lại chạy khi: sửa tạm nghỉ (`setKoaPause` — bắt đầu / kết thúc
+  ///   sớm ở màn Hôm nay), và khi màn Hôm nay nạp lại (`loadGains` →
+  ///   `syncKoaPause` + `syncKoaPauseLog`: lần nạp đầu, đổi ngày, nạp lại tay,
+  ///   sau đồng bộ HealthKit). Không có lịch đẩy riêng, không có ngân sách
+  ///   thử lại: lần đồng bộ sau gần nhất là lần thử kế.
+  /// - Đọc hỏng (mất mạng, bảng chưa deploy) thì giữ sổ trên máy, im lặng có
+  ///   chủ đích: đọc khi ngoại tuyến là chuyện thường, không phải sự cố.
+  /// - Kéo về: server thắng theo từng đợt, rồi ghép đợt đang có trên máy
+  ///   (`including`). Hai máy cùng sửa thì LWW, không có tín hiệu xung đột —
+  ///   chấp nhận được vì đây là trạng thái hiển thị / lịch, không phải bản ghi.
+  /// - Đăng xuất KHÔNG xoá các khoá này, có chủ đích: khoá gắn `userId` nên
+  ///   không rò sang tài khoản khác, và đợt chưa gửi được của chính chủ sẽ
+  ///   gửi bù khi họ đăng nhập lại. Khoá cũ tích lại theo tài khoản — sổ tự
+  ///   cắt ở `keepDays` ngày, đợt đang có chỉ một dòng.
+  ///
+  /// Test thay kho ghi bằng `koaStoreOverride` và đếm lỗi qua
+  /// `onKoaPausePushFailure`.
+  @ObservationIgnored var koaStoreOverride: (any RowStore)?
+  @ObservationIgnored var onKoaPausePushFailure: ((String) -> Void)?
+
+  /// Đường đồng bộ tạm nghỉ dùng sự thật trên máy (UserDefaults) và đẩy thật.
+  /// Chế độ UI test tắt đường này (máy chủ giả làm chủ trạng thái) — TRỪ khi
+  /// test đã gắn `koaStoreOverride`: lúc đó test làm chủ cả kho ghi lẫn sự
+  /// thật trên máy, nên đường đẩy thật phải chạy thì mới kiểm được lỗi đẩy
+  /// (R2-SYNC-05). Lược đồ test của ASCNDTests luôn bật `-uiTestFakeBackend`
+  /// (`project.yml`), nên không có ngoại lệ này thì seam kiểm không bao giờ
+  /// chạy. Ngoài test, override luôn `nil` nên hành vi UI test / bản thật
+  /// không đổi.
+  private var koaLocalSyncEnabled: Bool { koaStoreOverride != nil || !Self.uiTest }
+
+  private var koaStore: (any RowStore)? {
+    if let override = koaStoreOverride { return override }
+    return rows
+  }
+
+  /// Lỗi đẩy tạm nghỉ tới được đội (R2-SYNC-05): Telemetry ở bản thật, bộ đếm
+  /// của test qua hook. `stage`: `pause` hay `pause_log`.
+  private func reportKoaPausePushFailure(stage: String) {
+    onKoaPausePushFailure?(stage)
+    Telemetry.reportKoaPausePush(stage: stage)
+  }
+
   /// Tạm nghỉ đang có hiệu lực của tài khoản (Koa Ecosystem V2). Lưu trên máy trước, rồi
   /// đồng bộ với bảng `koa_pauses`.
   func koaPause(userId: String, today: LocalDate) -> KoaPause? {
     _ = koaPauseRevision
-    guard let data = Self.uiTest ? uiTestPauses[userId] : UserDefaults.standard.data(forKey: "koa.pause.\(userId)"),
+    guard let data = koaLocalSyncEnabled ? UserDefaults.standard.data(forKey: "koa.pause.\(userId)") : uiTestPauses[userId],
       let p = try? JSONDecoder().decode(KoaPause.self, from: data), p.active(on: today)
     else { return nil }
     return p
@@ -870,7 +973,7 @@ final class AppServices {
     storeKoaPause(pause, userId: userId)
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     storePauseLog(koaPauseLog(userId: userId, today: today).setting(pause, today: today), "koa.pauselog.\(userId)", userId: userId)
-    guard !Self.uiTest else { return }
+    guard koaLocalSyncEnabled else { return }
     // lưu trên máy trước; đẩy lên server sau, mất mạng thì để cờ chờ lần đọc sau
     UserDefaults.standard.set(true, forKey: "koa.pause.pending.\(userId)")
     Task {
@@ -882,7 +985,7 @@ final class AppServices {
   @ObservationIgnored private var uiTestPauseLogs: [String: KoaPauseLog] = [:]
 
   private func loadPauseLog(_ key: String, userId: String) -> KoaPauseLog {
-    if Self.uiTest { return uiTestPauseLogs[key] ?? KoaPauseLog() }
+    if !koaLocalSyncEnabled { return uiTestPauseLogs[key] ?? KoaPauseLog() }
     guard let data = UserDefaults.standard.data(forKey: key),
       let log = try? JSONDecoder().decode(KoaPauseLog.self, from: data)
     else { return KoaPauseLog() }
@@ -890,7 +993,7 @@ final class AppServices {
   }
 
   private func storePauseLog(_ log: KoaPauseLog, _ key: String, userId: String) {
-    if Self.uiTest {
+    if !koaLocalSyncEnabled {
       uiTestPauseLogs[key] = log
     } else if let data = try? JSONEncoder().encode(log) {
       UserDefaults.standard.set(data, forKey: key)
@@ -901,7 +1004,7 @@ final class AppServices {
   /// Gửi phần sổ server chưa có: so với bản đã gửi được lần cuối (`koa.pauselog.synced`), nên
   /// mất mạng hay bảng chưa deploy thì lần sau gửi bù, kể cả đợt đã huỷ.
   private func pushKoaPauseLog(userId: String) async {
-    guard !Self.uiTest, let rows else { return }
+    guard koaLocalSyncEnabled, let rows = koaStore else { return }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     let local = koaPauseLog(userId: userId, today: today)
     let synced = loadPauseLog("koa.pauselog.synced.\(userId)", userId: userId)
@@ -910,7 +1013,11 @@ final class AppServices {
     do {
       try await rows.upsert(KoaPauseLogSync.table, changes, onConflict: KoaPauseLogSync.conflict)
       storePauseLog(local, "koa.pauselog.synced.\(userId)", userId: userId)
-    } catch {}
+    } catch {
+      // Đẩy hỏng: ảnh đã gửi giữ nguyên nên lần sau gửi bù đúng phần thiếu;
+      // lỗi phải tới được đội (R2-SYNC-05), không nuốt lặng như trước.
+      reportKoaPausePushFailure(stage: "pause_log")
+    }
   }
 
   /// Sổ tạm nghỉ: còn phần chưa gửi thì gửi trước; sau đó lấy bản trên server, ghép đợt đang có
@@ -918,7 +1025,7 @@ final class AppServices {
   /// `true` khi sổ trên máy vừa đổi theo server.
   @discardableResult
   func syncKoaPauseLog(userId: String) async -> Bool {
-    guard !Self.uiTest, let rows else { return false }
+    guard koaLocalSyncEnabled, let rows = koaStore else { return false }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     await pushKoaPauseLog(userId: userId)
     let local = koaPauseLog(userId: userId, today: today)
@@ -935,9 +1042,48 @@ final class AppServices {
     return true
   }
 
+  // MARK: - Bài tập: sao yêu thích + độ phổ biến (Kiệt 16/11)
+
+  /// Đẩy sao chưa gửi lên `exercise_favorites` rồi lấy bản server (sao đánh ở máy khác). Bảng
+  /// lỗi (mất mạng; trước khi migration 20261116120000 được deploy 16/11) thì giữ bản trên máy,
+  /// lần sau gửi bù.
+  func syncExerciseFavorites(userId: String) async {
+    guard !Self.uiTest, let rows, session.session?.userId == userId else { return }
+    await ExerciseFavoritesShared.book(for: userId).sync(rows: rows)
+  }
+
+  private static let popularityKey = "ex.popularity.rows"
+  private static let popularityAtKey = "ex.popularity.at"
+
+  /// Độ phổ biến từ số liệu thật (`exercise_popularity()`), đọc tối đa mỗi ngày một lần; bản cuối
+  /// lưu trên máy. Hàm chưa deploy / mất mạng thì thử lại sau một giờ, trong lúc ấy dùng bản đã
+  /// lưu hay danh sách soạn tay.
+  func refreshExercisePopularity() async {
+    Self.applyCachedExercisePopularity()
+    guard !Self.uiTest, let backend else { return }
+    let defaults = UserDefaults.standard
+    let now = Date().timeIntervalSince1970
+    guard now - defaults.double(forKey: Self.popularityAtKey) >= 86_400 else { return }
+    guard let raw = try? await SupabaseExercisePopularity(backend: backend).popularity() else {
+      defaults.set(now - 86_400 + 3_600, forKey: Self.popularityAtKey)
+      return
+    }
+    let rows = ExercisePopularity.decode(raw)
+    if let data = try? JSONEncoder().encode(rows) { defaults.set(data, forKey: Self.popularityKey) }
+    defaults.set(now, forKey: Self.popularityAtKey)
+    ExercisePopularity.use(ExercisePopularity.blend(curated: ExerciseSearch.popularity, server: rows))
+  }
+
+  private static func applyCachedExercisePopularity() {
+    guard let data = UserDefaults.standard.data(forKey: popularityKey),
+      let rows = try? JSONDecoder().decode([ExercisePopularity.Row].self, from: data)
+    else { return }
+    ExercisePopularity.use(ExercisePopularity.blend(curated: ExerciseSearch.popularity, server: rows))
+  }
+
   private func storeKoaPause(_ pause: KoaPause?, userId: String) {
     let key = "koa.pause.\(userId)"
-    if Self.uiTest {
+    if !koaLocalSyncEnabled {
       uiTestPauses[userId] = pause.flatMap { try? JSONEncoder().encode($0) }
     } else if let pause, let data = try? JSONEncoder().encode(pause) {
       UserDefaults.standard.set(data, forKey: key)
@@ -948,13 +1094,17 @@ final class AppServices {
   }
 
   private func pushKoaPause(_ pause: KoaPause?, userId: String) async {
-    guard let rows else { return }
+    guard let rows = koaStore else { return }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     do {
       try await rows.upsert(
         KoaPauseSync.table, [KoaPauseSync.row(pause, userId: userId, today: today)], onConflict: "user_id")
       UserDefaults.standard.removeObject(forKey: "koa.pause.pending.\(userId)")
-    } catch {}
+    } catch {
+      // Đẩy hỏng: cờ chờ vẫn còn nên lần đồng bộ sau gửi lại; lỗi phải tới
+      // được đội (R2-SYNC-05), không nuốt lặng như trước.
+      reportKoaPausePushFailure(stage: "pause")
+    }
   }
 
   /// Đồng bộ tạm nghỉ với server: còn thay đổi chưa gửi thì gửi; không thì lấy bản trên server
@@ -962,7 +1112,7 @@ final class AppServices {
   /// `true` khi đợt nghỉ trên máy vừa đổi theo server (bên gọi dựng lại việc chính).
   @discardableResult
   func syncKoaPause(userId: String) async -> Bool {
-    guard !Self.uiTest, let rows else { return false }
+    guard koaLocalSyncEnabled, let rows = koaStore else { return false }
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     if UserDefaults.standard.bool(forKey: "koa.pause.pending.\(userId)") {
       await pushKoaPause(koaPause(userId: userId, today: today), userId: userId)
@@ -1450,6 +1600,28 @@ final class AppServices {
   func makeCommunityFeed(userId: String) -> CommunityFeedBook? {
     guard let backend else { return nil }
     return CommunityFeedBook(userId: userId, remote: SupabaseCommunity(backend: backend))
+  }
+
+  /// Bảng kiểm duyệt Cộng đồng (#915, giai đoạn 1): hàng đợi báo cáo / kháng
+  /// nghị qua RPC `mod_*`. Chỉ hỏi vai trò khi mở bảng — người thường không
+  /// thấy lối vào, không một lời gọi dữ liệu quản trị nào rời máy.
+  func makeModeration(userId: String) -> ModerationBook? {
+    guard let backend else { return nil }
+    return ModerationBook(userId: userId, remote: SupabaseModeration(backend: backend))
+  }
+
+  /// Quản trị Cộng đồng (#915, giai đoạn 2): người dùng / vai trò / nhật ký /
+  /// thư viện ảnh qua RPC `admin_*`. Chỉ admin mới tải dữ liệu.
+  func makeAdmin(userId: String) -> AdminBook? {
+    guard let backend else { return nil }
+    return AdminBook(userId: userId, remote: SupabaseModeration(backend: backend))
+  }
+
+  /// "Báo cáo của tôi" (#915, giai đoạn 2): báo cáo của chính mình qua RPC
+  /// `community_my_reports()`.
+  func makeMyReports(userId: String) -> MyReportsBook? {
+    guard let backend else { return nil }
+    return MyReportsBook(userId: userId, remote: SupabaseCommunity(backend: backend))
   }
 
   /// Hồ sơ cộng đồng của mình (#527, lát 2): `community_profiles` (upsert theo

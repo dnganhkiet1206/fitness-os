@@ -1,23 +1,17 @@
 public import ASCNDCore
 import Foundation
-import Supabase
 
-/// `HistorySource` thật: đúng truy vấn của `useWorkoutSessions`
-/// (`use-fitness-data.ts:874`) — các cột màn lịch sử đọc (WH-1d), của mình,
-/// trong cửa sổ, mới trước.
+/// `HistorySource` thật: các cột màn lịch sử đọc (WH-1d), của mình, trong cửa
+/// sổ, mới trước — qua lượt đọc chung `SharedWorkoutSessions` (R2-OPS-08), lọc
+/// trong bộ nhớ theo đúng `since`, thay cho một truy vấn riêng.
 public struct SupabaseHistorySource: HistorySource {
-  private let client: SupabaseClient
+  private let shared: SharedWorkoutSessions
 
   public init(backend: Backend) {
-    self.client = backend.client
+    self.shared = backend.sharedSessions
   }
 
   public func sessions(userId: String, since: EpochMillis) async throws -> [JSONValue] {
-    try await client.from("workout_sessions")
-      .select("id, date_time, template_name, session_rpe, volume_load, pr_detected, sets")
-      .eq("user_id", value: userId)
-      .gte("date_time", value: WorkoutSessionRecord.iso8601(since))
-      .order("date_time", ascending: false)
-      .execute().value
+    try await shared.rows(userId: userId, since: since)
   }
 }

@@ -15,14 +15,17 @@ struct TodayAskKoaCard: View {
     Button(action: onAsk) {
       // Ảnh phủ hết bề ngang (hơi phóng), tan dần vào nền tối; chữ đặt lên ảnh trên lớp
       // gradient (Kiệt 21/10: khác Apple Health một chút). Nền luôn tối nên chữ luôn trắng.
+      // Thẻ gọn theo chiều dọc (Kiệt 17/11): cao 272 thay vì 340, ảnh 200 thay vì
+      // 250 — chữ giữ nguyên, chỉ bớt phần ảnh phía trên. Điểm tan của gradient
+      // dời lên theo để phần chữ vẫn nằm trên nền tối như trước.
       Self.ink
         .frame(maxWidth: .infinity)
-        .frame(height: 340)
+        .frame(height: 272)
         .overlay(alignment: .top) {
           Image("AskKoaScene")
             .resizable()
             .scaledToFill()
-            .frame(height: 250)
+            .frame(height: 200)
             .frame(maxWidth: .infinity)
             .clipped()
             .accessibilityHidden(true)
@@ -30,9 +33,9 @@ struct TodayAskKoaCard: View {
         .overlay {
           LinearGradient(
             stops: [
-              .init(color: Self.ink.opacity(0), location: 0.42),
-              .init(color: Self.ink.opacity(0.8), location: 0.62),
-              .init(color: Self.ink, location: 0.74),
+              .init(color: Self.ink.opacity(0), location: 0.28),
+              .init(color: Self.ink.opacity(0.8), location: 0.52),
+              .init(color: Self.ink, location: 0.66),
             ],
             startPoint: .top, endPoint: .bottom)
         }
@@ -40,8 +43,8 @@ struct TodayAskKoaCard: View {
         .overlay {
           LinearGradient(
             stops: [
-              .init(color: .black.opacity(0), location: 0.45),
-              .init(color: .black.opacity(0.55), location: 0.75),
+              .init(color: .black.opacity(0), location: 0.30),
+              .init(color: .black.opacity(0.55), location: 0.64),
               .init(color: .black.opacity(0.7), location: 1),
             ],
             startPoint: .top, endPoint: .bottom)
