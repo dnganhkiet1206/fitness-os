@@ -87,13 +87,26 @@ public enum QuestRetry {
   /// Giữ tối đa chừng này khoá (mới nhất) — chặn hàng lớn mãi nếu server luôn từ chối.
   public static let limit = 20
 
-  /// Lỗi nào đáng thử lại: chưa tới server (mất mạng) hay không rõ đã tới chưa.
-  /// Server đã trả lời có tên (trần ngày, khoá lạ, chưa đăng nhập…) thì thôi.
+  /// Lỗi nào đáng thử lại: chưa tới server (mất mạng), không rõ đã tới chưa, hay lỗi TẠM
+  /// THỜI của server (KOA-T16: trước đây 5xx mang mã bị bỏ luôn, mất thưởng). Server đã
+  /// trả lời có tên (trần ngày, khoá lạ, chưa đăng nhập…) thì thôi.
   public static func shouldRetry(_ f: MascotFailure) -> Bool {
     switch f {
     case .offline, .server(code: nil): true
+    case .server(code: let code?): isTransient(code)
     default: false
     }
+  }
+
+  /// Mã lỗi tạm thời: SQLSTATE lớp 08 (kết nối), 40 (xung đột / deadlock), 53 (hết tài
+  /// nguyên), 57 (huỷ / hết giờ / tắt máy), 55P03 (khoá bận); PostgREST không nối được
+  /// cơ sở dữ liệu (`PGRST000`–`PGRST003`); mã HTTP 5xx / 429 nếu adapter mang theo.
+  public static func isTransient(_ code: String) -> Bool {
+    // SQLSTATE luôn 5 ký tự — "404" (HTTP) không phải lớp 40.
+    if code.count == 5, ["08", "40", "53", "57"].contains(where: { code.hasPrefix($0) }) || code == "55P03" { return true }
+    if ["PGRST000", "PGRST001", "PGRST002", "PGRST003"].contains(code) { return true }
+    if let http = Int(code), http == 429 || (500..<600).contains(http) { return true }
+    return false
   }
 
   /// Thêm một khoá (không trùng), giữ `limit` khoá mới nhất.

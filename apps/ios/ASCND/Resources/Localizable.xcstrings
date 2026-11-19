@@ -15462,6 +15462,29 @@
         }
       }
     },
+    "mr.balance.stale": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "May be out of date. Tap to refresh."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Có thể chưa mới. Chạm để tải lại."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puede no estar actualizado. Toca para actualizar."
+          }
+        }
+      }
+    },
     "mr.today": {
       "extractionState": "manual",
       "localizations": {

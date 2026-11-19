@@ -1163,6 +1163,8 @@ final class AppServices {
   /// lịch sử cũ nên không đọc lại. Các trạng thái có gắn `userId` (bụi, Gains hiện tại, Daily
   /// Plan, tuần, chuỗi) đã tự loại người khác nên giữ nguyên.
   func forgetKoaSession() {
+    // Sổ "Tuần của Koa" của phiên vừa rời (KOA-T17: trước đây sống qua đăng xuất).
+    koaWeekBook = nil
     koaGainsHistory = nil
     koaShelfRecords = nil
     koaEquipped = []

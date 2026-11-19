@@ -7,6 +7,8 @@ import SwiftUI
 struct KoaWeekCard: View {
   let state: KoaWeek.State
   let claim: KoaWeekBook.Claim
+  /// Nhận hỏng → nút Thử lại (KOA-T17: trước đây chỉ có chữ, phải vào lại màn mới thử).
+  var onRetry: (() -> Void)? = nil
 
   var body: some View {
     DSCard {
@@ -45,9 +47,23 @@ struct KoaWeekCard: View {
             .font(DS.TextStyle.footnote.weight(.semibold))
             .foregroundStyle(DS.Color.readinessGreen.swiftUI)
         case .failed:
-          Text("kw.retry")
-            .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.destructive.swiftUI)
+          HStack(spacing: DS.Spacing.sm) {
+            Text("kw.retry")
+              .font(DS.TextStyle.footnote)
+              .foregroundStyle(DS.Color.destructive.swiftUI)
+            if let onRetry {
+              Spacer(minLength: 0)
+              Button(action: onRetry) {
+                Label("common.retry", systemImage: "arrow.clockwise")
+                  .font(DS.TextStyle.footnote.weight(.semibold))
+                  .padding(.horizontal, 12)
+                  .frame(minHeight: 44)
+                  .background(DS.Color.foreground.swiftUI.opacity(0.08), in: Capsule())
+              }
+              .buttonStyle(.plain)
+              .accessibilityIdentifier("koaWeek.retry")
+            }
+          }
         case .notYet:
           EmptyView()
         }

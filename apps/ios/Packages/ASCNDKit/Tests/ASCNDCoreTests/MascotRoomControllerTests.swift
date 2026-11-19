@@ -25,10 +25,19 @@ struct MascotRoomControllerTests {
 
     private func note(_ uid: String) { lock.withLock { askedFor.append(uid) } }
 
+    /// Độ trễ của lần đọc sổ xu kế tiếp (thử tải chồng — KOA-T17), dùng một lần.
+    var nextLedgerDelayMs = 0
+    var freezesError: (any Error)?
     func ledger(userId: String) async throws -> [LedgerRow] {
       note(userId)
-      if let ledgerError { throw ledgerError }
-      return lock.withLock { ledgerRows }
+      let (delay, rows, err) = lock.withLock { () -> (Int, [LedgerRow], (any Error)?) in
+        let d = nextLedgerDelayMs
+        nextLedgerDelayMs = 0
+        return (d, ledgerRows, ledgerError)
+      }
+      if delay > 0 { try? await Task.sleep(for: .milliseconds(delay)) }
+      if let err { throw err }
+      return rows
     }
     func loggedDates(userId: String, limit: Int) async throws -> [LocalDate] {
       note(userId)
@@ -36,6 +45,7 @@ struct MascotRoomControllerTests {
     }
     func freezes(userId: String) async throws -> [FreezeRow] {
       note(userId)
+      if let freezesError { throw freezesError }
       return lock.withLock { freezeRows }
     }
     func weeklyChallenges(userId: String, weekStart: LocalDate) async throws -> [WeeklyChallenge] {
@@ -141,6 +151,44 @@ struct MascotRoomControllerTests {
   }
 
   // MARK: - Thưởng chào mừng
+
+  /// KOA-T17: hai lượt tải chồng nhau — lượt bắt đầu sau thắng, lượt cũ về muộn không đè.
+  @Test func overlappingLoadsLatestWins() async {
+    let s = FakeSource()
+    s.ledgerRows = Self.welcomed
+    let (c, _) = make(s)
+    await c.load()
+    s.nextLedgerDelayMs = 120  // lượt 1 chậm, còn sổ CŨ
+    let first = Task { await c.load() }
+    try? await Task.sleep(for: .milliseconds(20))
+    s.ledgerRows = Self.welcomed + [LedgerRow(amount: 40, refKey: "x:photo")]
+    await c.load()  // lượt 2 nhanh, sổ MỚI
+    #expect(c.balance == 340)
+    await first.value
+    #expect(c.balance == 340, "lượt cũ về muộn không được đè số mới")
+  }
+
+  /// KOA-T17: sổ xu đọc hỏng sau khi đã có số → giữ số, nhưng báo là số cũ; băng hỏng
+  /// không về 0.
+  @Test func aFailedReloadIsShownAsStaleAndFreezesAreKept() async {
+    let s = FakeSource()
+    s.ledgerRows = Self.welcomed
+    s.freezeRows = [FreezeRow(usedOn: nil), FreezeRow(usedOn: nil)]
+    let (c, _) = make(s)
+    await c.load()
+    #expect(!c.walletStale)
+    #expect(c.freezesHeld == 2)
+    s.ledgerError = URLError(.timedOut)
+    s.freezesError = URLError(.timedOut)
+    await c.load()
+    #expect(c.walletStale)
+    #expect(c.phase == .ready)
+    #expect(c.balance == 300)
+    #expect(c.freezesHeld == 2, "băng đọc hỏng: giữ số đã biết, không về 0")
+    s.ledgerError = nil
+    await c.load()
+    #expect(!c.walletStale)
+  }
 
   @Test func welcomeIsClaimedOnceThroughTheServer() async {
     let s = FakeSource()
