@@ -94,3 +94,25 @@ public enum MascotLine {
     thisSession || praisedOn != today
   }
 }
+
+extension MascotLine {
+  /// Câu dự phòng phải hợp với nét mặt đang hiện (KOA-T14, audit Koa 17/11): mặt và câu do hai bộ
+  /// chọn khác nhau, nên Koa có thể mặt mệt / lo mà miệng khen "xong hết rồi". Mặt buồn / mệt / lo /
+  /// ối thì không khen — im lặng (bong bóng chỉ còn lời chào khi chưa làm gì). Hỏi việc kế tiếp
+  /// luôn hợp với mọi nét.
+  public static func coherent(_ line: Line, with emotion: KoaEmotion.Emotion) -> Line {
+    if case .praise = line, [.sad, .tired, .worry, .oops].contains(emotion) { return .silent }
+    return line
+  }
+}
+
+extension KoaEmotion {
+  /// Nét mặt cho Koa nhỏ ở Hôm nay gọn (KOA-T14): giữ mệt / lo — chúng nói điều gì đó về ngày
+  /// (widget cũng giữ); chỉ gộp các biến thể trang trí (buồn thoáng qua, ối, khởi động) về thường.
+  public static func compact(_ e: Emotion) -> Emotion {
+    switch e {
+    case .sad, .oops, .warmup: .idle
+    default: e
+    }
+  }
+}

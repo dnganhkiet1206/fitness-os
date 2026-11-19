@@ -119,17 +119,20 @@ struct TodayDayBlock: View {
     let pending = services?.todayPending(userId: room.userId, today: room.today)
     let signals = TodayDay.merging(room.signals, localWaterMl: localWaterMl, pending: pending)
     let tubes = TodayDay.tubes(signals, stepsGoal: room.stepsGoal)
-    let line = MascotLine.line(TodayDay.mascotDay(signals, hour: hour))
-    let dayNext = line.gap.map(TodayDay.quest)
     let dayMood = KoaToday.read(
       room: room, localWaterMl: localWaterMl, pending: pending, profile: profile, riskHour: riskHour, hour: hour,
       minute: minute)
+    // KOA-T14: câu dự phòng (`MascotLine`) phải hợp với nét mặt của ngày — không khen khi Koa mệt / lo.
+    let line = MascotLine.coherent(MascotLine.line(TodayDay.mascotDay(signals, hour: hour)), with: dayMood.emotion)
+    let dayNext = line.gap.map(TodayDay.quest)
     let daySaid = KoaToday.line(dayMood, signals: signals, profile: profile, streak: room.streak.count)
     // Koa sống theo lịch tập (đợt 2): pump / đợi / mất pump / tụt hạng đè lên Koa của ngày.
     let sched = schedulePhase(hour: hour, minute: minute)
-    let mood = sched.map { KoaMood.Read(emotion: Self.emotion($0), reason: dayMood.reason) } ?? dayMood
     // mốc mới của hành trình (lên hạng, tuần đủ buổi, kỷ lục…) đi trước mọi câu khác, mỗi mốc một lần
     let moment = KoaMomentsStore.next(services, userId: room.userId, today: room.today)
+    // Mặt đi cùng câu (KOA-T14): câu mốc hành trình → mặt tự hào; câu theo lịch tập → mặt theo lịch.
+    let mood = moment != nil ? KoaMood.Read(emotion: .proud, reason: dayMood.reason)
+      : sched.map { KoaMood.Read(emotion: Self.emotion($0), reason: dayMood.reason) } ?? dayMood
     let said = moment.map { KoaMomentsStore.line($0, lang: lang) } ?? sched.map(scheduleLine) ?? daySaid
     let next = sched.map { $0 == .pump ? nil : MascotRules.Quest.workout } ?? dayNext
     // Premium (20/10, Kiệt duyệt mock `today-koa-card.html` + `today-koa-meters.html`
@@ -139,7 +142,7 @@ struct TodayDayBlock: View {
     let doneCount = tubes.filter(\.done).count
     let state = KoaState(emotion: mood.emotion, line: said ?? bubbleText(line, tubes: tubes) ?? "", next: next)
     if compact {
-      compactRow(emotion: Self.compactEmotion(oneShot ?? mood.emotion))
+      compactRow(emotion: KoaEmotion.compact(oneShot ?? mood.emotion))
         .task(id: state) { onKoa?(state) }
         .onChange(of: reward?.id) { _, _ in celebrate() }
     } else {
@@ -203,12 +206,6 @@ struct TodayDayBlock: View {
 
   /// Nét mặt của Koa nhỏ ở dạng gọn: buồn / mệt / lo / ngượng / gồng sức ở cỡ 64 điểm trông như cau có
   /// (#802, 04/11, Kiệt giao E quyết) → nét bình thường. Câu Koa nói và widget vẫn theo tâm trạng thật.
-  static func compactEmotion(_ e: KoaEmotion.Emotion) -> KoaEmotion.Emotion {
-    switch e {
-    case .sad, .tired, .worry, .oops, .warmup: .idle
-    default: e
-    }
-  }
 
   /// Today gọn: Koa nhỏ (chạm → phòng) + tên + "hạng · Gains · còn N tới hạng sau".
   private func compactRow(emotion: KoaEmotion.Emotion) -> some View {
