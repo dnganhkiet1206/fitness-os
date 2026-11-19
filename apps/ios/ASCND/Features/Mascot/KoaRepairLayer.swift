@@ -15,6 +15,8 @@ struct KoaRepairLayer: View {
   var daytime = false
   let done: () -> Void
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  /// Ra nền thì đồng hồ cảnh dừng (KOA-T11).
+  @Environment(\.scenePhase) private var scenePhase
 
   @State private var played = 0
   @State private var finished = false
@@ -31,7 +33,8 @@ struct KoaRepairLayer: View {
   var body: some View {
     GeometryReader { g in
       let width = Double(g.size.width), k = width / StudioScene.width
-      TimelineView(.animation(paused: reduceMotion)) { tl in   // cảnh không chạy khi Giảm chuyển động (MascotRoomView.startRepair)
+      // KOA-T11: tối đa 60 khung/giây, dừng khi app không ở tiền cảnh.
+      TimelineView(.animation(minimumInterval: 1.0 / 60, paused: reduceMotion || scenePhase != .active)) { tl in   // cảnh không chạy khi Giảm chuyển động (MascotRoomView.startRepair)
         let t = tl.date.timeIntervalSince(start)
         if let s = Self.shot(shots, at: tl.date, start: start) {
           ZStack(alignment: .topLeading) {
@@ -146,7 +149,7 @@ struct KoaRepairLayer: View {
       }
     }
     if s.dust.tornado, let a = s.dust.spin {               // lốc xoáy: bốn tư thế lệch pha chồng lên nhau + vòng gió
-      let plan = KoaPaint.plan(KoaRender.figure(o))
+      let plan = KoaFigurePlans.plan(o)
       for j in 0..<4 {
         let cj = cos((a + Double(j) * 45) * .pi / 180)
         var g = c
@@ -168,7 +171,7 @@ struct KoaRepairLayer: View {
     f.translateBy(x: foot.x, y: foot.y)
     f.scaleBy(x: sc * s.stretchX * flip, y: sc * s.stretchY)
     f.translateBy(x: -120, y: -240 * KoaMath.aspect)
-    KoaCanvas.draw(KoaPaint.plan(KoaRender.figure(o)), in: &f)
+    KoaCanvas.draw(KoaFigurePlans.plan(o), in: &f)
     var mouth: CGPoint?
     func toRoom(_ q: (x: Double, y: Double)) -> CGPoint {
       CGPoint(x: foot.x + sc * s.stretchX * flip * (q.x - 120), y: foot.y + sc * s.stretchY * (q.y - 240 * KoaMath.aspect))
