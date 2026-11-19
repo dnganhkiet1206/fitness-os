@@ -220,6 +220,22 @@ public final class CoachChat {
   @ObservationIgnored private var lastAsk: (text: String, checks: [CoachLogPrompt.Conflict])?
   /// Tin trả lời dở của lượt hỏng (đã đánh dấu "…") — "Thử lại" thay nó bằng câu mới.
   @ObservationIgnored private var truncatedId: String?
+  /// Câu hỏi của `lastAsk` đã vào lịch sử chưa (Devin #961: gửi lúc mất mạng thì chưa —
+  /// "Thử lại" phải lưu bù, không thì lịch sử chỉ còn câu trả lời).
+  @ObservationIgnored private var askSaved = false
+  /// Việc đọc luồng đang chạy — `stop()` huỷ nó (nút Dừng, mọi đường gửi).
+  @ObservationIgnored private var streamTask: Task<(any Error)?, Never>?
+  @ObservationIgnored private var stopRequested = false
+  /// Câu trả lời đang chảy của lượt hiện tại (chữ + id tin trên màn).
+  @ObservationIgnored private var live: (text: String, id: String?) = ("", nil)
+
+  /// Nút Dừng (KOA-T06): cắt luồng đang chảy, giữ phần đã nhận. Dùng được cho mọi lượt
+  /// gửi, kể cả lượt bắt đầu từ ngoài màn chat (bảng Xu hướng — Devin #961).
+  public func stop() {
+    guard isLoading else { return }
+    stopRequested = true
+    streamTask?.cancel()
+  }
 
   /// Gửi một câu (đã cắt khoảng trắng); không làm gì khi rỗng hoặc đang gửi.
   public func send(
@@ -251,8 +267,10 @@ public final class CoachChat {
   ) async {
     isLoading = true
     failure = nil
+    stopRequested = false
     lastAsk = (text, checks)
     if !isRetry {
+      askSaved = false
       let askedId = nextId()
       messages.append(Coach.Message(id: askedId, role: .user, content: text))
       if !checks.isEmpty { conflicts[askedId] = checks }
@@ -267,33 +285,39 @@ public final class CoachChat {
       conversationId = id
     }
     let convo = conversationId
-    if let convo, !isRetry { try? await store.saveMessage(conversationId: convo, role: .user, content: text) }
-
-    var answer = ""
-    var answerId: String?
-    var streamError: (any Error)?
-    do {
-      for try await chunk in stream.stream(
-        messages: Array(outgoing.suffix(Coach.sendWindow)), lang: lang, date: today, tzOffset: tzOffset,
-        checks: checks, waterUnit: waterUnit)
-      {
-        guard !closed else { return }
-        answer += chunk
-        if let id = answerId, let i = messages.lastIndex(where: { $0.id == id }) {
-          messages[i].content = answer
-        } else {
-          let id = nextId()
-          answerId = id
-          messages.append(Coach.Message(id: id, role: .assistant, content: answer))
-        }
-      }
-    } catch {
-      streamError = error
+    // Câu hỏi chưa vào lịch sử (lần đầu, hoặc lần trước lưu hỏng) thì lưu — kể cả khi thử lại.
+    if let convo, !askSaved {
+      do {
+        try await store.saveMessage(conversationId: convo, role: .user, content: text)
+        askSaved = true
+      } catch {}
     }
+
+    live = ("", nil)
+    let source = stream.stream(
+      messages: Array(outgoing.suffix(Coach.sendWindow)), lang: lang, date: today, tzOffset: tzOffset,
+      checks: checks, waterUnit: waterUnit)
+    // Đọc luồng trong một việc riêng để `stop()` huỷ được từ bất kỳ đâu.
+    let reader = Task<(any Error)?, Never> { [weak self] in
+      do {
+        for try await chunk in source {
+          guard let self, !self.closed else { return nil }
+          self.append(chunk)
+        }
+        return nil
+      } catch {
+        return error
+      }
+    }
+    streamTask = reader
+    let streamError = await withTaskCancellationHandler { await reader.value } onCancel: { reader.cancel() }
+    streamTask = nil
     guard !closed else { return }
+    var answer = live.text
+    let answerId = live.id
 
     // Người dùng bấm Dừng (huỷ việc gửi): giữ phần đã nhận, đánh dấu chưa xong, không báo lỗi.
-    if Task.isCancelled || streamError is CancellationError {
+    if stopRequested || Task.isCancelled || reader.isCancelled || streamError is CancellationError {
       await keepPartial(answer, id: answerId, convo: convo)
       lastAsk = nil
       return
@@ -324,15 +348,34 @@ public final class CoachChat {
     try? await store.touch(conversationId: convo, userId: userId)
   }
 
-  /// Phần trả lời dở: thêm dấu `cutOffMark` trên màn và lưu vào lịch sử. Trả id tin.
+  /// Một mẩu chữ của luồng: nối vào tin trả lời đang hiện (tạo tin ở mẩu đầu).
+  private func append(_ chunk: String) {
+    live.text += chunk
+    if let id = live.id, let i = messages.lastIndex(where: { $0.id == id }) {
+      messages[i].content = live.text
+    } else {
+      let id = nextId()
+      live.id = id
+      messages.append(Coach.Message(id: id, role: .assistant, content: live.text))
+    }
+  }
+
+  /// Phần trả lời dở: đối chiếu số liệu như câu hoàn chỉnh (Devin #961: lịch sử không
+  /// được hiện số sai đã bị ẩn), thêm dấu `cutOffMark`, lưu vào lịch sử. Lệnh lưu chạy
+  /// trong một việc MỚI: bấm Dừng huỷ lượt gửi, và lệnh lưu trong việc đã huỷ cũng bị huỷ
+  /// theo (Devin #961). Trả id tin.
   @discardableResult
   private func keepPartial(_ answer: String, id: String?, convo: String?) async -> String? {
     guard !answer.isEmpty, let id, let i = messages.lastIndex(where: { $0.id == id }) else { return nil }
-    let marked = answer.hasSuffix(Coach.cutOffMark) ? answer : answer + Coach.cutOffMark
+    let checked = sanitize?(answer) ?? answer
+    let marked = checked.hasSuffix(Coach.cutOffMark) ? checked : checked + Coach.cutOffMark
     messages[i].content = marked
     if let convo {
-      try? await store.saveMessage(conversationId: convo, role: .assistant, content: marked)
-      try? await store.touch(conversationId: convo, userId: userId)
+      let store = self.store, userId = self.userId
+      await Task {
+        try? await store.saveMessage(conversationId: convo, role: .assistant, content: marked)
+        try? await store.touch(conversationId: convo, userId: userId)
+      }.value
     }
     return id
   }

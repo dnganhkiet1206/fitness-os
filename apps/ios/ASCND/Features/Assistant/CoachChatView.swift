@@ -25,8 +25,6 @@ struct CoachChatView: View {
   var onLogged: () async -> Void = {}
 
   @State private var draft = ""
-  /// Việc gửi đang chạy — nút Dừng huỷ nó (KOA-T06).
-  @State private var sendTask: Task<Void, Never>?
   /// Câu vừa gửi — gửi hỏng thì trả lại vào ô soạn (KOA-T06: bản nháp giữ tới khi gửi được).
   @State private var lastSent = ""
   /// Màn ghi đang mở từ một nút trong chat.
@@ -490,9 +488,10 @@ struct CoachChatView: View {
         .padding(.leading, 18)
         .padding(.vertical, 12)
         .frame(minHeight: 48)
-      if chat.isLoading, sendTask != nil {
-        // KOA-T06: đang trả lời thì nút gửi thành nút Dừng — giữ phần đã nhận.
-        Button { sendTask?.cancel() } label: {
+      if chat.isLoading {
+        // KOA-T06: đang trả lời thì nút gửi thành nút Dừng — giữ phần đã nhận. `chat.stop()`
+        // dừng được mọi lượt gửi, kể cả lượt bắt đầu từ bảng Xu hướng (Devin #961).
+        Button { chat.stop() } label: {
           Image(systemName: "stop.fill")
             .font(.system(size: 13, weight: .bold))
             .foregroundStyle(DS.Color.background.swiftUI)
@@ -536,7 +535,7 @@ struct CoachChatView: View {
   private func retry() {
     let now = Date()
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
-    sendTask = Task { await chat.retry(lang: lang.rawValue, today: today, tzOffset: Coach.tzOffset(.current, at: now)) }
+    Task { await chat.retry(lang: lang.rawValue, today: today, tzOffset: Coach.tzOffset(.current, at: now)) }
   }
 
   private func send(_ text: String) {
@@ -553,7 +552,7 @@ struct CoachChatView: View {
       case .unclear: break
       }
     }
-    sendTask = Self.ask(chat, text, lang: lang, signal: signal, logged: logged)
+    Self.ask(chat, text, lang: lang, signal: signal, logged: logged)
   }
 
   // MARK: - Ghi từ chat (16/10)
