@@ -162,7 +162,9 @@ struct MascotShopBookTests {
       return rows
     }
 
-    func buy(itemKey: String) async throws -> Int {
+    /// Món cùng chỗ đã cởi trong lượt mua gần nhất (KOA-T18).
+    var unequipped: [String] = []
+    func buy(itemKey: String, unequip: [String]) async throws -> Int {
       buys += 1
       if holdBuy { await withCheckedContinuation { gate = $0 } }
       if let buyError { throw buyError }
@@ -171,7 +173,9 @@ struct MascotShopBookTests {
       let balance = source.entries.reduce(0) { $0 + $1.amount }
       if balance < it.price { throw MascotFailure.insufficientCoins }
       source.entries.append(LedgerRow(amount: -it.price, refKey: "buy:\(itemKey)"))
+      rows = rows.map { unequip.contains($0.itemKey) ? InventoryRow(itemKey: $0.itemKey, equipped: false) : $0 }
       rows.append(InventoryRow(itemKey: itemKey, equipped: true))
+      unequipped = unequip
       return balance - it.price
     }
 
@@ -285,6 +289,31 @@ struct MascotShopBookTests {
     #expect(await book.setWorn("head_band", on: false) == .done)
     #expect(!book.equipped.contains("head_band"))
     #expect(await book.setWorn("face_vr", on: true) == .busy)  // chưa có món
+  }
+
+  /// KOA-T18: mua cởi món cùng chỗ trong CÙNG lượt mua — mỗi chỗ đúng một món đang mặc.
+  @Test func buyingWearsTheNewItemAndTakesOffTheSameSlotAtomically() async {
+    let (book, _, w, _) = Self.make(coins: 1000)
+    w.rows = [InventoryRow(itemKey: "head_band", equipped: true)]
+    await book.load()
+    let cap = MascotShop.item("head_cap")!
+    #expect(await book.buy(cap) == .bought)
+    #expect(w.unequipped.contains("head_band"))
+    #expect(w.rows.filter { $0.itemKey.hasPrefix("head_") && $0.equipped }.map(\.itemKey) == ["head_cap"])
+    #expect(book.equipped.contains("head_cap") && !book.equipped.contains("head_band"))
+  }
+
+  /// KOA-T19: mặc hỏng → đọc lại sự thật từ server, không trả về ảnh chụp cũ.
+  @Test func aFailedWearReloadsServerTruth() async {
+    let (book, _, w, _) = Self.make(coins: 0)
+    w.rows = [InventoryRow(itemKey: "head_band", equipped: false), InventoryRow(itemKey: "head_cap", equipped: false)]
+    await book.load()
+    // Máy khác vừa mặc mũ lưỡi trai; lượt mặc băng đô ở máy này hỏng.
+    w.rows = [InventoryRow(itemKey: "head_band", equipped: false), InventoryRow(itemKey: "head_cap", equipped: true)]
+    w.wearError = .offline
+    #expect(await book.setWorn("head_band", on: true) == .failed(.offline))
+    #expect(book.equipped.contains("head_cap"), "đọc lại server: thấy món máy khác vừa mặc")
+    #expect(!book.equipped.contains("head_band"))
   }
 
   @Test func aCompletedSetPaysOnce() async {
