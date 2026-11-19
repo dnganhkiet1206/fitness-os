@@ -234,6 +234,13 @@ struct TodayExtras<Plan: View>: View {
       if askKoa {
         TodayAskKoaCard { services.coachRequest += 1 }
           .todayEntrance(3)
+      } else if let reason = askKoaPlaceholder {
+        // KOA-T08: chưa dò được / coach trục trặc → thẻ giữ chỗ có lý do, chạm để dò lại;
+        // không biến mất im lặng.
+        TodayAskKoaCard(unavailable: reason, checking: services.aiProbing) {
+          Task { await services.probeAI(force: true) }
+        }
+        .todayEntrance(3)
       }
       if let mascot, case .ready = mascot.phase {
         // "Hôm nay của bạn" (18/10, mock A): thay danh sách "Ngày của bạn".
@@ -508,6 +515,15 @@ struct TodayExtras<Plan: View>: View {
   /// Dinh dưỡng › Thêm.
   /// Thẻ "Hỏi Koa" chỉ khi Koa Coach có trên máy chủ.
   private var askKoa: Bool { services.isAIDeployed(.coach) }
+
+  /// Lý do thẻ "Hỏi Koa" giữ chỗ (KOA-T08); `nil` = hiện đầy đủ hoặc ẩn (chưa deploy).
+  private var askKoaPlaceholder: TodayAskKoaCard.Unavailable? {
+    switch services.aiState(.coach) {
+    case .unknown: .offline
+    case .unhealthy: .unhealthy
+    case .available, .missing: nil
+    }
+  }
 
   private var moreRows: [TodayMore.Row] {
     var rows: [TodayMore.Row] = []
