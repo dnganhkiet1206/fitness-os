@@ -316,6 +316,17 @@ struct MascotShopBookTests {
     #expect(!book.equipped.contains("head_band"))
   }
 
+  /// Devin #967: mặc hỏng VÀ đọc lại cũng hỏng (mất mạng) → không giữ thay đổi chưa lưu.
+  @Test func aFailedWearWhileOfflineRestoresTheChoice() async {
+    let (book, s, w, _) = Self.make(coins: 0)
+    w.rows = [InventoryRow(itemKey: "head_band", equipped: false)]
+    await book.load()
+    w.wearError = .offline
+    s.fail = true
+    #expect(await book.setWorn("head_band", on: true) == .failed(.offline))
+    #expect(!book.equipped.contains("head_band"), "chưa lưu thì không hiện như đã mặc")
+  }
+
   @Test func aCompletedSetPaysOnce() async {
     let (book, _, w, e) = Self.make(coins: 0)
     w.rows = [InventoryRow(itemKey: "head_santa", equipped: false)]

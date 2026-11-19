@@ -428,6 +428,14 @@ public final class MascotShopBook {
   /// Sổ xu + tủ đồ song song. Lần đầu hỏng → lỗi; đọc lại hỏng giữ số cũ.
   @ObservationIgnored private var loadGeneration = 0
 
+  /// Đọc lại; `true` khi tủ đồ đọc được.
+  private func reload() async -> Bool {
+    await load()
+    return lastInventoryLoadOK
+  }
+
+  @ObservationIgnored private var lastInventoryLoadOK = false
+
   public func load() async {
     // Lượt tải chồng nhau: chỉ lượt bắt đầu sau cùng được áp (KOA-T19).
     loadGeneration += 1
@@ -437,6 +445,7 @@ public final class MascotShopBook {
     async let inv = capture { try await wardrobe.inventory(userId: uid) }
     let (l, i) = await (ledger, inv)
     guard !closed, mine == loadGeneration else { return }
+    if case .success = i { lastInventoryLoadOK = true } else { lastInventoryLoadOK = false }
     switch (l, i) {
     case (.success(let rows), .success(let items)):
       wallet = MascotWallet(rows: rows)
@@ -484,6 +493,7 @@ public final class MascotShopBook {
     guard !wearing.contains(group), !closed, owned.contains(key) else { return .busy }
     let members = [key] + MascotShop.conflictingKeys(key)
     let value: String? = on ? key : nil
+    let before = inventory
     inventory = inventory.map { r in
       members.contains(r.itemKey) ? InventoryRow(itemKey: r.itemKey, equipped: r.itemKey == value) : r
     }
@@ -500,8 +510,9 @@ public final class MascotShopBook {
     } catch {
       guard !closed else { return .busy }
       // Hỏng: đọc lại sự thật từ server (KOA-T19) — trả về `before` có thể đè dữ liệu mới
-      // hơn (một lượt tải / mặc khác vừa xong).
-      await load()
+      // hơn. Đọc lại cũng hỏng (mất mạng): không giữ thay đổi chưa lưu như thể đã lưu —
+      // trả về như trước để lựa chọn còn thử lại được (Devin #967).
+      if await !reload() { inventory = before }
       return .failed(MascotRoomController.failure(error))
     }
   }

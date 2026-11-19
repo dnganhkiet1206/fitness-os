@@ -276,6 +276,16 @@ public struct SupabaseMascotWardrobe: MascotWardrobe {
   struct WornParams: Encodable, Sendable {
     let p_on: String?
     let p_off: [String]
+
+    enum CodingKeys: String, CodingKey { case p_on, p_off }
+
+    /// `p_on` luôn có mặt (null khi cởi): bỏ khoá thì PostgREST không tìm thấy hàm hai tham số
+    /// (PGRST202) và cởi đồ rơi về đường cũ không nguyên khối (Devin #967).
+    func encode(to encoder: any Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      if let p_on { try c.encode(p_on, forKey: .p_on) } else { try c.encodeNil(forKey: .p_on) }
+      try c.encode(p_off, forKey: .p_off)
+    }
   }
 
   /// Server chưa có hàm (PostgREST `PGRST202`): migration KOA-T18/T19 chưa deploy → đường cũ.

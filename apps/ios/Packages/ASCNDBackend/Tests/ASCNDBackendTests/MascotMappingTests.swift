@@ -50,4 +50,15 @@ struct MascotMappingTests {
     #expect(SupabaseMascotWardrobe.missingFunction(PostgrestError(code: "PGRST202", message: "Could not find the function")))
     #expect(!SupabaseMascotWardrobe.missingFunction(dup))
   }
+
+  /// Devin #967: cởi đồ vẫn gửi `p_on: null` — thiếu khoá thì PostgREST không khớp hàm (PGRST202).
+  @Test func wornParamsAlwaysCarryOn() throws {
+    let off = try JSONSerialization.jsonObject(
+      with: JSONEncoder().encode(SupabaseMascotWardrobe.WornParams(p_on: nil, p_off: ["head_band"]))) as? [String: Any]
+    #expect(off?.keys.contains("p_on") == true)
+    #expect(off?["p_on"] is NSNull)
+    let on = try JSONSerialization.jsonObject(
+      with: JSONEncoder().encode(SupabaseMascotWardrobe.WornParams(p_on: "head_cap", p_off: []))) as? [String: Any]
+    #expect(on?["p_on"] as? String == "head_cap")
+  }
 }
