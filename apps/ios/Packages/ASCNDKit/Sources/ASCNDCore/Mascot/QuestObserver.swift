@@ -169,6 +169,8 @@ public final class QuestObserver {
           let amount = try await economy.claimReward(refKey: key, reason: q.rawValue)
           guard let self, !self.closed else { return }
           self.owed[key] = nil
+          // Đã nhận ở lượt / máy khác: không báo "+xu" lần hai (KOA-T01).
+          if MascotRules.isDuplicateClaim(amount) { return }
           // "Xong hết" chỉ gắn với nhiệm vụ của hôm nay, không với khoá nợ hôm qua.
           self.onClaimed(Claimed(quest: q, refKey: key, amount: amount, seen: saw, allDone: allDone && date == day))
         } catch {

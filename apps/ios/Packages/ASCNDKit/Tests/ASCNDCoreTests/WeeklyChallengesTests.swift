@@ -162,10 +162,12 @@ struct WeeklyChallengesBookTests {
     let lock = NSLock()
     var claims: [String] = []
     var failure: MascotFailure?
+    /// Server trả 0 khi khoá đã nhận (KOA-T01).
+    var amount = 50
     func claimReward(refKey: String, reason: String) async throws -> Int {
       lock.withLock { claims.append(refKey) }
       if let failure { throw failure }
-      return 50
+      return amount
     }
   }
 
@@ -232,17 +234,19 @@ struct WeeklyChallengesBookTests {
     #expect(b.justCompleted.isEmpty)
   }
 
-  /// Trùng (đã trả ở máy khác) không phải lỗi.
-  @Test func duplicatePaymentIsNotAFailure() async {
+  /// Trùng (đã trả ở máy khác — server trả 0, KOA-T01) không phải lỗi, tiến độ vẫn ghi,
+  /// nhưng không mừng lại.
+  @Test func duplicatePaymentIsNotAFailureAndNotCelebrated() async {
     let s = FakeStore()
     s.challenges = [Self.row("c1", "workouts_3", current: 2, target: 3)]
     s.workouts = (0..<3).map { .object(["id": .string("w\($0)")]) }
     let e = FakeEconomy()
-    e.failure = .server(code: "23505")
+    e.amount = 0
     let b = book(s, e)
     await b.load()
     #expect(s.updates.count == 1)
     #expect(b.progressFailure == nil)
+    #expect(b.justCompleted.isEmpty)
   }
 
   /// Một nguồn đọc hỏng: thử thách ấy KHÔNG bị ghi 0; thử thách khác vẫn đi tiếp.

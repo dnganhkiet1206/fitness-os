@@ -194,16 +194,20 @@ NOANON = '20261001190000_core_rpc_no_anon'
 RAA = '20260819120000_reward_amount_authority'
 LOCK = '20260815120000_economy_balance_lock'
 KQ = '20261029130000_koa_quests_v2'
+# Định nghĩa CUỐI của claim_quest_reward từ 19/11 (KOA-T01).
+KD = '20261119120000_claim_duplicate_marker'
 KC = '20261029140000_koa_room_clean'
 CASES += [
-    # Định nghĩa CUỐI của claim_quest_reward nằm ở koa_quests_v2 (29/10): phá ở bản cũ thì
-    # bản mới ghi đè và kịch bản xanh oan — phá đúng bản đang chạy.
-    ('E1 bản mới nhất mở quyền anon của claim_quest_reward', KQ, 'REVOKE ALL ON FUNCTION public.claim_quest_reward(TEXT, TEXT) FROM PUBLIC, anon;\n', 'GRANT EXECUTE ON FUNCTION public.claim_quest_reward(TEXT, TEXT) TO anon;\n', None, 'E1 anon gọi được public.claim_quest_reward'),
-    ('E2 nhận thưởng ghi lệch giá', KQ, '    VALUES (v_uid, v_amount, p_reason, p_ref_key)\n    ON CONFLICT (user_id, ref_key) DO NOTHING;', '    VALUES (v_uid, v_amount + 1, p_reason, p_ref_key)\n    ON CONFLICT (user_id, ref_key) DO NOTHING;', None, 'E2'),
+    # Định nghĩa CUỐI của claim_quest_reward nằm ở claim_duplicate_marker (19/11): phá ở bản
+    # cũ thì bản mới ghi đè và kịch bản xanh oan — phá đúng bản đang chạy.
+    ('E1 bản mới nhất mở quyền anon của claim_quest_reward', KD, 'REVOKE ALL ON FUNCTION public.claim_quest_reward(TEXT, TEXT) FROM PUBLIC, anon;\n', 'GRANT EXECUTE ON FUNCTION public.claim_quest_reward(TEXT, TEXT) TO anon;\n', None, 'E1 anon gọi được public.claim_quest_reward'),
+    ('E2 nhận thưởng ghi lệch giá', KD, '    VALUES (v_uid, v_amount, p_reason, p_ref_key)\n    ON CONFLICT (user_id, ref_key) DO NOTHING;', '    VALUES (v_uid, v_amount + 1, p_reason, p_ref_key)\n    ON CONFLICT (user_id, ref_key) DO NOTHING;', None, 'E2'),
     ('C1 dọn phòng mở cho anon', KC, 'REVOKE ALL ON FUNCTION public.clean_koa_room(DATE) FROM PUBLIC, anon;\n', 'GRANT EXECUTE ON FUNCTION public.clean_koa_room(DATE) TO anon;\n', None, 'C1 anon gọi được clean_koa_room'),
     ('C2 dọn phòng trừ hai lần', KC, "  IF EXISTS (SELECT 1 FROM public.mascot_transactions WHERE user_id = v_uid AND ref_key = v_ref) THEN\n    RETURN v_balance;", "  IF false THEN\n    RETURN v_balance;", None, 'C2'),
     ('C3 dọn phòng không cần xu', KC, "  IF v_balance < PRICE THEN", "  IF false THEN", None, 'C3'),
-    ('Q3 khám phá bị trần ngày chặn', KQ, "  IF p_ref_key NOT LIKE 'x:%' THEN", '  IF true THEN', None, 'Q3'),
+    ('Q3 khám phá bị trần ngày chặn', KD, "  IF p_ref_key NOT LIKE 'x:%' THEN", '  IF true THEN', None, 'Q3'),
+    ('D1 nhận trùng lại trả đủ giá', KD, "  IF EXISTS (SELECT 1 FROM public.mascot_transactions WHERE user_id = v_uid AND ref_key = p_ref_key) THEN\n    RETURN 0;", "  IF EXISTS (SELECT 1 FROM public.mascot_transactions WHERE user_id = v_uid AND ref_key = p_ref_key) THEN\n    RETURN v_amount;", None, 'D1'),
+    ('D2 khoá đã nhận vẫn bị trần ngày từ chối', KD, "  IF EXISTS (SELECT 1 FROM public.mascot_transactions WHERE user_id = v_uid AND ref_key = p_ref_key) THEN\n    RETURN 0;\n  END IF;", "", None, 'D2'),
     ('E5 earn_mascot_coins tin số tiền client', RAA, 'BEGIN\n  RETURN public.claim_quest_reward(p_ref_key, p_reason);\nEND;',
      "BEGIN\n  INSERT INTO public.mascot_transactions (user_id, amount, reason, ref_key) VALUES (auth.uid(), p_amount, p_reason, p_ref_key) ON CONFLICT DO NOTHING;\n  RETURN p_amount;\nEND;", None, 'E5'),
     ('E8 mua bỏ chốt đủ xu', LOCK, '  IF v_balance < v_price THEN\n    RAISE EXCEPTION \'insufficient coins\';', '  IF false THEN\n    RAISE EXCEPTION \'insufficient coins\';', 1, 'E8'),

@@ -358,6 +358,8 @@ public final class MascotRoomController {
       let amount = try await economy.claimReward(refKey: refKey, reason: reason)
       guard !closed else { return nil }
       await reloadLedger()
+      // Đã nhận ở lượt / máy khác: sổ xu đã đúng, không mừng lần hai (KOA-T01).
+      if MascotRules.isDuplicateClaim(amount) { return nil }
       let oldLevel = MascotRules.level(xp: before), newLevel = MascotRules.level(xp: before + xpGain)
       // Hạng giờ theo Gains, không đổi khi nhận xu / XP.
       return ClaimOutcome(amount: amount, newLevel: newLevel > oldLevel ? newLevel : nil, newRank: nil)
@@ -375,7 +377,8 @@ public final class MascotRoomController {
     do {
       let amount = try await economy.claimReward(refKey: "welcome", reason: "welcome bonus")
       guard !closed else { return }
-      welcomeGranted = amount
+      // Túi chào mừng đã nhận ở máy khác: không hiện lại "+300" (KOA-T01).
+      if !MascotRules.isDuplicateClaim(amount) { welcomeGranted = amount }
       await reloadLedger()
     } catch {
       // Bị từ chối thì lần mở sau được thử lại — khoá là duy nhất mỗi tài khoản.

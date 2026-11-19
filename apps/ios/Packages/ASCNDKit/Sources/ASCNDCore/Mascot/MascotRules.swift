@@ -9,6 +9,13 @@ import Foundation
 /// tự ghi sổ. Các con số ở đây chỉ để HIỆN và để tính XP / cấp từ sổ đã đọc
 /// — đúng như RN (`xpForRefKey`).
 public enum MascotRules {
+
+  /// `claim_quest_reward` trả 0 khi khoá ĐÃ nhận rồi (KOA-T01, migration
+  /// 20261119120000): giá thật luôn > 0 (`reward_prices CHECK coins > 0`), nên ≤ 0 nghĩa là
+  /// "đã nhận ở lượt khác / máy khác" — không mừng, không cộng lại. Server cũ (trước
+  /// migration) vẫn trả đủ giá khi trùng; khi đó dấu "đã nhận" trên máy là lớp chặn thứ hai.
+  public static func isDuplicateClaim(_ amount: Int) -> Bool { amount <= 0 }
+
   public enum Quest: String, Sendable, Hashable, CaseIterable {
     case meal, workout, water, sleep, steps
     /// Ngày nghỉ (không có buổi trong lịch): ngủ đủ + 6 000 bước (#527 đợt 1).
