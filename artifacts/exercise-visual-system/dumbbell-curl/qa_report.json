@@ -1,12 +1,13 @@
 {
   "tool": "pipeline/validate_motion.py",
-  "date": "2026-11-16",
+  "date": "2026-11-19",
   "exercise_id": "dumbbell_biceps_curl",
   "frames": 237,
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 19
+      "PASS": 19,
+      "NOT_TESTED": 1
     },
     "technically_validated": true,
     "states": {
@@ -198,12 +199,17 @@
       "stage": "C",
       "title": "Skin stretch stays within limits",
       "status": "PASS",
-      "measured": 2.206,
+      "measured": 1.994,
       "limit": 2.6,
       "where": {
         "frame": 59
       },
-      "detail": "p99.9 edge stretch"
+      "detail": "p99.9 edge stretch per frame: f0 1.981, f59 1.994, f118 1.981",
+      "per_frame": {
+        "0": 1.981,
+        "59": 1.994,
+        "118": 1.981
+      }
     },
     {
       "id": "movement_elbow_min_deg",
@@ -216,7 +222,7 @@
         60
       ],
       "where": null,
-      "detail": "provisional bound"
+      "detail": "ROM envelope only: AAOS reference values (elbow flexion 140-150 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound requires >=120 deg flexion, inside the envelope; no curl kinematics study read."
     },
     {
       "id": "movement_elbow_max_deg",
@@ -229,7 +235,7 @@
         null
       ],
       "where": null,
-      "detail": "provisional bound"
+      "detail": "ROM envelope only: AAOS reference values (elbow extension 0 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound sits inside the envelope; no curl kinematics study read."
     },
     {
       "id": "movement_arm_elev_max_deg",
@@ -269,6 +275,16 @@
       ],
       "where": null,
       "detail": "provisional bound"
+    },
+    {
+      "id": "reference_measurements",
+      "stage": "D",
+      "title": "Golden measurements: reference comparison",
+      "status": "NOT_TESTED",
+      "measured": null,
+      "limit": null,
+      "where": null,
+      "detail": "Reference measurements exist but no comparable checks are declared, so nothing is compared. Record why in movement.reference_note."
     }
   ]
 }
