@@ -193,6 +193,8 @@ CASES += [
 NOANON = '20261001190000_core_rpc_no_anon'
 RAA = '20260819120000_reward_amount_authority'
 LOCK = '20260815120000_economy_balance_lock'
+# Định nghĩa CUỐI của buy_mascot_item từ 20/11 (KOA-T18).
+SA = '20261120120000_shop_atomic_wear'
 KQ = '20261029130000_koa_quests_v2'
 # Định nghĩa CUỐI của claim_quest_reward từ 19/11 (KOA-T01).
 KD = '20261119120000_claim_duplicate_marker'
@@ -210,8 +212,11 @@ CASES += [
     ('D2 khoá đã nhận vẫn bị trần ngày từ chối', KD, "  IF EXISTS (SELECT 1 FROM public.mascot_transactions WHERE user_id = v_uid AND ref_key = p_ref_key) THEN\n    RETURN 0;\n  END IF;", "", None, 'D2'),
     ('E5 earn_mascot_coins tin số tiền client', RAA, 'BEGIN\n  RETURN public.claim_quest_reward(p_ref_key, p_reason);\nEND;',
      "BEGIN\n  INSERT INTO public.mascot_transactions (user_id, amount, reason, ref_key) VALUES (auth.uid(), p_amount, p_reason, p_ref_key) ON CONFLICT DO NOTHING;\n  RETURN p_amount;\nEND;", None, 'E5'),
-    ('E8 mua bỏ chốt đủ xu', LOCK, '  IF v_balance < v_price THEN\n    RAISE EXCEPTION \'insufficient coins\';', '  IF false THEN\n    RAISE EXCEPTION \'insufficient coins\';', 1, 'E8'),
-    ('E8b mua món không có giá', LOCK, "  IF v_price IS NULL THEN\n    RAISE EXCEPTION 'unknown item %', p_item_key;", "  IF v_price IS NULL THEN\n    v_price := 0;", 1, 'E8b'),
+    ('E8 mua bỏ chốt đủ xu', SA, '  IF v_balance < v_price THEN\n    RAISE EXCEPTION \'insufficient coins\';', '  IF false THEN\n    RAISE EXCEPTION \'insufficient coins\';', 1, 'E8'),
+    ('S1 mua trùng ra lỗi thô', SA, "  EXCEPTION WHEN unique_violation THEN\n    RAISE EXCEPTION 'already owned';", "  EXCEPTION WHEN unique_violation THEN\n    RAISE;", None, 'S1'),
+    ('S2 mua không cởi món cùng chỗ', SA, "     SET equipped = false\n   WHERE user_id = v_uid\n     AND item_key = ANY(COALESCE(p_unequip, '{}'))", "     SET equipped = equipped\n   WHERE user_id = v_uid\n     AND item_key = ANY(COALESCE(p_unequip, '{}'))", None, 'S2'),
+    ('S4 mặc chạm tủ người khác', SA, "   WHERE user_id = v_uid\n     AND item_key = ANY(COALESCE(p_off, '{}'))", "   WHERE item_key = ANY(COALESCE(p_off, '{}'))", None, 'S4'),
+    ('E8b mua món không có giá', SA, "  IF v_price IS NULL THEN\n    RAISE EXCEPTION 'unknown item %', p_item_key;", "  IF v_price IS NULL THEN\n    v_price := 0;", 1, 'E8b'),
 ]
 
 # ── hình dạng khoá thưởng (round 3, AUD-02): rpc_reward_keys.test.sql ──

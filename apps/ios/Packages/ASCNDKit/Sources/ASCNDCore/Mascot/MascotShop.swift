@@ -346,8 +346,9 @@ public struct InventoryRow: Sendable, Hashable {
 public protocol MascotWardrobe: Sendable {
   /// `mascot_inventory` (`item_key`, `equipped`) của tài khoản.
   func inventory(userId: String) async throws -> [InventoryRow]
-  /// `buy_mascot_item(p_item_key)` → số dư sau khi mua. Server định giá.
-  func buy(itemKey: String) async throws -> Int
+  /// Mua + mặc + cởi các món cùng chỗ (`unequip`) trong MỘT giao dịch ở server
+  /// (`buy_and_wear_mascot_item`, KOA-T18) → số dư sau khi mua. Server định giá.
+  func buy(itemKey: String, unequip: [String]) async throws -> Int
   /// Đặt TUYỆT ĐỐI một nhóm: `on` (nếu có) `equipped = true`, mọi khoá ở `off`
   /// `false`. Trả `false` khi `on` không còn trong kho (0 hàng).
   func setWorn(userId: String, on: String?, off: [String]) async throws -> Bool
@@ -425,12 +426,26 @@ public final class MascotShopBook {
   }
 
   /// Sổ xu + tủ đồ song song. Lần đầu hỏng → lỗi; đọc lại hỏng giữ số cũ.
+  @ObservationIgnored private var loadGeneration = 0
+
+  /// Đọc lại; `true` khi tủ đồ đọc được.
+  private func reload() async -> Bool {
+    await load()
+    return lastInventoryLoadOK
+  }
+
+  @ObservationIgnored private var lastInventoryLoadOK = false
+
   public func load() async {
+    // Lượt tải chồng nhau: chỉ lượt bắt đầu sau cùng được áp (KOA-T19).
+    loadGeneration += 1
+    let mine = loadGeneration
     let source = self.source, wardrobe = self.wardrobe, uid = userId
     async let ledger = capture { try await source.ledger(userId: uid) }
     async let inv = capture { try await wardrobe.inventory(userId: uid) }
     let (l, i) = await (ledger, inv)
-    guard !closed else { return }
+    guard !closed, mine == loadGeneration else { return }
+    if case .success = i { lastInventoryLoadOK = true } else { lastInventoryLoadOK = false }
     switch (l, i) {
     case (.success(let rows), .success(let items)):
       wallet = MascotWallet(rows: rows)
@@ -456,16 +471,16 @@ public final class MascotShopBook {
     buying = item.key
     defer { buying = nil }
     do {
-      _ = try await wardrobe.buy(itemKey: item.key)
+      // Cởi món cùng chỗ trong CÙNG giao dịch mua (KOA-T18) — trước đây là một lệnh sau,
+      // lỗi thì nuốt, để lại hai món cùng chỗ đều đang mặc.
+      _ = try await wardrobe.buy(itemKey: item.key, unequip: MascotShop.conflictingKeys(item.key))
     } catch {
       guard !closed else { return .busy }
       let f = MascotRoomController.failure(error)
-      // Server nói đã có: tủ đồ máy đang cũ — đọc lại để thẻ thành "Mặc".
-      if f == .alreadyOwned || f == .insufficientCoins { await load() }
+      // Lỗi nào cũng đọc lại tủ đồ: máy có thể đang cũ (đã có, hết xu, mua chồng ở máy khác).
+      await load()
       return .failed(f)
     }
-    let off = MascotShop.conflictingKeys(item.key)
-    if !off.isEmpty { _ = try? await wardrobe.setWorn(userId: userId, on: nil, off: off) }
     await load()
     return .bought
   }
@@ -494,7 +509,10 @@ public final class MascotShopBook {
       return .done
     } catch {
       guard !closed else { return .busy }
-      inventory = before
+      // Hỏng: đọc lại sự thật từ server (KOA-T19) — trả về `before` có thể đè dữ liệu mới
+      // hơn. Đọc lại cũng hỏng (mất mạng): không giữ thay đổi chưa lưu như thể đã lưu —
+      // trả về như trước để lựa chọn còn thử lại được (Devin #967).
+      if await !reload() { inventory = before }
       return .failed(MascotRoomController.failure(error))
     }
   }

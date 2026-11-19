@@ -325,6 +325,9 @@
         case "current_tier": .string("free")
         case "claim_quest_reward": .number(10)
         case "buy_mascot_item": .number(0)
+        // KOA-T18 / T19: mua + mặc nguyên khối, đặt cả nhóm mặc nguyên khối.
+        case "buy_and_wear_mascot_item": .number(0)
+        case "set_mascot_worn": .bool(true)
         case "dm_open": .string(UUID().uuidString.lowercased())
         case "community_user_stats": .object([:])
         // Kiểm duyệt Cộng đồng (#915): người test là ADMIN, dữ liệu mẫu ở

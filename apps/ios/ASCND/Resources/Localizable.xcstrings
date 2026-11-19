@@ -24869,6 +24869,52 @@
         }
       }
     },
+    "shop.wear.partial %lld %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld item(s) not changed yet: %2$@ Tap Apply to try again."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld món chưa đổi được: %2$@ Chạm Áp dụng để thử lại."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld artículo(s) sin cambiar: %2$@ Toca Aplicar para reintentar."
+          }
+        }
+      }
+    },
+    "shop.wear.busy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Still saving — try again in a moment."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang lưu dở — thử lại sau giây lát."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún guardando — inténtalo de nuevo en un momento."
+          }
+        }
+      }
+    },
     "shop.close": {
       "extractionState": "manual",
       "localizations": {

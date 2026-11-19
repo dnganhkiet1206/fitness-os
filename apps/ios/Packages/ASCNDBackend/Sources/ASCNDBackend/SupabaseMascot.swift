@@ -268,15 +268,69 @@ public struct SupabaseMascotWardrobe: MascotWardrobe {
     return rows.map { InventoryRow(itemKey: $0.item_key, equipped: $0.equipped ?? false) }
   }
 
-  public func buy(itemKey: String) async throws -> Int {
+  struct BuyWearParams: Encodable, Sendable {
+    let p_item_key: String
+    let p_unequip: [String]
+  }
+
+  struct WornParams: Encodable, Sendable {
+    let p_on: String?
+    let p_off: [String]
+
+    enum CodingKeys: String, CodingKey { case p_on, p_off }
+
+    /// `p_on` luôn có mặt (null khi cởi): bỏ khoá thì PostgREST không tìm thấy hàm hai tham số
+    /// (PGRST202) và cởi đồ rơi về đường cũ không nguyên khối (Devin #967).
+    func encode(to encoder: any Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      if let p_on { try c.encode(p_on, forKey: .p_on) } else { try c.encodeNil(forKey: .p_on) }
+      try c.encode(p_off, forKey: .p_off)
+    }
+  }
+
+  /// Server chưa có hàm (PostgREST `PGRST202`): migration KOA-T18/T19 chưa deploy → đường cũ.
+  static func missingFunction(_ error: any Error) -> Bool { (error as? PostgrestError)?.code == "PGRST202" }
+
+  public func buy(itemKey: String, unequip: [String]) async throws -> Int {
     do {
-      return try await client.rpc("buy_mascot_item", params: BuyParams(p_item_key: itemKey)).execute().value
+      return try await client.rpc(
+        "buy_and_wear_mascot_item", params: BuyWearParams(p_item_key: itemKey, p_unequip: unequip)
+      ).execute().value
+    } catch where Self.missingFunction(error) {
+      do {
+        let left: Int = try await client.rpc("buy_mascot_item", params: BuyParams(p_item_key: itemKey)).execute().value
+        if !unequip.isEmpty, let uid = try? await client.auth.session.user.id.uuidString.lowercased() {
+          _ = try? await setWornDirect(userId: uid, on: nil, off: unequip)
+        }
+        return left
+      } catch {
+        throw Self.buyFailure(error)
+      }
+    } catch {
+      throw Self.buyFailure(error)
+    }
+  }
+
+  /// Lỗi của đường mua: trùng khoá (23505 — hai lượt mua chạy chồng, server cũ) là "đã có"
+  /// (KOA-T18), không phải lỗi máy chủ chung.
+  static func buyFailure(_ error: any Error) -> MascotFailure {
+    if (error as? PostgrestError)?.code == "23505" { return .alreadyOwned }
+    return SupabaseMascotEconomy.failure(error)
+  }
+
+  /// Đặt cả nhóm nguyên khối (`set_mascot_worn`, KOA-T19). Server chưa có hàm → hai lệnh cũ.
+  public func setWorn(userId: String, on: String?, off: [String]) async throws -> Bool {
+    do {
+      return try await client.rpc("set_mascot_worn", params: WornParams(p_on: on, p_off: off)).execute().value
+    } catch where Self.missingFunction(error) {
+      return try await setWornDirect(userId: userId, on: on, off: off)
     } catch {
       throw SupabaseMascotEconomy.failure(error)
     }
   }
 
-  public func setWorn(userId: String, on: String?, off: [String]) async throws -> Bool {
+  /// Đường cũ (trước migration 20261120120000): hai UPDATE trên hàng của mình.
+  func setWornDirect(userId: String, on: String?, off: [String]) async throws -> Bool {
     do {
       var found = true
       if let on {
