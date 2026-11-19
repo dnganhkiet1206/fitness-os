@@ -89,7 +89,7 @@ struct KoaRestScreen: View {
   @State private var heard = Heard()
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-  final class Heard { var scene: KoaReaction.Scene?; var played = Set<Int>(); var tick = -1 }
+  final class Heard { var scene: KoaReaction.Scene?; var played = Set<Int>(); var tick = -1; var buzzed = Set<Double>() }
 
   private static let bg = Color(red: 0.055, green: 0.059, blue: 0.071)
   private static let orange = Color(red: 0.91, green: 0.52, blue: 0.16)
@@ -387,11 +387,18 @@ struct KoaRestScreen: View {
     let sec = Int(elapsed / 1000)
     if sec != heard.tick { heard.tick = sec; onSettle() }
     guard heard.played != [-1] || b.scene != .restIntro else { return }   // mở lại giữa chừng: không phát lại mở đầu
-    if heard.scene != b.scene { heard.scene = b.scene; heard.played = [] }
+    if heard.scene != b.scene { heard.scene = b.scene; heard.played = []; heard.buzzed = [] }
     guard let s = b.scene else { return }
     for (i, snd) in KoaPerformance.sounds(s).enumerated() where snd.t <= b.t && !heard.played.contains(i) {
       heard.played.insert(i)
       if b.t - snd.t < 250 { KoaSound.reaction(snd.name, gain: snd.gain) }
+    }
+    // KOA-T15: rung theo mốc của kịch bản, kể cả nhịp "LƯỢT MÌNH!" (đúng mốc, không trễ 1 giây
+    // như rung hết giờ toàn cục — rung toàn cục bỏ qua khi nhịp này vừa rung).
+    guard KoaHaptics.allowed(reduceMotion: reduceMotion) else { return }
+    for m in KoaHaptics.due(KoaHaptics.marks(KoaPerformance.cues(s)), at: b.t, fired: heard.buzzed) {
+      heard.buzzed.insert(m.t)
+      KoaHapticPlayer.play(m.haptic, restGo: s == .restGo)
     }
   }
 }
