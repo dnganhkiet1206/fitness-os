@@ -44,6 +44,8 @@ struct KoaReactionView: View {
   @State private var start = Date.now
   @State private var heard = Heard()
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  /// Ra nền thì đồng hồ cảnh dừng (KOA-T11).
+  @Environment(\.scenePhase) private var scenePhase
 
   /// Tiếng đã phát trong vòng lặp này (không phát lại khi khung vẽ lại).
   final class Heard { var loop = -1; var played = Set<Int>(); var cue = -1; var ended = false; var buzzed = Set<Double>() }
@@ -56,8 +58,9 @@ struct KoaReactionView: View {
   private static let rose = Color(red: 0.90, green: 0.33, blue: 0.42)
 
   var body: some View {
+    // KOA-T11: tối đa 60 khung/giây (đúng tốc độ màn), dừng khi app không ở tiền cảnh.
     // reduce-motion: đồng hồ của cảnh; bật Giảm chuyển động thì máy không đẩy, không rung, không pháo giấy, chỉ còn chữ mờ dần
-    TimelineView(.animation) { ctx in
+    TimelineView(.animation(minimumInterval: 1.0 / 60, paused: scenePhase != .active)) { ctx in
       let total = KoaPerformance.duration(scene)
       let cycle = total + 900
       // `ASCND_DEBUG_KOA_REACTION_T=<ms>`: dừng ở một mốc để chụp so sánh

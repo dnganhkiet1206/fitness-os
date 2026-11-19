@@ -20,6 +20,8 @@ struct KoaPullScene<Content: View>: View {
   @ViewBuilder var content: Content
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  /// Ra nền thì đồng hồ cảnh dừng (KOA-T11).
+  @Environment(\.scenePhase) private var scenePhase
   @State private var drag = 0.0
   /// Koa đang ngủ thì không có cảnh chạy tới: thẻ tự trượt lên, Koa ngủ tiếp.
   private var quiet: Bool { reduceMotion || asleep }
@@ -36,7 +38,8 @@ struct KoaPullScene<Content: View>: View {
     GeometryReader { g in
       let w = Double(g.size.width), h = Double(g.size.height + g.safeAreaInsets.top + g.safeAreaInsets.bottom)
       let panelHeight = h * 0.66
-      TimelineView(.animation(paused: quiet && leaving == nil)) { tl in
+      // KOA-T11: tối đa 60 khung/giây, dừng khi app không ở tiền cảnh.
+      TimelineView(.animation(minimumInterval: 1.0 / 60, paused: (quiet && leaving == nil) || scenePhase != .active)) { tl in
         let t = quiet ? KoaPull.end : began.map { tl.date.timeIntervalSince($0) } ?? 0
         let gone = leaving.map { tl.date.timeIntervalSince($0) }
         let shot = gone.map { g in
@@ -131,7 +134,7 @@ struct KoaPullScene<Content: View>: View {
       o.flat = light
       o.build = build
       o.worn = KoaEmotion.worn(equipped)
-      KoaCanvas.draw(KoaPaint.plan(KoaRender.figure(o)), in: &c)
+      KoaCanvas.draw(KoaFigurePlans.plan(o), in: &c)
     }
     .frame(width: width, height: height)
     .allowsHitTesting(false)

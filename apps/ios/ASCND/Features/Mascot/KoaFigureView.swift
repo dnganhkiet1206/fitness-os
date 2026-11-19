@@ -203,14 +203,15 @@ struct KoaFigureView: View {
       let sp = KoaSignpost.poster.beginInterval("figure")
       defer { KoaSignpost.poster.endInterval("figure", sp) }
       // Dáng giơ tay đè má: hình đủ (vai sau đầu), rồi một lớp chỉ nửa bàn tay ở trên.
+      // Kế hoạch đệm theo `Options` (KOA-T10): khung giống hệt khung trước không dựng lại.
       var plans: [[KoaPaint.Op]] = []
       if gesture?.armsFront == true {
         o.arms = .all
-        plans.append(KoaPaint.plan(KoaRender.figure(o)))
+        plans.append(KoaFigurePlans.plan(o))
         o.arms = .only
-        plans.append(KoaPaint.plan(KoaRender.figure(o)))
+        plans.append(KoaFigurePlans.plan(o))
       } else {
-        plans.append(KoaPaint.plan(KoaRender.figure(o)))
+        plans.append(KoaFigurePlans.plan(o))
       }
       ctx.drawLayer { layer in
         var c = layer

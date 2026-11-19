@@ -88,6 +88,8 @@ struct KoaRestScreen: View {
   @State private var start = Date.now
   @State private var heard = Heard()
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  /// Ra nền thì đồng hồ cảnh dừng (KOA-T11).
+  @Environment(\.scenePhase) private var scenePhase
 
   final class Heard { var scene: KoaReaction.Scene?; var played = Set<Int>(); var tick = -1; var buzzed = Set<Double>() }
 
@@ -124,8 +126,10 @@ struct KoaRestScreen: View {
   }
 
   var body: some View {
+    // KOA-T11: tối đa 60 khung/giây, dừng khi app không ở tiền cảnh (giờ nghỉ tính theo mốc thời
+    // gian nên không lệch khi quay lại).
     // reduce-motion: Koa đứng yên ở khung đầu của mỗi cảnh, không nhún, không pháo giấy; chữ, thẻ và đồng hồ vẫn chạy
-    TimelineView(.animation) { ctx in
+    TimelineView(.animation(minimumInterval: 1.0 / 60, paused: scenePhase != .active)) { ctx in
       let elapsed = frozen ?? max(0, ctx.date.timeIntervalSince(startedAt ?? start) * 1000)
       let now = frozen.map { EpochMillis((startedAt ?? start).addingTimeInterval($0 / 1000)) } ?? EpochMillis(ctx.date)
       let leftMs = timer.pausedLeft.map { Double($0) * 1000 } ?? Double(timer.endsAt.millis - now.millis)
