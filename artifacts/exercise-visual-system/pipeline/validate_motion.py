@@ -193,7 +193,8 @@ def main() -> None:
         tempo_check,
         Q.implement_clash(overlaps, clash_frames) if overlaps else Q.rec("implement_clash", "C", "Implements do not pass through each other", Q.NOT_TESTED, detail="fewer than two implements"),
         Q.rec("skin_stretch", "C", "Skin stretch stays within limits", Q.PASS if worst_stretch[0] <= prof["max_p999_edge_stretch"] else Q.FAIL,
-              round(worst_stretch[0], 3), prof["max_p999_edge_stretch"], {"frame": worst_stretch[1]}, stretch_detail),
+              round(worst_stretch[0], 3), prof["max_p999_edge_stretch"], {"frame": worst_stretch[1]}, stretch_detail,
+              per_frame={f: round(v, 3) for v, f in stretch}),
     ]
     movement = ex.get("movement", {})
     jr = j
@@ -209,7 +210,9 @@ def main() -> None:
             status = Q.PASS if r["pass"] else (Q.REVIEW if r["provisional"] else Q.FAIL)
             records.append(Q.rec(f"movement_{r['metric']}", "D", f"{movement['pattern']}: {r['metric']} inside the family bounds", status,
                                  r["measured"], r["limit"], None, (r["source"] or "provisional bound")))
-    for r in reference_check.check(path, movement, movement_gate.metrics(jr)):
+    posed = {pos: reference_check.metrics_at(j, frames, movement_gate.metrics)
+             for pos, frames in reference_check.position_frames(ex.get("exercise_phases"), fps).items()}
+    for r in reference_check.check(path, movement, movement_gate.metrics(jr), at=posed):
         status = {reference_check.PASS: Q.PASS, reference_check.FAIL: Q.FAIL, reference_check.NOT_TESTED: Q.NOT_TESTED}[r["outcome"]]
         limit = [round(r["reference"] - r["tolerance"], 3), round(r["reference"] + r["tolerance"], 3)] \
             if r["reference"] is not None and r["tolerance"] is not None else None

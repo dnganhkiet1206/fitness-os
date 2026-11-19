@@ -62,12 +62,54 @@ def _result(cid: str, title: str, outcome: str, measured, reference, tolerance, 
             "reference": reference, "tolerance": tolerance, "detail": detail}
 
 
-def check(exercise_dir, movement: dict | None, metrics: dict) -> list[dict]:
+def position_of(key, declared: dict) -> str | None:
+    """Which pose a reference number describes: "top" / "bottom" from an explicit
+    ``"at"`` in the declaration, else from the key (``elbow_top_2d_median``). ``None``
+    for a reference that is not tied to one pose (it compares to the extreme)."""
+    at = declared.get("at")
+    if at in ("top", "bottom"):
+        return at
+    name = str(key or "")
+    for pos in ("top", "bottom"):
+        if f"_{pos}_" in name or name.endswith(f"_{pos}") or name.startswith(f"{pos}_"):
+            return pos
+    return None
+
+
+def position_frames(phases, fps: float) -> dict[str, list[int]]:
+    """Frames of each pose of each repetition, from exercise_phases: "top" = the end
+    of every lifting phase (``concentric*``), "bottom" = the end of every lowering
+    phase (``eccentric*``). The same moments measure_video.py samples per rep."""
+    out: dict[str, list[int]] = {"top": [], "bottom": []}
+    for p in phases or []:
+        pid = str(p.get("id", ""))
+        pos = "top" if pid.startswith("concentric") else "bottom" if pid.startswith("eccentric") else None
+        if pos and "end_s" in p:
+            out[pos].append(int(round(float(p["end_s"]) * fps)))
+    return {k: sorted(set(v)) for k, v in out.items() if v}
+
+
+def metrics_at(joints: dict, frames: list[int], metric_fn) -> dict[str, float]:
+    """``metric_fn`` (movement_gate.metrics) at each frame on its own, median over the
+    frames — the animation's angle AT that pose, not the extreme of the whole rep
+    (Devin #890: a transition frame must not stand in for the top)."""
+    import statistics
+    n = min(len(v) for v in joints.values())
+    per = [metric_fn({k: v[f:f + 1] for k, v in joints.items()}) for f in frames if 0 <= f < n]
+    if not per:
+        return {}
+    return {k: float(statistics.median(m[k] for m in per)) for k in per[0]}
+
+
+def check(exercise_dir, movement: dict | None, metrics: dict, at: dict | None = None) -> list[dict]:
     """Compare measured metrics against the exercise's reference file.
 
     exercise_dir: directory holding reference_measurements.json (if any).
     movement: the exercise.json "movement" object (may be None).
     metrics: movement_gate.metrics() over the repetition phases.
+    at: {"top": metrics at the top frames, "bottom": ...} (metrics_at). A reference
+    tied to one pose (position_of) is compared there; without it the check FAILS
+    loudly instead of falling back to the extreme of the whole rep.
     Returns one result dict per check, or a single aggregate result for
     the no-file / no-declaration states.
     """
@@ -122,8 +164,19 @@ def check(exercise_dir, movement: dict | None, metrics: dict) -> list[dict]:
         except (TypeError, ValueError):
             out.append(_result(cid, title, FAIL, None, None, float(tol), f"reference key {key!r} is not a number"))
             continue
-        measured = float(metrics[metric])
+        pos = position_of(key, d)
+        if pos is not None:
+            posed = (at or {}).get(pos) or {}
+            if metric not in posed:
+                out.append(_result(cid, title, FAIL, None, round(ref, 3), float(tol),
+                                   f"reference {key!r} is measured at the {pos} of each rep, but no {pos}-frame metrics were "
+                                   f"given (exercise_phases need concentric/eccentric phases); refusing to compare with the "
+                                   f"extreme of the whole rep"))
+                continue
+            measured, where = float(posed[metric]), f" at the {pos} (median over reps)"
+        else:
+            measured, where = float(metrics[metric]), ""
         ok = abs(measured - ref) <= float(tol)
         out.append(_result(cid, title, PASS if ok else FAIL, round(measured, 3), round(ref, 3), float(tol),
-                           f"{metric} {measured:.1f} vs reference {key} {ref:.1f} +/- {tol:g} ({basis})"))
+                           f"{metric} {measured:.1f}{where} vs reference {key} {ref:.1f} +/- {tol:g} ({basis})"))
     return out

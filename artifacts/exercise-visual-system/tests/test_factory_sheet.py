@@ -50,6 +50,25 @@ class FlaggedFramesTests(unittest.TestCase):
         self.assertEqual(frames, {})
         self.assertEqual([c["id"] for c in without], ["skin_deformation", "elbow_tracking"])
 
+    def test_every_frame_over_the_limit_is_flagged_not_only_the_worst(self):
+        # Devin #890: squat f0 3,039, f56 3,818, f112 3,039, f168 3,820, ngưỡng 2,6 — trước chỉ có f168.
+        structured = {"checks": [{"id": "skin_stretch", "status": "FAIL", "limit": 2.6, "where": {"frame": 168},
+                                  "per_frame": {"0": 3.039, "56": 3.818, "112": 3.039, "168": 3.82, "200": 2.1}}]}
+        frames, without = factory.flagged_frames_from_report(structured)
+        self.assertEqual(sorted(frames), [0, 56, 112, 168])
+        self.assertEqual(without, [])
+        # f62 (hàng cuối của tờ soi) nằm gần f56 → viền NEAR.
+        self.assertEqual(factory.frame_mark(62, frames), ("near", 56))
+        # Báo cáo cũ: chỉ có chữ trong detail.
+        legacy = {"checks": [{"id": "skin_stretch", "status": "FAIL", "limit": 2.6, "where": {"frame": 168},
+                              "detail": "p99.9 edge stretch per frame: f0 3.039, f56 3.818, f112 3.039, f168 3.820"}]}
+        self.assertEqual(sorted(factory.flagged_frames_from_report(legacy)[0]), [0, 56, 112, 168])
+        # Bench: limit là dict, ngưỡng riêng của số đo từng khung.
+        bench = {"checks": [{"id": "skin_deformation", "status": "FAIL", "category": "character",
+                             "limit": {"p99.9_edge_stretch": 2.6}, "per_frame_limit": 2.6,
+                             "per_frame": {"60": 2.829, "120": 2.5, "180": 2.829}}]}
+        self.assertEqual(sorted(factory.flagged_frames_from_report(bench)[0]), [60, 180])
+
     def test_frame_mark_flag_near_and_none(self):
         flagged = {56: [{"id": "skin_stretch", "status": "FAIL"}]}
         self.assertEqual(factory.frame_mark(56, flagged), ("flag", 56))

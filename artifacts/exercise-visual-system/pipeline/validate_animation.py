@@ -101,7 +101,13 @@ def reference_measurement_checks(clip, exercise: dict, exercise_path) -> list[di
     else:
         joints = clip.j
     out = []
-    for r in reference_check.check(exercise_path, movement, movement_gate.metrics(joints)):
+    # Góc AT đỉnh / đáy của từng lần lặp (cuối pha nâng / hạ), không phải cực trị cả đoạn.
+    # Khung → chỉ số mẫu gần nhất (clip lấy mẫu theo danh sách khung riêng).
+    def index(f: int) -> int:
+        return int(min(range(len(clip.frames)), key=lambda i: abs(int(clip.frames[i]) - f)))
+    posed = {pos: reference_check.metrics_at(clip.j, [index(f) for f in frames], movement_gate.metrics)
+             for pos, frames in reference_check.position_frames(exercise.get("exercise_phases"), clip.fps).items()}
+    for r in reference_check.check(exercise_path, movement, movement_gate.metrics(joints), at=posed):
         status = {reference_check.PASS: PASS, reference_check.FAIL: FAIL, reference_check.NOT_TESTED: NOT_TESTED}[r["outcome"]]
         limit = [round(r["reference"] - r["tolerance"], 3), round(r["reference"] + r["tolerance"], 3)] \
             if r["reference"] is not None and r["tolerance"] is not None else None

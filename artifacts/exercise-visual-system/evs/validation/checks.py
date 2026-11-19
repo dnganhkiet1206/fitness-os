@@ -19,11 +19,17 @@ from .. import CHECK_STATUSES, FAIL, NOT_TESTED, PASS, REQUIRES_MANUAL_REVIEW
 
 
 def record(check_id: str, category: str, title: str, status: str, measured=None, limit=None, unit: str = "",
-           detail: str = "", phases: list[str] | None = None) -> dict:
+           detail: str = "", phases: list[str] | None = None, per_frame: dict | None = None,
+           per_frame_limit=None) -> dict:
     if status not in CHECK_STATUSES:
         raise ValueError(f"status {status!r} is not one of {CHECK_STATUSES}")
-    return {"id": check_id, "category": category, "title": title, "status": status, "measured": measured, "limit": limit,
-            "unit": unit, "detail": detail, "phases": phases or []}
+    out = {"id": check_id, "category": category, "title": title, "status": status, "measured": measured, "limit": limit,
+           "unit": unit, "detail": detail, "phases": phases or []}
+    if per_frame:
+        # Số đo từng khung + ngưỡng của chính số đo ấy (Devin #890: tờ soi đánh dấu mọi khung trượt).
+        out["per_frame"] = {str(int(k)): v for k, v in per_frame.items()}
+        out["per_frame_limit"] = per_frame_limit
+    return out
 
 
 def _r(value, digits: int = 4):
@@ -107,7 +113,9 @@ def character_checks(samples: dict, facts: dict, profile: dict, rig_test: dict |
         out.append(record("skin_deformation", "character", "Skin stretch and body volume stay within limits in the exercise poses",
                           PASS if ok else FAIL, measured={"p99.9_edge_stretch": _r(p999, 3), "volume_change": _r(volume, 4)},
                           limit={"p99.9_edge_stretch": profile["max_p999_edge_stretch"], "volume_change": profile["max_volume_change"]},
-                          detail="per frame: " + "; ".join(f"f{int(k)} {_per_frame(d)}" for k, d in ordered)))
+                          detail="per frame: " + "; ".join(f"f{int(k)} {_per_frame(d)}" for k, d in ordered),
+                          per_frame={k: _r(d["p999_edge_stretch"], 3) for k, d in ordered},
+                          per_frame_limit=profile["max_p999_edge_stretch"]))
         crossing = max(d["new_self_intersections"] for d in deformation.values())
         out.append(record("mesh_self_intersection", "character", "Skin passing through skin (beyond the rest pose)",
                           PASS if crossing <= profile["max_new_self_intersections"] else REQUIRES_MANUAL_REVIEW,

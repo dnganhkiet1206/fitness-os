@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import re
 import os
 import subprocess
 import sys
@@ -128,11 +129,32 @@ def flagged_frames_from_report(report: dict) -> tuple[dict[int, list[dict]], lis
         f = where.get("frame") if isinstance(where, dict) else None
         if isinstance(f, float) and f.is_integer():
             f = int(f)
-        if isinstance(f, int) and not isinstance(f, bool):
-            frames.setdefault(f, []).append({"id": c["id"], "status": c["status"]})
+        hit = {f} if isinstance(f, int) and not isinstance(f, bool) else set()
+        # Mọi khung vượt ngưỡng, không chỉ khung cực trị (Devin #890: squat f0/f56/f112/f168).
+        hit |= _frames_over_limit(c)
+        if hit:
+            for fr in sorted(hit):
+                frames.setdefault(fr, []).append({"id": c["id"], "status": c["status"]})
         else:
             without.append({"id": c["id"], "status": c["status"]})
     return frames, without
+
+
+_FRAME_VALUE = re.compile(r"\bf(\d+)\s+(?:p999\s+)?(-?\d+(?:\.\d+)?)")
+
+
+def _frames_over_limit(c: dict) -> set[int]:
+    """Khung có số đo vượt ngưỡng: ``per_frame`` (+ ``per_frame_limit`` hoặc ``limit`` số) nếu
+    báo cáo có; báo cáo cũ thì đọc ``detail`` dạng "f56 3.818" / "f56 p999 3.818"."""
+    limit = c.get("per_frame_limit", c.get("limit"))
+    if isinstance(limit, bool) or not isinstance(limit, (int, float)):
+        return set()
+    values = c.get("per_frame")
+    if isinstance(values, dict) and values:
+        pairs = [(int(k), v) for k, v in values.items() if isinstance(v, (int, float))]
+    else:
+        pairs = [(int(m.group(1)), float(m.group(2))) for m in _FRAME_VALUE.finditer(c.get("detail") or "")]
+    return {fr for fr, v in pairs if v > limit}
 
 
 def frame_mark(frame: int, flagged: dict, window: int = FLAG_WINDOW_FRAMES) -> tuple[str, int] | None:

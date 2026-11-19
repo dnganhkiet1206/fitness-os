@@ -204,7 +204,13 @@
       "where": {
         "frame": 56
       },
-      "detail": "p99.9 edge stretch per frame: f0 2.407, f56 2.540, f63 2.529, f112 2.407"
+      "detail": "p99.9 edge stretch per frame: f0 2.407, f56 2.540, f63 2.529, f112 2.407",
+      "per_frame": {
+        "0": 2.407,
+        "56": 2.54,
+        "63": 2.529,
+        "112": 2.407
+      }
     },
     {
       "id": "movement_knee_min_deg",

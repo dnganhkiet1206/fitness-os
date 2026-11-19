@@ -204,7 +204,12 @@
       "where": {
         "frame": 59
       },
-      "detail": "p99.9 edge stretch per frame: f0 1.981, f59 1.994, f118 1.981"
+      "detail": "p99.9 edge stretch per frame: f0 1.981, f59 1.994, f118 1.981",
+      "per_frame": {
+        "0": 1.981,
+        "59": 1.994,
+        "118": 1.981
+      }
     },
     {
       "id": "movement_elbow_min_deg",
