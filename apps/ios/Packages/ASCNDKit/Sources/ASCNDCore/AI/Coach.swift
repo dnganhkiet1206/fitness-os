@@ -216,29 +216,62 @@ public final class CoachChat {
     return "local-\(seq)"
   }
 
+  /// Câu hỏi của lượt hỏng gần nhất — để "Thử lại" gửi lại đúng câu ấy (KOA-T06).
+  @ObservationIgnored private var lastAsk: (text: String, checks: [CoachLogPrompt.Conflict])?
+  /// Tin trả lời dở của lượt hỏng (đã đánh dấu "…") — "Thử lại" thay nó bằng câu mới.
+  @ObservationIgnored private var truncatedId: String?
+
   /// Gửi một câu (đã cắt khoảng trắng); không làm gì khi rỗng hoặc đang gửi.
   public func send(
     _ raw: String, lang: String, today: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict] = []
   ) async {
     let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !text.isEmpty, !isLoading, !closed else { return }
+    await run(text, lang: lang, today: today, tzOffset: tzOffset, checks: checks, isRetry: false)
+  }
+
+  /// Gửi lại câu của lượt vừa hỏng (KOA-T06): không thêm bong bóng câu hỏi lần hai,
+  /// không lưu câu hỏi lần hai; tin trả lời dở (nếu có) được thay bằng câu mới.
+  public func retry(lang: String, today: LocalDate, tzOffset: Int) async {
+    guard let ask = lastAsk, failure != nil, !isLoading, !closed else { return }
+    if let id = truncatedId, let i = messages.lastIndex(where: { $0.id == id }) { messages.remove(at: i) }
+    truncatedId = nil
+    await run(ask.text, lang: lang, today: today, tzOffset: tzOffset, checks: ask.checks, isRetry: true)
+  }
+
+  /// Có thể thử lại lượt vừa hỏng không. Hết lượt trong ngày, phiên hết hạn, hàm chưa
+  /// triển khai: thử lại không giúp gì — không đưa nút.
+  public var canRetry: Bool {
+    guard let failure, lastAsk != nil, !isLoading else { return false }
+    return ![.quotaExceeded, .unauthorised, .notDeployed].contains(failure)
+  }
+
+  private func run(
+    _ text: String, lang: String, today: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict], isRetry: Bool
+  ) async {
     isLoading = true
     failure = nil
-    let askedId = nextId()
-    messages.append(Coach.Message(id: askedId, role: .user, content: text))
-    if !checks.isEmpty { conflicts[askedId] = checks }
+    lastAsk = (text, checks)
+    if !isRetry {
+      let askedId = nextId()
+      messages.append(Coach.Message(id: askedId, role: .user, content: text))
+      if !checks.isEmpty { conflicts[askedId] = checks }
+    }
     let outgoing = messages
     defer { if !closed { isLoading = false } }
 
-    // Lưu là việc phụ: hỏng thì vẫn hỏi coach.
+    // Lưu là việc phụ: hỏng thì vẫn hỏi coach. Câu hỏi lưu NGAY khi gửi (KOA-T06) —
+    // thử lại không lưu lần hai.
     if conversationId == nil, let id = try? await store.createConversation(userId: userId, title: Coach.title(text)) {
       guard !closed else { return }
       conversationId = id
     }
     let convo = conversationId
-    if let convo { try? await store.saveMessage(conversationId: convo, role: .user, content: text) }
+    if let convo, !isRetry { try? await store.saveMessage(conversationId: convo, role: .user, content: text) }
 
     var answer = ""
+    var answerId: String?
+    var streamError: (any Error)?
     do {
       for try await chunk in stream.stream(
         messages: Array(outgoing.suffix(Coach.sendWindow)), lang: lang, date: today, tzOffset: tzOffset,
@@ -246,30 +279,62 @@ public final class CoachChat {
       {
         guard !closed else { return }
         answer += chunk
-        if let last = messages.last, last.role == .assistant {
-          messages[messages.count - 1].content = answer
+        if let id = answerId, let i = messages.lastIndex(where: { $0.id == id }) {
+          messages[i].content = answer
         } else {
-          messages.append(Coach.Message(id: nextId(), role: .assistant, content: answer))
+          let id = nextId()
+          answerId = id
+          messages.append(Coach.Message(id: id, role: .assistant, content: answer))
         }
       }
     } catch {
-      // Như RN: lượt hỏng không lưu phần trả lời dở (lệnh lưu nằm sau vòng đọc).
-      guard !closed else { return }
-      failure = (error as? EdgeFunction.Failure) ?? .unknown
+      streamError = error
+    }
+    guard !closed else { return }
+
+    // Người dùng bấm Dừng (huỷ việc gửi): giữ phần đã nhận, đánh dấu chưa xong, không báo lỗi.
+    if Task.isCancelled || streamError is CancellationError {
+      await keepPartial(answer, id: answerId, convo: convo)
+      lastAsk = nil
       return
     }
-    guard !closed, !answer.isEmpty else { return }
+    if let streamError {
+      // KOA-T06: lượt hỏng giữ phần trả lời dở (đánh dấu "…") cả trên màn lẫn trong lịch
+      // sử, để mở lại thấy đúng điều đã thấy; "Thử lại" thay nó.
+      failure = (streamError as? EdgeFunction.Failure) ?? .unknown
+      truncatedId = await keepPartial(answer, id: answerId, convo: convo)
+      return
+    }
+    // Luồng "xong" mà không có chữ nào: không im lặng — báo để thử lại.
+    guard !answer.isEmpty else {
+      failure = .incomplete
+      return
+    }
+    lastAsk = nil
     // Hỏi lại khi lệch: AI chép chỉ dẫn ra thay vì hỏi → câu hỏi dựng sẵn.
     if let c = checks.first, CoachLogPrompt.leaksInstructions(answer) {
       answer = CoachLogPrompt.question(c, lang: lang, unit: waterUnit)
     }
     let final = sanitize?(answer) ?? answer
-    if final != answer, let last = messages.last, last.role == .assistant {
-      messages[messages.count - 1].content = final
+    if final != answer, let id = answerId, let i = messages.lastIndex(where: { $0.id == id }) {
+      messages[i].content = final
     }
     guard let convo else { return }
     try? await store.saveMessage(conversationId: convo, role: .assistant, content: final)
     try? await store.touch(conversationId: convo, userId: userId)
+  }
+
+  /// Phần trả lời dở: thêm dấu `cutOffMark` trên màn và lưu vào lịch sử. Trả id tin.
+  @discardableResult
+  private func keepPartial(_ answer: String, id: String?, convo: String?) async -> String? {
+    guard !answer.isEmpty, let id, let i = messages.lastIndex(where: { $0.id == id }) else { return nil }
+    let marked = answer.hasSuffix(Coach.cutOffMark) ? answer : answer + Coach.cutOffMark
+    messages[i].content = marked
+    if let convo {
+      try? await store.saveMessage(conversationId: convo, role: .assistant, content: marked)
+      try? await store.touch(conversationId: convo, userId: userId)
+    }
+    return id
   }
 
   /// Trả lời không qua AI (`CoachQuickReply`, 16/10): câu hỏi và câu trả lời dựng
@@ -305,6 +370,8 @@ public final class CoachChat {
     messages = []
     conflicts = [:]
     failure = nil
+    lastAsk = nil
+    truncatedId = nil
     learnedAt = 0
   }
 
@@ -327,6 +394,8 @@ public final class CoachChat {
     conversationId = id
     messages = loaded
     failure = nil
+    lastAsk = nil
+    truncatedId = nil
     // Đã học từ những tin này rồi (hoặc chúng đến từ máy khác) — không trả lại.
     learnedAt = loaded.count
   }

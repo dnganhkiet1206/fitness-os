@@ -51,6 +51,8 @@
       var status: Int
       var body: Data
       var headers: [String: String] = ["Content-Type": "application/json"]
+      /// Trả lời muộn (giây) — mô phỏng byte đầu chậm của AI (KOA-T09).
+      var delay: TimeInterval = 0
     }
 
     func handle(_ request: URLRequest, body: Data?) -> Reply {
@@ -375,6 +377,21 @@
 
     private func function(_ name: String, _ body: JSONValue?) -> Reply {
       if name == EdgeFunction.Name.coach.rawValue {
+        // Câu mồi cho kiểm lỗi luồng (KOA-T06/T07/T09): "#cut" → luồng đứt không có [DONE];
+        // "#quota" → 429 với thân lỗi thật của `guard.ts`; "#slow" → byte đầu sau 12 giây.
+        let last: String = {
+          guard case .array(let msgs)? = body?["messages"], let m = msgs.last else { return "" }
+          return m["content"]?.stringValue ?? ""
+        }()
+        if last.contains("#quota") {
+          return Reply(status: 429, body: Data(#"{"error":"Đã dùng hết lượt AI hôm nay. Vui lòng thử lại vào ngày mai."}"#.utf8))
+        }
+        if last.contains("#slow") {
+          return Reply(status: 200, body: UITestSeed.coachStream, headers: ["Content-Type": "text/event-stream"], delay: 12)
+        }
+        if last.contains("#cut") {
+          return Reply(status: 200, body: UITestSeed.coachStreamCut, headers: ["Content-Type": "text/event-stream"])
+        }
         return Reply(status: 200, body: UITestSeed.coachStream, headers: ["Content-Type": "text/event-stream"])
       }
       let value: JSONValue? = UITestSeed.edgeReply(name, body: body)
@@ -491,12 +508,21 @@
       guard
         let response = HTTPURLResponse(url: url, statusCode: reply.status, httpVersion: "HTTP/1.1", headerFields: reply.headers)
       else { return }
-      client.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-      if !reply.body.isEmpty { client.urlProtocol(self, didLoad: reply.body) }
-      client.urlProtocolDidFinishLoading(self)
+      let deliver = { [weak self] in
+        guard let self, !self.stopped else { return }
+        client.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        if !reply.body.isEmpty { client.urlProtocol(self, didLoad: reply.body) }
+        client.urlProtocolDidFinishLoading(self)
+      }
+      if reply.delay > 0 {
+        DispatchQueue.global().asyncAfter(deadline: .now() + reply.delay, execute: deliver)
+      } else {
+        deliver()
+      }
     }
 
-    override func stopLoading() {}
+    private var stopped = false
+    override func stopLoading() { stopped = true }
 
     /// `URLSession` chuyển thân request thành luồng trước khi tới `URLProtocol`.
     private static func body(of request: URLRequest) -> Data? {
