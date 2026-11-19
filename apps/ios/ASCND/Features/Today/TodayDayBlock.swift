@@ -207,12 +207,12 @@ struct TodayDayBlock: View {
   /// Nét mặt của Koa nhỏ ở dạng gọn: buồn / mệt / lo / ngượng / gồng sức ở cỡ 64 điểm trông như cau có
   /// (#802, 04/11, Kiệt giao E quyết) → nét bình thường. Câu Koa nói và widget vẫn theo tâm trạng thật.
 
-  /// #802 (04/11, Kiệt giao E quyết — "Koa không cau có"): Koa nhỏ ở Hôm nay gọn không mang mặt
-  /// buồn / mệt / lo / ngượng / gồng sức. Audit Koa 17/11 (KOA-T14) đề nghị giữ mệt / lo — trái
-  /// quyết định này nên CHƯA đổi, chờ Kiệt chọn.
+  /// Koa nhỏ ở Hôm nay gọn: #802 (04/11) bỏ mọi mặt cau có; Kiệt 20/11 (audit Koa KOA-T14) chọn
+  /// HIỆN mệt / lo — chúng nói điều gì đó về ngày (widget cũng hiện). Vẫn gộp buồn thoáng qua /
+  /// ngượng / gồng sức về mặt thường.
   static func compactEmotion(_ e: KoaEmotion.Emotion) -> KoaEmotion.Emotion {
     switch e {
-    case .sad, .tired, .worry, .oops, .warmup: .idle
+    case .sad, .oops, .warmup: .idle
     default: e
     }
   }
