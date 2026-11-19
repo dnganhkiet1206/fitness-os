@@ -20085,6 +20085,52 @@
         }
       }
     },
+    "ai.failure.timedOut": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa took too long to answer. Try again in a moment."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa trả lời quá lâu. Thử lại sau chút nhé."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa tardó demasiado en responder. Inténtalo de nuevo en un momento."
+          }
+        }
+      }
+    },
+    "ai.failure.incomplete": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The answer was cut off. Try again."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Câu trả lời bị cắt giữa chừng. Thử lại nhé."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La respuesta se cortó. Inténtalo de nuevo."
+          }
+        }
+      }
+    },
     "ai.failure.rateLimited": {
       "extractionState": "manual",
       "localizations": {
@@ -20568,6 +20614,29 @@
         }
       }
     },
+    "coach.stop.a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop answering"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dừng trả lời"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detener respuesta"
+          }
+        }
+      }
+    },
     "coach.newChat": {
       "extractionState": "manual",
       "localizations": {
@@ -20610,6 +20679,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "Koa está respondiendo"
+          }
+        }
+      }
+    },
+    "coach.thinking.slow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa is thinking — this one needs a little longer…"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa đang suy nghĩ — câu này cần thêm chút thời gian…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa está pensando: esta necesita un poco más de tiempo…"
           }
         }
       }

@@ -635,6 +635,8 @@ struct WeeklyReviewView: View {
     case .rateLimited: String(localized: "ai.failure.rateLimited")
     case .quotaExceeded: String(localized: "ai.failure.quota")
     case .offline: String(localized: "ai.failure.offline")
+    case .timedOut: String(localized: "ai.failure.timedOut")
+    case .incomplete: String(localized: "ai.failure.incomplete")
     case .unknown: String(localized: "ai.failure.unknown")
     }
   }

@@ -41,6 +41,12 @@ public enum EdgeFunction {
     /// kèm câu "hết lượt") — khác máy chủ quá tải: chờ ít phút không giúp gì.
     case quotaExceeded = "quota-exceeded"
     case offline
+    /// Hết giờ chờ (KOA-T09): server chưa gửi byte đầu trong ngân sách, hoặc luồng đang
+    /// trả lời thì im quá lâu — khác mất mạng (không bảo người dùng "kiểm tra internet").
+    case timedOut = "timed-out"
+    /// Luồng trả lời kết thúc mà không có `[DONE]`, hoặc không có chữ nào (KOA-T06): câu
+    /// trả lời bị cắt giữa chừng — khác lỗi máy chủ, thử lại thường được.
+    case incomplete
     case unknown
 
     /// AI quá tải / hết lượt ở máy chủ (24/10, Kiệt: "AI quá tải mà app không hề báo
