@@ -46,7 +46,7 @@ struct KoaReactionView: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   /// Tiếng đã phát trong vòng lặp này (không phát lại khi khung vẽ lại).
-  final class Heard { var loop = -1; var played = Set<Int>(); var cue = -1; var ended = false }
+  final class Heard { var loop = -1; var played = Set<Int>(); var cue = -1; var ended = false; var buzzed = Set<Double>() }
 
   private var cueList: [KoaPerformance.Cue] { KoaPerformance.cues(scene, content: content) }
 
@@ -114,10 +114,16 @@ struct KoaReactionView: View {
 
   /// Tiếng + rung khi dòng thời gian đi qua mốc của chúng.
   private func fire(loop: Int, t: Double) {
-    if heard.loop != loop { heard.loop = loop; heard.played = []; heard.cue = -1 }
+    if heard.loop != loop { heard.loop = loop; heard.played = []; heard.cue = -1; heard.buzzed = [] }
     for (i, s) in KoaPerformance.sounds(scene).enumerated() where s.t <= t && !heard.played.contains(i) {
       heard.played.insert(i)
       if t - s.t < 250 { KoaSound.reaction(s.name, gain: s.gain) }
+    }
+    // KOA-T15: rung theo mốc của kịch bản (tắt tiếng vẫn rung; Giảm chuyển động thì không).
+    guard KoaHaptics.allowed(reduceMotion: reduceMotion) else { return }
+    for m in KoaHaptics.due(KoaHaptics.marks(cueList), at: t, fired: heard.buzzed) {
+      heard.buzzed.insert(m.t)
+      KoaHapticPlayer.play(m.haptic)
     }
   }
 
