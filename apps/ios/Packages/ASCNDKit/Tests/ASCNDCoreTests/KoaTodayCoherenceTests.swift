@@ -18,13 +18,4 @@ struct KoaTodayCoherenceTests {
       #expect(MascotLine.coherent(.silent, with: e) == .silent)
     }
   }
-
-  @Test func compactKeepsInformativeFaces() {
-    #expect(KoaEmotion.compact(.tired) == .tired)
-    #expect(KoaEmotion.compact(.worry) == .worry)
-    #expect(KoaEmotion.compact(.sad) == .idle)
-    #expect(KoaEmotion.compact(.oops) == .idle)
-    #expect(KoaEmotion.compact(.warmup) == .idle)
-    #expect(KoaEmotion.compact(.proud) == .proud)
-  }
 }

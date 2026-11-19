@@ -105,14 +105,3 @@ extension MascotLine {
     return line
   }
 }
-
-extension KoaEmotion {
-  /// Nét mặt cho Koa nhỏ ở Hôm nay gọn (KOA-T14): giữ mệt / lo — chúng nói điều gì đó về ngày
-  /// (widget cũng giữ); chỉ gộp các biến thể trang trí (buồn thoáng qua, ối, khởi động) về thường.
-  public static func compact(_ e: Emotion) -> Emotion {
-    switch e {
-    case .sad, .oops, .warmup: .idle
-    default: e
-    }
-  }
-}

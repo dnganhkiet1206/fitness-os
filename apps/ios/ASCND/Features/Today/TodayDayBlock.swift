@@ -142,7 +142,7 @@ struct TodayDayBlock: View {
     let doneCount = tubes.filter(\.done).count
     let state = KoaState(emotion: mood.emotion, line: said ?? bubbleText(line, tubes: tubes) ?? "", next: next)
     if compact {
-      compactRow(emotion: KoaEmotion.compact(oneShot ?? mood.emotion))
+      compactRow(emotion: Self.compactEmotion(oneShot ?? mood.emotion))
         .task(id: state) { onKoa?(state) }
         .onChange(of: reward?.id) { _, _ in celebrate() }
     } else {
@@ -206,6 +206,16 @@ struct TodayDayBlock: View {
 
   /// Nét mặt của Koa nhỏ ở dạng gọn: buồn / mệt / lo / ngượng / gồng sức ở cỡ 64 điểm trông như cau có
   /// (#802, 04/11, Kiệt giao E quyết) → nét bình thường. Câu Koa nói và widget vẫn theo tâm trạng thật.
+
+  /// #802 (04/11, Kiệt giao E quyết — "Koa không cau có"): Koa nhỏ ở Hôm nay gọn không mang mặt
+  /// buồn / mệt / lo / ngượng / gồng sức. Audit Koa 17/11 (KOA-T14) đề nghị giữ mệt / lo — trái
+  /// quyết định này nên CHƯA đổi, chờ Kiệt chọn.
+  static func compactEmotion(_ e: KoaEmotion.Emotion) -> KoaEmotion.Emotion {
+    switch e {
+    case .sad, .tired, .worry, .oops, .warmup: .idle
+    default: e
+    }
+  }
 
   /// Today gọn: Koa nhỏ (chạm → phòng) + tên + "hạng · Gains · còn N tới hạng sau".
   private func compactRow(emotion: KoaEmotion.Emotion) -> some View {
