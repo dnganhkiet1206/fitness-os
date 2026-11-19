@@ -177,7 +177,14 @@ struct QuestAutoClaimTests {
     await Self.settle { e.claims.count == 1 }
     await o.refresh()
     try? await Task.sleep(for: .milliseconds(30))
-    #expect(e.claims.count == 1, "trần ngày: không gửi lại trong ngày")
+    #expect(e.claims.count == 1, "trần ngày: không gửi lại khoá ấy trong ngày")
+    // Devin #964: khoá KHÁC (rẻ hơn, còn vừa trần) vẫn được gửi.
+    e.claimError = nil
+    s.signals = QuestHabitProducerTests.signals(workout: true, meal: true)
+    await o.refresh()
+    await Self.settle { e.claims.count == 2 }
+    try? await Task.sleep(for: .milliseconds(30))
+    #expect(e.claims == ["d:2026-10-08:meal", "d:2026-10-08:workout"])
     // Lỗi tạm thời (Postgres hết giờ 57014) được thử lại ở lượt đọc sau.
     let s2 = Fake()
     s2.ledgerRows = MascotRoomControllerTests.welcomed

@@ -62,8 +62,10 @@ public final class QuestObserver {
   private var applied = 0
   private var lastDay: LocalDate?
   private var closed = false
-  /// Ngày server báo hết trần thưởng — không gửi thêm trong ngày ấy.
-  private var ceilingDay: LocalDate?
+  /// Khoá server từ chối vì trần thưởng, kèm ngày bị từ chối: khoá ấy không gửi lại trong
+  /// ngày đó. Server kiểm trần riêng cho TỪNG khoá (`v_today + v_amount > 800`), nên khoá
+  /// rẻ hơn vẫn có thể vừa — không chặn cả ngày (Devin #964).
+  private var ceilingKeys: [String: LocalDate] = [:]
 
   public init(
     userId: String, source: any MascotSource,
@@ -160,8 +162,7 @@ public final class QuestObserver {
     _ quests: [MascotRules.Quest], day: LocalDate, seen: Set<MascotRules.Quest>, claimed: Set<String>, allDone: Bool
   ) {
     guard let economy else { return }
-    // Trần ngày của server: hôm nay thôi, mai thử lại (KOA-T16: không gõ cửa mỗi lượt đọc).
-    if let ceilingDay, ceilingDay == day { return }
+    ceilingKeys = ceilingKeys.filter { $0.value == day }
     var jobs = quests.map { (MascotRules.questRefKey(day, $0), $0, seen.contains($0)) }
     let oldest = day.adding(days: -Self.claimRetryDays)
     for (key, (q, d)) in owed.sorted(by: { $0.key < $1.key }) where !jobs.contains(where: { $0.0 == key }) {
@@ -171,7 +172,8 @@ public final class QuestObserver {
         jobs.append((key, q, false))
       }
     }
-    for (key, q, saw) in jobs where !sent.contains(key) {
+    // Khoá vừa chạm trần hôm nay: mai thử lại (KOA-T16: không gõ cửa mỗi lượt đọc).
+    for (key, q, saw) in jobs where !sent.contains(key) && ceilingKeys[key] != day {
       sent.insert(key)
       let date = LocalDate(String(key.dropFirst(2).prefix(10))) ?? day
       Task { @MainActor [weak self] in
@@ -188,7 +190,7 @@ public final class QuestObserver {
           let failure = (error as? MascotFailure) ?? (NetworkFailure.isOffline(error) ? .offline : .server(code: nil))
           if failure == .dailyCeiling {
             // Hết trần hôm nay: giữ nợ, ngày mai mới thử lại.
-            self.ceilingDay = day
+            self.ceilingKeys[key] = day
             self.sent.remove(key)
             self.owed[key] = (q, date)
           } else if QuestRetry.shouldRetry(failure) {
