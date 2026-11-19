@@ -126,6 +126,24 @@ struct QuestAutoClaimTests {
     #expect(got.all.first?.amount == 25)
   }
 
+  /// KOA-T01: nhiệm vụ đã nhận ở máy khác (server trả 0) → không báo "+xu", không gửi lại.
+  @Test func aDuplicateClaimIsNotCelebrated() async {
+    let s = Fake()
+    s.ledgerRows = MascotRoomControllerTests.welcomed
+    s.signals = QuestHabitProducerTests.signals()
+    let e = MascotRoomControllerTests.FakeEconomy(source: s)
+    e.duplicate = true
+    let got = Got()
+    let o = Self.observer(s, e, clock: Clock("2026-10-08T09:00:00Z"), got: got)
+    await o.refresh()
+    s.signals = QuestHabitProducerTests.signals(meal: true)
+    await o.refresh()
+    await Self.settle { e.claims.count == 1 }
+    try? await Task.sleep(for: .milliseconds(30))
+    #expect(e.claims == ["d:2026-10-08:meal"])
+    #expect(got.all.isEmpty, "trùng: không ăn mừng")
+  }
+
   @Test func aRefusedClaimIsRetriedOnTheNextReadingEvenAfterMidnight() async {
     let s = Fake()
     s.ledgerRows = MascotRoomControllerTests.welcomed

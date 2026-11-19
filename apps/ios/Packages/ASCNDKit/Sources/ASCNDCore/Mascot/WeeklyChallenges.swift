@@ -401,17 +401,18 @@ public final class WeeklyChallengesBook {
         currentValue: ch.currentValue, targetValue: ch.targetValue, completed: ch.completed,
         completedAt: ch.completedAt, newValue: value)
 
+      // Thưởng đã trả ở máy khác (server trả 0, KOA-T01): vẫn ghi tiến độ, nhưng không mừng.
+      var paidElsewhere = false
       if step.justCompleted {
         let tier = ch.rewardTier ?? "bronze"
         do {
-          _ = try await economy.claimReward(
+          paidElsewhere = MascotRules.isDuplicateClaim(try await economy.claimReward(
             refKey: MascotRules.challengeRefKey(tier: tier, weekStart: weekStart.description, key: ch.key),
-            reason: "challenge \(ch.key)")
+            reason: "challenge \(ch.key)"))
         } catch let f as MascotFailure {
-          if f != .server(code: "23505") {
-            firstFailure = firstFailure ?? .reward(f)
-            continue
-          }
+          // Trùng khoá không còn là lỗi (server trả 0, KOA-T01) — mọi lỗi ở đây là lỗi thật.
+          firstFailure = firstFailure ?? .reward(f)
+          continue
         } catch {
           firstFailure = firstFailure ?? .reward(.server(code: nil))
           continue
@@ -437,7 +438,7 @@ public final class WeeklyChallengesBook {
           continue
         }
       }
-      if step.justCompleted && ch.rewardTitle != nil { justCompleted.append(ch.key) }
+      if step.justCompleted && ch.rewardTitle != nil && !paidElsewhere { justCompleted.append(ch.key) }
     }
     guard !closed else { return }
     progressFailure = firstFailure

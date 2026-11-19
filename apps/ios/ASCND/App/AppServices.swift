@@ -610,9 +610,8 @@ final class AppServices {
 
   // MARK: - Nhiệm vụ Koa phần 4 (29/10)
 
-  /// Khoá đã nhận trên máy này — `claim_quest_reward` trả số xu cả khi khoá đã có (ON
-  /// CONFLICT DO NOTHING), nên máy nhớ để không mừng "+xu" hai lần. Server vẫn chỉ ghi
-  /// một dòng.
+  /// Khoá đã nhận trên máy này. Từ 19/11 (KOA-T01) server trả 0 khi khoá đã có; máy vẫn
+  /// nhớ để khỏi gọi lại, và để chặn mừng hai lần với server cũ (trả đủ giá khi trùng).
   private func questSeenKey(_ userId: String, _ ref: String) -> String { "ascnd_koa_quest.\(userId).\(ref)" }
   @ObservationIgnored private var claimingQuests: Set<String> = []
 
@@ -628,6 +627,7 @@ final class AppServices {
       let amount = try await SupabaseMascotEconomy(backend: backend).claimReward(refKey: ref, reason: reason)
       UserDefaults.standard.set(true, forKey: seen)
       setPendingQuests(userId, pendingQuests(userId).filter { $0.ref != ref })
+      if MascotRules.isDuplicateClaim(amount) { return nil }
       return session.session?.userId == userId ? amount : nil
     } catch {
       // Mất mạng / không rõ đã tới server: giữ lại để nhận bù (`retryPendingQuests`).

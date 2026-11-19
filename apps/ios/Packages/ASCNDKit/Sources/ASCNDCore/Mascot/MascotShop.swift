@@ -510,7 +510,8 @@ public final class MascotShopBook {
       let coins = try await economy.claimReward(refKey: c.refKey, reason: c.refKey)
       guard !closed else { return .busy }
       await load()
-      return .claimed(coins: coins)
+      // Bộ đã nhận ở máy khác: sau `load()` bộ hiện "đã nhận", không mừng (KOA-T01).
+      return MascotRules.isDuplicateClaim(coins) ? .notReady : .claimed(coins: coins)
     } catch {
       guard !closed else { return .busy }
       return .failed(MascotRoomController.failure(error))

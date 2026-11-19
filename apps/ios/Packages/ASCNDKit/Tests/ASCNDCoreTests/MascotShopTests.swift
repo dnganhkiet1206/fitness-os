@@ -191,10 +191,13 @@ struct MascotShopBookTests {
     let source: Source
     var claims: [String] = []
     var error: MascotFailure?
+    /// Server trả 0 = bộ đã nhận ở máy khác (KOA-T01).
+    var duplicate = false
     init(_ s: Source) { source = s }
     func claimReward(refKey: String, reason: String) async throws -> Int {
       if let error { throw error }
       claims.append(refKey)
+      if duplicate { return 0 }
       let amount = MascotShop.collections.first { $0.refKey == refKey }?.rewardCoins ?? 0
       source.entries.append(LedgerRow(amount: amount, refKey: refKey))
       return amount
@@ -297,6 +300,17 @@ struct MascotShopBookTests {
     #expect(book.balance == 120)
     #expect(book.isClaimed(xmas))
     #expect(book.setsReady == 0)
+    #expect(await book.claim(xmas) == .notReady)
+    #expect(e.claims == ["set:xmas"])
+  }
+
+  /// KOA-T01: bộ đã nhận ở máy khác mà sổ máy này chưa thấy → server trả 0 → không mừng.
+  @Test func aSetPaidElsewhereIsNotCelebrated() async {
+    let (book, _, w, e) = Self.make(coins: 0)
+    w.rows = [InventoryRow(itemKey: "head_santa", equipped: false), InventoryRow(itemKey: "top_xmas", equipped: false)]
+    await book.load()
+    let xmas = MascotShop.collections.first { $0.id == "xmas" }!
+    e.duplicate = true
     #expect(await book.claim(xmas) == .notReady)
     #expect(e.claims == ["set:xmas"])
   }

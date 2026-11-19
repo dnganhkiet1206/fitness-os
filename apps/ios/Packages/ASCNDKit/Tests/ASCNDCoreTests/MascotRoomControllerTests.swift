@@ -60,12 +60,15 @@ struct MascotRoomControllerTests {
     let source: FakeSource
     var claims: [String] = []
     var claimError: (any Error)?
+    /// Server trả 0 = khoá đã nhận ở máy khác (KOA-T01); sổ không thêm dòng.
+    var duplicate = false
 
     init(source: FakeSource) { self.source = source }
 
     func claimReward(refKey: String, reason: String) async throws -> Int {
       lock.withLock { claims.append(refKey) }
       if let claimError { throw claimError }
+      if duplicate { return 0 }
       let amount = refKey == "welcome" ? 300 : 25
       source.lock.withLock { source.ledgerRows.append(LedgerRow(amount: amount, refKey: refKey)) }
       return amount
@@ -148,6 +151,16 @@ struct MascotRoomControllerTests {
     #expect(c.balance == 300)
     await c.load()
     #expect(e.claims == ["welcome"], "đã có trong sổ thì không hỏi lại")
+  }
+
+  /// KOA-T01: túi chào mừng đã nhận ở máy khác (server trả 0) → không hiện "+300".
+  @Test func welcomeAlreadyClaimedElsewhereIsNotCelebrated() async {
+    let s = FakeSource()
+    let (c, e) = make(s)
+    e.duplicate = true
+    await c.load()
+    #expect(e.claims == ["welcome"])
+    #expect(c.welcomeGranted == nil)
   }
 
   /// Bị từ chối thì lần sau được thử lại (chốt gỡ khi lỗi — RN).

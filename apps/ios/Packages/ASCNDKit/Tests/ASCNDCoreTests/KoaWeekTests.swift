@@ -53,7 +53,7 @@ struct KoaWeekTests {
     var failWith: MascotFailure?
     func claimReward(refKey: String, reason: String) async throws -> Int {
       if let failWith { throw failWith }
-      if claims.contains(refKey) { throw MascotFailure.server(code: "23505") }
+      if claims.contains(refKey) { return 0 }  // server mới: trùng → 0 (KOA-T01)
       claims.append(refKey)
       return KoaWeek.rewardCoins
     }
@@ -95,6 +95,17 @@ struct KoaWeekTests {
 
   /// Đủ tuần lúc mất mạng, sang tuần mới mới có mạng: nhận bù tuần trước một lần,
   /// không đụng trạng thái nhận của tuần này.
+  /// KOA-T01: tuần đã nhận ở máy khác — nhận bù trả 0 → không báo "+50", nhớ đã nhận.
+  @Test func missedWeekPaidElsewhereIsNotCelebrated() async throws {
+    let econ = Economy()
+    econ.claims = [Self.complete().refKey]  // máy khác đã nhận
+    let defaults = try #require(UserDefaults(suiteName: "koaweek-\(UUID())"))
+    let book = KoaWeekBook(userId: "u", economy: econ, defaults: defaults)
+    #expect(await book.claimMissed(Self.complete()) == nil)
+    await book.claimIfComplete(Self.complete())
+    #expect(book.claim == .claimed, "đã nhận ở máy khác: hiện 'đã nhận', không 'vừa nhận'")
+  }
+
   @Test func missedWeekIsClaimedOnceLaterWithoutTouchingThisWeek() async throws {
     let defaults = try #require(UserDefaults(suiteName: "koaweek-\(UUID())"))
     let econ = Economy()

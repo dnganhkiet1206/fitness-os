@@ -122,7 +122,7 @@ public final class KoaWeekBook {
   private func seenKey(_ ref: String) -> String { "ascnd_koa_week.\(userId).\(ref)" }
 
   /// Đủ tuần mà chưa nhận → nhận. Gọi lại bao nhiêu lần cũng chỉ một giao dịch:
-  /// máy nhớ đã nhận, và server bỏ trùng theo `ref_key` (lỗi 23505 = đã nhận).
+  /// máy nhớ đã nhận, và server bỏ trùng theo `ref_key` (trả 0 = đã nhận, KOA-T01).
   public func claimIfComplete(_ state: KoaWeek.State?) async {
     guard let state else {
       claim = .notYet
@@ -139,12 +139,9 @@ public final class KoaWeekBook {
       return
     }
     do {
-      _ = try await economy.claimReward(refKey: ref, reason: "koa week \(state.weekStart)")
+      let amount = try await economy.claimReward(refKey: ref, reason: "koa week \(state.weekStart)")
       defaults.set(true, forKey: seenKey(ref))
-      claim = .justClaimed(coins: KoaWeek.rewardCoins)
-    } catch let f as MascotFailure where f == .server(code: "23505") {
-      defaults.set(true, forKey: seenKey(ref))
-      claim = .claimed
+      claim = MascotRules.isDuplicateClaim(amount) ? .claimed : .justClaimed(coins: KoaWeek.rewardCoins)
     } catch {
       claim = .failed
     }
@@ -157,12 +154,9 @@ public final class KoaWeekBook {
     let ref = state.refKey
     guard !defaults.bool(forKey: seenKey(ref)) else { return nil }
     do {
-      _ = try await economy.claimReward(refKey: ref, reason: "koa week \(state.weekStart)")
+      let amount = try await economy.claimReward(refKey: ref, reason: "koa week \(state.weekStart)")
       defaults.set(true, forKey: seenKey(ref))
-      return KoaWeek.rewardCoins
-    } catch let f as MascotFailure where f == .server(code: "23505") {
-      defaults.set(true, forKey: seenKey(ref))
-      return nil
+      return MascotRules.isDuplicateClaim(amount) ? nil : KoaWeek.rewardCoins
     } catch {
       return nil
     }
