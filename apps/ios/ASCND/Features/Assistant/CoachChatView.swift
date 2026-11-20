@@ -1521,7 +1521,14 @@ private struct CoachHistorySheet: View {
         Task { await chat.loadHistory() }
       }
     case .ready(let list) where list.isEmpty:
-      DSEmptyState(systemImage: "bubble.left.and.bubble.right", title: String(localized: "coach.history.empty"))
+      // Devin #970: lịch sử rỗng mà lần tải lại hỏng thì vẫn nói ra, có nút thử lại.
+      VStack(spacing: DS.Spacing.md) {
+        if chat.historyStale {
+          historyNotice("coach.history.stale") { Task { await chat.loadHistory() } }
+            .padding(.horizontal, DS.Spacing.lg)
+        }
+        DSEmptyState(systemImage: "bubble.left.and.bubble.right", title: String(localized: "coach.history.empty"))
+      }
     case .ready(let list):
       List {
         if chat.deleteFailed {

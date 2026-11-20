@@ -249,7 +249,9 @@ public struct CoachOverview: Equatable, Sendable {
     }
     return CoachOverview(
       title: all.compactMap(\.title).first, items: items, trend: all.compactMap(\.trend).first,
-      gauge: all.compactMap(\.gauge).first, split: all.compactMap(\.split).first, steps: all.flatMap(\.steps))
+      gauge: all.compactMap(\.gauge).first, split: all.compactMap(\.split).first,
+      // Cùng trần với `parse` (Devin #970): khối gộp được lưu lại, mở lại không được mất bước.
+      steps: Array(all.flatMap(\.steps).prefix(5)))
   }
 
   static func stripExtraBlocks(_ text: String) -> String {

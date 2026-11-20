@@ -1,0 +1,335 @@
+# ASCND iOS — XcodeGen. Nguồn sự thật của project; `ASCND.xcodeproj` sinh ra
+# từ đây và không commit (ADR-0001: bốn agent sửa song song không conflict
+# .pbxproj). Sinh lại: `xcodegen` trong thư mục này.
+name: ASCND
+
+options:
+  bundleIdPrefix: com.ascnd
+  developmentLanguage: en
+  deploymentTarget:
+    iOS: "18.0"
+    watchOS: "11.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: Z54JL44R9Z
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+    DEAD_CODE_STRIPPING: YES
+
+packages:
+  ASCNDKit:
+    path: Packages/ASCNDKit
+  ASCNDBackend:
+    path: Packages/ASCNDBackend
+  ASCNDStore:
+    path: Packages/ASCNDStore
+  # Đo lường (15/10): crash / lỗi và phễu người dùng. Tắt khi chưa có khoá —
+  # xem ASCND/App/Telemetry.swift và Config/Backend.xcconfig.
+  Sentry:
+    url: https://github.com/getsentry/sentry-cocoa
+    from: 8.36.0
+  PostHog:
+    url: https://github.com/PostHog/posthog-ios
+    from: 3.13.0
+  # Snapshot test (#795, MIT): CHỈ cho target ASCNDTests, không vào app.
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    exactVersion: 1.19.7
+
+targets:
+  ASCND:
+    type: application
+    platform: iOS
+    sources:
+      - path: ASCND
+    dependencies:
+      - package: ASCNDKit
+        product: ASCNDCore
+      - package: ASCNDKit
+        product: ASCNDDesignSystem
+      - package: ASCNDBackend
+        product: ASCNDBackend
+      - package: ASCNDStore
+        product: ASCNDStore
+      - package: ASCNDKit
+        product: ASCNDLiveActivity
+      - package: Sentry
+        product: Sentry
+      - package: PostHog
+        product: PostHog
+      - target: ASCNDWidgets
+        embed: true
+      - sdk: WatchConnectivity.framework
+    # App Group dùng chung với widget màn hình chính — CÙNG nhóm bản RN dùng
+    # (`group.com.ascnd.fitnessos`, `WidgetData.swift`), để dữ liệu widget còn
+    # nguyên khi bản native cập nhật đè app RN (#66).
+    entitlements:
+      path: ASCND/ASCND.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.ascnd.fitnessos
+        # Apple Health (#66): đọc bước / nhịp tim / HRV / giấc ngủ / buổi tập,
+        # ghi buổi tập — như plugin `@kingstinct/react-native-healthkit` của RN.
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+        # Đồng bộ nền (18/10): Health đánh thức app khi có dữ liệu mới (HKObserverQuery).
+        com.apple.developer.healthkit.background-delivery: true
+    configFiles:
+      Debug: Config/Backend.xcconfig
+      Release: Config/Backend.xcconfig
+    info:
+      path: ASCND/Info.plist
+      properties:
+        CFBundleDisplayName: $(APP_DISPLAY_NAME)
+        CFBundleAllowMixedLocalizations: true
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen: {}
+        # Làm mới nền cho thông báo cộng đồng khi app không mở (16/10).
+        UIBackgroundModes:
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.ascnd.fitnessos.community-refresh
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        # Điền từ Config/Backend.xcconfig — chỗ duy nhất ghi project Supabase.
+        # Link trong email xác nhận / đặt lại mật khẩu quay về app (như bản RN).
+        CFBundleURLTypes:
+          - CFBundleURLName: com.ascnd.fitnessos
+            CFBundleURLSchemes: [ascnd]
+        ASCNDSupabaseURL: https://$(ASCND_SUPABASE_HOST)
+        ASCNDSupabaseKey: $(ASCND_SUPABASE_KEY)
+        NSSupportsLiveActivities: true
+        # Nút Sign in with Apple (#527): Apple chỉ cấp capability này cho
+        # Apple Developer Program trả phí. Bật = đặt build setting
+        # `ASCND_SIGN_IN_WITH_APPLE: YES` dưới đây VÀ thêm entitlement
+        # `com.apple.developer.applesignin: [Default]` — xem
+        # `docs/APPLE_DEVELOPER_PROGRAM.md`.
+        ASCNDSignInWithApple: $(ASCND_SIGN_IN_WITH_APPLE)
+        # "Tiếp tục với Google" (23/10): bật khi dự án Supabase đã bật Google —
+        # `docs/GOOGLE_SIGN_IN.md`.
+        ASCNDSignInWithGoogle: $(ASCND_SIGN_IN_WITH_GOOGLE)
+        # Client ID iOS (không phải bí mật) của project Google Cloud "ASCND", theo bundle.
+        ASCNDGoogleIOSClientID: $(ASCND_GOOGLE_IOS_CLIENT_ID)
+        # Đo lường (15/10) — trống = tắt. Khoá thật ở Backend.local.xcconfig.
+        ASCNDSentryDSN: https://$(ASCND_SENTRY_DSN)
+        ASCNDPostHogKey: $(ASCND_POSTHOG_KEY)
+        ASCNDPostHogHost: https://$(ASCND_POSTHOG_HOST)
+        # Câu chữ của bản RN (`app.json`), nguyên văn.
+        NSMotionUsageDescription: ASCND counts your steps with your iPhone's motion sensor when Apple Health isn't connected.
+        NSHealthShareUsageDescription: ASCND reads your steps, heart rate, HRV, sleep, weight and water to compute your daily readiness score and fill in your day, and, when you ask during setup, your height, sex and date of birth, so you log less by hand.
+        NSCameraUsageDescription: ASCND uses the camera to take your progress photos, photograph meals for AI logging and scan food barcodes. Photos are stored privately in your account.
+        # "Kể cho Koa" (18/10): nói thay gõ. Bản vi / es ở ASCND/Resources/InfoPlist.xcstrings.
+        NSMicrophoneUsageDescription: ASCND uses the microphone only while the mic is on in Tell Koa, so you can say what you did instead of typing. Audio is not stored.
+        # Khoá app (#527 mục 7, 01/11). Bản vi / es ở ASCND/Resources/InfoPlist.xcstrings.
+        NSFaceIDUsageDescription: ASCND uses Face ID only to unlock the app when you turn on App Lock in Settings.
+        NSSpeechRecognitionUsageDescription: ASCND turns what you say in Tell Koa into text so you can review it before anything is logged. On iPhones that support your language this happens on the device; otherwise Apple processes the audio.
+    settings:
+      base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASCND_SIGN_IN_WITH_APPLE: "NO"
+        ASCND_SIGN_IN_WITH_GOOGLE: "YES"
+      configs:
+        # Release trùng bundle của app RN để bản native cập nhật đè app đang
+        # có trên App Store. Debug có hậu tố riêng để Kiệt cài cả bản RN lẫn
+        # bản native cạnh nhau mà so.
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev
+          APP_DISPLAY_NAME: ASCND Dev
+          ASCND_GOOGLE_IOS_CLIENT_ID: 751814705388-gonm9e313v927p3o8baubu9ibluu27t1.apps.googleusercontent.com
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos
+          APP_DISPLAY_NAME: ASCND
+          ASCND_GOOGLE_IOS_CLIENT_ID: 751814705388-ahlo5v7e2qi45ar82luinus59lm73h9g.apps.googleusercontent.com
+          # Script upload dSYM đọc thư mục build và `~/.sentryclirc` — ngoài
+          # hộp cát của build phase. Chỉ bản Release; Debug giữ hộp cát.
+          ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+    # Archive (Release) → dSYM lên Sentry để stack crash / treo có tên hàm
+    # (16/10). Thiếu sentry-cli / khoá thì chỉ cảnh báo, không hỏng build.
+    postBuildScripts:
+      - name: Set build number
+        script: |
+          [ "$CONFIGURATION" = "Release" ] || exit 0
+          "${SRCROOT}/tools/set-build-number.sh"
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - "${SRCROOT}/tools/set-build-number.sh"
+      - name: Upload dSYMs to Sentry
+        # Debug thoát ngay tại đây: hộp cát của Debug không cho đọc file script.
+        script: |
+          [ "$CONFIGURATION" = "Release" ] || exit 0
+          "${SRCROOT}/tools/sentry-upload-dsyms.sh"
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - "${SRCROOT}/tools/sentry-upload-dsyms.sh"
+          - "${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}"
+      - name: Check telemetry keys (Release)
+        # Thiếu khoá thì chỉ cảnh báo, không hỏng build — đo lường tắt hẳn
+        # một cách lặng lẽ là lý do audit R2 thấy "zero error reporting".
+        # Debug thoát ngay như phase dSYM: hộp cát của Debug không cho đọc
+        # file script.
+        script: |
+          [ "$CONFIGURATION" = "Release" ] || exit 0
+          "${SRCROOT}/tools/check-telemetry-keys.sh"
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - "${SRCROOT}/tools/check-telemetry-keys.sh"
+
+  # Widget extension: Live Activity / Dynamic Island của quãng nghỉ (#227) và
+  # hai widget màn hình chính (#66).
+  ASCNDWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ASCNDWidgets
+    dependencies:
+      - package: ASCNDKit
+        product: ASCNDCore
+      - package: ASCNDKit
+        product: ASCNDLiveActivity
+    entitlements:
+      path: ASCNDWidgets/ASCNDWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.ascnd.fitnessos
+    info:
+      path: ASCNDWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: ASCND
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.widgets
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.widgets
+          # Script số build ghi vào Info.plist đã build — ngoài hộp cát.
+          ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+    # Số build khớp app (App Store từ chối widget lệch số build với app).
+    postBuildScripts:
+      - name: Set build number
+        script: |
+          [ "$CONFIGURATION" = "Release" ] || exit 0
+          "${SRCROOT}/tools/set-build-number.sh"
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - "${SRCROOT}/tools/set-build-number.sh"
+
+  # Test cần SwiftUI thật (hosted trong app, simulator). Test logic thuần nằm ở các package.
+  ASCNDTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ASCNDTests
+        # Ảnh chuẩn của snapshot nằm cạnh test, không phải tài nguyên của bundle.
+        excludes:
+          - "**/__Snapshots__/**"
+    dependencies:
+      - target: ASCND
+      - package: SnapshotTesting
+        product: SnapshotTesting
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+  # Kiểm accessibility tự động (#795 đợt 2): XCUITest `performAccessibilityAudit()`, chạy ở
+  # `.github/workflows/ios-a11y.yml` bằng scheme `ASCNDA11y` — không chạy trong `app-macos` hay E2E.
+  ASCNDUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: ASCNDUITests
+    dependencies:
+      - target: ASCND
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: ASCND
+
+  # App Apple Watch: ghi set và quãng nghỉ khi iPhone đang có buổi tập.
+  # Nhúng vào ASCND để cài cùng app. Scheme ASCND của CI vẫn là app iOS;
+  # target này được build vì là dependency nhúng.
+  ASCNDWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: ASCNDWatch
+    dependencies:
+      - package: ASCNDKit
+        product: ASCNDCore
+      - sdk: WatchKit.framework
+      - sdk: WatchConnectivity.framework
+    info:
+      path: ASCNDWatch/Info.plist
+      properties:
+        CFBundleDisplayName: ASCND
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: $(WK_COMPANION_BUNDLE_ID)
+        WKRunsIndependentlyOfCompanionApp: true
+    settings:
+      base:
+        TARGETED_DEVICE_FAMILY: "4"
+        SWIFT_EMIT_LOC_STRINGS: NO
+        WK_COMPANION_BUNDLE_ID: com.ascnd.fitnessos.dev
+        PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.watchkitapp
+        SKIP_INSTALL: YES
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.watchkitapp
+          WK_COMPANION_BUNDLE_ID: com.ascnd.fitnessos.dev
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.watchkitapp
+          WK_COMPANION_BUNDLE_ID: com.ascnd.fitnessos
+          ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+    postBuildScripts:
+      - name: Set build number
+        script: |
+          [ "$CONFIGURATION" = "Release" ] || exit 0
+          "${SRCROOT}/tools/set-build-number.sh"
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - "${SRCROOT}/tools/set-build-number.sh"
+
+schemes:
+  ASCND:
+    build:
+      targets:
+        ASCND: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - ASCNDTests
+      commandLineArguments:
+        "-uiTestFakeBackend": true
+    archive:
+      config: Release
+  ASCNDA11y:
+    build:
+      targets:
+        ASCND: all
+        ASCNDUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - ASCNDUITests
+  ASCNDWatch:
+    build:
+      targets:
+        ASCNDWatch: all
+    run:
+      config: Debug

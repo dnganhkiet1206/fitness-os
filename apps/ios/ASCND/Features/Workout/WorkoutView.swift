@@ -53,6 +53,7 @@ public struct WorkoutView: View {
   @State private var restMinimized = false
   /// Lúc mỗi quãng nghỉ (theo set vừa xong) mở màn Koa lần đầu.
   @State private var restBegan: [String: Date] = [:]
+  @State private var restClocks = RestClockStore()
 
   @State private var weightTexts: [String: String] = [:]
   @State private var repsTexts: [String: String] = [:]
@@ -196,7 +197,8 @@ public struct WorkoutView: View {
             } : nil
         },
         startedAt: restBegan[last?.key ?? "rest"],
-        onStarted: { restBegan[last?.key ?? "rest"] = $0 }
+        onStarted: { restBegan[last?.key ?? "rest"] = $0 },
+        clock: restClocks.box(last?.key ?? "rest")
       )
       .id(last?.key ?? "rest")
       .transition(.opacity)

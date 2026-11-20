@@ -84,6 +84,9 @@ struct KoaRestScreen: View {
   /// Lúc quãng nghỉ này mở lần đầu: thu nhỏ rồi mở lại thì Koa diễn tiếp, không diễn lại mở đầu.
   var startedAt: Date?
   var onStarted: (Date) -> Void = { _ in }
+  /// Đồng hồ hoạt động của quãng nghỉ này, giữ ở màn tập qua các lần thu nhỏ (Devin #970: màn
+  /// dựng lại sau khi thu nhỏ thì quên quãng đã dừng, Koa nhảy nhịp). `nil`: đồng hồ riêng.
+  var clock: RestClockBox? = nil
 
   @State private var start = Date.now
   @State private var heard = Heard()
@@ -93,7 +96,7 @@ struct KoaRestScreen: View {
 
   final class Heard {
     var scene: KoaReaction.Scene?; var played = Set<Int>(); var tick = -1; var buzzed = Set<Double>()
-    var active = RestActiveClock()
+    let active = RestClockBox()
   }
 
   private static let bg = Color(red: 0.055, green: 0.059, blue: 0.071)
@@ -135,7 +138,7 @@ struct KoaRestScreen: View {
     TimelineView(.animation(minimumInterval: 1.0 / 60, paused: scenePhase != .active)) { ctx in
       // KOA-T26: màn diễn chạy theo thời gian HOẠT ĐỘNG (trừ quãng dừng) — dừng thì Koa đứng yên
       // cùng đồng hồ đếm ngược, tiếp tục không nhảy cóc nhịp.
-      let elapsed = frozen ?? heard.active.elapsed(
+      let elapsed = frozen ?? (clock ?? heard.active).clock.elapsed(
         now: max(0, ctx.date.timeIntervalSince(startedAt ?? start) * 1000), paused: timer.isPaused)
       let now = frozen.map { EpochMillis((startedAt ?? start).addingTimeInterval($0 / 1000)) } ?? EpochMillis(ctx.date)
       let leftMs = timer.pausedLeft.map { Double($0) * 1000 } ?? Double(timer.endsAt.millis - now.millis)
@@ -410,5 +413,21 @@ struct KoaRestScreen: View {
       heard.buzzed.insert(m.t)
       KoaHapticPlayer.play(m.haptic, restGo: s == .restGo)
     }
+  }
+}
+
+/// Hộp đồng hồ hoạt động (KOA-T26) — tham chiếu, để cập nhật mỗi khung hình không làm view vẽ lại.
+final class RestClockBox {
+  var clock = RestActiveClock()
+}
+
+/// Đồng hồ hoạt động theo khoá quãng nghỉ, sống cùng màn tập (Devin #970).
+final class RestClockStore {
+  private var boxes: [String: RestClockBox] = [:]
+  func box(_ key: String) -> RestClockBox {
+    if let b = boxes[key] { return b }
+    let b = RestClockBox()
+    boxes[key] = b
+    return b
   }
 }
