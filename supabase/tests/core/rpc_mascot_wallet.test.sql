@@ -20,7 +20,12 @@ INSERT INTO mascot_transactions (user_id, amount, reason, ref_key) VALUES
   (:W, 50, 'thử', 'ch:silver:2020-01-06:koa_week'),
   (:W, 25, 'thử', 'ch:bronze:2026-13-40:hong'),          -- khoá cũ, ngày hỏng
   (:W, -150, 'thử', 'freeze:00000000-0000-4000-8000-000000000001'),
+  (:W, 40, 'thử', 'set:gym_starter'),
   (:O, 999, 'thử', 'welcome');
+-- KOA-T54 (1): 100 lần dọn phòng + một món mua — không được vào tập `claimed`.
+INSERT INTO mascot_transactions (user_id, amount, reason, ref_key)
+SELECT :W, -30, 'thử', 'clean:' || ((now() AT TIME ZONE 'UTC')::date - i) FROM generate_series(1, 100) i;
+INSERT INTO mascot_transactions (user_id, amount, reason, ref_key) VALUES (:W, -120, 'thử', 'buy:head_cap');
 RESET ROLE;
 
 SELECT pg_temp.who('ee000000-0000-4000-8000-00000000000e'); SET ROLE authenticated;
@@ -28,7 +33,7 @@ CREATE TEMP TABLE w AS SELECT public.mascot_wallet() AS j;
 RESET ROLE;
 
 DO $$ DECLARE j jsonb := (SELECT j FROM w); BEGIN
-  ASSERT (j->>'balance')::int = 1500 * 10 + 300 + 40 + 50 + 50 + 25 - 150,
+  ASSERT (j->>'balance')::int = 1500 * 10 + 300 + 40 + 50 + 50 + 25 - 150 + 40 - 30 * 100 - 120,
     format('W1 số dư sai: %s', j->>'balance');
   ASSERT (SELECT (x->>'n')::int FROM jsonb_array_elements(j->'xp') x WHERE x->>'key' = 'd:2000-01-03:meal') = 1500,
     'W2 XP bữa ăn không gom đủ 1500 dòng (lượt đọc bị cắt?)';
@@ -40,6 +45,11 @@ DO $$ DECLARE j jsonb := (SELECT j FROM w); BEGIN
   ASSERT NOT (j->'claimed' ? ('d:' || ((now() AT TIME ZONE 'UTC')::date - 30) || ':meal')), 'W3 khoá ngày cũ vẫn trả về';
   ASSERT NOT (j->'claimed' ? 'ch:silver:2020-01-06:koa_week'), 'W3 khoá tuần cũ vẫn trả về';
   ASSERT j->'claimed' ? 'ch:bronze:2026-13-40:hong', 'W4 khoá ngày hỏng làm mất dòng (phải coi như khoá một lần)';
+  -- KOA-T54 (1): chỉ khoá app hỏi; dọn phòng / mua / băng chuỗi không phình tập này.
+  ASSERT j->'claimed' ? 'set:gym_starter', 'W6 thiếu khoá bộ sưu tập';
+  ASSERT NOT EXISTS (SELECT 1 FROM jsonb_array_elements_text(j->'claimed') k
+                     WHERE k LIKE 'clean:%' OR k LIKE 'buy:%' OR k LIKE 'freeze:%' OR k LIKE 'cc:%'),
+    format('W6 tập claimed còn khoá không ai hỏi: %s', j->'claimed');
 END $$;
 
 -- W5: người khác không thấy sổ của W; anon không gọi được.
@@ -50,5 +60,5 @@ DO $$ BEGIN
   ASSERT NOT has_function_privilege('anon', 'public.mascot_wallet()', 'EXECUTE'), 'W5 anon gọi được mascot_wallet';
 END $$;
 
-\echo 'VÍ KOA Ở SERVER: W1–W5 xanh'
+\echo 'VÍ KOA Ở SERVER: W1–W6 xanh'
 ROLLBACK;

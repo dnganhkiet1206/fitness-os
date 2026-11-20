@@ -214,9 +214,10 @@ const calls = srcFiles.reduce((n, [, s]) => n + (s.match(/\.rpc\(\s*['"]\w+['"]/
     'bỏ một cột khỏi RETURNS TABLE của community_user_badges',
     bentMig('20261001140000_community_badges_no_date', 'RETURNS TABLE (challenge_id uuid, title text)', 'RETURNS TABLE (challenge_id uuid)'),
   );
+  /* Bẻ bản ĐANG CÓ HIỆU LỰC: KOA-T54 (20261120130100) định nghĩa lại hàm — bẻ tệp gốc thì bản sau ghi đè. */
   probe(
     'đổi kiểu trả của claim_community_challenge sang text',
-    bentMig('_community_challenges', 'RETURNS integer\nLANGUAGE plpgsql\nSECURITY DEFINER\nSET search_path = public\nAS $$\nDECLARE\n  v_uid     uuid := auth.uid();\n  c ', 'RETURNS text\nLANGUAGE plpgsql\nSECURITY DEFINER\nSET search_path = public\nAS $$\nDECLARE\n  v_uid     uuid := auth.uid();\n  c '),
+    bentMig('_community_challenge_ceiling', 'RETURNS integer\nLANGUAGE plpgsql\nSECURITY DEFINER\nSET search_path = public\nAS $$\nDECLARE\n  v_uid     uuid := auth.uid();\n  c ', 'RETURNS text\nLANGUAGE plpgsql\nSECURITY DEFINER\nSET search_path = public\nAS $$\nDECLARE\n  v_uid     uuid := auth.uid();\n  c '),
   );
   const noBadges = types.replace(/ {6}community_user_badges: \{\n[\s\S]*?\n {6}\}\n/, '');
   probe('bỏ community_user_badges khỏi Functions trong khi app vẫn gọi nó', noBadges === types ? null : check(noBadges, migrations, srcFiles).out.length);

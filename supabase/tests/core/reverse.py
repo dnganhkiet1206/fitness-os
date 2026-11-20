@@ -231,8 +231,10 @@ CASES += [
     ('E1c mở lại bán băng chuỗi', '20261112140000_streak_freeze_sale_closed', "GRANT EXECUTE ON FUNCTION public.buy_streak_freeze(UUID) TO service_role;",
      "GRANT EXECUTE ON FUNCTION public.buy_streak_freeze(UUID) TO service_role, authenticated;", None, 'E1c'),
     ('FK1 bỏ index user_id của workout_templates', '20261112130000_fk_indexes', 'CREATE INDEX IF NOT EXISTS idx_workout_templates_user_id ON public.workout_templates (user_id);\n', '', None, 'FK1'),
-    ('W2 ví đếm sai số dòng XP', '20261112150000_mascot_wallet', "(SELECT k, count(*) AS n FROM cls", "(SELECT k, 1 AS n FROM cls", None, 'W2'),
-    ('W5 ví đọc sổ mọi người', '20261112150000_mascot_wallet', "FROM public.mascot_transactions WHERE user_id = auth.uid()", "FROM public.mascot_transactions WHERE true", None, 'W1'),
+    ('W2 ví đếm sai số dòng XP', '20261120130000_wallet_claimed_keys', "(SELECT k, count(*) AS n FROM cls", "(SELECT k, 1 AS n FROM cls", None, 'W2'),
+    ('W5 ví đọc sổ mọi người', '20261120130000_wallet_claimed_keys', "FROM public.mascot_transactions WHERE user_id = auth.uid()", "FROM public.mascot_transactions WHERE true", None, 'W1'),
+    # KOA-T54 (1): tập `claimed` lại nhận mọi khoá (clean:/buy:/freeze:…) → W6 phải đỏ
+    ('W6 ví trả cả khoá không ai hỏi', '20261120130000_wallet_claimed_keys', "ref_key = 'welcome' OR ref_key LIKE 'x:%' OR ref_key LIKE 'set:%'", "true", None, 'W3'),
 ]
 
 def mutate(src, old, new, nth):
