@@ -81592,7 +81592,7 @@
         }
       }
     },
-    "koa.reaction.a11y": {
+    "koa.reaction.a11y %@": {
       "extractionState": "manual",
       "localizations": {
         "en": {
