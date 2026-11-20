@@ -281,14 +281,21 @@ final class KoaDirectorDriver {
     // phim hoạt hình), rồi mới có tiếng và lời
     director.blink()
     KoaSound.react(voice, delay: 0.2)
-    Task { @MainActor in
-      try? await Task.sleep(for: .milliseconds(110))
+    // KOA-T48: chạm dồn (cách nhau < 110 ms) chỉ ra MỘT câu — lượt trước chưa kịp nói thì bị huỷ.
+    pendingTalk?.cancel()
+    pendingTalk = Task { @MainActor [weak self] in
+      guard (try? await Task.sleep(for: .milliseconds(110))) != nil, let self else { return }
       self.talkStart = Date.timeIntervalSinceReferenceDate
       self.speech = beat
+      self.tapTalks += 1
       KoaSound.talk(beat)
     }
   }
 
+  /// Số câu đã nói vì chạm (test KOA-T48: chạm dồn chỉ ra một câu).
+  @ObservationIgnored private(set) var tapTalks = 0
+  /// Câu đang chờ nói sau cú chạm (KOA-T48).
+  @ObservationIgnored private var pendingTalk: Task<Void, Never>?
   @ObservationIgnored private var tapStreak = 0
   @ObservationIgnored private var lastTap = 0.0
 

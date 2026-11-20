@@ -106,7 +106,8 @@ struct KoaFigureView: View {
     .sensoryFeedback(.impact(weight: .light), trigger: pokes)
     .task {
       guard greet, !reduceMotion, animated else { return }
-      try? await Task.sleep(for: .milliseconds(500))
+      // KOA-T48: rời màn trước 500 ms thì không chọc nữa (`sleep` ném lỗi khi `.task` bị huỷ).
+      guard (try? await Task.sleep(for: .milliseconds(500))) != nil else { return }
       _ = touch.poke(at: Date.now.timeIntervalSinceReferenceDate * 1000)
     }
     // có `onTap` thì chỗ gọi tự đặt nhãn / nút trợ năng

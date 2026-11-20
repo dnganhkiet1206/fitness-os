@@ -22,9 +22,25 @@ import SwiftUI
   static var playing = false
 
   /// Chờ cảnh đang chạy (nếu có) xong. Chờ một nhịp trước: cảnh mở ngay SAU khi buổi được ghi.
-  static func waitIdle() async {
-    try? await Task.sleep(for: .seconds(1))
-    while playing { try? await Task.sleep(for: .milliseconds(250)) }
+  /// KOA-T48: tối đa `timeout` (cảnh kẹt `playing` không giữ hộp xin quyền mãi) và dừng khi tác vụ bị huỷ.
+  /// Trả `true` khi cảnh đã xong, `false` khi hết giờ hay bị huỷ.
+  @discardableResult
+  static func waitIdle(
+    lead: Duration = .seconds(1), poll: Duration = .milliseconds(250), timeout: Duration = .seconds(30),
+    isPlaying: () -> Bool = { playing }
+  ) async -> Bool {
+    let clock = ContinuousClock()
+    let deadline = clock.now + timeout
+    do {
+      try await Task.sleep(for: lead)
+      while isPlaying() {
+        guard clock.now < deadline else { return false }
+        try await Task.sleep(for: poll)
+      }
+      return true
+    } catch {
+      return false
+    }
   }
 }
 

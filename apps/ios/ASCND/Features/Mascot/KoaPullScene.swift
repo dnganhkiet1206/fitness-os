@@ -71,26 +71,36 @@ struct KoaPullScene<Content: View>: View {
     }
     .ignoresSafeArea()
     .sensoryFeedback(.impact(weight: .medium), trigger: tugs)
+    // KOA-T48: mọi bước chờ đều có cấu trúc — đóng cảnh (`.task` bị huỷ) là dừng cả tiếng chạy lẫn cú kéo,
+    // không còn tiếng bước / rung vang lên sau khi cảnh đã gỡ.
     .task {
       guard !quiet else { return }
-      try? await Task.sleep(for: .milliseconds(60))
-      began = .now
-      // tiếng chạy: bật khỏi bục gỗ, rồi từng bước chạy theo đúng nhịp của hình
-      Task {
-        try? await Task.sleep(for: .seconds(KoaPull.anticipate))
-        KoaSound.step(wood: true, gain: 1.2)
-        var at = KoaPull.anticipate
-        for step in KoaPull.runSteps {
-          try? await Task.sleep(for: .seconds(step - at))
-          at = step
-          KoaSound.step(wood: false, gain: 1.4)
-        }
+      do {
+        try await Task.sleep(for: .milliseconds(60))
+        began = .now
+        // tiếng chạy: bật khỏi bục gỗ, rồi từng bước chạy theo đúng nhịp của hình
+        async let steps: Void = Self.runSteps()
+        try await Task.sleep(for: .seconds(KoaPull.peekEnd))
+        tugs += 1
+        KoaSound.boop()
+        try await Task.sleep(for: .seconds(KoaPull.tugTwoStart - KoaPull.peekEnd))
+        tugs += 1
+        try await steps
+      } catch {
+        return
       }
-      try? await Task.sleep(for: .seconds(KoaPull.peekEnd))
-      tugs += 1
-      KoaSound.boop()
-      try? await Task.sleep(for: .seconds(KoaPull.tugTwoStart - KoaPull.peekEnd))
-      tugs += 1
+    }
+  }
+
+  /// Tiếng chạy theo nhịp hình; dừng khi bị huỷ.
+  @MainActor private static func runSteps() async throws {
+    try await Task.sleep(for: .seconds(KoaPull.anticipate))
+    KoaSound.step(wood: true, gain: 1.2)
+    var at = KoaPull.anticipate
+    for step in KoaPull.runSteps {
+      try await Task.sleep(for: .seconds(step - at))
+      at = step
+      KoaSound.step(wood: false, gain: 1.4)
     }
   }
 
