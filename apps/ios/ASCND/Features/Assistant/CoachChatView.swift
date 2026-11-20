@@ -42,6 +42,7 @@ struct CoachChatView: View {
   @Environment(WorkoutFlow.self) private var flow
   /// Nước theo đơn vị người dùng trên nút / câu hỏi lại (audit vòng 3, 26/10).
   private var waterUnit: Water.Unit { services.preferences.volumeUnit }
+  @Environment(\.weightUnit) private var weightUnit
   @State private var showsHistory = false
   @FocusState private var composing: Bool
   /// Ô chat thu thành viên nhỏ khi người dùng vuốt xuống, như thanh phát của
@@ -184,7 +185,7 @@ struct CoachChatView: View {
       }
       Button(String(localized: "common.cancel"), role: .cancel) {}
     } message: { c in
-      Text("coach.check.update.message \(CoachLogPrompt.display(c.kind, c.logged, lang: lang.rawValue, unit: waterUnit)) \(CoachLogPrompt.display(c.kind, c.stated, lang: lang.rawValue, unit: waterUnit))")
+      Text("coach.check.update.message \(CoachLogPrompt.display(c.kind, c.logged, lang: lang.rawValue, unit: waterUnit, weight: weightUnit)) \(CoachLogPrompt.display(c.kind, c.stated, lang: lang.rawValue, unit: waterUnit, weight: weightUnit))")
     }
     // Câu trả lời lưu vào lịch sử đã được đối chiếu với số thật của hôm nay.
     .onChange(of: signal, initial: true) { _, now in
@@ -540,11 +541,12 @@ struct CoachChatView: View {
 
   private func send(_ text: String) {
     chat.waterUnit = waterUnit
+    chat.weightUnit = weightUnit
     // nhiệm vụ khám phá "Hỏi Koa" (#527 phần 4)
     services.exploreDone(.askkoa)
     // Trả lời một câu hỏi lại "số nào đúng" bằng chữ: đọc số người dùng chọn.
     if let (key, c) = openConflict() {
-      switch CoachLogPrompt.choice(text, for: c, unit: waterUnit) {
+      switch CoachLogPrompt.choice(text, for: c, unit: waterUnit, weight: weightUnit) {
       case .stated:
         resolved.insert(key)
         confirmUpdate = c
@@ -581,14 +583,14 @@ struct CoachChatView: View {
     if !conflicts.isEmpty || !suggestions.isEmpty {
       FlowRows(spacing: DS.Spacing.sm, centered: false) {
         ForEach(conflicts, id: \.kind) { c in
-          chip(Text("coach.check.stated \(CoachLogPrompt.display(c.kind, c.stated, lang: lang.rawValue, unit: waterUnit))"), primary: true) {
+          chip(Text("coach.check.stated \(CoachLogPrompt.display(c.kind, c.stated, lang: lang.rawValue, unit: waterUnit, weight: weightUnit))"), primary: true) {
             resolved.insert(asked.id + c.kind.rawValue)
-            send(Self.replyText(c.stated, c.kind, lang: lang, unit: waterUnit))
+            send(Self.replyText(c.stated, c.kind, lang: lang, unit: waterUnit, weight: weightUnit))
             confirmUpdate = c
           }
-          chip(Text("coach.check.logged \(CoachLogPrompt.display(c.kind, c.logged, lang: lang.rawValue, unit: waterUnit))"), primary: false) {
+          chip(Text("coach.check.logged \(CoachLogPrompt.display(c.kind, c.logged, lang: lang.rawValue, unit: waterUnit, weight: weightUnit))"), primary: false) {
             resolved.insert(asked.id + c.kind.rawValue)
-            send(Self.replyText(c.logged, c.kind, lang: lang, unit: waterUnit))
+            send(Self.replyText(c.logged, c.kind, lang: lang, unit: waterUnit, weight: weightUnit))
           }
         }
         // Lời kể nhiều việc / có bữa ăn (18/10, "log bằng chat"): MỘT nút mở màn
@@ -609,7 +611,7 @@ struct CoachChatView: View {
   }
 
   @ViewBuilder private func suggestionChip(_ d: CoachLogPrompt.Detected, key: String) -> some View {
-    let v = d.value.map { CoachLogPrompt.display(d.kind, $0, lang: lang.rawValue, unit: waterUnit) } ?? ""
+    let v = d.value.map { CoachLogPrompt.display(d.kind, $0, lang: lang.rawValue, unit: waterUnit, weight: weightUnit) } ?? ""
     switch d.kind {
     case .sleep: chip(Text("coach.log.sleep \(v)"), primary: true) { logSheet = .sleep(d.value ?? 0) }
     case .weight: chip(Text("coach.log.weight \(v)"), primary: true) { logSheet = .weight(d.value ?? 0) }
@@ -653,8 +655,8 @@ struct CoachChatView: View {
   }
 
   /// Câu gửi đi khi chạm một nút chọn số: "8 giờ mới đúng".
-  static func replyText(_ v: Double, _ kind: CoachLogPrompt.Kind, lang: AppPreferences.Lang, unit: Water.Unit = .ml) -> String {
-    String(localized: "coach.check.reply \(CoachLogPrompt.display(kind, v, lang: lang.rawValue, unit: unit))")
+  static func replyText(_ v: Double, _ kind: CoachLogPrompt.Kind, lang: AppPreferences.Lang, unit: Water.Unit = .ml, weight: WeightUnit = .kg) -> String {
+    String(localized: "coach.check.reply \(CoachLogPrompt.display(kind, v, lang: lang.rawValue, unit: unit, weight: weight))")
   }
 
   /// Màn ghi mở từ chat, điền sẵn số người dùng đã nói / đã chọn.

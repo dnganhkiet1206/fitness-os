@@ -120,21 +120,22 @@ public enum CoachLogPrompt {
 
   /// Số để hiện trên nút / hộp thoại: "7 giờ 30 phút", "1.5 L", "16 oz", "60.5 kg".
   /// Nước theo đơn vị người dùng (26/10, audit vòng 3: tài khoản oz thấy "473 ml").
-  public static func display(_ kind: Kind, _ v: Double, lang: String, unit: Water.Unit = .ml) -> String {
+  /// Cân theo đơn vị tài khoản (KOA-T34): tài khoản lb thấy "139.3 lb", không phải "63.2 kg".
+  public static func display(_ kind: Kind, _ v: Double, lang: String, unit: Water.Unit = .ml, weight: WeightUnit = .kg) -> String {
     let l = CoachQuickReply.Lang(lang)
     switch kind {
     case .sleep, .workout: return CoachQuickReply.duration(v, l)
     case .water where unit == .oz: return "\(Int(Water.jsRound(v / Water.mlPerFloz))) oz"
     case .water: return v >= 1000 ? "\(CoachOverview.format((v / 100).rounded() / 10)) L" : "\(Int(v.rounded())) ml"
-    case .weight: return "\(CoachOverview.format((v * 10).rounded() / 10)) kg"
+    case .weight: return "\(CoachOverview.format((weight.convert(v) * 10).rounded() / 10)) \(weight.label)"
     case .meal: return ""
     }
   }
 
   /// Câu hỏi lại dựng sẵn — dùng khi AI làm lộ chỉ dẫn thay vì hỏi (16/10).
-  public static func question(_ c: Conflict, lang: String, unit: Water.Unit = .ml) -> String {
-    let said = display(c.kind, c.stated, lang: lang, unit: unit)
-    let logged = display(c.kind, c.logged, lang: lang, unit: unit)
+  public static func question(_ c: Conflict, lang: String, unit: Water.Unit = .ml, weight: WeightUnit = .kg) -> String {
+    let said = display(c.kind, c.stated, lang: lang, unit: unit, weight: weight)
+    let logged = display(c.kind, c.logged, lang: lang, unit: unit, weight: weight)
     switch CoachQuickReply.Lang(lang) {
     case .en: return "You said \(said), but the app has \(logged) logged — which one is correct?"
     case .es: return "Dijiste \(said), pero la app tiene registrado \(logged). ¿Cuál es el correcto?"
@@ -142,31 +143,71 @@ public enum CoachLogPrompt {
     }
   }
 
-  /// Câu trả lời chép lại chữ của chỉ dẫn hệ thống.
+  /// Câu trả lời chép lại chữ của chỉ dẫn hệ thống. KOA-T34: chỉ những cụm GIỐNG CHỈ DẪN —
+  /// "quan trọng" / "important" / "instruction" một mình là chữ thường gặp trong câu trả lời đúng.
   public static func leaksInstructions(_ answer: String) -> Bool {
-    let t = CoachQuickReply.fold(answer)
-    return ["kiem tra du lieu", "data check", "chi dan", "instruction", "quan trong", "important", "app se hien nut",
-            "nguoi dung vua noi", "the user just said", "the user's message", "tin nhan cua nguoi dung"]
-      .contains { t.contains($0) }
+    leaks(CoachQuickReply.fold(answer))
+  }
+
+  static let leakPhrases = [
+    "kiem tra du lieu", "data check", "chi dan he thong", "theo chi dan", "system instruction", "my instructions",
+    "app se hien nut", "the app will show", "nguoi dung vua noi", "the user just said", "the user's message",
+    "the user said", "tin nhan cua nguoi dung", "el usuario dijo", "mensaje del usuario", "verificacion de datos",
+  ]
+
+  static func leaks(_ folded: String) -> Bool { leakPhrases.contains { folded.contains($0) } }
+
+  /// Bỏ riêng những câu lộ chỉ dẫn, giữ phần còn lại của câu trả lời (KOA-T34: trước đây cả
+  /// câu trả lời bị thay bằng câu hỏi dựng sẵn). `nil` khi không còn gì đáng giữ.
+  public static func strippingLeaks(_ answer: String) -> String? {
+    guard leaksInstructions(answer) else { return answer }
+    var kept: [String] = []
+    var current = ""
+    for ch in answer {
+      current.append(ch)
+      if ".!?\n".contains(ch) {
+        if !leaks(CoachQuickReply.fold(current)) { kept.append(current) }
+        current = ""
+      }
+    }
+    if !current.isEmpty, !leaks(CoachQuickReply.fold(current)) { kept.append(current) }
+    let out = kept.joined().trimmingCharacters(in: .whitespacesAndNewlines)
+    return out.filter(\.isLetter).count >= 12 ? out : nil
   }
 
   /// Người dùng đã chọn số nào trong một câu trả lời tự gõ: số mới / số cũ / chưa rõ.
   public enum Choice: Equatable, Sendable { case stated, logged, unclear }
 
-  public static func choice(_ reply: String, for c: Conflict, unit: Water.Unit = .ml) -> Choice {
+  public static func choice(_ reply: String, for c: Conflict, unit: Water.Unit = .ml, weight: WeightUnit = .kg) -> Choice {
     let t = " " + CoachQuickReply.fold(reply).replacingOccurrences(of: ",", with: ".") + " "
+    // Không số: đọc lời chọn ("số mới", "cái app ghi") — KOA-T34, trước đây là ngõ cụt.
+    let wordsStated = statedCues.contains { t.contains(" \($0) ") }
+    let wordsLogged = loggedCues.contains { t.contains(" \($0) ") }
     let numbers = (try? NSRegularExpression(pattern: #"\d+(?:\.\d+)?"#))
       .map { r in r.matches(in: t, range: NSRange(t.startIndex..., in: t)).compactMap { Range($0.range, in: t).map { Double(t[$0]) ?? .nan } } } ?? []
     func display(_ v: Double) -> Double {
       if c.kind == .water, unit == .oz { return v / Water.mlPerFloz }
+      if c.kind == .weight { return weight.convert(v) }
       return c.kind == .sleep ? v / 60 : c.kind == .water && v >= 1000 ? v / 1000 : v
     }
     let near = { (v: Double, target: Double) in abs(v - target) < 0.26 || abs(v - target * 60) < 10 }
     let saysStated = numbers.contains { near($0, display(c.stated)) || near($0, c.stated) }
     let saysLogged = numbers.contains { near($0, display(c.logged)) || near($0, c.logged) }
     if saysStated != saysLogged { return saysStated ? .stated : .logged }
+    if numbers.isEmpty, wordsStated != wordsLogged { return wordsStated ? .stated : .logged }
     return .unclear
   }
+
+  static let statedCues = [
+    "so moi", "so toi vua noi", "cai toi vua noi", "toi vua noi", "toi noi dung", "loi toi", "cai moi",
+    "the new one", "what i said", "what i just said", "mine", "my number", "i m right", "im right",
+    "lo que dije", "el nuevo", "el mio", "mi numero",
+  ]
+  static let loggedCues = [
+    "so cu", "so da ghi", "cai da ghi", "app ghi", "app dung", "trong app", "giu nguyen", "cai cu",
+    "the logged one", "the app", "app is right", "keep it", "the old one", "what s logged", "whats logged",
+    "lo registrado", "el de la app", "la app", "el anterior", "dejalo",
+  ]
 
   // MARK: - Nhận diện
 
@@ -177,9 +218,20 @@ public enum CoachLogPrompt {
     let question = raw.contains("?") || questionCues.contains(where: { t.contains(" \($0) ") })
     var out: [Detected] = []
 
-    if let m = sleepMinutes(t) { out.append(Detected(kind: .sleep, value: m)) }
-    if let ml = waterMl(t) { out.append(Detected(kind: .water, value: ml)) }
-    if let kg = weightKg(t) { out.append(Detected(kind: .weight, value: kg)) }
+    // KOA-T34: câu HỎI về chính con số ("ngủ 7 tiếng có đủ không?", "did I sleep 7 hours?") không
+    // phải lời kể. Xét theo vế chứa số — "Tôi ngủ 7 tiếng, vậy có đủ không?" vẫn là lời kể + câu hỏi.
+    let clauses = clauses(raw)
+    func reported<T>(_ read: (String) -> T?) -> T? {
+      for c in clauses {
+        let ct = " " + CoachQuickReply.fold(c.text).replacingOccurrences(of: ",", with: ".") + " "
+        guard let v = read(ct) else { continue }
+        return c.asks || clauseCues.contains(where: { ct.contains(" \($0) ") }) ? nil : v
+      }
+      return nil
+    }
+    if let m = reported(sleepMinutes) { out.append(Detected(kind: .sleep, value: m)) }
+    if let ml = reported(waterMl) { out.append(Detected(kind: .water, value: ml)) }
+    if let kg = reported(weightKg) { out.append(Detected(kind: .weight, value: kg)) }
     // Không có số thì phải là câu kể, không phải câu hỏi.
     if !question, didWorkout(t) { out.append(Detected(kind: .workout, value: workoutMinutes(t))) }
     if !question, didEat(t) { out.append(Detected(kind: .meal, meal: meal(t, hour: hour))) }
@@ -190,6 +242,32 @@ public enum CoachLogPrompt {
     // "nên" một mình hay là liên từ ("ngủ ít nên mệt") — chỉ chặn khi nó hỏi lời khuyên.
     "co nen", "toi nen", "minh nen", "nen ngu", "nen tap", "nen an", "nen uong", "muc tieu", "can phai", "should", "goal", "target", "need to", "debo", "deberia",
     "meta", "objetivo", "bao nhieu la du", "how much should",
+  ]
+  /// Vế câu: tách ở `, ;` (theo sau là khoảng trắng — "7,5" giữ nguyên) và `. ! ? xuống dòng`
+  /// (không phải dấu thập phân). `asks`: vế kết thúc bằng dấu hỏi.
+  static func clauses(_ raw: String) -> [(text: String, asks: Bool)] {
+    var out: [(String, Bool)] = []
+    var cur = ""
+    let chars = Array(raw)
+    for (i, ch) in chars.enumerated() {
+      let next = i + 1 < chars.count ? chars[i + 1] : " "
+      let ends = (",;".contains(ch) && next.isWhitespace) || ("!?\n¿".contains(ch))
+        || (ch == "." && !next.isNumber)
+      if ends {
+        if ch == "¿" { if !cur.isEmpty { out.append((cur, false)) }; cur = ""; continue }
+        out.append((cur, ch == "?"))
+        cur = ""
+      } else {
+        cur.append(ch)
+      }
+    }
+    if !cur.trimmingCharacters(in: .whitespaces).isEmpty { out.append((cur, false)) }
+    return out
+  }
+  /// Từ hỏi chắc chắn về con số (không gồm "không" / "gì" — hay là phủ định / liên từ).
+  static let clauseCues = [
+    "bao nhieu", "co phai", "phai khong", "dung khong", "co du", "du khong", "how much", "how many", "did i",
+    "do i", "am i", "is it", "is that", "cuanto", "cuanta", "cuantos", "cuantas", "es suficiente",
   ]
   static let questionCues = [
     "bao nhieu", "the nao", "sao", "khong", "gi", "how", "what", "why", "cuanto", "que", "como", "por que",
@@ -210,7 +288,11 @@ public enum CoachLogPrompt {
     guard has(t, ["ngu", "slept", "sleep", "dormi", "dormido", "dorm"]) else { return nil }
     guard let g = first(t, #"(\d+(?:\.\d+)?)\s*(tieng|gio|h|hours?|hrs?|horas?)\b(\s*ruoi)?(?:\s*(\d+)\s*(?:phut|p|min|mins|minutes|minutos))?"#),
       let h = Double(g[1])
-    else { return nil }
+    else {
+      // Chỉ phút ("ngủ 450 phút") — KOA-T34.
+      guard let g = first(t, #"(\d+)\s*(?:phut|p|min|mins|minutes|minutos)\b"#), let m = Double(g[1]) else { return nil }
+      return (60...16 * 60).contains(m) ? m : nil
+    }
     var minutes = h * 60
     if !g[3].isEmpty { minutes += 30 }
     if let extra = Double(g[4]) { minutes += extra }
@@ -234,8 +316,11 @@ public enum CoachLogPrompt {
 
   static func weightKg(_ t: String) -> Double? {
     guard has(t, ["nang", "can", "weigh", "weighed", "weight", "peso", "pese"]) else { return nil }
-    guard let g = first(t, #"(\d+(?:\.\d+)?)\s*(kg|ky|ki|kilo|kilos|kilograms?)\b"#), let kg = Double(g[1])
+    guard let g = first(t, #"(\d+(?:\.\d+)?)\s*(kg|ky|ki|kilo|kilos|kilograms?|lb|lbs|pounds?|libras?)\b"#),
+      let n = Double(g[1])
     else { return nil }
+    // Pound → kg (KOA-T34): tài khoản lb nói "I weigh 150 lb".
+    let kg = ["lb", "lbs", "pound", "pounds", "libra", "libras"].contains(g[2]) ? WeightUnit.lbs.toKg(n) : n
     return (25...300).contains(kg) ? kg : nil
   }
 
