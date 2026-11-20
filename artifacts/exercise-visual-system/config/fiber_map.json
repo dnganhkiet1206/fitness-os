@@ -6,19 +6,19 @@
     "limits": "One field per group: multi-headed muscles (triceps, biceps, quadriceps, hamstrings) are drawn as one converging/parallel field, not per-head fields. The pectoralis and latissimus tendon twist near the insertion is NOT modelled — the twist happens in the tendon, outside the muscle belly shown. Pennation angle is NOT modelled: striations follow the belly's mean fibre direction.",
     "parallel": "Fibres run parallel to 'axis' (a unit vector in METRIC chart coordinates: metres along u, arc metres along v). 'spacing_m' is the distance between neighbouring striations across the fibres. 'origin_point' is an arbitrary phase reference in metric coordinates. 'wrap': true quantises the spacing so a whole number of striations fits around the limb (no seam where the angle wraps)."
   },
-  "fiber_map_id": "master_character_003.fibers.v1",
+  "fiber_map_id": "master_character_003.fibers.v2",
   "groups": {
-    "adductors": {
-      "angle_center": -98.0,
+    "adductor_longus": {
+      "angle_center": -70.0,
       "axis": [
         1.0,
         0.0
       ],
       "chart": "thigh",
       "insertion": "Linea aspera and medial femur.",
-      "label": "Hip adductors",
-      "note": "Parallel along the thigh; the slight inferolateral slant of the adductor mass is not drawn separately.",
-      "origin": "Pubis and ischium.",
+      "label": "Adductor longus",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Body of the pubis to the middle linea aspera; the inner thigh near the groin.",
       "origin_point": [
         0.0,
         0.0
@@ -27,17 +27,55 @@
       "spacing_m": 0.008,
       "type": "parallel"
     },
-    "biceps_brachii": {
-      "angle_center": -6.0,
+    "adductor_magnus": {
+      "angle_center": -140.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "thigh",
+      "insertion": "Linea aspera and medial femur.",
+      "label": "Adductor magnus",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Ischiopubic ramus and ischial tuberosity to the linea aspera and adductor tubercle; the back of the inner thigh.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.075,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "biceps_femoris": {
+      "angle_center": -155.0,
+      "axis": [
+        1.0,
+        -0.35
+      ],
+      "chart": "thigh",
+      "insertion": "Head of the fibula and lateral tibial condyle (biceps femoris); medial tibia (semitendinosus, semimembranosus).",
+      "label": "Biceps femoris",
+      "note": "Down and lateral from the ischial tuberosity to the fibular head.",
+      "origin": "Ischial tuberosity (long head) and linea aspera (short head) to the head of the fibula; the outer hamstring.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.075,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "biceps_long_head": {
+      "angle_center": 18.0,
       "axis": [
         1.0,
         0.0
       ],
       "chart": "upperarm",
       "insertion": "Radial tuberosity (and bicipital aponeurosis).",
-      "label": "Biceps brachii",
-      "note": "Parallel along the arm toward the elbow; the two heads share one field.",
-      "origin": "Long head: supraglenoid tubercle of the scapula. Short head: coracoid process.",
+      "label": "Biceps, long head",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Supraglenoid tubercle to the radial tuberosity; the lateral head.",
       "origin_point": [
         0.0,
         0.0
@@ -46,24 +84,63 @@
       "spacing_m": 0.008,
       "type": "parallel"
     },
-    "calves": {
-      "angle_center": 182.0,
+    "biceps_short_head": {
+      "angle_center": -34.0,
       "axis": [
         1.0,
         0.0
       ],
-      "chart": "calf",
-      "insertion": "Calcaneus via the Achilles tendon.",
-      "label": "Gastrocnemius and soleus",
-      "note": "Parallel along the calf toward the heel; the two muscles share one field.",
-      "origin": "Gastrocnemius: medial/lateral femoral condyles. Soleus: soleal line of the tibia and fibula.",
+      "chart": "upperarm",
+      "insertion": "Radial tuberosity (and bicipital aponeurosis).",
+      "label": "Biceps, short head",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Coracoid process to the radial tuberosity; the medial head.",
       "origin_point": [
         0.0,
         0.0
       ],
-      "radius_m": 0.052,
+      "radius_m": 0.048,
       "spacing_m": 0.008,
       "type": "parallel"
+    },
+    "brachialis": {
+      "angle_center": 80.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "upperarm",
+      "insertion": "Radial tuberosity (and bicipital aponeurosis).",
+      "label": "Brachialis",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Lower half of the front of the humerus to the coronoid process of the ulna; shows between biceps and triceps on the outer arm.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.048,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "brachioradialis": {
+      "angle_center": 60.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "lowerarm",
+      "insertion": "Wrist and hand (flexor/extensor tendons).",
+      "label": "Brachioradialis",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Lateral supracondylar ridge of the humerus to the styloid of the radius; the thumb-side ridge.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.04,
+      "spacing_m": 0.008,
+      "type": "parallel",
+      "wrap": true
     },
     "deltoid_anterior": {
       "angle_center": 5.0,
@@ -116,42 +193,113 @@
       "radius_m": 0.065,
       "type": "fan"
     },
-    "erector_spinae": {
+    "erector_iliocostalis": {
+      "type": "parallel",
+      "chart": "torso_back",
       "axis": [
         0.0,
         1.0
       ],
-      "chart": "torso_back",
-      "insertion": "Ribs and vertebral processes up to the skull.",
-      "label": "Erector spinae",
-      "note": "Vertical fibres alongside the spine.",
-      "origin": "Sacrum, iliac crest, spinous processes (common tendon).",
       "origin_point": [
-        0.0,
-        0.0
+        0,
+        0
       ],
       "spacing_m": 0.008,
-      "type": "parallel"
+      "label": "Erector spinae, iliocostalis",
+      "origin": "Angles of the ribs, the lateral column. Common origin: sacrum, iliac crest, lumbar spinous processes.",
+      "insertion": "",
+      "note": "Vertical fibres along this column."
     },
-    "forearm_muscles": {
-      "angle_center": 0.0,
+    "erector_longissimus": {
+      "type": "parallel",
+      "chart": "torso_back",
+      "axis": [
+        0.0,
+        1.0
+      ],
+      "origin_point": [
+        0,
+        0
+      ],
+      "spacing_m": 0.008,
+      "label": "Erector spinae, longissimus",
+      "origin": "Transverse processes, the middle column. Common origin: sacrum, iliac crest, lumbar spinous processes.",
+      "insertion": "",
+      "note": "Vertical fibres along this column."
+    },
+    "erector_spinalis": {
+      "type": "parallel",
+      "chart": "torso_back",
+      "axis": [
+        0.0,
+        1.0
+      ],
+      "origin_point": [
+        0,
+        0
+      ],
+      "spacing_m": 0.008,
+      "label": "Erector spinae, spinalis",
+      "origin": "Spinous processes, the most medial column. Common origin: sacrum, iliac crest, lumbar spinous processes.",
+      "insertion": "",
+      "note": "Vertical fibres along this column."
+    },
+    "fibularis_longus": {
+      "angle_center": 95.0,
       "axis": [
         1.0,
         0.0
       ],
-      "chart": "lowerarm",
-      "insertion": "Wrist and hand (flexor/extensor tendons).",
-      "label": "Forearm flexors and extensors",
-      "note": "One merged region wrapping the whole forearm, drawn as fibres along the arm. Flexor/extensor directions differ in reality; this is a deliberate simplification, and 'wrap' keeps the field seamless around the limb.",
-      "origin": "Flexors: medial epicondyle and forearm bones. Extensors: lateral epicondyle and forearm bones.",
+      "chart": "calf",
+      "insertion": "Medial cuneiform and base of the first metatarsal.",
+      "label": "Fibularis (peroneus) longus",
+      "note": "Along the outer leg toward the ankle.",
+      "origin": "Head of the fibula to the first metatarsal; the outer side of the leg.",
       "origin_point": [
         0.0,
         0.0
       ],
-      "radius_m": 0.04,
+      "radius_m": 0.045,
       "spacing_m": 0.008,
-      "type": "parallel",
-      "wrap": true
+      "type": "parallel"
+    },
+    "gastrocnemius_lateral": {
+      "angle_center": 152.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "calf",
+      "insertion": "Calcaneus via the Achilles tendon.",
+      "label": "Gastrocnemius, lateral head",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Lateral femoral condyle to the calcaneus (Achilles); the outer calf head.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.052,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "gastrocnemius_medial": {
+      "angle_center": -152.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "calf",
+      "insertion": "Calcaneus via the Achilles tendon.",
+      "label": "Gastrocnemius, medial head",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Medial femoral condyle to the calcaneus (Achilles); the bigger, lower inner calf head.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.052,
+      "spacing_m": 0.008,
+      "type": "parallel"
     },
     "gluteus_maximus": {
       "angular_spacing_deg": 4.0,
@@ -181,17 +329,17 @@
       "origin": "Outer surface of the ilium between the anterior and posterior gluteal lines.",
       "type": "fan"
     },
-    "hamstrings": {
-      "angle_center": 186.0,
+    "gracilis": {
+      "angle_center": -112.0,
       "axis": [
         1.0,
         0.0
       ],
       "chart": "thigh",
-      "insertion": "Head of the fibula and lateral tibial condyle (biceps femoris); medial tibia (semitendinosus, semimembranosus).",
-      "label": "Hamstrings",
-      "note": "Parallel along the back of the thigh toward the knee; medial/lateral heads share one field.",
-      "origin": "Ischial tuberosity (biceps femoris long head, semitendinosus, semimembranosus); linea aspera (biceps femoris short head).",
+      "insertion": "Linea aspera and medial femur.",
+      "label": "Gracilis",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Pubis to the medial tibia; the thin strap on the inner thigh.",
       "origin_point": [
         0.0,
         0.0
@@ -199,6 +347,20 @@
       "radius_m": 0.075,
       "spacing_m": 0.008,
       "type": "parallel"
+    },
+    "infraspinatus": {
+      "type": "fan",
+      "chart": "torso_back",
+      "center": [
+        0.215,
+        1.405
+      ],
+      "angular_spacing_deg": 6.0,
+      "cut_deg": 0.0,
+      "label": "Infraspinatus",
+      "origin": "Infraspinous fossa to the greater tubercle; fibres converge up and lateral.",
+      "insertion": "Greater tubercle of the humerus.",
+      "note": "Fan converging up and lateral on the greater tubercle. Cut ray points lateral (0 deg), away from the muscle, which lies medial to its insertion."
     },
     "latissimus_dorsi": {
       "angular_spacing_deg": 5.0,
@@ -231,7 +393,7 @@
       "spacing_m": 0.008,
       "type": "parallel"
     },
-    "pectoralis_major": {
+    "pectoralis_major_abdominal": {
       "angular_spacing_deg": 6.5,
       "center": [
         0.205,
@@ -240,29 +402,38 @@
       "chart": "torso_front",
       "cut_deg": 0.0,
       "insertion": "Lateral lip of the intertubercular (bicipital) groove of the humerus. Clavicular fibres run down/lateral, middle fibres horizontal, lower fibres up/lateral.",
-      "label": "Pectoralis major",
-      "note": "Fan centre sits just lateral to the region, at the humerus, so striations converge on the insertion and fan out toward the sternum/clavicle. The tendon twist is not modelled.",
-      "origin": "Medial half of the clavicle (clavicular head); sternum and superior six costal cartilages (sternocostal head); aponeurosis of the external oblique (abdominal fibres).",
+      "label": "Pectoralis major, abdominal part",
+      "note": "All three parts converge on the bicipital groove; clavicular fibres run down/lateral, sternocostal horizontal, abdominal up/lateral (one fan centre, three regions).",
+      "origin": "Aponeurosis of the external oblique / rectus sheath to the bicipital groove; fibres up and lateral, twisting under the others.",
       "type": "fan"
     },
-    "quadriceps": {
-      "angle_center": 18.0,
-      "axis": [
-        1.0,
-        0.0
+    "pectoralis_major_clavicular": {
+      "angular_spacing_deg": 6.5,
+      "center": [
+        0.205,
+        1.365
       ],
-      "chart": "thigh",
-      "insertion": "Patella and tibial tuberosity (quadriceps/patellar tendon).",
-      "label": "Quadriceps femoris",
-      "note": "Parallel along the thigh toward the knee; the four heads share one field (the vastus medialis oblique pull is not drawn separately).",
-      "origin": "Rectus femoris: anterior inferior iliac spine. Vasti: femoral shaft.",
-      "origin_point": [
-        0.0,
-        0.0
+      "chart": "torso_front",
+      "cut_deg": 0.0,
+      "insertion": "Lateral lip of the intertubercular (bicipital) groove of the humerus. Clavicular fibres run down/lateral, middle fibres horizontal, lower fibres up/lateral.",
+      "label": "Pectoralis major, clavicular part",
+      "note": "All three parts converge on the bicipital groove; clavicular fibres run down/lateral, sternocostal horizontal, abdominal up/lateral (one fan centre, three regions).",
+      "origin": "Medial half of the clavicle to the bicipital groove; fibres down and lateral.",
+      "type": "fan"
+    },
+    "pectoralis_major_sternocostal": {
+      "angular_spacing_deg": 6.5,
+      "center": [
+        0.205,
+        1.365
       ],
-      "radius_m": 0.075,
-      "spacing_m": 0.008,
-      "type": "parallel"
+      "chart": "torso_front",
+      "cut_deg": 0.0,
+      "insertion": "Lateral lip of the intertubercular (bicipital) groove of the humerus. Clavicular fibres run down/lateral, middle fibres horizontal, lower fibres up/lateral.",
+      "label": "Pectoralis major, sternocostal part",
+      "note": "All three parts converge on the bicipital groove; clavicular fibres run down/lateral, sternocostal horizontal, abdominal up/lateral (one fan centre, three regions).",
+      "origin": "Sternum and costal cartilages 1-6 to the bicipital groove; fibres horizontal.",
+      "type": "fan"
     },
     "rectus_abdominis": {
       "axis": [
@@ -281,19 +452,115 @@
       "spacing_m": 0.008,
       "type": "parallel"
     },
-    "rotator_cuff_posterior": {
-      "angular_spacing_deg": 5.0,
-      "center": [
-        0.215,
-        1.38
+    "rectus_femoris": {
+      "angle_center": 8.0,
+      "axis": [
+        1.0,
+        0.0
       ],
+      "chart": "thigh",
+      "insertion": "Patella and tibial tuberosity (quadriceps/patellar tendon).",
+      "label": "Rectus femoris",
+      "note": "Bipennate in life; drawn parallel along the thigh toward the patella.",
+      "origin": "Anterior inferior iliac spine to the patella; the middle of the front of the thigh.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.075,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "rhomboid_major": {
+      "type": "parallel",
       "chart": "torso_back",
-      "cut_deg": 0.0,
-      "insertion": "Greater tubercle of the humerus (middle/lower facets).",
-      "label": "Infraspinatus and teres minor",
-      "note": "Small fan converging laterally on the greater tubercle.",
-      "origin": "Infraspinous fossa of the scapula (infraspinatus); upper lateral border of the scapula (teres minor).",
-      "type": "fan"
+      "axis": [
+        0.71,
+        -0.71
+      ],
+      "origin_point": [
+        0,
+        0
+      ],
+      "spacing_m": 0.008,
+      "label": "Rhomboid major",
+      "origin": "T2-T5 spinous processes to the medial border of the scapula, root of the spine to the inferior angle.",
+      "insertion": "",
+      "note": "From T2-T5 down and lateral to the medial border."
+    },
+    "rhomboid_minor": {
+      "type": "parallel",
+      "chart": "torso_back",
+      "axis": [
+        0.8,
+        -0.6
+      ],
+      "origin_point": [
+        0,
+        0
+      ],
+      "spacing_m": 0.008,
+      "label": "Rhomboid minor",
+      "origin": "C7-T1 spinous processes to the medial border of the scapula at the root of the spine.",
+      "insertion": "",
+      "note": "From C7-T1 down and lateral to the scapula."
+    },
+    "sartorius": {
+      "angle_center": 0.0,
+      "axis": [
+        0.9,
+        -0.44
+      ],
+      "chart": "thigh",
+      "insertion": "Patella and tibial tuberosity (quadriceps/patellar tendon).",
+      "label": "Sartorius",
+      "note": "Along the strap, diagonally from the outer hip to the inner knee.",
+      "origin": "Anterior superior iliac spine to the medial tibia (pes anserinus); crosses the thigh diagonally from the outer hip to the inner knee.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.075,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "semimembranosus": {
+      "angle_center": -155.0,
+      "axis": [
+        1.0,
+        0.3
+      ],
+      "chart": "thigh",
+      "insertion": "Head of the fibula and lateral tibial condyle (biceps femoris); medial tibia (semitendinosus, semimembranosus).",
+      "label": "Semimembranosus",
+      "note": "Down and medial to the medial tibial condyle.",
+      "origin": "Ischial tuberosity to the medial tibial condyle; wider and deeper, shows lower and inner to the semitendinosus.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.075,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "semitendinosus": {
+      "angle_center": -155.0,
+      "axis": [
+        1.0,
+        0.25
+      ],
+      "chart": "thigh",
+      "insertion": "Head of the fibula and lateral tibial condyle (biceps femoris); medial tibia (semitendinosus, semimembranosus).",
+      "label": "Semitendinosus",
+      "note": "Down and medial to the pes anserinus.",
+      "origin": "Ischial tuberosity to the medial tibia; the inner hamstring with the long tendon.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.075,
+      "spacing_m": 0.008,
+      "type": "parallel"
     },
     "serratus_anterior": {
       "axis": [
@@ -311,6 +578,78 @@
       ],
       "spacing_m": 0.008,
       "type": "parallel"
+    },
+    "soleus": {
+      "angle_center": 180.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "calf",
+      "insertion": "Calcaneus via the Achilles tendon.",
+      "label": "Soleus",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Soleal line of the tibia and head of the fibula to the calcaneus; shows below and beside the gastrocnemius.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.052,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "tensor_fasciae_latae": {
+      "angle_center": 62.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "thigh",
+      "insertion": "Patella and tibial tuberosity (quadriceps/patellar tendon).",
+      "label": "Tensor fasciae latae",
+      "note": "Along the muscle toward the iliotibial band.",
+      "origin": "Anterior iliac crest to the iliotibial band; front of the outer hip.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.075,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "teres_major": {
+      "type": "parallel",
+      "chart": "torso_back",
+      "axis": [
+        0.8,
+        0.6
+      ],
+      "origin_point": [
+        0,
+        0
+      ],
+      "spacing_m": 0.008,
+      "label": "Teres major",
+      "origin": "Inferior angle of the scapula to the medial lip of the bicipital groove; runs with the latissimus.",
+      "insertion": "",
+      "note": "From the inferior angle up and lateral to the humerus, alongside the latissimus."
+    },
+    "teres_minor": {
+      "type": "parallel",
+      "chart": "torso_back",
+      "axis": [
+        0.78,
+        0.62
+      ],
+      "origin_point": [
+        0,
+        0
+      ],
+      "spacing_m": 0.008,
+      "label": "Teres minor",
+      "origin": "Upper lateral border of the scapula to the greater tubercle (lowest facet).",
+      "insertion": "",
+      "note": "Along the lateral border of the scapula up to the greater tubercle."
     },
     "tibialis_anterior": {
       "angle_center": 28.0,
@@ -331,7 +670,7 @@
       "spacing_m": 0.008,
       "type": "parallel"
     },
-    "trapezius": {
+    "trapezius_lower": {
       "angular_spacing_deg": 5.5,
       "center": [
         0.21,
@@ -340,22 +679,50 @@
       "chart": "torso_back_top",
       "cut_deg": 0.0,
       "insertion": "Lateral third of the clavicle (superior fibres), acromion and scapular spine (middle/inferior fibres).",
-      "label": "Trapezius",
-      "note": "One fan centred at the acromion: upper fibres run down/lateral, middle horizontal, lower up/lateral — the classic trapezius fan. The centre sits just lateral to the region.",
-      "origin": "External occipital protuberance, superior nuchal line, ligamentum nuchae, spinous processes C7-T12.",
+      "label": "Trapezius, lower",
+      "note": "Fan centred at the acromion: upper fibres down/lateral, middle horizontal, lower up/lateral.",
+      "origin": "T4-T12 spinous processes to the root of the scapular spine; fibres up and lateral.",
       "type": "fan"
     },
-    "triceps_brachii": {
-      "angle_center": 186.0,
+    "trapezius_middle": {
+      "angular_spacing_deg": 5.5,
+      "center": [
+        0.21,
+        1.47
+      ],
+      "chart": "torso_back_top",
+      "cut_deg": 0.0,
+      "insertion": "Lateral third of the clavicle (superior fibres), acromion and scapular spine (middle/inferior fibres).",
+      "label": "Trapezius, middle",
+      "note": "Fan centred at the acromion: upper fibres down/lateral, middle horizontal, lower up/lateral.",
+      "origin": "C7-T3 spinous processes to the acromion and scapular spine; fibres horizontal.",
+      "type": "fan"
+    },
+    "trapezius_upper": {
+      "angular_spacing_deg": 5.5,
+      "center": [
+        0.21,
+        1.47
+      ],
+      "chart": "torso_back_top",
+      "cut_deg": 0.0,
+      "insertion": "Lateral third of the clavicle (superior fibres), acromion and scapular spine (middle/inferior fibres).",
+      "label": "Trapezius, upper",
+      "note": "Fan centred at the acromion: upper fibres down/lateral, middle horizontal, lower up/lateral.",
+      "origin": "External occipital protuberance, superior nuchal line and ligamentum nuchae down to C7, inserting on the lateral third of the clavicle and the acromion (Gray 1918). Runs up the back and side of the neck toward the ear; 15/11 Kiệt: the old region stopped at the base of the neck, under the new trapezius volume.",
+      "type": "fan"
+    },
+    "triceps_lateral_head": {
+      "angle_center": 140.0,
       "axis": [
         1.0,
         0.0
       ],
       "chart": "upperarm",
       "insertion": "Olecranon of the ulna (common tendon).",
-      "label": "Triceps brachii",
-      "note": "Parallel along the arm: all three heads run toward the olecranon and the belly is long and narrow, so a fan would alias near the elbow. Per-head fields are not drawn.",
-      "origin": "Long head: infraglenoid tubercle of the scapula. Lateral head: posterior humerus above the radial groove. Medial head: posterior humerus below the radial groove.",
+      "label": "Triceps, lateral head",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Back of the humerus above the radial groove to the olecranon; the outer horseshoe.",
       "origin_point": [
         0.0,
         0.0
@@ -363,6 +730,122 @@
       "radius_m": 0.048,
       "spacing_m": 0.008,
       "type": "parallel"
+    },
+    "triceps_long_head": {
+      "angle_center": -155.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "upperarm",
+      "insertion": "Olecranon of the ulna (common tendon).",
+      "label": "Triceps, long head",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Infraglenoid tubercle of the scapula to the olecranon; the inner back head.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.048,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "triceps_medial_head": {
+      "angle_center": 180.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "upperarm",
+      "insertion": "Olecranon of the ulna (common tendon).",
+      "label": "Triceps, medial head",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Back of the humerus below the radial groove to the olecranon; shows above the elbow.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.048,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "vastus_lateralis": {
+      "angle_center": 68.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "thigh",
+      "insertion": "Patella and tibial tuberosity (quadriceps/patellar tendon).",
+      "label": "Vastus lateralis",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Greater trochanter and linea aspera to the patella; the outer thigh.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.075,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "vastus_medialis": {
+      "angle_center": -40.0,
+      "axis": [
+        1.0,
+        0.5
+      ],
+      "chart": "thigh",
+      "insertion": "Patella and tibial tuberosity (quadriceps/patellar tendon).",
+      "label": "Vastus medialis",
+      "note": "Oblique fibres running down and lateral toward the patella (vastus medialis obliquus).",
+      "origin": "Linea aspera to the patella; the teardrop above the inner knee.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.075,
+      "spacing_m": 0.008,
+      "type": "parallel"
+    },
+    "wrist_extensors": {
+      "angle_center": 140.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "lowerarm",
+      "insertion": "Wrist and hand (flexor/extensor tendons).",
+      "label": "Wrist and finger extensors",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Lateral epicondyle (common extensor origin) to the back of the hand: ECRL/ECRB, extensor digitorum, ECU.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.04,
+      "spacing_m": 0.008,
+      "type": "parallel",
+      "wrap": true
+    },
+    "wrist_flexors": {
+      "angle_center": -55.0,
+      "axis": [
+        1.0,
+        0.0
+      ],
+      "chart": "lowerarm",
+      "insertion": "Wrist and hand (flexor/extensor tendons).",
+      "label": "Wrist and finger flexors",
+      "note": "Parallel along this head toward its tendon (15/11: each head has its own field).",
+      "origin": "Medial epicondyle (common flexor origin) to the palm: FCR, palmaris longus, FDS, FCU.",
+      "origin_point": [
+        0.0,
+        0.0
+      ],
+      "radius_m": 0.04,
+      "spacing_m": 0.008,
+      "type": "parallel",
+      "wrap": true
     }
   },
   "master_character_id": "master_character_003",

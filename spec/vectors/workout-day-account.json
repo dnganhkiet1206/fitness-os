@@ -30,18 +30,19 @@
      {"op": "load", "day": "2026-10-05", "expect": {"done": ["0-0"], "loggedSessionId": null}}
    ]},
    "expected": {"owners": ["a"], "outbox": []}},
-  {"rule": "WDA-3 Đăng xuất có dọn (RN clearUserScopedStorage, #241) → lượt ghi muộn không dựng lại ngày",
+  {"rule": "WDA-3 Đăng xuất KHÔNG xoá ngày (R3-DATA-01: đỗ lại theo chủ như hàng đợi) → lượt ghi muộn vẫn bị từ chối, chính chủ quay lại tập tiếp được",
    "input": {"steps": [
      {"op": "signIn", "user": "a"},
      {"op": "save", "day": "2026-10-05", "done": ["0-0"], "expect": "ok"},
      {"op": "signOut"},
-     {"op": "clearAll", "expect": 1},
      {"op": "save", "day": "2026-10-05", "done": ["0-0", "0-1"], "expect": "closed"},
      {"op": "finish", "day": "2026-10-05", "session": "late", "done": ["0-0"], "expect": "closed"},
      {"op": "signIn", "user": "a"},
-     {"op": "load", "day": "2026-10-05", "expect": null}
+     {"op": "load", "day": "2026-10-05", "expect": {"done": ["0-0"]}},
+     {"op": "save", "day": "2026-10-05", "done": ["0-0", "0-1"], "expect": "ok"},
+     {"op": "load", "day": "2026-10-05", "expect": {"done": ["0-0", "0-1"]}}
    ]},
-   "expected": {"owners": [], "outbox": []}},
+   "expected": {"owners": ["a"], "outbox": []}},
   {"rule": "WDA-4 B đăng nhập sau A → B tạo và chốt cùng khoá ngày độc lập",
    "input": {"steps": [
      {"op": "signIn", "user": "a"},

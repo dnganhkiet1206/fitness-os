@@ -291,13 +291,24 @@ private struct LabWorkout: View {
         LabRow(label: "Signed in", value: services.sync.signedInUser ?? "—")
         LabRow(label: "Outbox pending", value: "\(services.sync.pendingCount)")
         LabRow(label: "Outbox dead", value: "\(services.sync.deadCount)")
+        // Hàng đĩa không đọc được (R2-SYNC-02): vẫn nằm trên đĩa, chờ bản đọc
+        // được nó — xem `SyncWorker.undecodableCount`.
+        LabRow(label: "Outbox undecodable", value: "\(services.sync.undecodableCount)")
+          .foregroundStyle(services.sync.undecodableCount > 0 ? .orange : .primary)
         LabRow(label: "Sending", value: "\(services.sync.isRunning)")
         if let u = services.sync.unsaved {
           LabRow(label: "Outbox unsaved", value: u.message).foregroundStyle(.red)
         }
         ForEach(services.sync.outbox.dead, id: \.entry.id) { d in
-          LabRow(label: "dead \(d.reason)", value: "\(d.entry.id.prefix(8)) \(d.failure.map { "\($0)" } ?? "")")
-            .foregroundStyle(.red)
+          HStack {
+            LabRow(label: "dead \(d.reason)", value: "\(d.entry.id.prefix(8)) \(d.failure.map { "\($0)" } ?? "")")
+              .foregroundStyle(.red)
+            Spacer()
+            Button { Task { await services.sync.retryDead(id: d.entry.id) } } label: {
+              Text(verbatim: "Retry")
+            }
+            .buttonStyle(.borderless)
+          }
         }
         Button { services.sync.kick() } label: { Text(verbatim: "Sync now") }
       } header: {

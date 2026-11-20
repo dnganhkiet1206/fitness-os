@@ -72,7 +72,7 @@ struct RootTabView: View {
     .modifier(QuickLogBar(
       hidden: quickLog.hidden,
       // Chỉ khi các function AI có trên máy chủ (`probeAI`), như mọi lối vào AI khác.
-      askCoach: services.aiDeployed == true
+      askCoach: services.isAIDeployed(.coach)
         ? {
           openCoachFromHere()
         } : nil
@@ -85,7 +85,9 @@ struct RootTabView: View {
     // "Ghi món khác" trên thông báo nhắc bữa (Kiệt 01/11): mở màn ghi bữa như Ghi nhanh.
     .onChange(of: services.mealLogRequest) { _, _ in linked = .logMeal(date: nil, meal: nil) }
     .onChange(of: services.coachRequest) { _, _ in
-      guard services.aiDeployed == true else { return }
+      // Mở chat: kết luận "coach có" đã cũ thì dò lại ngầm (KOA-T08).
+      Task { await services.probeAI() }
+      guard services.isAIDeployed(.coach) else { return }
       openCoachFromHere()
     }
     // Tự đổi tab khi chat đang mở → không còn "về lại" nữa.
@@ -417,7 +419,8 @@ private struct QuickLogAccessory: View {
 }
 
 /// Bảng "Ghi nhanh": một danh sách hàng (Buổi tập, Bữa, Nước, Ngủ, Cân). "Ăn lại"
-/// cùng kiểu hàng khi có bữa gần đây.
+/// cùng kiểu hàng khi có bữa gần đây. Koa ("Ghi hôm nay" + coach) gộp một nhóm
+/// chung dưới cùng (17/11, vẽ lại bảng theo chuẩn Apple).
 private struct QuickLogSheet: View {
   let pick: (DeepLink.Screen) -> Void
   /// "Hỏi Koa Coach" — `nil` khi AI chưa có trên máy chủ (hàng ẩn).
@@ -466,19 +469,34 @@ private struct QuickLogSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       // Tiêu đề nằm ngoài vùng cuộn để kéo từ đây đóng bảng (không chỉ cuộn danh sách).
-      Text("quicklog.title").font(.system(size: 20, weight: .bold))
-        .accessibilityAddTraits(.isHeader)
-        .accessibilityIdentifier("quicklog.sheet")
-        .padding(.horizontal, DS.Spacing.lg)
-        .padding(.top, DS.Spacing.lg)
-        .padding(.bottom, DS.Spacing.sm)
+      // Nút đóng tròn kiểu sheet iOS (17/11, vẽ lại bảng): kéo để đóng vẫn được.
+      HStack(alignment: .center) {
+        Text("quicklog.title").font(.system(size: 20, weight: .bold))
+          .accessibilityAddTraits(.isHeader)
+          .accessibilityIdentifier("quicklog.sheet")
+        Spacer(minLength: 0)
+        Button(action: close) {
+          Image(systemName: "xmark")
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(width: 28, height: 28)
+            .background(DS.Color.secondary.swiftUI, in: Circle())
+            .contentShape(Circle())
+        }
+        .buttonStyle(TodayPressStyle())
+        .accessibilityLabel(Text("common.close"))
+        .accessibilityIdentifier("quicklog.close")
+      }
+      .padding(.horizontal, DS.Spacing.lg)
+      .padding(.top, DS.Spacing.lg)
+      .padding(.bottom, DS.Spacing.sm)
       ScrollView {
         VStack(alignment: .leading, spacing: DS.Spacing.md) {
           actionGroup
           if showsRepeats { repeats }
-          // "Ghi hôm nay" và coach: cùng hàng icon + chữ, dưới các việc ghi.
-          tellRow
-          if let askCoach { coachRow(askCoach) }
+          // Koa: "Ghi hôm nay" và coach gộp một nhóm chung, cùng kiểu hàng với
+          // các nhóm trên thay vì hai thẻ rời.
+          koaGroup
         }
         .padding(.horizontal, DS.Spacing.lg)
         .padding(.bottom, DS.Spacing.lg)
@@ -513,7 +531,7 @@ private struct QuickLogSheet: View {
         }
       }
     }
-    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
     .quickLogCard()
   }
 
@@ -544,7 +562,7 @@ private struct QuickLogSheet: View {
               Divider().padding(.leading, 60).opacity(0.6)
             }
             logRow(
-              symbol: logged == m.id ? "checkmark" : "arrow.counterclockwise",
+              symbol: logged == m.id ? "checkmark" : Self.mealSymbol(m.mealType),
               tint: logged == m.id ? DS.Color.readinessGreen.swiftUI : DS.Color.metricOrangeGraphic.swiftUI,
               title: DiaryView.mealName(m.mealType),
               subtitle: m.foods.map { $0.food.name }.joined(separator: ", "),
@@ -556,35 +574,45 @@ private struct QuickLogSheet: View {
           }
         }
       }
-      .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+      .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
       .quickLogCard()
     }
   }
 
-  private func logRow(
-    symbol: String, tint: Color, title: String, subtitle: String?, trailing: String?, id: String,
-    label: Text? = nil, action: @escaping () -> Void
+  /// Icon hàng "Ăn lại" theo loại bữa (17/11, vẽ lại bảng): mỗi bữa một ký hiệu
+  /// riêng thay vì cùng một mũi tên xoay — nhìn là biết bữa nào.
+  private static func mealSymbol(_ type: String) -> String {
+    switch type {
+    case "breakfast": "sunrise.fill"
+    case "lunch": "sun.max.fill"
+    case "dinner": "moon.stars.fill"
+    case "snack": "carrot.fill"
+    case "preworkout": "bolt.fill"
+    case "postworkout": "dumbbell.fill"
+    default: "fork.knife"
+    }
+  }
+
+  /// Một hàng trong bảng: icon tròn + tên + (phụ đề) + (số bên phải) + (chevron).
+  /// `logRow` là hàng icon SF Symbol màu metric; hàng Koa dùng icon riêng (mic /
+  /// ký hiệu Intelligence) nên đi qua đây trực tiếp.
+  private func iconRow<Icon: View, Subtitle: View>(
+    @ViewBuilder icon: () -> Icon,
+    title: String, @ViewBuilder subtitle: () -> Subtitle,
+    trailing: String?, id: String,
+    label: Text? = nil, chevron: Bool = false,
+    action: @escaping () -> Void
   ) -> some View {
     Button(action: action) {
       HStack(spacing: 12) {
-        Image(systemName: symbol)
-          .font(.system(size: 16, weight: .semibold))
-          .foregroundStyle(tint)
-          .frame(width: 36, height: 36)
-          .background(tint.opacity(0.14), in: Circle())
-          .accessibilityHidden(true)
+        icon()
         VStack(alignment: .leading, spacing: 2) {
           Text(verbatim: title)
             .font(DS.TextStyle.headline)
             .foregroundStyle(DS.Color.foreground.swiftUI)
             .lineLimit(1)
             .minimumScaleFactor(0.8)
-          if let subtitle, !subtitle.isEmpty {
-            Text(verbatim: subtitle)
-              .font(DS.TextStyle.caption)
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .lineLimit(1)
-          }
+          subtitle()
         }
         Spacer(minLength: DS.Spacing.sm)
         if let trailing {
@@ -592,6 +620,12 @@ private struct QuickLogSheet: View {
             .font(DS.TextStyle.footnote.monospacedDigit())
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             .lineLimit(1)
+        }
+        if chevron {
+          Image(systemName: "chevron.right")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .accessibilityHidden(true)
         }
       }
       .padding(.horizontal, DS.Spacing.md)
@@ -603,56 +637,76 @@ private struct QuickLogSheet: View {
     .accessibilityLabel(label ?? Text(verbatim: title))
   }
 
-  /// Hàng "Kể cho Koa": gõ hay nói cả ngày một lần.
-  private var tellRow: some View {
-    Button(action: tell) {
-      HStack(spacing: 12) {
-        Image(systemName: "mic.fill")
-          .font(.system(size: 18, weight: .semibold))
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .frame(width: 44, height: 44)
-          .background(Intelligence.wash, in: Circle())
-        VStack(alignment: .leading, spacing: 3) {
-          Text("tellkoa.title").font(.system(size: 15, weight: .bold))
-            .foregroundStyle(DS.Color.foreground.swiftUI)
-          Text("tellkoa.row.hint").font(.system(size: 12))
+  private func logRow(
+    symbol: String, tint: Color, title: String, subtitle: String?, trailing: String?, id: String,
+    label: Text? = nil, action: @escaping () -> Void
+  ) -> some View {
+    iconRow(
+      icon: {
+        Image(systemName: symbol)
+          .font(.system(size: 16, weight: .semibold))
+          .foregroundStyle(tint)
+          .frame(width: 36, height: 36)
+          .background(tint.opacity(0.14), in: Circle())
+          .accessibilityHidden(true)
+      },
+      title: title,
+      subtitle: {
+        if let subtitle, !subtitle.isEmpty {
+          Text(verbatim: subtitle)
+            .font(DS.TextStyle.caption)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(1)
         }
-        Spacer(minLength: 0)
-        Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      }
-      .padding(12)
-      .quickLogCard()
-      .contentShape(Rectangle())
-    }
-    .buttonStyle(TodayPressStyle())
-    .accessibilityElement(children: .combine)
+      },
+      trailing: trailing, id: id, label: label, action: action
+    )
   }
 
-  /// Hàng "Hỏi Koa Coach": cùng một bảng với các lối ghi — máy cũ (không có thanh
-  /// phụ) cũng tới được coach từ nút "+".
-  private func coachRow(_ ask: @escaping () -> Void) -> some View {
-    Button(action: ask) {
-      HStack(spacing: 12) {
-        IntelligenceMark(size: 22)
-          .frame(width: 44, height: 44)
-          .background(Intelligence.wash, in: Circle())
-        VStack(alignment: .leading, spacing: 3) {
-          Text("quicklog.coach").font(.system(size: 15, weight: .bold))
+  /// Koa (17/11, vẽ lại bảng): "Ghi hôm nay" và coach trong một nhóm chung, cùng
+  /// kiểu hàng với các nhóm trên. Có chevron vì cả hai đều mở màn khác.
+  private var koaGroup: some View {
+    VStack(spacing: 0) {
+      iconRow(
+        icon: {
+          Image(systemName: "mic.fill")
+            .font(.system(size: 16, weight: .semibold))
             .foregroundStyle(DS.Color.foreground.swiftUI)
-          IntelligenceBadge(size: 11, mark: false)
+            .frame(width: 36, height: 36)
+            .background(Intelligence.wash, in: Circle())
+            .accessibilityHidden(true)
+        },
+        title: String(localized: "tellkoa.title"),
+        subtitle: {
+          Text("tellkoa.row.hint")
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(1)
+        },
+        trailing: nil, id: "quicklog.tell",
+        label: Text("tellkoa.title") + Text(", ") + Text("tellkoa.row.hint"),
+        chevron: true, action: tell
+      )
+      if let askCoach {
+        VStack(spacing: 0) {
+          Divider().padding(.leading, 60).opacity(0.6)
+          iconRow(
+            icon: {
+              IntelligenceMark(size: 18)
+                .frame(width: 36, height: 36)
+                .background(Intelligence.wash, in: Circle())
+            },
+            title: String(localized: "quicklog.coach"),
+            subtitle: { IntelligenceBadge(size: 11, mark: false) },
+            trailing: nil, id: "quicklog.coach",
+            label: Text("quicklog.coach") + Text(", ") + Text("ai.brand"),
+            chevron: true, action: askCoach
+          )
         }
-        Spacer(minLength: 0)
-        Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
-      .padding(12)
-      .quickLogCard()
-      .contentShape(Rectangle())
     }
-    .buttonStyle(TodayPressStyle())
-    .accessibilityElement(children: .combine)
+    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
+    .quickLogCard()
   }
 
   /// Bữa hôm qua để chép (giữ danh sách khi đã chép để thẻ còn hiện dấu tích).
@@ -688,7 +742,7 @@ private extension View {
   /// Thẻ trong bảng Ghi nhanh: nền thẻ đặc + viền mảnh + bóng nhẹ — tách rõ khỏi nền
   /// kem của bảng (thẻ kính `dsCard` lẫn vào bảng — 16/10, chủ dự án).
   func quickLogCard() -> some View {
-    let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
+    let shape = RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
     return self
       .background(DS.Color.card.swiftUI, in: shape)
       .overlay { shape.strokeBorder(DS.Color.foreground.swiftUI.opacity(0.08), lineWidth: 0.75) }

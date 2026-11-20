@@ -69,16 +69,52 @@ public struct SupabaseRemoteWriter: RemoteWriter {
   /// chèn bài / template vào tài khoản khác (RLS cũng chặn, đây chặn sớm).
   static let ownedRows: Set<String> = [PlanEdit.templateKind, ExerciseEdit.createKind, Water.addKind]
 
-  private let client: SupabaseClient
-  private let afterWrite: @Sendable (OutboxEntry) async -> Void
+  /// Entry đã gửi thành trong MỘT lượt, chờ việc cuối lượt (AUD-50,
+  /// R2-SYNC-04). Hộp tham chiếu: writer là struct, mọi bản sao của cùng một
+  /// writer cùng gom vào một lượt; `take()` lấy rồi xoá, lượt sau gom lại
+  /// từ đầu.
+  private final class DrainBatch: @unchecked Sendable {
+    private let lock = NSLock()
+    private var entries: [OutboxEntry] = []
 
-  /// - Parameter afterWrite: chạy sau khi server ĐÃ nhận — chỗ cho việc dựng
-  ///   lại ngày (`rebuildAfterReplay`). Không ném: ghi đã thành rồi, để lỗi
-  ///   dựng lại làm hỏng lượt gửi thì lượt sau phát lại và nhân đôi bản ghi —
-  ///   tệ hơn một ngày tạm lệch (baseline giải thích ở `rebuildAfterReplay`).
-  public init(backend: Backend, afterWrite: @escaping @Sendable (OutboxEntry) async -> Void = { _ in }) {
+    func record(_ entry: OutboxEntry) {
+      lock.withLock { entries.append(entry) }
+    }
+
+    func take() -> [OutboxEntry] {
+      lock.withLock {
+        defer { entries = [] }
+        return entries
+      }
+    }
+  }
+
+  private let client: SupabaseClient
+  private let batch = DrainBatch()
+  private let afterDrain: @Sendable ([OutboxEntry]) async -> Void
+
+  /// - Parameter afterDrain: chạy MỘT lần khi lượt gửi kết thúc tự nhiên, với
+  ///   mọi entry lượt ấy đã gửi thành — chỗ cho việc dựng lại ngày và làm mới
+  ///   widget (AUD-50, R2-SYNC-04). Không ném: ghi đã thành rồi, để lỗi dựng
+  ///   lại làm hỏng lượt gửi thì lượt sau phát lại và nhân đôi bản ghi — tệ
+  ///   hơn một ngày tạm lệch (baseline giải thích ở `rebuildAfterReplay`).
+  ///   Lượt trống thì không gọi.
+  public init(backend: Backend, afterDrain: @escaping @Sendable ([OutboxEntry]) async -> Void = { _ in }) {
     self.client = backend.client
-    self.afterWrite = afterWrite
+    self.afterDrain = afterDrain
+  }
+
+  /// Lượt gửi xong (`RemoteWriter.drainCompleted`): việc cuối lượt chạy MỘT
+  /// lần với mọi entry đã gửi thành. Chỉ entry của người ĐANG đăng nhập mới
+  /// được xả: lượt bị huỷ (đăng xuất) để lại entry trong hộp, lượt sau của
+  /// người khác không được dựng lại ngày của người trước (RLS cũng chặn, đây
+  /// chặn sớm và tránh báo lỗi dựng lại giả). Lượt trống thì không gọi gì.
+  public func drainCompleted() async {
+    let entries = batch.take()
+    let signedIn = client.auth.currentSession?.user.id.uuidString.lowercased()
+    let mine = entries.filter { $0.userId.lowercased() == signedIn }
+    guard !mine.isEmpty else { return }
+    await afterDrain(mine)
   }
 
   public func send(_ entry: OutboxEntry) async throws(WriteFailure) {
@@ -145,7 +181,9 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     } catch {
       throw Self.classify(error)
     }
-    await afterWrite(entry)
+    // Ghi đã thành: gom entry vào lượt — việc cuối lượt (dựng lại ngày, làm
+    // mới widget) chạy MỘT lần ở `drainCompleted`, không phải mỗi entry một lần.
+    batch.record(entry)
   }
 
   /// `case 'sleep'`: hàng của ngày thức dậy CHỒNG LẤN giấc này thì upsert vào

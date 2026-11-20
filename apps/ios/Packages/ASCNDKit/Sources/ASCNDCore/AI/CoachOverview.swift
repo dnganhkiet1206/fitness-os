@@ -149,7 +149,10 @@ public struct CoachOverview: Equatable, Sendable {
   /// nó (phần nháp suy nghĩ của model). App cắt thêm một lần cho chắc.
   public static let answerMark = "@@ANSWER@@"
 
-  public static func split(_ message: String) -> (overview: CoachOverview?, text: String) {
+  /// `complete`: câu trả lời đã về hết (không còn stream). Khi ấy rào chưa đóng (model bị cắt ở
+  /// trần token) được đọc dễ dãi và chữ sau JSON được giữ — trước đây cả phần đuôi, kể cả câu trả
+  /// lời trực tiếp, bị bỏ vĩnh viễn (KOA-T35). Đang stream thì vẫn giấu phần dở như cũ.
+  public static func split(_ message: String, complete: Bool = false) -> (overview: CoachOverview?, text: String) {
     var message = message
     if let mark = message.range(of: answerMark) {
       message = String(message[mark.upperBound...].drop(while: { $0.isNewline || $0 == " " }))
@@ -169,20 +172,88 @@ public struct CoachOverview: Equatable, Sendable {
     }
     let before = String(message[..<open.lowerBound])
     let rest = message[open.upperBound...]
-    // Đang stream, chưa đóng rào: giấu phần dở, chưa vẽ gì.
     guard let close = rest.range(of: "```") else {
-      return (nil, before.trimmingCharacters(in: .whitespacesAndNewlines))
+      // Đang stream, chưa đóng rào: giấu phần dở, chưa vẽ gì.
+      guard complete else { return (nil, before.trimmingCharacters(in: .whitespacesAndNewlines)) }
+      // Câu đã xong mà rào chưa đóng: JSON tới dấu } cân bằng; phần sau là chữ.
+      let (json, tail) = balancedJSON(String(rest))
+      return (parse(json), (before + "\n\n" + tail).trimmingCharacters(in: .whitespacesAndNewlines))
     }
     let body = String(rest[..<close.lowerBound])
-    let after = stripExtraBlocks(String(rest[close.upperBound...]))
+    // Khối thêm sau khối đầu: gộp số liệu vào khối đầu thay vì bỏ (KOA-T35); khối hỏng thì bỏ.
+    let (extras, after) = extractExtraBlocks(String(rest[close.upperBound...]), complete: complete)
     // Khối nằm giữa câu: hai nửa là hai đoạn, không dính liền ("cơ.Hôm nay").
     let text = (before + "\n\n" + after).trimmingCharacters(in: .whitespacesAndNewlines)
-    return (parse(body), text)
+    return (merged(parse(body), extras.compactMap(parse)), text)
   }
 
   /// Model đôi khi trả THÊM khối ```ascnd giữa câu (18/10: "buổi tập.```ascnd
   /// {"items":…}```" hiện thành chữ thô). Chỉ khối đầu được vẽ; các khối sau bị
   /// bỏ khỏi chữ — khối chưa đóng (đang stream) bị cắt tới cuối.
+  /// JSON từ dấu `{` đầu tới dấu `}` cân bằng (bỏ qua ngoặc trong chuỗi); chưa cân bằng thì cả
+  /// phần còn lại là JSON, không có đuôi.
+  static func balancedJSON(_ s: String) -> (json: String, tail: String) {
+    guard let start = s.firstIndex(of: "{") else { return (s, "") }
+    var depth = 0, inString = false, escaped = false
+    var i = start
+    while i < s.endIndex {
+      let c = s[i]
+      if inString {
+        if escaped { escaped = false } else if c == "\\" { escaped = true } else if c == "\"" { inString = false }
+      } else if c == "\"" {
+        inString = true
+      } else if c == "{" {
+        depth += 1
+      } else if c == "}" {
+        depth -= 1
+        if depth == 0 {
+          let end = s.index(after: i)
+          return (String(s[start..<end]), String(s[end...]))
+        }
+      }
+      i = s.index(after: i)
+    }
+    return (String(s[start...]), "")
+  }
+
+  /// Các khối ```ascnd thêm: tách thân ra (để gộp), chữ còn lại giữ nguyên. Khối chưa đóng:
+  /// đang stream thì cắt tới cuối; câu đã xong thì đọc tới dấu } cân bằng, giữ chữ sau.
+  static func extractExtraBlocks(_ text: String, complete: Bool) -> (bodies: [String], text: String) {
+    var out = text
+    var bodies: [String] = []
+    while let open = out.range(of: "```ascnd") {
+      if let close = out[open.upperBound...].range(of: "```") {
+        bodies.append(String(out[open.upperBound..<close.lowerBound]))
+        out.replaceSubrange(open.lowerBound..<close.upperBound, with: "\n\n")
+      } else if complete {
+        let (json, tail) = balancedJSON(String(out[open.upperBound...]))
+        bodies.append(json)
+        out.replaceSubrange(open.lowerBound..., with: "\n\n" + tail)
+      } else {
+        out.removeSubrange(open.lowerBound...)
+      }
+    }
+    return (bodies, out)
+  }
+
+  /// Gộp khối đầu với các khối thêm: dòng số liệu (không trùng nhãn, tối đa `maxItems`) và bước
+  /// nối vào; xu hướng / thước / chia phần lấy cái đầu tiên có.
+  static func merged(_ first: CoachOverview?, _ extras: [CoachOverview]) -> CoachOverview? {
+    guard !extras.isEmpty else { return first }
+    let all = (first.map { [$0] } ?? []) + extras
+    var items: [Item] = []
+    for o in all {
+      for it in o.items where !items.contains(where: { $0.label == it.label }) && items.count < maxItems {
+        items.append(it)
+      }
+    }
+    return CoachOverview(
+      title: all.compactMap(\.title).first, items: items, trend: all.compactMap(\.trend).first,
+      gauge: all.compactMap(\.gauge).first, split: all.compactMap(\.split).first,
+      // Cùng trần với `parse` (Devin #970): khối gộp được lưu lại, mở lại không được mất bước.
+      steps: Array(all.flatMap(\.steps).prefix(5)))
+  }
+
   static func stripExtraBlocks(_ text: String) -> String {
     var out = text
     while let open = out.range(of: "```ascnd") {

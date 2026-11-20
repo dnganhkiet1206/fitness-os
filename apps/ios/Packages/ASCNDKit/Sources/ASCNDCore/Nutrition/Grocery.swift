@@ -221,11 +221,28 @@ public final class GroceryBook {
   /// đọc lại — `invalidateQueries` của RN, món đã lấy xuống cuối.
   @discardableResult
   public func setChecked(_ item: GroceryItem, checked: Bool, writer: StateWriter) -> StateWriter.Outcome {
-    let source = self.source, userId = self.userId, id = item.id
-    return writer.set(key: Grocery.checkedKey(id), value: checked, server: item.checked) { [weak self] value in
+    return writer.set(key: Grocery.checkedKey(item.id), value: checked, server: item.checked, send: checkedSender(id: item.id))
+  }
+
+  /// `send` của một ý tick: ghi cờ tuyệt đối; 0 hàng = món đã bị xoá ở máy
+  /// khác → `.gone`. Ghi xong thì bản trong sổ mang ngay giá trị ấy (ý chờ
+  /// gửi đã gỡ, không được nháy về bản cũ) rồi đọc lại. Dùng chung cho
+  /// `setChecked` và `reattach`, để ý khôi phục từ đĩa gửi đúng như ý vừa chạm.
+  private func checkedSender(id: String) -> StateWriter.Send {
+    let source = self.source, userId = self.userId
+    return { [weak self] value in
       guard try await source.setChecked(id: id, userId: userId, checked: value) > 0 else { return .gone }
       self?.settle(id: id, checked: value)
       return .ok
+    }
+  }
+
+  /// Nhận lại các ý tick đã khôi phục từ đĩa (AUD-29). Màn gọi sau `refresh()`,
+  /// khi danh sách đã đọc.
+  public func reattach(writer: StateWriter) {
+    guard !closed else { return }
+    for item in items {
+      writer.adopt(key: Grocery.checkedKey(item.id), server: item.checked, send: checkedSender(id: item.id))
     }
   }
 

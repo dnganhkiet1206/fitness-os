@@ -51,6 +51,9 @@ struct CommunityFeedView: View {
   @Environment(AppServices.self) private var services
   /// Tin nhắn (15/10) — `nil` khi chưa có nguồn (server chưa có nhắn tin).
   @State private var messages: DMInboxBook?
+  /// Bảng kiểm duyệt (#915) — chỉ hỏi vai trò; nút khiên chỉ hiện khi là
+  /// moderator/admin, người thường không thấy gì.
+  @State private var moderation: ModerationBook?
   @State private var challengeRoute: ChallengeRoute?
   @State private var openAllChallenges = false
   @Environment(\.weightUnit) private var unit
@@ -139,11 +142,16 @@ struct CommunityFeedView: View {
     .statusBarScrim()
     .background { TodayAmbient(accent: nil) }
     .communityUserLinks()
-    .communityPostActions(userId: book.userId, host: book)
+    // Sổ kiểm duyệt của feed (đã tạo sẵn cho nút khiên) — menu ⋯ thêm mục
+    // "Kiểm duyệt" khi là staff, không tạo sổ mới.
+    .communityPostActions(userId: book.userId, host: book, moderation: moderation)
     // Trước mọi sheet / màn con (01/11): màn mở ra không thừa hưởng kéo để làm mới.
     .refreshable {
       await book.load()
       await loadChallenges()
+      // Vai trò chưa biết (lỗi mạng lúc mở feed): hỏi lại để nút khiên trở
+      // lại. Chỉ hỏi `my_app_role`, không gọi dữ liệu quản trị (Devin #916).
+      if moderation?.role == nil { await moderation?.loadRole() }
     }
     .navigationDestination(isPresented: $findPeople) { CommunitySearchScreen() }
     .environment(\.openCommunityComments) { commentsFor = OpenPost(id: $0.id) }
@@ -165,6 +173,20 @@ struct CommunityFeedView: View {
         let m = DMInboxBook(userId: book.userId, source: src)
         messages = m
         await m.load()
+      }
+    }
+    .task {
+      // Chỉ hỏi vai trò (#915) — người thường thì dừng ở đây, không một lời
+      // gọi dữ liệu quản trị nào rời máy.
+      if moderation == nil, let m = services.makeModeration(userId: book.userId) {
+        moderation = m
+        await m.loadRole()
+      }
+    }
+    .onChange(of: services.session.session?.userId) { _, id in
+      if id != book.userId {
+        moderation?.close()
+        moderation = nil
       }
     }
     .task { if challenges?.phase == .loading { await loadChallenges() } }
@@ -262,6 +284,14 @@ struct CommunityFeedView: View {
         .minimumScaleFactor(0.7)
         .accessibilityAddTraits(.isHeader)
       Spacer(minLength: 0)
+      // Bảng kiểm duyệt (#915): chỉ nhân viên mới thấy nút khiên.
+      if let moderation, moderation.role?.isStaff == true {
+        NavigationLink { ModerationDashboardScreen(book: moderation) } label: {
+          roundIcon("shield", dot: false)
+        }
+        .buttonStyle(TodayPressStyle())
+        .accessibilityLabel(Text("community.mod.title"))
+      }
       // Chỉ khi hộp thư đọc được (server có nhắn tin) — không thì một nút dẫn tới màn lỗi.
       if let messages, messages.phase == .ready {
         NavigationLink { MessagesInboxView(book: messages) } label: {

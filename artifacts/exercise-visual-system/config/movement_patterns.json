@@ -1,5 +1,5 @@
 {
-  "comment": "ASCND Motion Kit: movement families and the metric bounds that define them (evs/movement_gate.py). [lo, hi], null = no bound. A family marked provisional has bounds from coaching consensus that are not yet checked against a measured clip or a cited study; tighten them from the first reviewed exercise of that family and record the source here. Exercises can override a bound in exercise.json -> movement.qa.",
+  "comment": "ASCND Motion Kit: movement families and the metric bounds that define them (evs/movement_gate.py). [lo, hi], null = no bound. A family marked provisional has bounds from coaching consensus that are not yet checked against a measured clip or a cited study; tighten them from the first reviewed exercise of that family and record the source here. Exercises can override a bound in exercise.json -> movement.qa. Per-family research_notes record what was checked on 2026-11-14 and what is still missing; a cited family may still list individual provisional metrics, which fail as REQUIRES_MANUAL_REVIEW.",
   "schema_version": 1,
   "patterns": {
     "press_horizontal": {
@@ -37,7 +37,11 @@
     },
     "push_up": {
       "label": "Prone press from the floor",
-      "status": "provisional",
+      "status": "cited",
+      "provisional": [
+        "torso_lean_min_deg",
+        "elbow_max_deg"
+      ],
       "bounds": {
         "torso_lean_min_deg": [
           60,
@@ -51,7 +55,12 @@
           155,
           null
         ]
-      }
+      },
+      "sources": {
+        "elbow_flexion_max_deg": "Su et al. 2026 Front Physiol (doi 10.3389/fphys.2026.1989588): elbow flexion at the lowest push-up position 85.6 +/- 5.3 deg (elite) / 94.2 +/- 7.1 deg (non-elite), 40 male gymnasts, 3D motion capture. Bound requires >=70 deg.",
+        "elbow_max_deg": "ROM envelope only: AAOS reference values (elbow extension 0 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound sits inside the envelope; no push-up study reporting the top angle was read, so the metric stays provisional."
+      },
+      "research_notes": "2026-11-14 review (C): torso_lean_min_deg: Su 2026 reports trunk inclination VARIABILITY (2.1 +/- 0.5 vs 3.8 +/- 1.2 deg), not an absolute trunk angle, so no bound was drawn from it. Missing: a study reporting absolute trunk inclination during the push-up, or a measured clip."
     },
     "press_vertical": {
       "label": "Overhead press (barbell, dumbbell, machine)",
@@ -77,11 +86,22 @@
           null,
           0.05
         ]
-      }
+      },
+      "sources": {
+        "elbow_min_deg": "ROM envelope only: AAOS reference values (elbow flexion 140-150 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound sits inside the envelope; no overhead-press study read.",
+        "elbow_max_deg": "ROM envelope only: AAOS reference values (elbow extension 0 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound sits inside the envelope; no overhead-press study read.",
+        "wrist_over_head_m": "ROM envelope only: AAOS reference values (shoulder flexion 180 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Full overhead reach is inside the envelope; the 0.05 m clearance itself is coaching consensus, no press study read."
+      },
+      "research_notes": "2026-11-14 review (C): standing overhead press abstracts read report ROM comparisons between conditions (barbell vs machine, Korean J Appl Biomech) or model outputs (J Funct Morphol Kinesiol 2025 link-chain model), with no absolute gate-usable shoulder/elbow angles. Missing: full text with absolute angles, or a measured licensed clip. torso_lean_max_deg / hip_drop_m: no source found."
     },
     "squat": {
       "label": "Squat (back, front, goblet, air)",
-      "status": "provisional",
+      "status": "cited",
+      "provisional": [
+        "hip_drop_m",
+        "torso_lean_max_deg",
+        "foot_split_m"
+      ],
       "bounds": {
         "knee_min_deg": [
           null,
@@ -99,7 +119,11 @@
           null,
           0.15
         ]
-      }
+      },
+      "sources": {
+        "knee_min_deg": "Schoenfeld 2010 JSCR 24(12):3497-3506: half squats 70-100 deg knee flexion, deep squats >100 deg; Escamilla et al. 2001 MSSE 33(6):984-998 (PMID 11404665): competition squats analysed at 90 deg knee flexion and maximum knee flexion. Bound requires >=80 deg flexion (interior <=100 deg), inside the half-squat band."
+      },
+      "research_notes": "2026-11-14 review (C): hip_drop_m: no study found reporting pelvis drop in metres; torso_lean_max_deg: Hales et al. 2009 JSCR 23(9):2574-2580 (PMID 19910816) reports a squat trunk angle of 40.58 +/- 6.29 deg at the sticking point, but the abstract does not state the angle convention (from vertical vs horizontal), so no bound was drawn from it - full text needed; foot_split_m: stance-symmetry check, no study; Escamilla 2001 stance widths (107/142/169% shoulder width) describe foot_spread, not foot_split. No licensed squat clip was on hand for measurement; two user-provided 'squat-pro3' mp4 files exist under ~/workspace/user/files but were NOT measured (provenance/license unverified)."
     },
     "hinge": {
       "label": "Hip hinge (deadlift, Romanian deadlift, good morning)",
@@ -121,11 +145,16 @@
           null,
           0.15
         ]
-      }
+      },
+      "research_notes": "2026-11-14 review (C): Escamilla et al. 2000 MSSE 32(7):1265-1275 (PMID 10912892) abstract read: sumo vs conventional comparisons only (thigh 11-16 deg more horizontal for sumo, trunk 5-10 deg more vertical for sumo), no absolute joint angles; Hales et al. 2009 abstract read: deadlift trunk angle 58.30 +/- 7.15 deg at the sticking point, angle convention unstated in the abstract. Missing: full text of either study with absolute hip/knee/trunk angles at liftoff, or a measured licensed clip. Secondary blog numbers attributed to Hales/Escamilla were seen but NOT used (unverified)."
     },
     "lunge": {
       "label": "Lunge, split squat, step-up",
-      "status": "provisional",
+      "status": "cited",
+      "provisional": [
+        "torso_lean_max_deg",
+        "hip_drop_m"
+      ],
       "bounds": {
         "foot_split_m": [
           0.5,
@@ -143,7 +172,12 @@
           0.15,
           null
         ]
-      }
+      },
+      "sources": {
+        "knee_min_deg": "Hofmann et al. 2017 JOSPT 47(1):31-40 (doi 10.2519/jospt.2017.6336): peak lead-limb knee flexion 90 deg (vertical shank, by design) and ~100 deg (shank-forward); trail limb ~100-105 deg. Bound requires >=70 deg flexion (interior <=110 deg), below the observed range.",
+        "foot_split_m": "Hofmann et al. 2017: stride-length target 75-100% of limb length (mean limb length 84.4 +/- 5.6 cm), i.e. study strides >= ~0.63 m; bound 0.5 m is below the study minimum and only requires a real step forward."
+      },
+      "research_notes": "2026-11-14 review (C): torso_lean_max_deg: Hofmann 2017 varies trunk position (vertical vs forward) but reports no trunk angle in degrees; hip_drop_m: no study found reporting pelvis drop in metres for the lunge. Both stay provisional."
     },
     "row": {
       "label": "Bent-over / supported row",
@@ -161,7 +195,8 @@
           150,
           null
         ]
-      }
+      },
+      "research_notes": "2026-11-14 review (C): no kinematic study with absolute torso/elbow angles found. Secondary summaries describe Fenwick et al. 2009 (spine loading, 7 men) and Saeterbakken et al. 2015 (EMG, 15 men); neither paper was opened and neither reports gate metrics in the summaries seen. A small 9-player torso-angle comparison (65 vs 40 deg from upright) was seen only in a secondary summary and was NOT used. Missing: a row kinematics study or a measured licensed clip."
     },
     "pull_vertical": {
       "label": "Pull-up, lat pulldown",
@@ -175,7 +210,12 @@
           null,
           90
         ]
-      }
+      },
+      "sources": {
+        "arm_elev_max_deg": "ROM envelope only: AAOS reference values (shoulder flexion 180 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Arms fully overhead at the hang sit inside the envelope; no pull-up study read.",
+        "elbow_min_deg": "ROM envelope only: AAOS reference values (elbow flexion 140-150 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound sits inside the envelope; no pull-up study read."
+      },
+      "research_notes": "2026-11-14 review (C): no pull-up / lat-pulldown kinematics study with absolute angles found in search. Missing: a kinematics study or a measured licensed clip."
     },
     "curl": {
       "label": "Elbow flexion (biceps curl, hammer curl)",
@@ -201,7 +241,12 @@
           null,
           0.05
         ]
-      }
+      },
+      "sources": {
+        "elbow_min_deg": "ROM envelope only: AAOS reference values (elbow flexion 140-150 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound requires >=120 deg flexion, inside the envelope; no curl kinematics study read.",
+        "elbow_max_deg": "ROM envelope only: AAOS reference values (elbow extension 0 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound sits inside the envelope; no curl kinematics study read."
+      },
+      "research_notes": "2026-11-14 review (C): ACE / ExRx technique guidance (upper arms stationary at the sides, torso upright, full elbow flexion to shoulder height) is qualitative with no angles; no peer-reviewed curl kinematics study with absolute angles found. Missing: a curl kinematics study or a measured licensed clip. No licensed curl clip was on hand."
     },
     "tricep_extension": {
       "label": "Elbow extension (overhead / lying / pushdown)",
@@ -215,7 +260,12 @@
           150,
           null
         ]
-      }
+      },
+      "sources": {
+        "elbow_min_deg": "ROM envelope only: AAOS reference values (elbow flexion 140-150 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound sits inside the envelope; no triceps-extension study read.",
+        "elbow_max_deg": "ROM envelope only: AAOS reference values (elbow extension 0 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound sits inside the envelope; no triceps-extension study read."
+      },
+      "research_notes": "2026-11-14 review (C): no triceps-extension kinematics study found in search. Missing: a kinematics study or a measured licensed clip."
     },
     "raise_lateral": {
       "label": "Lateral raise",
@@ -237,7 +287,11 @@
           null,
           15
         ]
-      }
+      },
+      "sources": {
+        "elbow_min_deg": "ROM envelope only: AAOS reference values (elbow extension 0 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Near-straight elbows sit inside the envelope; the 'keep elbows nearly straight' cue itself is coaching consensus."
+      },
+      "research_notes": "2026-11-14 review (C): guidance consensus seen in secondary summaries is 'stop at shoulder height, upper arm parallel to the floor' (ACE / ExRx); the primary ACE/ExRx pages were not opened and no peer-reviewed kinematics study with absolute angles was found. arm_elev_max_deg / arm_lateral_frac / torso_lean_max_deg stay provisional. Missing: a kinematics study or a measured licensed clip."
     },
     "raise_front": {
       "label": "Front raise",
@@ -259,7 +313,11 @@
           null,
           15
         ]
-      }
+      },
+      "sources": {
+        "elbow_min_deg": "ROM envelope only: AAOS reference values (elbow extension 0 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Near-straight elbows sit inside the envelope; the 'keep elbows nearly straight' cue itself is coaching consensus."
+      },
+      "research_notes": "2026-11-14 review (C): guidance consensus seen in secondary summaries is 'stop at shoulder height, upper arm parallel to the floor' (ACE / ExRx); the primary ACE/ExRx pages were not opened and no peer-reviewed kinematics study with absolute angles was found. arm_elev_max_deg / arm_lateral_frac / torso_lean_max_deg stay provisional. Missing: a kinematics study or a measured licensed clip."
     },
     "calf_raise": {
       "label": "Calf raise",
@@ -273,7 +331,11 @@
           160,
           null
         ]
-      }
+      },
+      "sources": {
+        "knee_min_deg": "ROM envelope only: AAOS reference values (knee extension 0 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Straight knees sit inside the envelope; the 'knees stay straight' requirement itself is coaching consensus."
+      },
+      "research_notes": "2026-11-14 review (C): search surfaced heel-rise studies reporting EMG, peak-height comparisons across foot positions (Hebert-Losier 2024, The Foot 60:102112), and bone-level ankle ROM (talus dorsiflexion-plantarflexion 34.7 +/- 12.9 deg, PMID 35097392); none gives pelvis rise in metres or a knee-angle bound for the gate. Missing: a study reporting heel-rise height / pelvis rise, or a measured licensed clip."
     }
   }
 }

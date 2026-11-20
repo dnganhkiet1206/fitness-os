@@ -32,6 +32,8 @@ private struct CelebrationCard: View {
   let onClose: () -> Void
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  /// Ra nền thì đồng hồ cảnh dừng (KOA-T11).
+  @Environment(\.scenePhase) private var scenePhase
   @Environment(\.colorScheme) private var scheme
   @State private var shown = false
   @State private var popped = false
@@ -54,7 +56,8 @@ private struct CelebrationCard: View {
       if !reduceMotion, let fallStart {
         // `withTiming(1, { duration: 2600, easing: Easing.out(Easing.quad) })`,
         // đọc theo đồng hồ khung hình; dừng khi rơi xong.
-        TimelineView(.animation(minimumInterval: nil, paused: fallDone)) { tl in
+        // KOA-T11: tối đa 60 khung/giây, dừng khi app không ở tiền cảnh.
+        TimelineView(.animation(minimumInterval: 1.0 / 60, paused: fallDone || scenePhase != .active)) { tl in
           let x = Swift.min(Swift.max(tl.date.timeIntervalSince(fallStart) / 2.6, 0), 1)
           let progress = 1 - (1 - x) * (1 - x)
           GeometryReader { geo in

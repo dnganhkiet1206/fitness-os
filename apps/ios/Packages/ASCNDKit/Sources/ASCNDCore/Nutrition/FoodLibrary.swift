@@ -290,15 +290,45 @@ public final class FoodLibraryBook {
   @discardableResult
   public func setFavorite(_ f: FoodLibrary.Food, value: Bool, writer: StateWriter) -> StateWriter.Outcome? {
     guard let favorites else { return nil }
-    let userId = self.userId, id = f.id
-    return writer.set(key: FoodFavorite.key(id), value: value, server: settledFavorites[id] ?? f.isFavorite) {
-      [weak self] v in
+    let id = f.id
+    return writer.set(
+      key: FoodFavorite.key(id), value: value, server: settledFavorites[id] ?? f.isFavorite,
+      send: favoriteSender(id: id, favorites: favorites))
+  }
+
+  /// `send` của một ý sao: qua `FoodFavorite.send` (tuyệt đối, gửi lại vô
+  /// hại); xong thì cờ đã xác nhận mang ngay giá trị ấy rồi đọc lại. Dùng
+  /// chung cho `setFavorite` và `reattach`, để ý khôi phục từ đĩa gửi đúng
+  /// như ý vừa chạm.
+  private func favoriteSender(id: String, favorites: any FoodFavoriteSource) -> StateWriter.Send {
+    let userId = self.userId
+    return { [weak self] v in
       let result = try await FoodFavorite.send(id: id, value: v, userId: userId, source: favorites)
       if result == .ok, let self, !self.closed {
         self.settledFavorites[id] = v
         Task { await self.load() }
       }
       return result
+    }
+  }
+
+  /// Nhận lại các ý sao đã khôi phục từ đĩa (AUD-29). Màn gọi sau `load()`.
+  /// Món trong "Của tôi" có cờ server vừa đọc; món ngoài danh sách (kết quả
+  /// tìm, món chung) thì không biết cờ server — nhận với `server: nil` để
+  /// luôn gửi, vì lệnh ghi sao là tuyệt đối nên gửi lại cũng vô hại.
+  public func reattach(writer: StateWriter) {
+    guard !closed, let favorites else { return }
+    var seen: Set<String> = []
+    for f in mine {
+      seen.insert(f.id)
+      writer.adopt(
+        key: FoodFavorite.key(f.id), server: settledFavorites[f.id] ?? f.isFavorite,
+        send: favoriteSender(id: f.id, favorites: favorites))
+    }
+    for key in writer.pendingKeys where key.hasPrefix("food:favorite:") {
+      let id = String(key.dropFirst("food:favorite:".count))
+      guard !seen.contains(id) else { continue }
+      writer.adopt(key: key, server: settledFavorites[id], send: favoriteSender(id: id, favorites: favorites))
     }
   }
 

@@ -216,7 +216,10 @@ struct ManualLogView: View {
         .accessibilityLabel(Text(String(localized: "manualLog.removeExercise")))
       }
       if suggesting == group.id, let library = flow.library {
-        let picks = ManualLogController.suggestions(for: group.name, in: library.exercises)
+        let picks = ManualLogController.suggestions(
+          for: group.name, in: library.exercises,
+          usage: ExerciseFamiliarity.counts(ExerciseFamiliarity.usage(flow.insights?.performances ?? [])),
+          favorites: ExerciseFavoritesShared.book(for: library.userId).ids)
         if !picks.isEmpty {
           ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: DS.Spacing.xs) {
@@ -232,7 +235,8 @@ struct ManualLogView: View {
                     focusedName = nil
                   }
                 } label: {
-                  Text(verbatim: ex.displayName)
+                  // Tên tiếng Anh (Kiệt 15/11: tên bài ai cũng gọi bằng tiếng Anh).
+                  Text(verbatim: ex.primaryName)
                     .font(DS.TextStyle.footnote.weight(.medium))
                     .foregroundStyle(DS.Color.foreground.swiftUI)
                     .padding(.horizontal, DS.Spacing.sm + 4)

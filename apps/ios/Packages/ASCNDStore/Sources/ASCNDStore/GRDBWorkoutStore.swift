@@ -93,15 +93,19 @@ public final class GRDBWorkoutStore: WorkoutStore {
     }
   }
 
-  /// Dọn điểm quay lại quá 14 ngày (`DayProgressStore.stale`, luật của
-  /// baseline). Ngày đã chốt cũng bị dọn: buổi của nó đã nằm ở outbox/server,
-  /// và cửa sổ mở lại của baseline cũng chỉ 14 ngày. Trả về số ngày bỏ.
+  /// Dọn điểm quay lại quá 14 ngày (`DayProgressStore.stale`). Ngày đã chốt
+  /// cũng bị dọn: buổi của nó đã nằm ở outbox/server, và cửa sổ mở lại cũng
+  /// chỉ 14 ngày. Trả về số ngày bỏ.
   ///
   /// CHỈ ngày của người đang đăng nhập (#469), như mọi lối khác của bảng:
   /// không ai đăng nhập → `AccountScopeClosed`, không chạm gì. Hàng của người
   /// khác / hàng `#legacy` không phải việc của lượt dọn này — chúng đi theo
-  /// vòng đời phiên (`clearAll(except:)` lúc phiên mở, `clearAll` lúc đăng
-  /// xuất), lối XUYÊN tài khoản duy nhất. Chủ đọc trong giao dịch.
+  /// vòng đời phiên: `clearAll(except:)` lúc phiên mở dọn của mọi người khác,
+  /// và kết thúc phiên không xoá gì nữa (R3-DATA-01) — ngày của người rời đi
+  /// đỗ lại theo chủ như hàng đợi, chỉ đi khi người khác mở phiên, khi đã quá
+  /// hạn lúc mở app (`pruneStaleDays(except:today:)`, ngoại lệ #469 — chỉ
+  /// hàng quá hạn của người khác), hoặc khi tài khoản bị xoá (`purge(userId:)`).
+  /// Chủ đọc trong giao dịch.
   @discardableResult
   public func pruneDays(today: LocalDate) async throws -> Int {
     try await db.write { [accounts] db in
@@ -116,22 +120,52 @@ public final class GRDBWorkoutStore: WorkoutStore {
     }
   }
 
-  /// Đăng xuất / đổi tài khoản: bỏ mọi điểm quay lại — như baseline xoá các
-  /// khoá `routine-day:*` trong `clearUserScopedStorage` (`query-client.ts:94`).
-  /// Không thì khoá "ngày đã chốt" của người trước (vd khoá `adhoc`) chặn
-  /// người sau chốt buổi của chính họ. Trả về số ngày bỏ.
+  /// Dọn ngày đỗ quá hạn của mọi người TRỪ `userId` — lượt dọn lúc mở app
+  /// (`AccountLifecycle.pruneParkedStaleDays`). Cùng cửa sổ và cùng ngữ nghĩa
+  /// với `pruneDays` (`DayProgressStore.stale`, quá 14 ngày): ngày của tài
+  /// khoản không bao giờ quay lại không nằm trên máy vô hạn, trong khi ngày
+  /// trong cửa sổ của họ vẫn đỗ lại cho lần đăng nhập sau (R3-DATA-01).
+  ///
+  /// XUYÊN tài khoản như `clearAll(except:)` / `purge(userId:)`: không hỏi
+  /// chốt — lúc mở app chốt còn đóng — nên CHỈ `AccountLifecycle` được gọi.
+  /// `userId == nil` (không có phiên khôi phục) thì dọn ngày quá hạn của mọi
+  /// người, kể cả hàng `#legacy`. So chủ không phân biệt hoa thường, như chốt.
+  /// Trả về số ngày bỏ.
   @discardableResult
-  public func clearAll() async throws -> Int {
+  public func pruneStaleDays(except userId: String?, today: LocalDate) async throws -> Int {
+    let kept = (userId ?? "").lowercased()
+    return try await db.write { db in
+      var removed = 0
+      for owner in try String.fetchAll(db, sql: "SELECT DISTINCT userId FROM workout_day") {
+        guard kept.isEmpty || owner.lowercased() != kept else { continue }
+        let keys = try String.fetchAll(db, sql: "SELECT key FROM workout_day WHERE userId = ?", arguments: [owner])
+        for k in DayProgressStore.stale(keys, today: today) {
+          try db.execute(sql: "DELETE FROM workout_day WHERE userId = ? AND key = ?", arguments: [owner, k])
+          removed += db.changesCount
+        }
+      }
+      return removed
+    }
+  }
+
+  /// Tài khoản đã bị xoá trên server: bỏ hẳn ngày của nó — như
+  /// `OutboxStore.purge(userId:)` bỏ hàng đợi của nó. Kết thúc phiên thường
+  /// (đăng xuất, token hết hạn, đổi tài khoản) KHÔNG xoá gì nữa (R3-DATA-01):
+  /// ngày của người rời đi đỗ lại theo chủ, và chỉ đi khi người KHÁC mở phiên
+  /// (`clearAll(except:)`) hoặc khi chính tài khoản ấy bị xoá (hàm này). Trả
+  /// về số ngày bỏ.
+  @discardableResult
+  public func purge(userId: String) async throws -> Int {
     try await db.write { db in
-      try db.execute(sql: "DELETE FROM workout_day")
+      try db.execute(sql: "DELETE FROM workout_day WHERE userId = ?", arguments: [userId.lowercased()])
       return db.changesCount
     }
   }
 
-  /// Như `clearAll`, nhưng giữ ngày của `userId` (#455): khi đổi thẳng tài
-  /// khoản, người mới có thể đã đăng nhập và ghi TRƯỚC khi lượt dọn của người
-  /// cũ chạy tới đây — dọn của người cũ không được xoá của người mới. Hàng
-  /// `#legacy` cũng bị bỏ, như `clearAll`.
+  /// Bỏ ngày của mọi người TRỪ `userId` (#455): lúc phiên mở, dọn ngày của
+  /// người trước (kể cả hàng `#legacy`) để người mới không thấy gì của họ.
+  /// Khi đổi thẳng tài khoản, người mới có thể đã đăng nhập và ghi TRƯỚC khi
+  /// lượt dọn này chạy tới — ngày của họ được giữ.
   @discardableResult
   public func clearAll(except userId: String) async throws -> Int {
     try await db.write { db in

@@ -121,6 +121,9 @@ struct ProgressPhotosBookTests {
     var failSign = false
     var failInsert = false
     var offline = false
+    /// Số lần `removeObject` sẽ hỏng trước khi thành công.
+    var removeFailures = 0
+    var removeCalls = 0
     var pageCalls: [Int] = []
 
     func rows(userId: String, from: Int) async throws -> [JSONValue] {
@@ -147,7 +150,14 @@ struct ProgressPhotosBookTests {
       table.removeAll { $0["id"]?.stringValue == id && $0["user_id"]?.stringValue == userId }
       return before - table.count
     }
-    func removeObject(path: String) async throws { objects.remove(path) }
+    func removeObject(path: String) async throws {
+      removeCalls += 1
+      if removeFailures > 0 {
+        removeFailures -= 1
+        throw ProgressPhotosFailure.server
+      }
+      objects.remove(path)
+    }
 
     func row(id: String, user: String, date: String, path: String, pose: String = "front") -> JSONValue {
       .object([
@@ -239,5 +249,34 @@ struct ProgressPhotosBookTests {
     let foreign = ProgressPhotos.photo(r.table[0])!
     #expect(await b.delete(foreign) == .nothingWritten)
     #expect(r.table.count == 1)
+  }
+
+  /// AUD-32: xoá file hỏng một lần thì thử lại — lần hai được thì vẫn `.done`.
+  @Test func deleteRetriesObjectRemovalOnce() async {
+    let r = Remote()
+    r.table = [r.row(id: "a", user: "u", date: "2026-01-02", path: "u/a.jpg")]
+    r.objects = ["u/a.jpg"]
+    r.removeFailures = 1
+    let b = Self.book(r)
+    await b.load()
+    #expect(await b.delete(b.photos[0]) == .done)
+    #expect(r.removeCalls == 2)
+    #expect(r.objects.isEmpty)
+  }
+
+  /// AUD-32: xoá file hỏng cả hai lần thì báo lỗi — hàng đã xoá, file còn lại
+  /// không được lặng lẽ thành mồ côi.
+  @Test func deleteReportsPersistentObjectRemovalFailure() async {
+    let r = Remote()
+    r.table = [r.row(id: "a", user: "u", date: "2026-01-02", path: "u/a.jpg")]
+    r.objects = ["u/a.jpg"]
+    r.removeFailures = 99
+    let b = Self.book(r)
+    await b.load()
+    #expect(await b.delete(b.photos[0]) == .failed(.server))
+    #expect(r.removeCalls == 2)
+    #expect(r.table.isEmpty)
+    #expect(r.objects == ["u/a.jpg"])
+    #expect(b.photos.isEmpty)
   }
 }

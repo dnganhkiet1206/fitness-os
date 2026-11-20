@@ -77,6 +77,8 @@ final class VoiceDictation {
 
     do {
       let session = AVAudioSession.sharedInstance()
+      // Phiên dùng chung với tiếng Koa (`.ambient`): báo Koa nhường, lần phát sau Koa đặt lại.
+      KoaSound.yieldSession()
       try session.setCategory(.record, mode: .measurement, options: .duckOthers)
       try session.setActive(true, options: .notifyOthersOnDeactivation)
       let input = engine.inputNode

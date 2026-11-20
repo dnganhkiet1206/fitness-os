@@ -23,7 +23,7 @@ import bmesh  # noqa: E402
 import bpy  # noqa: E402
 import numpy as np  # noqa: E402
 
-from evs import bl_util, config, motion_qa as Q, movement_gate  # noqa: E402
+from evs import bl_util, config, motion_qa as Q, movement_gate, reference_check  # noqa: E402
 from evs.sampling import JOINTS  # noqa: E402
 
 DEFAULTS = {"max_joint_speed_m_s": 2.5, "max_frame_to_frame_joint_jump_deg": 12.0, "max_hand_to_socket_m": 0.004,
@@ -81,13 +81,25 @@ def main() -> None:
             feet[k].append(list(mw @ rig.pose.bones[k].head))
     j = {k: np.array(v) for k, v in joints.items()}
 
-    # Skin stretch at start, quarter, half (mesh evaluation is slow).
+    # Skin stretch at start, quarter, half, and the deepest pelvis frame
+    # (the extreme pose: the squat bottom). Mesh evaluation is slow, so only
+    # these frames are measured; per-frame values go into the record detail.
+    # Measure the skinned BASE mesh, like evs/sampling.py: with Subdivision
+    # on, the evaluated mesh has more vertices than the rest mesh (44722 vs
+    # 11171 on character 003), so rest edge indices do not address the same
+    # vertices (14/11 probe: planted feet showed up among the worst edges).
+    # The flags are restored right after sampling so the penetration check
+    # below still sees the subdivided surface.
+    low = int(np.argmin(j["pelvis"][:, 2]))
+    subsurf = [(m, m.show_viewport) for m in body.modifiers if m.type == "SUBSURF"]
+    for m, _ in subsurf:
+        m.show_viewport = False
     rest = body.data
     edges = np.array([e.vertices[:] for e in rest.edges])
     co0 = np.array([v.co[:] for v in rest.vertices])
     rl = np.linalg.norm(co0[edges[:, 0]] - co0[edges[:, 1]], axis=1)
     stretch = []
-    for f in (frames[0], frames[len(frames) // 4], frames[len(frames) // 2]):
+    for f in sorted({frames[0], frames[len(frames) // 4], frames[len(frames) // 2], frames[low]}):
         scene.frame_set(f)
         ev = body.evaluated_get(bpy.context.evaluated_depsgraph_get())
         me = ev.to_mesh()
@@ -96,6 +108,9 @@ def main() -> None:
         r = np.linalg.norm(co[edges[:, 0]] - co[edges[:, 1]], axis=1) / rl
         stretch.append((float(np.percentile(r, 99.9)), f))
     worst_stretch = max(stretch)
+    stretch_detail = "p99.9 edge stretch per frame: " + ", ".join(f"f{f} {v:.3f}" for v, f in sorted(stretch, key=lambda t: t[1]))
+    for m, visible in subsurf:
+        m.show_viewport = visible
 
     # Implement inside the skin (bar through the neck/traps, dumbbell through
     # the thigh): body vertices behind the nearest implement face, at the
@@ -104,7 +119,6 @@ def main() -> None:
     from mathutils.bvhtree import BVHTree
     ids = [e["id"].capitalize() for e in ex.get("equipment", []) if not any(k in e["id"] for k in ("bench", "rack", "machine"))]
     implements = [o for o in scene.objects if o.type == "MESH" and any(o.name.startswith(i) for i in ids)]
-    low = int(np.argmin(j["pelvis"][:, 2]))
     depths = {o.name: [] for o in implements}
     pen_frames = sorted({stretch_f for _s, stretch_f in stretch} | {frames[low]})
     for f in pen_frames:
@@ -151,6 +165,12 @@ def main() -> None:
                 bm.free()
             for ia in range(len(trees)):
                 for ib in range(ia + 1, len(trees)):
+                    # Plates sit on their own bar by design (15/11: the squat
+                    # failed on Barbell|Barbell_Plate_L1); only separate
+                    # implements may not overlap.
+                    a_name, b_name = trees[ia][0], trees[ib][0]
+                    if b_name.startswith(a_name + "_Plate") or a_name.startswith(b_name + "_Plate"):
+                        continue  # a bar and its own plate (plate against plate is still checked)
                     key = f"{trees[ia][0]}|{trees[ib][0]}"
                     overlaps.setdefault(key, []).append(len(trees[ia][1].overlap(trees[ib][1])))
     tempo_file = path / "tempo.json"
@@ -173,22 +193,30 @@ def main() -> None:
         tempo_check,
         Q.implement_clash(overlaps, clash_frames) if overlaps else Q.rec("implement_clash", "C", "Implements do not pass through each other", Q.NOT_TESTED, detail="fewer than two implements"),
         Q.rec("skin_stretch", "C", "Skin stretch stays within limits", Q.PASS if worst_stretch[0] <= prof["max_p999_edge_stretch"] else Q.FAIL,
-              round(worst_stretch[0], 3), prof["max_p999_edge_stretch"], {"frame": worst_stretch[1]}, "p99.9 edge stretch"),
+              round(worst_stretch[0], 3), prof["max_p999_edge_stretch"], {"frame": worst_stretch[1]}, stretch_detail,
+              per_frame={f: round(v, 3) for v, f in stretch}),
     ]
     movement = ex.get("movement", {})
-    if movement.get("pattern"):
-        patterns = movement_gate.load_patterns(config.CONFIG_DIR / "movement_patterns.json")
+    jr = j
+    if movement.get("rep_phases"):
         phases = {p["id"]: p for p in ex["exercise_phases"]}
         rep = [p for p in movement.get("rep_phases", []) if p in phases]
         if rep:
             f0, f1 = int(round(phases[rep[0]]["start_s"] * fps)), int(round(phases[rep[-1]]["end_s"] * fps))
             jr = {k: v[f0:f1 + 1] for k, v in j.items()}
-        else:
-            jr = j
+    if movement.get("pattern"):
+        patterns = movement_gate.load_patterns(config.CONFIG_DIR / "movement_patterns.json")
         for r in movement_gate.evaluate(jr, patterns, movement):
             status = Q.PASS if r["pass"] else (Q.REVIEW if r["provisional"] else Q.FAIL)
             records.append(Q.rec(f"movement_{r['metric']}", "D", f"{movement['pattern']}: {r['metric']} inside the family bounds", status,
                                  r["measured"], r["limit"], None, (r["source"] or "provisional bound")))
+    posed = {pos: reference_check.metrics_at(j, frames, movement_gate.metrics)
+             for pos, frames in reference_check.position_frames(ex.get("exercise_phases"), fps).items()}
+    for r in reference_check.check(path, movement, movement_gate.metrics(jr), at=posed):
+        status = {reference_check.PASS: Q.PASS, reference_check.FAIL: Q.FAIL, reference_check.NOT_TESTED: Q.NOT_TESTED}[r["outcome"]]
+        limit = [round(r["reference"] - r["tolerance"], 3), round(r["reference"] + r["tolerance"], 3)] \
+            if r["reference"] is not None and r["tolerance"] is not None else None
+        records.append(Q.rec(r["id"], "D", r["title"], status, r["measured"], limit, None, r["detail"]))
     report = {"tool": "pipeline/validate_motion.py", "date": datetime.date.today().isoformat(), "exercise_id": ex["exercise_id"],
               "frames": len(frames), "fps": fps, "summary": Q.summary(records), "checks": records}
     config.save_json(path / "qa_report.json", report)

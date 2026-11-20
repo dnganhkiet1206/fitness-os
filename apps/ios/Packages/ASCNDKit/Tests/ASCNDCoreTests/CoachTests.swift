@@ -58,8 +58,10 @@ struct CoachChatTests {
     var failure: EdgeFunction.Failure?
     private var log: [(Int, String, String, Int)] = []
     var calls: [(Int, String, String, Int)] { lock.withLock { log } }
-    func stream(messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int)
-      -> AsyncThrowingStream<String, any Error>
+    func stream(
+      messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
+      waterUnit: Water.Unit
+    ) -> AsyncThrowingStream<String, any Error>
     {
       lock.withLock { log.append((messages.count, lang, date.description, tzOffset)) }
       let (chunks, failure) = lock.withLock { (self.chunks, self.failure) }
@@ -84,7 +86,16 @@ struct CoachChatTests {
       if lock.withLock({ failCreate }) { throw RowStoreError(code: nil, message: "down") }
       return "c-\(title.prefix(3))"
     }
+    /// Hỏng N lần lưu đầu (mất mạng lúc gửi).
+    var failSaves = 0
     func saveMessage(conversationId: String, role: Coach.Role, content: String) async throws {
+      // Như URLSession: việc gọi đã bị huỷ thì lệnh lưu cũng bị huỷ (Devin #961).
+      if Task.isCancelled { throw CancellationError() }
+      if lock.withLock({ () -> Bool in
+        guard failSaves > 0 else { return false }
+        failSaves -= 1
+        return true
+      }) { throw RowStoreError(code: nil, message: "offline") }
       lock.withLock { saved.append((conversationId, role, content)) }
     }
     func touch(conversationId: String, userId: String) async throws { lock.withLock { touched.append(conversationId) } }
@@ -116,11 +127,6 @@ struct CoachChatTests {
     let lock = NSLock()
     private var units: [Water.Unit] = []
     var seen: [Water.Unit] { lock.withLock { units } }
-    func stream(messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int)
-      -> AsyncThrowingStream<String, any Error>
-    {
-      AsyncThrowingStream { $0.finish() }
-    }
     func stream(
       messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
       waterUnit: Water.Unit
@@ -185,11 +191,138 @@ struct CoachChatTests {
     let chat = CoachChat(userId: "u", stream: stream, store: store, edge: nil)
     await chat.send("Hỏi", lang: "en", today: Self.today, tzOffset: 0)
     #expect(chat.failure == .rateLimited)
-    #expect(chat.messages.last?.content == "Một nửa")
+    // KOA-T06: phần dở giữ lại, đánh dấu "…", và LƯU — mở lại thấy đúng điều đã thấy.
+    #expect(chat.messages.last?.content == "Một nửa" + Coach.cutOffMark)
     #expect(!chat.isLoading)
-    // Như RN: lượt hỏng không lưu phần trả lời dở, chỉ còn câu hỏi.
+    #expect(store.saved.map(\.1) == [.user, .assistant])
+    #expect(store.saved.last?.2 == "Một nửa" + Coach.cutOffMark)
+    #expect(chat.canRetry)
+  }
+
+  /// KOA-T06: luồng "xong" mà không có chữ nào không được im lặng.
+  @Test func anEmptyAnswerIsAFailureNotSilence() async {
+    let stream = Stream()
+    stream.chunks = []
+    let store = Store()
+    let chat = CoachChat(userId: "u", stream: stream, store: store, edge: nil)
+    await chat.send("Hỏi", lang: "vi", today: Self.today, tzOffset: 0)
+    #expect(chat.failure == .incomplete)
+    #expect(chat.messages.map(\.role) == [.user])
     #expect(store.saved.map(\.1) == [.user])
-    #expect(store.touched.isEmpty)
+    #expect(chat.canRetry)
+  }
+
+  /// KOA-T06: "Thử lại" gửi lại đúng câu, không thêm/lưu câu hỏi lần hai, thay phần dở.
+  @Test func retryReplacesTheTruncatedAnswer() async {
+    let stream = Stream()
+    stream.chunks = ["Một nửa"]
+    stream.failure = .incomplete
+    let store = Store()
+    let chat = CoachChat(userId: "u", stream: stream, store: store, edge: nil)
+    await chat.send("Hỏi", lang: "vi", today: Self.today, tzOffset: 0)
+    #expect(chat.failure == .incomplete)
+    stream.chunks = ["Trọn ", "câu"]
+    stream.failure = nil
+    await chat.retry(lang: "vi", today: Self.today, tzOffset: 0)
+    #expect(chat.failure == nil)
+    #expect(chat.messages.map(\.content) == ["Hỏi", "Trọn câu"])
+    #expect(stream.calls.last?.0 == 1, "gửi lại câu hỏi, không gửi phần dở")
+    #expect(store.saved.filter { $0.1 == .user }.count == 1, "câu hỏi chỉ lưu một lần")
+    #expect(store.saved.last?.2 == "Trọn câu")
+    #expect(!chat.canRetry)
+    // Không có lượt hỏng thì thử lại không làm gì.
+    await chat.retry(lang: "vi", today: Self.today, tzOffset: 0)
+    #expect(stream.calls.count == 2)
+  }
+
+  /// Hết lượt / phiên hết hạn / chưa triển khai: thử lại không giúp gì → không có nút.
+  @Test func noRetryWhereRetryingCannotHelp() async {
+    for f in [EdgeFunction.Failure.quotaExceeded, .unauthorised, .notDeployed] {
+      let stream = Stream()
+      stream.chunks = []
+      stream.failure = f
+      let chat = CoachChat(userId: "u", stream: stream, store: Store(), edge: nil)
+      await chat.send("Hỏi", lang: "vi", today: Self.today, tzOffset: 0)
+      #expect(chat.failure == f)
+      #expect(!chat.canRetry, "\(f)")
+    }
+    for f in [EdgeFunction.Failure.timedOut, .incomplete, .overloaded, .offline, .rateLimited] {
+      let stream = Stream()
+      stream.failure = f
+      let chat = CoachChat(userId: "u", stream: stream, store: Store(), edge: nil)
+      await chat.send("Hỏi", lang: "vi", today: Self.today, tzOffset: 0)
+      #expect(chat.canRetry, "\(f)")
+    }
+  }
+
+  /// Một luồng chảy một mẩu rồi treo — để thử nút Dừng.
+  final class HangingStream: CoachStream, @unchecked Sendable {
+    func stream(
+      messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
+      waterUnit: Water.Unit
+    ) -> AsyncThrowingStream<String, any Error>
+    {
+      AsyncThrowingStream { c in c.yield("Đang nói dở") }
+    }
+  }
+
+  /// Devin #961: câu hỏi lưu hỏng lúc gửi (mất mạng) → "Thử lại" lưu bù, lịch sử đủ hai phía.
+  @Test func retrySavesAQuestionThatNeverReachedHistory() async {
+    let stream = Stream()
+    stream.failure = .offline
+    stream.chunks = []
+    let store = Store()
+    store.failSaves = 1
+    let chat = CoachChat(userId: "u", stream: stream, store: store, edge: nil)
+    await chat.send("Hôm nay tập gì?", lang: "vi", today: Self.today, tzOffset: 0)
+    #expect(store.saved.isEmpty)
+    stream.failure = nil
+    stream.chunks = ["Tập chân"]
+    await chat.retry(lang: "vi", today: Self.today, tzOffset: 0)
+    #expect(store.saved.map(\.1) == [.user, .assistant])
+    #expect(store.saved.first?.2 == "Hôm nay tập gì?")
+  }
+
+  /// Devin #961: phần dở lưu qua bước đối chiếu số liệu như câu hoàn chỉnh.
+  @Test func aPartialIsSanitizedBeforeSaving() async {
+    let stream = Stream()
+    stream.chunks = ["Số SAI"]
+    stream.failure = .incomplete
+    let store = Store()
+    let chat = CoachChat(userId: "u", stream: stream, store: store, edge: nil)
+    chat.sanitize = { $0.replacingOccurrences(of: "SAI", with: "đúng") }
+    await chat.send("Hỏi", lang: "vi", today: Self.today, tzOffset: 0)
+    #expect(store.saved.last?.2 == "Số đúng" + Coach.cutOffMark)
+    #expect(chat.messages.last?.content == "Số đúng" + Coach.cutOffMark)
+  }
+
+  /// Devin #961: `stop()` dừng cả lượt gửi bắt đầu từ ngoài màn chat, và phần dở VẪN được
+  /// lưu dù lượt gửi đã bị huỷ.
+  @Test func stopFromAnywhereKeepsAndSavesThePartial() async {
+    let store = Store()
+    let chat = CoachChat(userId: "u", stream: HangingStream(), store: store, edge: nil)
+    let task = Task { await chat.send("Hỏi", lang: "vi", today: Self.today, tzOffset: 0) }
+    for _ in 0..<200 where chat.messages.count < 2 { try? await Task.sleep(for: .milliseconds(5)) }
+    chat.stop()
+    await task.value
+    #expect(chat.failure == nil)
+    #expect(!chat.isLoading)
+    #expect(store.saved.last?.2 == "Đang nói dở" + Coach.cutOffMark)
+  }
+
+  /// KOA-T06: Dừng giữ phần đã nhận (đánh dấu "…"), không báo lỗi, không đề nghị thử lại.
+  @Test func stoppingKeepsThePartialWithoutAFailure() async {
+    let store = Store()
+    let chat = CoachChat(userId: "u", stream: HangingStream(), store: store, edge: nil)
+    let task = Task { await chat.send("Hỏi", lang: "vi", today: Self.today, tzOffset: 0) }
+    for _ in 0..<200 where chat.messages.count < 2 { try? await Task.sleep(for: .milliseconds(5)) }
+    task.cancel()
+    await task.value
+    #expect(chat.failure == nil)
+    #expect(!chat.isLoading)
+    #expect(chat.messages.last?.content == "Đang nói dở" + Coach.cutOffMark)
+    #expect(store.saved.last?.2 == "Đang nói dở" + Coach.cutOffMark)
+    #expect(!chat.canRetry)
   }
 
   @Test func savingIsBestEffort() async {
@@ -218,6 +351,41 @@ struct CoachChatTests {
     #expect(chat.conversationId == nil)
   }
 
+  /// KOA-T38: mở hỏng thì báo (không im lặng); tải lại lịch sử hỏng thì báo danh sách cũ.
+  @Test func historyFailuresAreSurfaced() async {
+    final class FailingStore: CoachStore, @unchecked Sendable {
+      var failMessages = true
+      var failList = false
+      func createConversation(userId: String, title: String) async throws -> String { "c" }
+      func saveMessage(conversationId: String, role: Coach.Role, content: String) async throws {}
+      func touch(conversationId: String, userId: String) async throws {}
+      func messages(conversationId: String) async throws -> [Coach.Message] {
+        if failMessages { throw RowStoreError(code: nil, message: "down") }
+        return [Coach.Message(id: "m1", role: .user, content: "Hỏi")]
+      }
+      func conversations(userId: String) async throws -> [Coach.Conversation] {
+        if failList { throw RowStoreError(code: nil, message: "down") }
+        return [Coach.Conversation(id: "c1", title: "Hỏi", updatedAt: nil)]
+      }
+      func deleteConversation(id: String, userId: String) async throws {}
+    }
+    let store = FailingStore()
+    let chat = CoachChat(userId: "u", stream: Stream(), store: store, edge: nil)
+    #expect(await chat.open("c1") == false)
+    #expect(chat.openFailed == "c1")
+    store.failMessages = false
+    #expect(await chat.open("c1") == true)
+    #expect(chat.openFailed == nil)
+    await chat.loadHistory()
+    #expect(!chat.historyStale)
+    store.failList = true
+    await chat.loadHistory()
+    #expect(chat.historyStale, "danh sách cũ được báo là cũ")
+    store.failList = false
+    await chat.loadHistory()
+    #expect(!chat.historyStale)
+  }
+
   @Test func openingOldConversationsLateLoadLoses() async {
     let store = Store()
     store.stored = [
@@ -226,7 +394,7 @@ struct CoachChatTests {
     ]
     store.delayFor = ["a": 80_000_000]
     let chat = CoachChat(userId: "u", stream: Stream(), store: store, edge: nil)
-    async let first: Void = chat.open("a")
+    async let first: Bool = chat.open("a")
     try? await Task.sleep(nanoseconds: 10_000_000)
     await chat.open("b")
     await first

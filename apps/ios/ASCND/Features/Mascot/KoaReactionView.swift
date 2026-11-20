@@ -44,20 +44,22 @@ struct KoaReactionView: View {
   @State private var start = Date.now
   @State private var heard = Heard()
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  /// Ra nền thì đồng hồ cảnh dừng (KOA-T11).
+  @Environment(\.scenePhase) private var scenePhase
 
   /// Tiếng đã phát trong vòng lặp này (không phát lại khi khung vẽ lại).
-  final class Heard { var loop = -1; var played = Set<Int>(); var cue = -1; var ended = false }
+  final class Heard { var loop = -1; var played = Set<Int>(); var cue = -1; var ended = false; var buzzed = Set<Double>() }
 
   private var cueList: [KoaPerformance.Cue] { KoaPerformance.cues(scene, content: content) }
 
-  private static let bg = Color(red: 0.055, green: 0.059, blue: 0.071)
-  private static let orange = Color(red: 0.91, green: 0.52, blue: 0.16)
-  private static let gold = Color(red: 0.91, green: 0.70, blue: 0.23)
-  private static let rose = Color(red: 0.90, green: 0.33, blue: 0.42)
+  private static let orange = KoaShowStage.orange
+  private static let gold = KoaShowStage.gold
+  private static let rose = KoaShowStage.rose
 
   var body: some View {
+    // KOA-T11: tối đa 60 khung/giây (đúng tốc độ màn), dừng khi app không ở tiền cảnh.
     // reduce-motion: đồng hồ của cảnh; bật Giảm chuyển động thì máy không đẩy, không rung, không pháo giấy, chỉ còn chữ mờ dần
-    TimelineView(.animation) { ctx in
+    TimelineView(.animation(minimumInterval: 1.0 / 60, paused: scenePhase != .active)) { ctx in
       let total = KoaPerformance.duration(scene)
       let cycle = total + 900
       // `ASCND_DEBUG_KOA_REACTION_T=<ms>`: dừng ở một mốc để chụp so sánh
@@ -68,16 +70,8 @@ struct KoaReactionView: View {
       let cues = cueList.filter { t >= $0.from && t < $0.to }
       GeometryReader { geo in
         ZStack {
-          Self.bg.ignoresSafeArea()
-          // nền tĩnh: quầng sáng sân khấu + vũng sáng trên sàn, KHÔNG theo máy / theo Koa
-          RadialGradient(colors: [Self.orange.opacity(0.30), .clear], center: UnitPoint(x: 0.5, y: 0.46), startRadius: 0,
-                         endRadius: geo.size.width * 0.85)
-            .ignoresSafeArea()
-          Ellipse().fill(RadialGradient(colors: [Self.orange.opacity(0.22), .clear], center: .center, startRadius: 0,
-                                        endRadius: geo.size.width * 0.38))
-            .frame(width: geo.size.width * 0.8, height: geo.size.width * 0.18)
-            .position(x: geo.size.width / 2, y: geo.size.height * 0.79)
-          effects(cues, t: t, size: geo.size)
+          KoaShowStage.Backdrop(size: geo.size)
+          KoaShowStage.Effects(cues: cues, t: t, reduceMotion: reduceMotion)
           koa(f, t: t, size: geo.size)
           ring(f.ring)
           ForEach(Array(cues.enumerated()), id: \.offset) { _, c in overlay(c, since: t - c.from, size: geo.size) }
@@ -114,47 +108,33 @@ struct KoaReactionView: View {
 
   /// Tiếng + rung khi dòng thời gian đi qua mốc của chúng.
   private func fire(loop: Int, t: Double) {
-    if heard.loop != loop { heard.loop = loop; heard.played = []; heard.cue = -1 }
+    if heard.loop != loop { heard.loop = loop; heard.played = []; heard.cue = -1; heard.buzzed = [] }
     for (i, s) in KoaPerformance.sounds(scene).enumerated() where s.t <= t && !heard.played.contains(i) {
       heard.played.insert(i)
       if t - s.t < 250 { KoaSound.reaction(s.name, gain: s.gain) }
+    }
+    // KOA-T15: rung theo mốc của kịch bản (tắt tiếng vẫn rung; Giảm chuyển động thì không).
+    guard KoaHaptics.allowed(reduceMotion: reduceMotion) else { return }
+    for m in KoaHaptics.due(KoaHaptics.marks(cueList), at: t, fired: heard.buzzed) {
+      heard.buzzed.insert(m.t)
+      KoaHapticPlayer.play(m.haptic)
     }
   }
 
   // MARK: Koa — một hình duy nhất, không đổi dáng
 
   private func koa(_ f: KoaPerformance.Frame, t: Double, size: CGSize) -> some View {
-    let fig = min(size.width * 0.82, 340.0)
-    let anchorY = 0.32 + (0.6 - 0.32) * f.focus
-    let zoom = (reduceMotion ? 1 : f.zoom) * (1 - 0.58 * f.ring)
     var dx = 0.0, dy = 0.0
     if !reduceMotion, cueList.contains(where: { $0.effects.contains(.shake) && t >= $0.from && t < $0.from + 300 }) {
       let a = 6.0
       dx = sin(t * 0.09) * a; dy = cos(t * 0.11) * a
     }
     let hand = KoaPerformance.hand(scene)
-    // bay lên: dời CẢ hình (không nhún trong khung vẽ — đầu / tai bị cắt ở mép khung); bóng nằm yên trên sàn,
-    // co lại và nhạt đi khi bay cao. Không dùng quầng sáng `stage` của hình: nó dính vào hình nên nền nhảy theo
-    // Koa (Kiệt 06/11) — nền là quầng sáng tĩnh của màn.
-    let unit = fig / 240
-    let air = (reduceMotion ? 0 : f.air) * unit
-    let lift = min(1, f.air / 40)
-    return ZStack {
-      Ellipse().fill(Color(red: 0.68, green: 0.71, blue: 0.75).opacity(0.32 * (1 - 0.55 * lift)))
-        .frame(width: 128 * unit * (1 - 0.35 * lift), height: 18 * unit * (1 - 0.35 * lift))
-        .offset(y: (294 - 150) * unit)
-      KoaFigureView(
-        expression: f.expression, pose: .idle, gesture: f.cheer > 0.001 ? .cheer : nil,
-        worn: hand.map { [.hand: $0] } ?? [:], size: fig, animated: true, stage: false, walk: f.walk, bleeds: true,
-        headLook: KoaMath.Gaze(x: f.look.x, y: f.look.y, k: 1), eyes: KoaMath.Gaze(x: f.eyes.x, y: f.eyes.y, k: 1),
-        groundShadow: false, gestureAmount: min(1.1, f.cheer)
-      )
-      .scaleEffect(x: reduceMotion ? 1 : f.sx, y: reduceMotion ? 1 : f.sy, anchor: .bottom)
-      .offset(y: -air)
-    }
-    .scaleEffect(zoom, anchor: UnitPoint(x: 0.5, y: anchorY))
+    return KoaShowStage.Figure(
+      frame: f, size: size, reduceMotion: reduceMotion, gesture: f.cheer > 0.001 ? .cheer : nil,
+      worn: hand.map { [.hand: $0] } ?? [:], gestureAmount: min(1.1, f.cheer), shrink: 1 - 0.58 * f.ring)
     .offset(x: dx, y: dy - f.ring * size.height * 0.2)
-    .position(x: size.width / 2, y: size.height * 0.54)
+    .position(x: size.width / 2, y: size.height * KoaShowStage.koaY)
   }
 
   @ViewBuilder private func ring(_ k: Double) -> some View {
@@ -209,50 +189,5 @@ struct KoaReactionView: View {
     }
     .opacity(max(0, op))
     .padding(.top, 70).padding(.bottom, 70)
-  }
-
-  // MARK: hiệu ứng
-
-  private func effects(_ cues: [KoaPerformance.Cue], t: Double, size: CGSize) -> some View {
-    Canvas { c, sz in
-      guard !reduceMotion else { return }
-      func rnd(_ i: Double) -> Double { let x = sin(i * 12.9898) * 43758.5453; return x - floor(x) }
-      let cx = sz.width / 2, cy = sz.height * 0.46
-      for cue in cues {
-        let local = t - cue.from
-        if cue.effects.contains(.speedLines) {
-          for i in 0..<26 {
-            let a = rnd(Double(i)) * 2 * .pi, r0 = 210 + rnd(Double(i) + 1) * 70 - local / 30
-            var path = Path()
-            path.move(to: CGPoint(x: cx + cos(a) * r0, y: cy + sin(a) * r0))
-            path.addLine(to: CGPoint(x: cx + cos(a) * (r0 + 90), y: cy + sin(a) * (r0 + 90)))
-            c.stroke(path, with: .color(.white.opacity(0.14)), lineWidth: 3)
-          }
-        }
-        if cue.effects.contains(.sweat) {
-          for i in 0..<3 {
-            let q = (local / 800 + Double(i) / 3).truncatingRemainder(dividingBy: 1)
-            let r = CGRect(x: cx - 80 + Double(i) * 75, y: cy - 150 + q * 80, width: 12, height: 18)
-            c.fill(Path(ellipseIn: r), with: .color(Color(red: 0.62, green: 0.85, blue: 0.95).opacity(1 - q)))
-          }
-        }
-        if cue.effects.contains(.confetti) {
-          let cols: [Color] = [Self.orange, Self.gold, Self.rose, Color(red: 0.49, green: 0.78, blue: 0.93), .white]
-          for i in 0..<80 {
-            let d = Double(i)
-            let life = local / 1000 + rnd(d + 11) * 0.4
-            let x = rnd(d + 5) * sz.width + (rnd(d) - 0.5) * 60 * life
-            let y = -20 - rnd(d + 7) * 200 + (170 + rnd(d + 9) * 150) * life + 110 * life * life
-            guard y < sz.height + 20 else { continue }
-            var g = c
-            g.translateBy(x: x, y: y)
-            g.rotate(by: .radians(life * (rnd(d + 3) * 10 - 5)))
-            g.fill(Path(CGRect(x: -4, y: -7, width: 8, height: 14 * abs(cos(life * 6 + d)))), with: .color(cols[i % 5]))
-          }
-        }
-      }
-    }
-    .ignoresSafeArea()
-    .allowsHitTesting(false)
   }
 }

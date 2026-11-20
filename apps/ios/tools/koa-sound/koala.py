@@ -73,7 +73,9 @@ REACTIONS = {
 }
 
 # Âm tiết khi nói: nốt ngũ cung quanh C5–A5, ngắn, mỗi file một nốt; app phát theo nhịp miệng.
-TALK = ["C5", "D5", "E5", "G5", "A5", "C6", "A5", "G5", "E5", "D5"]
+# Sáu âm tiết khác nhau (KOA-T50): bản cũ 10 tên nhưng chỉ 6 nốt (lên rồi xuống), app chọn NGẪU NHIÊN nên
+# bốn tệp trùng từng byte chỉ làm lệch xác suất và phá luật "không lặp âm liền nhau" của `KoaSound.talk`.
+TALK = ["C5", "D5", "E5", "G5", "A5", "C6"]
 
 
 def write(name, x, peak=0.5):

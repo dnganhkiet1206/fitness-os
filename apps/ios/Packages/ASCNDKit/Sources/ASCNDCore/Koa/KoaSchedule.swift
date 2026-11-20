@@ -1,7 +1,8 @@
 /// Koa sống theo lịch tập (#527 đợt 2, Kiệt duyệt 20/10
 /// `docs/design/mocks/koa-wave2-schedule.html`).
 ///
-/// Hai trạng thái đè lên Koa của ngày (thẻ Hôm nay, widget, phòng linh vật):
+/// Hai trạng thái đè lên Koa của ngày (thẻ Hôm nay, widget — qua Koa của Hôm nay — và phòng linh vật;
+/// KOA-T30 19/11: phòng trước đây chưa dùng):
 /// - `pump`: tối đa 2 giờ sau buổi tập;
 /// - `waiting`: hôm nay có buổi trong lịch, chưa tập, đã qua giờ quen tập, chưa tới 22:00.
 /// "Mất pump" và "tụt hạng" đã bỏ (Kiệt 21/10, duyệt GĐ1): Koa không phạt việc

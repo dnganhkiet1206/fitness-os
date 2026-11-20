@@ -367,7 +367,20 @@ final class KoaDirectorDriver {
   private func nextLine(_ plan: KoaTalk.Schedule, facts: KoaCompanion.Facts, at now: Double) {
     var plan = plan
     talkLog = talkLog.today(facts.day)
-    guard let topic = KoaTalk.pick(facts, log: talkLog, greeting: talkGreeting) else {
+    // KOA-T50: dựng câu TRƯỚC khi ghi "đã nói". Chủ đề thiếu số liệu (câu `nil`) không bị đốt cả ngày — thử
+    // chủ đề khác; không còn chủ đề nào nói được thì im lượt này.
+    var tried = talkLog
+    var found: (KoaTalk.Topic, KoaTalk.Beat)?
+    for _ in 0..<8 {
+      guard let topic = KoaTalk.pick(facts, log: tried, greeting: talkGreeting) else { break }
+      let probe = KoaTalk.Beat(topic: topic, variant: Int.random(in: 0..<KoaTalk.variants(topic)))
+      if let line = lineOf?(probe) {
+        found = (topic, KoaTalk.Beat(topic: topic, variant: probe.variant, line: line))
+        break
+      }
+      tried.said.append(topic)
+    }
+    guard let (topic, beat) = found else {
       plan.spoke(at: now, seconds: 0)
       talkPlan = plan
       return
@@ -377,9 +390,6 @@ final class KoaDirectorDriver {
     if !talkLog.userId.isEmpty, let data = try? JSONEncoder().encode(talkLog) {
       UserDefaults.standard.set(data, forKey: Self.talkKey(talkLog.userId))
     }
-    let probe = KoaTalk.Beat(topic: topic, variant: Int.random(in: 0..<KoaTalk.variants(topic)))
-    guard let line = lineOf?(probe) else { return }
-    let beat = KoaTalk.Beat(topic: topic, variant: probe.variant, line: line)
     plan.spoke(at: now, seconds: beat.seconds)
     talkPlan = plan
     speak(beat, at: now)

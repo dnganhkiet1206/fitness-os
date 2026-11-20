@@ -103,6 +103,7 @@ struct CommunityPrivacyView: View {
         }
         blockedSection
         mutedSection
+        reportsSection
         postsSection
       }
       .padding(DS.Spacing.md)
@@ -266,6 +267,37 @@ struct CommunityPrivacyView: View {
             Task { say(await book.unmute(p.userId), done: String(localized: "community.privacy.unmuted")) }
           }
         }
+      }
+    }
+  }
+
+  /// "Báo cáo của tôi" (#915, giai đoạn 2): báo cáo mình đã gửi + trạng thái.
+  /// Đặt ở Quyền riêng tư — cùng nhóm an toàn với Đã chặn / Đã tắt tiếng.
+  private var reportsSection: some View {
+    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      heading("community.myreports.title")
+      sub("community.myreports.hint")
+      DSCard {
+        NavigationLink {
+          MyReportsScreen(userId: book.userId)
+        } label: {
+          HStack(spacing: DS.Spacing.sm) {
+            Image(systemName: "flag")
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .accessibilityHidden(true)
+            Text("community.myreports.title")
+              .font(DS.TextStyle.body)
+              .foregroundStyle(DS.Color.foreground.swiftUI)
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+              .font(DS.TextStyle.footnote)
+              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              .accessibilityHidden(true)
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
       }
     }
   }

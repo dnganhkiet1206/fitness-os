@@ -36,7 +36,7 @@ public struct Profile: Sendable, Hashable, Codable {
 
   public init(userId: String) { self.userId = userId }
 
-  /// Một hàng `profiles` (`select('*')`). Số đọc khoan dung (số hoặc chuỗi số,
+  /// Một hàng `profiles` (đủ cột `SupabaseProfileSource` đọc). Số đọc khoan dung (số hoặc chuỗi số,
   /// như `Number(…)`); cột thiếu / null là `nil` — không bao giờ thay bằng mặc định.
   public init?(row: JSONValue) {
     guard let id = row["user_id"]?.stringValue, !id.isEmpty else { return nil }

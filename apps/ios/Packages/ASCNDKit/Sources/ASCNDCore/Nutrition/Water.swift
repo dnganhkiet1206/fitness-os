@@ -186,7 +186,8 @@ public enum Water {
 
   /// Ngày đầu cần ĐỌC: bảy cốc (`useWaterWeek`: hôm nay − 6) và khung trung bình
   /// (`AverageWindow`: hôm nay − 7, Kiệt 27/10) — lấy ngày sớm hơn.
-  public static func weekStart(_ today: LocalDate) -> LocalDate {
+  /// KOA-T21: đổi tên từ `weekStart` — đây là khung TRƯỢT bảy ngày, không phải Thứ Hai.
+  public static func rollingWindowStart(_ today: LocalDate) -> LocalDate {
     min(today.adding(days: -6), AverageWindow.first(before: today))
   }
 

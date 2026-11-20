@@ -271,7 +271,8 @@ public final class TodayController {
     onRest: @escaping @MainActor (RestEvent, PlannedSet?) -> Void = { _, _ in },
     onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
   ) -> WorkoutSessionController? {
-    guard let sessionPlan = plan?.sessionPlan(variant: variantToday) else { return nil }
+    let progress = ProgressWeek.targets(userId: userId, date: today, in: choices)
+    guard let sessionPlan = plan?.sessionPlan(variant: variantToday, progress: progress) else { return nil }
     return WorkoutSessionController(
       plan: sessionPlan, userId: userId, store: workouts, clock: clock, timeZone: timeZone,
       loggedElsewhere: serverTrained.contains(today),
@@ -324,6 +325,11 @@ public final class TodayController {
       d = d.adding(days: 1)
     }
     return n
+  }
+
+  /// Tuần lên tạ (`KoaWeekCoach`, KOA-T23): nhận mục tiêu tăng tải cho các buổi tới hết tuần.
+  public func setProgressWeek(_ items: [OverloadPlan.Item]) {
+    ProgressWeek.set(ProgressWeek.targets(from: items), userId: userId, week: today, in: choices)
   }
 
   /// Buổi hôm nay là "buổi ngắn" (quay lại sau ≥ 4 tuần nghỉ).

@@ -342,7 +342,7 @@ struct MealLogBar: View {
       .accessibilityIdentifier("nutrition.search")
       Divider().frame(height: 24).opacity(0.6)
       // Chụp ảnh món cần edge function AI — ẩn khi chưa deploy (`AppServices.probeAI`).
-      if services?.aiDeployed == true {
+      if services?.isAIDeployed(.scanFood) == true {
         Button { open = .photo } label: {
           Image(systemName: "camera")
             .font(.system(size: 17, weight: .semibold))

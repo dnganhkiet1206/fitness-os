@@ -127,7 +127,7 @@ struct AssistantTab: View {
               .buttonStyle(.plain)
               Divider().padding(.leading, 58).opacity(0.6)
             }
-            if weekly != nil, ai {
+            if weekly != nil, weeklyAI {
               NavigationLink(value: AssistantRoute.weekly) {
                 WorkoutsHomeView.toolRow(
                   "calendar", String(localized: "assistant.tool.week"), sub: weekLine, tint: DS.Color.metricBlue.swiftUI)
@@ -219,7 +219,7 @@ struct AssistantTab: View {
                 // Vì sao điểm như vậy (15/10, audit — Apple Health: chạm điểm xem yếu tố).
                 ReadinessFactors(
                   makeBook: { services.makeReadinessBook(userId: flow.today.userId, date: readinessDate) }, lang: lang)
-                MetricPanelView(book: metrics, signal: signal, lang: lang, onAsk: ai ? { question in
+                MetricPanelView(book: metrics, signal: signal, lang: lang, onAsk: services.isAIDeployed(.coach) ? { question in
                   guard let chat else { return }
                   path.append(.chat)
                   CoachChatView.ask(chat, question, lang: lang, signal: signal?.signal, logged: signal?.logged)
@@ -457,7 +457,8 @@ struct AssistantTab: View {
     guard let library = flow.today.library, let history = services.koaGainsHistory else { return nil }
     let today = flow.today.today
     let s = KoaWeek.summary(
-      weekStart: WeeklyChallenges.weekStart(today), today: today, library: library, history: history.days)
+      weekStart: today.weekStart, today: today, library: library, history: history.days,
+      paused: services.koaPausedDay(userId: flow.today.userId, today: today))
     return String(localized: "dp.week.count \(s.done) \(s.target)") + " · " + String(localized: "wr.plan.gains \(s.gains)")
   }
 
@@ -502,7 +503,7 @@ struct AssistantTab: View {
   private var availableTools: [Tool] {
     var out: [Tool] = []
     // Tổng kết tuần và trí nhớ coach cần edge function AI — ẩn khi chưa deploy.
-    if weekly != nil, ai {
+    if weekly != nil, weeklyAI {
       out.append(
         Tool(
           route: .weekly, idName: "weekly", symbol: "calendar", tint: DS.Color.metricBlue.swiftUI,
@@ -532,7 +533,7 @@ struct AssistantTab: View {
           route: .sleep, idName: "sleep", symbol: "moon.fill", tint: DS.Color.metricPurple.swiftUI,
           label: String(localized: "assistant.tool.sleep"), hint: String(localized: "assistant.tool.sleep.hint")))
     }
-    if memory != nil, ai {
+    if memory != nil, memoryAI {
       out.append(
         Tool(
           route: .memory, idName: "memory", symbol: "brain.head.profile", tint: DS.Color.metricPurple.swiftUI,
@@ -541,8 +542,9 @@ struct AssistantTab: View {
     return out.filter { !Self.shownOnFeed.contains($0.route) }
   }
 
-  /// Edge function AI đã deploy (`AppServices.probeAI`) — chưa thì ẩn mọi lối vào AI.
-  private var ai: Bool { services.aiDeployed == true }
+  /// Tổng kết tuần / trí nhớ coach: mỗi lối chỉ nhìn function của nó (`AppServices.probeAI`).
+  private var weeklyAI: Bool { services.isAIDeployed(.weeklyReview) }
+  private var memoryAI: Bool { services.isAIDeployed(.coachMemory) }
 
   @ViewBuilder private var tools: some View {
     let list = availableTools

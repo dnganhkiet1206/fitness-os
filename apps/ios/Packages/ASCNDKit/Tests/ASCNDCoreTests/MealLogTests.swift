@@ -71,7 +71,8 @@ struct MealLogRuleTests {
     #expect(k.kcal == 350)
   }
 
-  /// Bản ghi `meal`: số mỗi món đã nhân khẩu phần và làm tròn; tổng làm tròn trên tổng thô.
+  /// Bản ghi `meal`: số mỗi món đã nhân khẩu phần và làm tròn; tổng là tổng các
+  /// món đã làm tròn — bằng tổng các số đã hiện, không phải số làm tròn trên tổng thô.
   @Test func entryRoundsPerItemAndOnTheTotal() throws {
     let items = [
       MealLog.Item(id: "x", foodItemId: "f1", name: "Phở", servings: 1.5, kcal: 301, protein: 10.3, carbs: 0, fat: 0),
@@ -83,7 +84,7 @@ struct MealLogRuleTests {
     #expect(e.id == "m1")
     #expect(e.kind == MealLog.kind)
     #expect(e.payload["total_kcal"] == .number(452))
-    #expect(e.payload["total_protein_g"] == .number(16))
+    #expect(e.payload["total_protein_g"] == .number(15))
     let rows = MealLog.itemRows(e.payload)
     #expect(rows.count == 2)
     #expect(rows[0]["id"] == .string("i1"))
@@ -94,6 +95,30 @@ struct MealLogRuleTests {
     #expect(MealLog.entryRow(e.payload)["items"] == nil)
     #expect(MealLog.entryRow(e.payload)["meal_type"] == .string("dinner"))
     #expect(MealLog.isRow(e))
+  }
+
+  /// R2-ECO-08: 3 × 100.4 — mỗi món hiện 100 thì tổng hiện 300, không phải 301
+  /// (làm tròn trên tổng thô). Một quy tắc cho cả năm chất, như `entryTotals`.
+  @Test func entryTotalsAreTheSumOfRoundedItems() throws {
+    let items = (0..<3).map {
+      MealLog.Item(
+        id: "m\($0)", foodItemId: nil, name: "Món \($0)", kcal: 100.4, protein: 100.4, carbs: 100.4, fat: 100.4,
+        fiber: 100.4)
+    }
+    let e = MealLog.entry(
+      id: "M1", itemIds: ["I1", "I2", "I3"], userId: "u1", mealType: "lunch", dateTime: "2026-10-09T05:00:00.000Z",
+      items: items, createdAt: EpochMillis(0))
+    let rows = MealLog.itemRows(e.payload)
+    #expect(rows.count == 3)
+    for (col, total) in [
+      ("kcal", "total_kcal"), ("protein_g", "total_protein_g"), ("carbs_g", "total_carbs_g"),
+      ("fat_g", "total_fat_g"), ("fiber_g", "total_fiber_g"),
+    ] {
+      #expect(rows.allSatisfy { $0[col] == .number(100) })
+      let sum = rows.reduce(0.0) { $0 + MealDiary.num($1[col]) }
+      #expect(e.payload[total] == .number(300))
+      #expect(e.payload[total] == .number(sum))
+    }
   }
 
   /// `foldRecentMeals`: bỏ bữa rỗng, bỏ bữa trùng chữ ký (tập tên, không phân
