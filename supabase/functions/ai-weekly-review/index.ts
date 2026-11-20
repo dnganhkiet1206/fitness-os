@@ -1,4 +1,5 @@
-import { callAI, DATA_SLOT, fillData, forSpanish, promptLang } from "../_shared/ai.ts";
+import { callAI, promptLang } from "../_shared/ai.ts";
+import { DATA_SLOT, fillData, forSpanish } from "../_shared/prompt-slots.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { aiGate, aiPayload, corsHeaders, json, localDate, opaque, quotaExceeded, requireUser, toolArgs } from "../_shared/guard.ts";

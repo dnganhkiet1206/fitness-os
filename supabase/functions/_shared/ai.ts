@@ -273,4 +273,3 @@ export async function callAI(
  */
 export const promptLang = (raw: unknown): "vi" | "en" => (raw === "en" || raw === "es" ? "en" : "vi");
 
-export { DATA_SLOT, fillData, forSpanish, slot } from "./prompt-slots.ts";

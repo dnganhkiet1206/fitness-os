@@ -1,5 +1,6 @@
 import { HOSTILE_REFUSAL, looksHostile, refusalStream, scopeRule } from "../_shared/scope.ts";
-import { callAI, DATA_SLOT, fillData, forSpanish, slot } from "../_shared/ai.ts";
+import { callAI } from "../_shared/ai.ts";
+import { DATA_SLOT, fillData, forSpanish, slot } from "../_shared/prompt-slots.ts";
 import { appLang, markRule, stripBeforeMark } from "../_shared/answer.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
