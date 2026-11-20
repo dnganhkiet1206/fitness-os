@@ -170,6 +170,50 @@ struct KoaWeekTests {
       "chỉ Gains của tuần này; buổi dời sang T5 vẫn là buổi trong lịch")
   }
 
+  /// KOA-T22: Hôm nay / phòng (`state`) và Tổng kết tuần (`summary`) cùng một đích khi có Tạm nghỉ.
+  @Test func stateAndSummaryAgreeOnTheTargetWithAPause() throws {
+    let fri = Self.mon.adding(days: 4), sun = Self.mon.adding(days: 6)
+    let paused: (LocalDate) -> Bool = { $0 == fri }
+    let trained: Set<LocalDate> = [Self.mon]
+    let st = try #require(KoaWeek.state(today: sun, library: Self.lib(), trained: trained, paused: paused))
+    let su = KoaWeek.summary(
+      weekStart: Self.mon, today: sun, library: Self.lib(),
+      history: trained.map { KoaGains.Day(date: $0, personalRecord: false) }, paused: paused)
+    #expect(st.target == 2 && su.target == st.target && su.done == st.done)
+  }
+
+  /// KOA-T22: buổi T6 dời sang T2 tuần sau — đích tuần này không đổi, buổi được tính ở tuần tập thật.
+  @Test func crossWeekMoveCountsWhereItIsTrained() throws {
+    let fri = Self.mon.adding(days: 4), nextMon = Self.mon.adding(days: 7)
+    let lib = Self.lib([
+      DayOverride(date: fri, templateId: nil, isRest: true, movedTo: nextMon),
+      DayOverride(date: nextMon, templateId: "t", isRest: false, movedFrom: fri),
+    ])
+    let history = [Self.mon, Self.mon.adding(days: 2), nextMon].map { KoaGains.Day(date: $0, personalRecord: false) }
+    let this = KoaWeek.summary(weekStart: Self.mon, today: nextMon, library: lib, history: history)
+    let next = KoaWeek.summary(weekStart: nextMon, today: nextMon, library: lib, history: history)
+    #expect(this.target == 3 && this.done == 2 && this.moved == 0)
+    #expect(next.done == 1 && next.moved == 1)
+  }
+
+  /// KOA-T22: 14 ngày lịch sử của Hôm nay phủ trọn tuần trước từ mọi ngày trong tuần (thẻ đầu tuần,
+  /// nhận bù Tuần của Koa đều đọc tuần trước từ nguồn này).
+  @Test func todayHistoryWindowCoversLastWeek() {
+    for o in 0..<7 {
+      let today = Self.mon.adding(days: o)
+      let firstRead = today.adding(days: -(TodayController.historyDays - 1))
+      #expect(firstRead <= today.weekStart.adding(days: -7), "thứ \(o + 2)")
+    }
+  }
+
+  /// KOA-T22: chưa có lịch — Tuần của Koa không có đích (ẩn), dải tuần Tập luyện vẫn hiện ngày đã tập.
+  @Test func noLibraryModelIsPinned() {
+    let trained: Set<LocalDate> = [Self.mon]
+    #expect(KoaWeek.state(today: Self.mon, library: nil, trained: trained) == nil)
+    let strip = WorkoutHome.week(today: Self.mon, library: nil, trained: trained)
+    #expect(strip.first?.status == .done && strip.dropFirst().allSatisfy { $0.status == .unplanned })
+  }
+
   /// Vòng ngày của màn Tổng kết tuần: một tuần đã qua vẫn đọc đúng lịch và buổi đã tập.
   @Test func daysOfAPastWeekFollowThePlan() {
     let prev = Self.mon.adding(days: -7)

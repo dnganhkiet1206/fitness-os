@@ -114,7 +114,9 @@ struct WeeklyReviewView: View {
   @ViewBuilder private var planBlock: some View {
     if let flow, let library = flow.today.library, let history = services?.koaGainsHistory {
       let today = flow.today.today
-      let s = KoaWeek.summary(weekStart: book.weekStart, today: today, library: library, history: history.days)
+      let s = KoaWeek.summary(
+        weekStart: book.weekStart, today: today, library: library, history: history.days,
+        paused: services?.koaPausedDay(userId: flow.today.userId, today: today) ?? { _ in false })
       let days = KoaWeek.days(
         weekStart: book.weekStart, today: today, library: library, trained: Set(history.days.map(\.date)))
       DSCard {

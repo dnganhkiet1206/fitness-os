@@ -81,18 +81,28 @@ extension KoaWeek {
     public let gains: Int
   }
 
+  /// Luật chung của mọi màn tuần (KOA-T22):
+  /// - Đích = số buổi theo lịch gốc của tuần (`KoaGains.Week.target`) TRỪ ngày Tạm nghỉ chưa tập —
+  ///   cùng một phép tính với `state`, nên Hôm nay, phòng Koa và Tổng kết tuần cùng một con số.
+  /// - Dời buổi KHÔNG đổi đích. Buổi dời sang tuần khác được tính ở tuần có buổi tập thật (tập ngày
+  ///   nào thì "đã tập" thuộc tuần ấy); `moved` chỉ đếm buổi dời VÀO tuần này.
+  /// - "Đã tập" = ngày có buổi ghi thật trong lịch sử truyền vào (Hôm nay: 14 ngày gần nhất của
+  ///   `TodayController` — đủ phủ trọn tuần trước từ mọi ngày trong tuần; Tổng kết: lịch sử Gains).
   public static func summary(
-    weekStart: LocalDate, today: LocalDate, library: TemplateSnapshot, history: [KoaGains.Day]
+    weekStart: LocalDate, today: LocalDate, library: TemplateSnapshot, history: [KoaGains.Day],
+    paused: (LocalDate) -> Bool = { _ in false }
   ) -> Summary {
     let end = weekStart.adding(days: 6)
     let week = KoaGains.Week(library)
     let inWeek = library.overrides.filter { $0.date >= weekStart && $0.date <= end }
     let trained = Set(history.map(\.date).filter { $0 >= weekStart && $0 <= min(end, today) })
+    let pausedPlanned = days(weekStart: weekStart, today: today, library: library, trained: trained)
+      .filter { $0.planned && !$0.trained && paused($0.date) }.count
     let last = min(end, today)
     let after = KoaGains.compute(history, week: week, today: last).points
     let before = KoaGains.compute(history, week: week, today: weekStart.adding(days: -1)).points
     return Summary(
-      target: week.target, done: trained.count, moved: inWeek.filter { $0.movedFrom != nil }.count,
+      target: max(0, week.target - pausedPlanned), done: trained.count, moved: inWeek.filter { $0.movedFrom != nil }.count,
       chosenRest: inWeek.filter { $0.isRest && $0.movedTo == nil }.count, gains: max(0, after - before))
   }
 }
