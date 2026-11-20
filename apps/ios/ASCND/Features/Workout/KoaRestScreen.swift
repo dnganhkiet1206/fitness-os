@@ -91,7 +91,10 @@ struct KoaRestScreen: View {
   /// Ra nền thì đồng hồ cảnh dừng (KOA-T11).
   @Environment(\.scenePhase) private var scenePhase
 
-  final class Heard { var scene: KoaReaction.Scene?; var played = Set<Int>(); var tick = -1; var buzzed = Set<Double>() }
+  final class Heard {
+    var scene: KoaReaction.Scene?; var played = Set<Int>(); var tick = -1; var buzzed = Set<Double>()
+    var active = RestActiveClock()
+  }
 
   private static let bg = Color(red: 0.055, green: 0.059, blue: 0.071)
   private static let orange = Color(red: 0.91, green: 0.52, blue: 0.16)
@@ -130,7 +133,10 @@ struct KoaRestScreen: View {
     // gian nên không lệch khi quay lại).
     // reduce-motion: Koa đứng yên ở khung đầu của mỗi cảnh, không nhún, không pháo giấy; chữ, thẻ và đồng hồ vẫn chạy
     TimelineView(.animation(minimumInterval: 1.0 / 60, paused: scenePhase != .active)) { ctx in
-      let elapsed = frozen ?? max(0, ctx.date.timeIntervalSince(startedAt ?? start) * 1000)
+      // KOA-T26: màn diễn chạy theo thời gian HOẠT ĐỘNG (trừ quãng dừng) — dừng thì Koa đứng yên
+      // cùng đồng hồ đếm ngược, tiếp tục không nhảy cóc nhịp.
+      let elapsed = frozen ?? heard.active.elapsed(
+        now: max(0, ctx.date.timeIntervalSince(startedAt ?? start) * 1000), paused: timer.isPaused)
       let now = frozen.map { EpochMillis((startedAt ?? start).addingTimeInterval($0 / 1000)) } ?? EpochMillis(ctx.date)
       let leftMs = timer.pausedLeft.map { Double($0) * 1000 } ?? Double(timer.endsAt.millis - now.millis)
       let left = timer.remaining(at: now)

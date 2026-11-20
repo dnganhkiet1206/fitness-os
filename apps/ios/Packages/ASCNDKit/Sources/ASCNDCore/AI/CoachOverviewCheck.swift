@@ -22,7 +22,7 @@ extension CoachOverview {
   /// Câu trả lời với khối tổng quan đã đối chiếu (viết lại khối, hoặc bỏ hẳn nếu
   /// không còn dòng nào đúng). Không có khối → trả nguyên văn.
   public static func sanitize(_ message: String, against s: AssistantSuggestions.Signal) -> String {
-    let (overview, text) = split(message)
+    let (overview, text) = split(message, complete: true)
     guard let overview else { return message }
     guard let good = overview.checked(against: s) else { return text }
     return "```ascnd\n\(good.json)\n```\n\(text)"

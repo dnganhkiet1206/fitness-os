@@ -429,11 +429,18 @@ public final class CoachChat {
   }
 
   /// Mở một cuộc trò chuyện cũ. Lượt mở về muộn không đè lượt mới hơn.
-  public func open(_ id: String) async {
+  /// Mở một cuộc trò chuyện cũ. `false` khi không đọc được (KOA-T38: trước đây im lặng —
+  /// màn lịch sử đã đóng, người dùng không biết vì sao không có gì xảy ra).
+  @discardableResult
+  public func open(_ id: String) async -> Bool {
     loadGeneration += 1
     let mine = loadGeneration
-    guard let loaded = try? await store.messages(conversationId: id) else { return }
-    guard !closed, mine == loadGeneration else { return }
+    openFailed = nil
+    guard let loaded = try? await store.messages(conversationId: id) else {
+      if !closed, mine == loadGeneration { openFailed = id }
+      return false
+    }
+    guard !closed, mine == loadGeneration else { return false }
     conversationId = id
     messages = loaded
     failure = nil
@@ -441,7 +448,13 @@ public final class CoachChat {
     truncatedId = nil
     // Đã học từ những tin này rồi (hoặc chúng đến từ máy khác) — không trả lại.
     learnedAt = loaded.count
+    return true
   }
+
+  /// Cuộc trò chuyện vừa mở không được (KOA-T38) — màn lịch sử báo + thử lại.
+  public private(set) var openFailed: String?
+  /// Danh sách lịch sử đang hiện là bản cũ: lần tải lại vừa hỏng (KOA-T38).
+  public private(set) var historyStale = false
 
   /// Đọc bảng lịch sử.
   public func loadHistory() async {
@@ -450,9 +463,13 @@ public final class CoachChat {
       let list = try await store.conversations(userId: userId)
       guard !closed else { return }
       history = .ready(list)
+      historyStale = false
     } catch {
       guard !closed else { return }
-      if case .ready = history { return }
+      if case .ready = history {
+        historyStale = true
+        return
+      }
       history = .failed
     }
   }

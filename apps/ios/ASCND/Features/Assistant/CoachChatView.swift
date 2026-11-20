@@ -827,7 +827,7 @@ private struct CoachMessageRow: View {
   }
 
   @ViewBuilder private var answer: some View {
-      let raw = CoachOverview.split(visible)
+      let raw = CoachOverview.split(visible, complete: !revealing)
       let parts = (overview: checkedOverview(raw.overview), text: raw.text)
       VStack(alignment: .leading, spacing: 14) {
         if let overview = parts.overview {
@@ -1481,6 +1481,8 @@ private struct CoachMarkdown: View {
 /// Lịch sử (`ai_conversations`, 20 cuộc gần nhất): chạm để mở, nút xoá cạnh
 /// từng hàng (hai nút riêng như RN — VoiceOver với tới được cả hai).
 private struct CoachHistorySheet: View {
+  /// Cuộc trò chuyện đang chờ xác nhận xoá (KOA-T38).
+  @State private var pendingDelete: Coach.Conversation?
   let chat: CoachChat
   @Environment(\.dismiss) private var dismiss
 
@@ -1498,6 +1500,15 @@ private struct CoachHistorySheet: View {
     }
     .presentationDetents([.medium, .large])
     .task { await chat.loadHistory() }
+    .confirmationDialog(
+      Text("coach.delete.confirm"), isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
+      titleVisibility: .visible, presenting: pendingDelete
+    ) { convo in
+      Button("coach.delete.confirm.action", role: .destructive) { Task { await chat.delete(convo.id) } }
+      Button("common.cancel", role: .cancel) {}
+    } message: { _ in
+      Text("coach.delete.confirm.message")
+    }
     .sensoryFeedback(.error, trigger: chat.deleteFailed) { _, failed in failed }
   }
 
@@ -1518,6 +1529,12 @@ private struct CoachHistorySheet: View {
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.destructive.swiftUI)
         }
+        // KOA-T38: mở / tải lại hỏng thì nói ra, có nút thử lại (trước đây im lặng).
+        if let failed = chat.openFailed {
+          historyNotice("coach.history.openFailed") { Task { if await chat.open(failed) { dismiss() } } }
+        } else if chat.historyStale {
+          historyNotice("coach.history.stale") { Task { await chat.loadHistory() } }
+        }
         ForEach(list) { convo in
           row(convo)
         }
@@ -1526,13 +1543,26 @@ private struct CoachHistorySheet: View {
     }
   }
 
+  private func historyNotice(_ key: LocalizedStringKey, retry: @escaping () -> Void) -> some View {
+    HStack(spacing: DS.Spacing.sm) {
+      Label(key, systemImage: "exclamationmark.triangle")
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.destructive.swiftUI)
+      Spacer(minLength: 0)
+      Button(action: retry) {
+        Text("common.retry").font(DS.TextStyle.footnote.weight(.semibold)).frame(minHeight: 44)
+      }
+      .buttonStyle(.plain)
+    }
+  }
+
   private func row(_ convo: Coach.Conversation) -> some View {
     let title = convo.title.isEmpty ? "—" : convo.title
     let selected = chat.conversationId == convo.id
     return HStack(spacing: DS.Spacing.sm) {
       Button {
-        dismiss()
-        Task { await chat.open(convo.id) }
+        // Đóng màn lịch sử khi đã mở được (KOA-T38) — hỏng thì ở lại và báo.
+        Task { if await chat.open(convo.id) { dismiss() } }
       } label: {
         HStack {
           Text(verbatim: title)
@@ -1554,7 +1584,8 @@ private struct CoachHistorySheet: View {
       .accessibilityLabel(Text(verbatim: title))
       .accessibilityAddTraits(selected ? .isSelected : [])
       Button {
-        Task { await chat.delete(convo.id) }
+        // Xoá vĩnh viễn: hỏi lại trước (KOA-T38).
+        pendingDelete = convo
       } label: {
         Image(systemName: "trash")
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)

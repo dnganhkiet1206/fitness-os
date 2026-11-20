@@ -352,6 +352,41 @@ struct CoachChatTests {
     #expect(chat.conversationId == nil)
   }
 
+  /// KOA-T38: mở hỏng thì báo (không im lặng); tải lại lịch sử hỏng thì báo danh sách cũ.
+  @Test func historyFailuresAreSurfaced() async {
+    final class FailingStore: CoachStore, @unchecked Sendable {
+      var failMessages = true
+      var failList = false
+      func createConversation(userId: String, title: String) async throws -> String { "c" }
+      func saveMessage(conversationId: String, role: Coach.Role, content: String) async throws {}
+      func touch(conversationId: String, userId: String) async throws {}
+      func messages(conversationId: String) async throws -> [Coach.Message] {
+        if failMessages { throw RowStoreError(code: nil, message: "down") }
+        return [Coach.Message(id: "m1", role: .user, content: "Hỏi")]
+      }
+      func conversations(userId: String) async throws -> [Coach.Conversation] {
+        if failList { throw RowStoreError(code: nil, message: "down") }
+        return [Coach.Conversation(id: "c1", title: "Hỏi", updatedAt: nil)]
+      }
+      func deleteConversation(id: String, userId: String) async throws {}
+    }
+    let store = FailingStore()
+    let chat = CoachChat(userId: "u", stream: Stream(), store: store, edge: nil)
+    #expect(await chat.open("c1") == false)
+    #expect(chat.openFailed == "c1")
+    store.failMessages = false
+    #expect(await chat.open("c1") == true)
+    #expect(chat.openFailed == nil)
+    await chat.loadHistory()
+    #expect(!chat.historyStale)
+    store.failList = true
+    await chat.loadHistory()
+    #expect(chat.historyStale, "danh sách cũ được báo là cũ")
+    store.failList = false
+    await chat.loadHistory()
+    #expect(!chat.historyStale)
+  }
+
   @Test func openingOldConversationsLateLoadLoses() async {
     let store = Store()
     store.stored = [
@@ -360,7 +395,7 @@ struct CoachChatTests {
     ]
     store.delayFor = ["a": 80_000_000]
     let chat = CoachChat(userId: "u", stream: Stream(), store: store, edge: nil)
-    async let first: Void = chat.open("a")
+    async let first: Bool = chat.open("a")
     try? await Task.sleep(nanoseconds: 10_000_000)
     await chat.open("b")
     await first
