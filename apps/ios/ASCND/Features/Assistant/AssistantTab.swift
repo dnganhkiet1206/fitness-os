@@ -457,7 +457,8 @@ struct AssistantTab: View {
     guard let library = flow.today.library, let history = services.koaGainsHistory else { return nil }
     let today = flow.today.today
     let s = KoaWeek.summary(
-      weekStart: WeeklyChallenges.weekStart(today), today: today, library: library, history: history.days)
+      weekStart: today.weekStart, today: today, library: library, history: history.days,
+      paused: services.koaPausedDay(userId: flow.today.userId, today: today))
     return String(localized: "dp.week.count \(s.done) \(s.target)") + " · " + String(localized: "wr.plan.gains \(s.gains)")
   }
 

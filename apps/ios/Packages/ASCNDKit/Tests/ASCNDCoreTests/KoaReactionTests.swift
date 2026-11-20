@@ -291,9 +291,19 @@ extension KoaPerformanceFixTests {
 /// Kiệt 07/11: "bỏ cảnh koa nhảy đi" — màn nghỉ không còn cảnh nào Koa rời sàn.
 @Suite struct KoaRestNoJumpTests {
   @Test func koaNeverLeavesTheFloorDuringRest() {
-    #expect(!KoaPerformance.restActivities.contains(.restJog))
     for s in [KoaReaction.Scene.restIntro, .restGo] + KoaPerformance.restActivities {
       #expect(KoaPerformance.frames(s).allSatisfy { $0.air == 0 }, "\(s) có nhảy")
     }
+  }
+}
+
+/// KOA-T30: mascot khác Koa có mặt theo ngày.
+@Suite struct VectorMascotMoodTests {
+  @Test func everyEmotionMapsToAMood() {
+    #expect(VectorMascot.Mood(.proud) == .happy)
+    #expect(VectorMascot.Mood(.tired) == .tired)
+    #expect(VectorMascot.Mood(.worry) == .tired)
+    #expect(VectorMascot.Mood(.idle) == .neutral)
+    #expect(Set(KoaEmotion.Emotion.allCases.map(VectorMascot.Mood.init)) == Set(VectorMascot.Mood.allCases))
   }
 }

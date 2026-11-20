@@ -270,11 +270,21 @@ struct TodayDayBlock: View {
   // MARK: - Koa theo lịch (đợt 2)
 
   private func schedulePhase(hour: Int, minute: Int) -> KoaSchedule.Phase? {
-    guard let services, let now = services.koaGainsNow, now.userId == room.userId else { return nil }
+    guard let services else { return nil }
+    return Self.schedulePhase(
+      services: services, room: room, plannedToday: planName != nil, profile: profile, hour: hour, minute: minute)
+  }
+
+  /// Pha theo lịch của Koa — MỘT chỗ tính cho Hôm nay (kéo theo widget, qua `KoaState`) và phòng Koa
+  /// (KOA-T30: trước chỉ Hôm nay dùng, phòng Koa vẫn mặt của ngày trong khi Hôm nay đang "đợi tập").
+  @MainActor static func schedulePhase(
+    services: AppServices, room: MascotRoomController, plannedToday: Bool, profile: Profile?, hour: Int, minute: Int
+  ) -> KoaSchedule.Phase? {
+    guard let now = services.koaGainsNow, now.userId == room.userId else { return nil }
     let habit = UserRhythm.lateClock(services.habitHours.habit(.workout, userId: room.userId))?.hour
     return KoaSchedule.phase(
       gains: now.state, lastSessionAt: services.koaLastSessionAt, now: SystemWallClock().nowMillis(),
-      trainedToday: room.questDone(.workout), plannedToday: planName != nil, hour: hour, habitHour: habit,
+      trainedToday: room.questDone(.workout), plannedToday: plannedToday, hour: hour, habitHour: habit,
       minute: minute, sleep: KoaMood.SleepWindow(profile: profile))
   }
 
