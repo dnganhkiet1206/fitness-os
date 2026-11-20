@@ -69,9 +69,18 @@ extension TodayPlan {
     sessionPlan(variant: lighter ? .lighter : .full)
   }
 
-  public func sessionPlan(variant: TodayVariant) -> WorkoutSessionController.Plan? {
-    guard variant != .full, let template else { return sessionPlan }
-    let list = variant == .short ? ShortSession.exercises(template.exercises) : LighterSession.exercises(template.exercises)
+  /// `progress`: mục tiêu "Tuần lên tạ" đã nhận (KOA-T23) — chỉ áp cho buổi đầy đủ.
+  public func sessionPlan(
+    variant: TodayVariant, progress: [String: ProgressWeek.Target] = [:]
+  ) -> WorkoutSessionController.Plan? {
+    guard let template else { return sessionPlan }
+    if variant == .full, progress.isEmpty { return sessionPlan }
+    let list: [TemplateExercise]
+    switch variant {
+    case .short: list = ShortSession.exercises(template.exercises)
+    case .lighter: list = LighterSession.exercises(template.exercises)
+    case .full: list = ProgressWeek.apply(progress, to: template.exercises)
+    }
     return .init(date: date, templateId: template.id, templateName: template.name, rows: WorkoutPlanning.rows(list))
   }
 }

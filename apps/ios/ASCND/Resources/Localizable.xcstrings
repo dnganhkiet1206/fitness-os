@@ -66165,19 +66165,19 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "These lifts beat their target two sessions in a row. The new numbers show on the daily overload card."
+            "value": "These lifts beat their target two sessions in a row. Accept and Koa sets the new numbers in this week's sessions."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Estos ejercicios superaron su objetivo dos sesiones seguidas. Los nuevos números aparecen en la tarjeta diaria."
+            "value": "Estos ejercicios superaron su objetivo dos sesiones seguidas. Si aceptas, Koa pone los nuevos números en las sesiones de esta semana."
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Các bài dưới đã vượt đích ở hai buổi liền. Mức mới hiện ở thẻ Tăng tải mỗi ngày."
+            "value": "Các bài này vượt đích hai buổi liền. Nhận thì Koa đặt số mới vào các buổi tuần này."
           }
         }
       }
@@ -81450,6 +81450,121 @@
           "stringUnit": {
             "state": "translated",
             "value": "Đội kiểm duyệt đã xử lý một nội dung liên quan đến bạn"
+          }
+        }
+      }
+    },
+    "settings.koaSound": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa sounds"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiếng Koa"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonidos de Koa"
+          }
+        }
+      }
+    },
+    "settings.koaSound.desc": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa's voice, room sounds and cheers. Follows the silent switch."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giọng Koa, tiếng phòng và tiếng reo. Im theo công tắc im lặng."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La voz de Koa, sonidos de la habitación y aplausos. Sigue el interruptor de silencio."
+          }
+        }
+      }
+    },
+    "coach.paused.recap": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're on a break. Rest is part of training too."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bạn đang tạm nghỉ. Nghỉ cũng là một phần của tập luyện."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estás en pausa. Descansar también es parte del entrenamiento."
+          }
+        }
+      }
+    },
+    "coach.paused.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This week: rest"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tuần này: nghỉ ngơi"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta semana: descanso"
+          }
+        }
+      }
+    },
+    "coach.paused.detail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When you come back, Koa will start you off light. Days on break don't count as missed."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khi bạn quay lại, Koa sẽ cho bắt đầu nhẹ. Ngày tạm nghỉ không tính là lỡ buổi."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuando vuelvas, Koa empezará suave. Los días de pausa no cuentan como sesiones perdidas."
           }
         }
       }

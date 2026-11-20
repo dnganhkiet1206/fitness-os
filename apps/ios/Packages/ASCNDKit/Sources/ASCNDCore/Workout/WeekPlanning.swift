@@ -21,7 +21,7 @@ public enum WeekPlanning {
   /// `weekDates(anchor)` với `anchor = hôm nay + 7 × offset`: bảy ngày Thứ Hai → Chủ nhật.
   public static func weekDates(today: LocalDate, offset: Int) -> [LocalDate] {
     let anchor = today.adding(days: 7 * offset)
-    let monday = anchor.adding(days: -WorkoutPlanning.routineIndex(anchor))
+    let monday = anchor.weekStart
     return (0..<7).map { monday.adding(days: $0) }
   }
 

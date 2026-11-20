@@ -391,7 +391,7 @@ public enum KoaGains {
     return s
   }
 
-  static func monday(_ d: LocalDate) -> LocalDate { d.adding(days: -WorkoutPlanning.routineIndex(d)) }
+  static func monday(_ d: LocalDate) -> LocalDate { d.weekStart }
 
   /// Ngày tập nặng / cardio liền tính tới `day` (gồm `day`) — từ `maxActiveStreak + 1` thì
   /// buổi hôm ấy không có Gains (màn tổng kết buổi tập nói ra).

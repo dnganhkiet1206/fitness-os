@@ -173,10 +173,18 @@ struct WeeklyChallengesBookTests {
 
   let thursday = LocalDate("2026-10-08")!
 
-  func book(_ s: FakeStore, _ e: FakeEconomy = FakeEconomy()) -> WeeklyChallengesBook {
+  func book(_ s: FakeStore, _ e: FakeEconomy = FakeEconomy(), defaults: UserDefaults? = nil) -> WeeklyChallengesBook {
     WeeklyChallengesBook(
       userId: "acct-A", today: thursday, store: s, economy: e,
-      english: { ("T \($0)", "D \($0)", "R \($0)") }, timeZone: TimeZone(identifier: "Asia/Ho_Chi_Minh")!)
+      english: { ("T \($0)", "D \($0)", "R \($0)") }, timeZone: TimeZone(identifier: "Asia/Ho_Chi_Minh")!,
+      defaults: defaults ?? Self.freshDefaults())
+  }
+
+  static func freshDefaults() -> UserDefaults {
+    let name = "ascnd-test-challenges-\(UUID().uuidString)"
+    let d = UserDefaults(suiteName: name)!
+    d.removePersistentDomain(forName: name)
+    return d
   }
 
   static func row(_ id: String, _ key: String, current: Double = 0, target: Double, completed: Bool = false, tier: String = "silver")
@@ -220,7 +228,8 @@ struct WeeklyChallengesBookTests {
     #expect(s.updates.count == 1)
   }
 
-  /// Trả hỏng → KHÔNG ghi "xong" (lượt sau còn trả lại được); lỗi được nói ra.
+  /// Trả hỏng → ghi TIẾN ĐỘ nhưng KHÔNG ghi "xong" (lượt sau còn trả lại được); lỗi được nói ra
+  /// (KOA-T24: trước đây không ghi gì, kể cả số đã đạt).
   @Test func failedPaymentLeavesRowUnfinished() async {
     let s = FakeStore()
     s.challenges = [Self.row("c1", "workouts_3", current: 2, target: 3)]
@@ -229,9 +238,85 @@ struct WeeklyChallengesBookTests {
     e.failure = .offline
     let b = book(s, e)
     await b.load()
-    #expect(s.updates.isEmpty)
+    #expect(s.updates.count == 1)
+    #expect(s.updates[0].0["current_value"] == .number(3) && s.updates[0].0["completed"] == .bool(false))
+    #expect(s.updates[0].0["completed_at"] == nil)
     #expect(b.progressFailure == .reward(.offline))
     #expect(b.justCompleted.isEmpty)
+    // Mạng về: trả, ghi xong, mừng một lần.
+    e.failure = nil
+    await b.refreshProgress()
+    #expect(e.claims.count == 2)
+    #expect(s.updates.last?.0["completed"] == .bool(true))
+    #expect(b.justCompleted == ["workouts_3"])
+  }
+
+  /// Trần thưởng: số tiến độ vẫn được ghi (KOA-T24).
+  @Test func ceilingStillWritesTheValue() async {
+    let s = FakeStore()
+    s.challenges = [Self.row("c1", "workouts_3", current: 1, target: 3)]
+    s.workouts = (0..<3).map { .object(["id": .string("w\($0)")]) }
+    let e = FakeEconomy()
+    e.failure = .dailyCeiling
+    let b = book(s, e)
+    await b.load()
+    #expect(s.challenges[0]["current_value"] == .number(3))
+    #expect(s.challenges[0]["completed"] == .bool(false))
+  }
+
+  /// Trả xong mà ghi hàng hỏng: vẫn mừng ngay, lượt sau (server trả 0) không mừng lại; và một
+  /// sổ mới (mở lại app) cũng không mừng lại (KOA-T24).
+  @Test func paidButUnwrittenCelebratesExactlyOnce() async {
+    let s = FakeStore()
+    s.challenges = [Self.row("c1", "workouts_3", current: 2, target: 3)]
+    s.workouts = (0..<3).map { .object(["id": .string("w\($0)")]) }
+    s.updateTouches = 0
+    let e = FakeEconomy()
+    let d = Self.freshDefaults()
+    let b = book(s, e, defaults: d)
+    await b.load()
+    #expect(b.justCompleted == ["workouts_3"])
+    #expect(b.progressFailure == .nothingWritten)
+    s.updateTouches = 1
+    s.challenges[0]["completed"] = .bool(false)
+    s.challenges[0]["completed_at"] = nil
+    s.challenges[0]["current_value"] = .number(2)
+    await b.refreshProgress()
+    #expect(b.justCompleted.isEmpty)
+    // Server trả lại khoá chưa thấy trùng (ví dụ trước KOA-T01): sổ mới vẫn không mừng lại.
+    s.challenges[0]["completed"] = .bool(false)
+    s.challenges[0]["completed_at"] = nil
+    s.challenges[0]["current_value"] = .number(2)
+    let again = book(s, e, defaults: d)
+    await again.load()
+    #expect(again.justCompleted.isEmpty)
+  }
+
+  /// Hôm nay chỉ gọi `refreshProgress`: KHÔNG gieo bộ thử thách chung, không phát sinh thưởng
+  /// (V1 mục 2 — Tuần của Koa thay bộ này; Devin #971).
+  @Test func todayRefreshDoesNotSeed() async {
+    let s = FakeStore()
+    s.daily = (0..<7).map { _ in .object(["calories": .number(2000)]) }
+    let e = FakeEconomy()
+    let b = book(s, e)
+    await b.refreshProgress()
+    #expect(s.inserts.isEmpty)
+    #expect(e.claims.isEmpty)
+    #expect(b.justCompleted.isEmpty)
+  }
+
+  /// Gieo hỏng lần đầu không kẹt: lần `load()` sau gieo lại (KOA-T24).
+  @Test func seedFailureIsRetriedOnNextLoad() async {
+    let s = FakeStore()
+    s.failTables = ["insert"]
+    let b = book(s)
+    await b.load()
+    #expect(b.progressFailure == .seed)
+    #expect(s.inserts.isEmpty)
+    s.failTables = []
+    await b.load()
+    #expect(s.inserts.count == 3)
+    #expect(b.progressFailure == nil)
   }
 
   /// Trùng (đã trả ở máy khác — server trả 0, KOA-T01) không phải lỗi, tiến độ vẫn ghi,

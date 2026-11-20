@@ -1,5 +1,6 @@
 import ASCNDCore
 import AVFoundation
+import os
 
 /// Tiếng của phòng Koa (31/10, Kiệt): vài tiếng nhỏ cho Koa sống động hơn, chỉ khi người dùng chạm
 /// hoặc ở khoảnh khắc lớn. Giọng Koa kiểu hoạt hình tự tổng hợp, công tắc là tiếng CC0 của Kenney
@@ -72,10 +73,108 @@ enum KoaSound {
 
   private static var off: Bool { UserDefaults.standard.bool(forKey: offKey) }
 
+  // MARK: - Phiên âm thanh (KOA-T28)
+
+  private static let log = Logger(subsystem: "app.ascnd", category: "KoaSound")
+  private static var activated = false
+  private static var observers: [NSObjectProtocol] = []
+  /// Tên tiếng đã báo thiếu (báo mỗi tên một lần).
+  private(set) static var missing: Set<String> = []
+
+  /// Bật phiên MỘT lần (trước đây đặt lại mỗi lần phát, lỗi bị nuốt); bị ngắt (cuộc gọi, Siri) xong
+  /// thì bật lại. Lỗi được ghi log.
   private static func activate() {
     let session = AVAudioSession.sharedInstance()
-    try? session.setCategory(.ambient, options: .mixWithOthers)
-    try? session.setActive(true)
+    // Phiên là của CẢ app: micro (Kể cho Koa) đổi sang `.record` rồi tắt phiên (Devin #971) — thấy
+    // loại phiên khác thì đặt lại, không tin cờ cũ.
+    guard !activated || session.category != .ambient else { return }
+    do {
+      try session.setCategory(.ambient, options: .mixWithOthers)
+      try session.setActive(true)
+      activated = true
+    } catch {
+      log.error("audio session: \(error.localizedDescription, privacy: .public)")
+    }
+    observeSession()
+    #if DEBUG
+      for name in auditAssets(expectedAssets + reactionAssets) { report(name, "missing file") }
+    #endif
+  }
+
+  /// Tiếng cảnh phản ứng mà các kịch bản dùng.
+  static var reactionAssets: [String] {
+    Array(Set(KoaReaction.Scene.allCases.flatMap { KoaPerformance.sounds($0).map(\.name) })).sorted()
+  }
+
+  /// Tiếng có trong gói mà chưa nơi nào dùng — để dành, ghi rõ để không thành tiếng "mồ côi" vô chủ:
+  /// `koa-rx-ring` dành cho màn ăn mừng (KOA-T25).
+  static let reservedAssets = ["koa-rx-ring"]
+
+  private static func observeSession() {
+    guard observers.isEmpty else { return }
+    let center = NotificationCenter.default
+    observers.append(center.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { note in
+      let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
+      let resume = ((note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt) ?? 0)
+        & AVAudioSession.InterruptionOptions.shouldResume.rawValue != 0
+      MainActor.assumeIsolated { interrupted(began: raw == AVAudioSession.InterruptionType.began.rawValue, resume: resume) }
+    })
+    observers.append(center.addObserver(forName: AVAudioSession.routeChangeNotification, object: nil, queue: .main) { note in
+      let reason = note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt
+      MainActor.assumeIsolated {
+        // Rút tai nghe: Koa không bỗng nói ra loa ngoài.
+        if reason == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue { hush() }
+      }
+    })
+  }
+
+  /// Bị ngắt: dừng giọng, tạm dừng nền; hết ngắt thì bật lại phiên và cho nền chạy tiếp.
+  static func interrupted(began: Bool, resume: Bool) {
+    if began {
+      activated = false
+      hush()
+      ambience?.player.pause()
+      snore?.pause()
+    } else {
+      activate()
+      guard resume, roomOn, !off else { return }
+      ambience?.player.play()
+      snore?.play()
+    }
+  }
+
+  /// Một phần khác của app lấy phiên (micro bắt đầu thu): dừng giọng, lần phát sau đặt lại phiên.
+  static func yieldSession() {
+    activated = false
+    hush()
+  }
+
+  /// Dừng giọng đang nói.
+  static func hush() {
+    talking?.cancel()
+    talking = nil
+    for p in voices.values where p.isPlaying { p.stop() }
+  }
+
+  /// DEBUG: tiếng thiếu / tên tiếng không khớp được ghi log, mỗi tên một lần (trước đây im lặng).
+  private static func report(_ name: String, _ why: String) {
+    guard missing.insert(name).inserted else { return }
+    log.error("\(why, privacy: .public): \(name, privacy: .public)")
+    #if DEBUG
+      print("KoaSound \(why): \(name)")
+    #endif
+  }
+
+  /// Mọi tên tiếng code dùng — kiểm tài nguyên lúc mở app (DEBUG) và trong test.
+  static var expectedAssets: [String] {
+    Cue.allCases.map(\.rawValue) + (1...10).map { "koa-talk-\($0)" }
+      + ["koa-amb-day", "koa-amb-night", "koa-snore"]
+      + ["giggle", "hehe", "hm", "mmm", "nonono", "oi", "ui", "yay"].map { "koa-v-\($0)" }
+  }
+
+  /// Tên tiếng còn thiếu trong gói app.
+  static func auditAssets(_ names: [String] = expectedAssets, bundle: Bundle = .main) -> [String] {
+    names.filter { bundle.url(forResource: $0, withExtension: "wav") == nil }
   }
 
   static func play(_ cue: Cue, gain: Float = 1) {
@@ -95,9 +194,14 @@ enum KoaSound {
   }
 
   private static func load(_ name: String) -> AVAudioPlayer? {
-    guard let url = Bundle.main.url(forResource: name, withExtension: "wav"),
-      let p = try? AVAudioPlayer(contentsOf: url)
-    else { return nil }
+    guard let url = Bundle.main.url(forResource: name, withExtension: "wav") else {
+      report(name, "missing file")
+      return nil
+    }
+    guard let p = try? AVAudioPlayer(contentsOf: url) else {
+      report(name, "unreadable file")
+      return nil
+    }
     p.prepareToPlay()
     return p
   }
@@ -122,9 +226,12 @@ enum KoaSound {
     if let c = Cue(rawValue: name) {
       play(c, gain: Float(volume))
     } else if name.hasPrefix("koa-talk-") {
-      voice(name, volume: 0.16)
+      // KOA-T28: độ to của cảnh được tôn trọng như `koa-v-*` (trước đây cố định 0,16).
+      voice(name, volume: Float(0.16 * min(1.4, volume / 0.7)))
     } else if name.hasPrefix("koa-v-") {
       voice(name, volume: Float(0.3 * min(1.4, volume / 0.7)))
+    } else {
+      report(name, "unmatched cue")
     }
   }
 
@@ -170,9 +277,14 @@ enum KoaSound {
     if let cached = voices[name] {
       p = cached
     } else {
-      guard let url = Bundle.main.url(forResource: name, withExtension: "wav"),
-        let made = try? AVAudioPlayer(contentsOf: url)
-      else { return }
+      guard let url = Bundle.main.url(forResource: name, withExtension: "wav") else {
+        report(name, "missing file")
+        return
+      }
+      guard let made = try? AVAudioPlayer(contentsOf: url) else {
+        report(name, "unreadable file")
+        return
+      }
       made.enableRate = true
       made.prepareToPlay()
       voices[name] = made
