@@ -154,6 +154,14 @@ extension CoachQuickReply {
       ]
     // MARK: Calo
     case (.calories, .vi):
+      // KOA-T03: chưa ghi bữa nào thì nói "chưa ghi", không nói "đã nạp 0".
+      guard s.hasNutrition else {
+        return [
+          "Hôm nay bạn chưa ghi bữa nào nên Koa chưa có số calo. Ghi bữa ăn là Koa tính ngay nhé.",
+          "Koa chưa thấy bữa ăn nào được ghi hôm nay. Thêm bữa đầu tiên để xem calo nhé.",
+          "Chưa có bữa nào trong nhật ký hôm nay, nên Koa chưa tính được calo.",
+        ]
+      }
       if kcalDone {
         return [
           "Bạn đã nạp **\(kcal) kcal**, gần đủ mục tiêu \(kcalT) kcal rồi 👏",
@@ -168,6 +176,14 @@ extension CoachQuickReply {
         "Đã ghi **\(kcal) kcal** hôm nay. Mục tiêu là \(kcalT) kcal, còn \(kcalLeft) kcal nhé.",
       ]
     case (.calories, .en):
+      // KOA-T03: chưa ghi bữa nào thì nói "chưa ghi", không nói "đã nạp 0".
+      guard s.hasNutrition else {
+        return [
+          "You haven't logged any meals today, so Koa has no calorie count yet. Log a meal and I'll add it up.",
+          "Koa hasn't seen a meal logged today. Add your first one to see your calories.",
+          "Nothing in today's food log yet, so there's no calorie total to show.",
+        ]
+      }
       if kcalDone {
         return [
           "You've had **\(kcal) kcal**, right around your \(kcalT) kcal target 👏",
@@ -182,6 +198,14 @@ extension CoachQuickReply {
         "**\(kcal) kcal** logged today. Target is \(kcalT), so \(kcalLeft) to go.",
       ]
     case (.calories, .es):
+      // KOA-T03: chưa ghi bữa nào thì nói "chưa ghi", không nói "đã nạp 0".
+      guard s.hasNutrition else {
+        return [
+          "Hoy aún no has registrado comidas, así que Koa no tiene calorías. Registra una y las sumo al momento.",
+          "Koa no ve ninguna comida registrada hoy. Añade la primera para ver tus calorías.",
+          "Aún no hay nada en el diario de hoy, así que no hay calorías que mostrar.",
+        ]
+      }
       if kcalDone {
         return [
           "Llevas **\(kcal) kcal**, casi en tu objetivo de \(kcalT) kcal 👏",
@@ -197,6 +221,14 @@ extension CoachQuickReply {
       ]
     // MARK: Đạm
     case (.protein, .vi):
+      // KOA-T03: chưa ghi bữa nào thì nói "chưa ghi", không nói "đã nạp 0".
+      guard s.hasNutrition else {
+        return [
+          "Hôm nay bạn chưa ghi bữa nào nên Koa chưa có số đạm. Ghi bữa ăn là Koa tính ngay nhé.",
+          "Koa chưa thấy bữa ăn nào được ghi hôm nay, nên chưa biết bạn nạp bao nhiêu đạm.",
+          "Chưa có bữa nào trong nhật ký hôm nay. Thêm bữa đầu tiên để xem đạm nhé.",
+        ]
+      }
       if proDone {
         return [
           "Đạm hôm nay đã đủ: **\(pro) g / \(proT) g** 💪",
@@ -211,6 +243,14 @@ extension CoachQuickReply {
         "Mới **\(pro) g** trên mục tiêu \(proT) g đạm. Hỏi Koa nếu muốn gợi ý bữa giàu đạm.",
       ]
     case (.protein, .en):
+      // KOA-T03: chưa ghi bữa nào thì nói "chưa ghi", không nói "đã nạp 0".
+      guard s.hasNutrition else {
+        return [
+          "You haven't logged any meals today, so Koa has no protein count yet. Log a meal and I'll add it up.",
+          "Koa hasn't seen a meal logged today, so your protein isn't known yet.",
+          "Nothing in today's food log yet. Add your first meal to see your protein.",
+        ]
+      }
       if proDone {
         return [
           "Protein is covered today: **\(pro) g / \(proT) g** 💪",
@@ -225,6 +265,14 @@ extension CoachQuickReply {
         "Only **\(pro) g** of your \(proT) g protein target. Ask Koa for high-protein meal ideas.",
       ]
     case (.protein, .es):
+      // KOA-T03: chưa ghi bữa nào thì nói "chưa ghi", không nói "đã nạp 0".
+      guard s.hasNutrition else {
+        return [
+          "Hoy aún no has registrado comidas, así que Koa no tiene la proteína. Registra una y la sumo al momento.",
+          "Koa no ve ninguna comida registrada hoy, así que aún no sé tu proteína.",
+          "Aún no hay nada en el diario de hoy. Añade tu primera comida para ver la proteína.",
+        ]
+      }
       if proDone {
         return [
           "Proteína cubierta hoy: **\(pro) g / \(proT) g** 💪",

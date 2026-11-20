@@ -25,6 +25,8 @@ struct CoachChatView: View {
   var onLogged: () async -> Void = {}
 
   @State private var draft = ""
+  /// Câu vừa gửi — gửi hỏng thì trả lại vào ô soạn (KOA-T06: bản nháp giữ tới khi gửi được).
+  @State private var lastSent = ""
   /// Màn ghi đang mở từ một nút trong chat.
   @State private var logSheet: CoachLogTarget?
   /// Lệch đã chọn xong (khoá: id tin + loại) — ẩn nút chọn.
@@ -40,6 +42,7 @@ struct CoachChatView: View {
   @Environment(WorkoutFlow.self) private var flow
   /// Nước theo đơn vị người dùng trên nút / câu hỏi lại (audit vòng 3, 26/10).
   private var waterUnit: Water.Unit { services.preferences.volumeUnit }
+  @Environment(\.weightUnit) private var weightUnit
   @State private var showsHistory = false
   @FocusState private var composing: Bool
   /// Ô chat thu thành viên nhỏ khi người dùng vuốt xuống, như thanh phát của
@@ -136,6 +139,8 @@ struct CoachChatView: View {
         proxy.scrollTo(Self.bottom, anchor: .bottom)
       }
       .onChange(of: chat.failure) { _, failure in
+        // KOA-T06: gửi hỏng thì câu vừa gõ quay lại ô soạn (nếu chưa gõ câu khác).
+        if failure != nil, draft.isEmpty, !lastSent.isEmpty { draft = lastSent }
         if failure != nil { proxy.scrollTo(Self.bottom, anchor: .bottom) }
       }
       // Câu trả lời xong có thể NGẮN lại (bỏ khối thừa, làm sạch số — 18/10): vị trí
@@ -180,7 +185,7 @@ struct CoachChatView: View {
       }
       Button(String(localized: "common.cancel"), role: .cancel) {}
     } message: { c in
-      Text("coach.check.update.message \(CoachLogPrompt.display(c.kind, c.logged, lang: lang.rawValue, unit: waterUnit)) \(CoachLogPrompt.display(c.kind, c.stated, lang: lang.rawValue, unit: waterUnit))")
+      Text("coach.check.update.message \(CoachLogPrompt.display(c.kind, c.logged, lang: lang.rawValue, unit: waterUnit, weight: weightUnit)) \(CoachLogPrompt.display(c.kind, c.stated, lang: lang.rawValue, unit: waterUnit, weight: weightUnit))")
     }
     // Câu trả lời lưu vào lịch sử đã được đối chiếu với số thật của hôm nay.
     .onChange(of: signal, initial: true) { _, now in
@@ -321,17 +326,35 @@ struct CoachChatView: View {
           .messageSendTransition(mine: false)
       }
       if let failure = chat.failure {
-        Label(WeeklyReviewView.failureText(failure), systemImage: "exclamationmark.triangle")
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.destructive.swiftUI)
-          .frame(maxWidth: .infinity, alignment: .leading)
+        // KOA-T06: lỗi kèm nút Thử lại — gửi lại đúng câu vừa hỏng, thay phần trả lời dở.
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+          Label(WeeklyReviewView.failureText(failure), systemImage: "exclamationmark.triangle")
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.destructive.swiftUI)
+          if chat.canRetry {
+            Button {
+              if draft == lastSent { draft = "" }
+              retry()
+            } label: {
+              Label("common.retry", systemImage: "arrow.clockwise")
+                .font(DS.TextStyle.footnote.weight(.semibold))
+                .padding(.horizontal, 14)
+                .frame(minHeight: 44)
+                .background(DS.Color.foreground.swiftUI.opacity(0.08), in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("coach.retry")
+          }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
       }
       // Lời nhắc y tế ở cuối cuộc trò chuyện (16/10, chủ dự án): nhỏ, mờ, căn giữa —
       // trôi theo nội dung thay vì dính dưới ô chat (ở đó nó đè lên chữ khi cuộn).
       // Chỉ khi cuộc trò chuyện có câu hỏi về sức khoẻ (16/10, chủ dự án) — chào
       // hỏi, tra calo, hỏi bài tập thì không cần lời nhắc y tế.
-      if !chat.isLoading, chat.messages.last?.role == .assistant,
-        chat.messages.contains(where: {
+      // KOA-T36: đã chạm chủ đề sức khoẻ thì lời nhắc ở lại tới hết cuộc trò chuyện — không
+      // nhấp nháy theo lượt đang tải / tin cuối là của ai.
+      if chat.messages.contains(where: {
           $0.role == .user ? Coach.isHealthTopic($0.content) : Coach.answerTouchesHealth($0.content)
         })
       {
@@ -358,15 +381,23 @@ struct CoachChatView: View {
   /// Ô soạn nổi: một viên chứa ô chữ và nút gửi, như ô hỏi của ChatGPT; dưới là
   /// lời nhắc y tế nhỏ, mờ, căn giữa như các app AI hiện nay (16/10, chủ dự án) —
   /// thay vì một câu "gặp bác sĩ" cuối mỗi câu trả lời.
-  /// Ngôn ngữ của cuộc chat: tin người dùng gần nhất mà nhận ra chắc chắn (vi / en /
-  /// es, ≥ 60 %); tin quá ngắn ("ok", "?") thì xét tin trước; không có thì ngôn ngữ app.
-  static func chatLanguage(_ messages: [Coach.Message], fallback: String) -> String {
+  /// Ngôn ngữ của cuộc chat: tin người dùng gần nhất mà nhận ra CHẮC (vi / en / es); tin
+  /// quá ngắn hay mơ hồ thì xét tin trước; không có thì ngôn ngữ app. KOA-T36: cùng một
+  /// ngôn ngữ cho câu trả lời và lời nhắc y tế. Vì nó quyết định cả câu trả lời nên ngưỡng
+  /// chặt: ≥ 3 từ và ≥ 90 % — "tap nguc 45 phut" (tiếng Việt không dấu) đo ra 82 % tiếng
+  /// Anh, "ok" 66 % tiếng Anh; ngưỡng 60 % cũ đổi tiếng sai.
+  nonisolated static func chatLanguage(_ messages: [Coach.Message], fallback: String) -> String {
+    chatLanguage(messages.filter { $0.role == .user }.map(\.content), fallback: fallback)
+  }
+
+  nonisolated static func chatLanguage(_ userTexts: [String], fallback: String) -> String {
     let codes: [NLLanguage: String] = [.vietnamese: "vi", .english: "en", .spanish: "es"]
-    for m in messages.reversed() where m.role == .user {
+    for text in userTexts.reversed() {
+      guard text.split(whereSeparator: { !$0.isLetter }).count >= 3 else { continue }
       let r = NLLanguageRecognizer()
       r.languageConstraints = Array(codes.keys)
-      r.processString(m.content)
-      if let (top, p) = r.languageHypotheses(withMaximum: 1).first, p >= 0.6, let code = codes[top] { return code }
+      r.processString(text)
+      if let (top, p) = r.languageHypotheses(withMaximum: 1).first, p >= 0.9, let code = codes[top] { return code }
     }
     return fallback
   }
@@ -467,19 +498,37 @@ struct CoachChatView: View {
         .padding(.leading, 18)
         .padding(.vertical, 12)
         .frame(minHeight: 48)
-      Button(action: submit) {
-        Image(systemName: "arrow.up")
-          .font(.system(size: 16, weight: .bold))
-          .foregroundStyle(DS.Color.background.swiftUI)
-          .frame(width: 36, height: 36)
-          .background(DS.Color.foreground.swiftUI.opacity(canSend ? 1 : 0.25), in: Circle())
-          .frame(width: 44, height: 48)
-          .contentShape(Rectangle())
+      if chat.isLoading {
+        // KOA-T06: đang trả lời thì nút gửi thành nút Dừng — giữ phần đã nhận. `chat.stop()`
+        // dừng được mọi lượt gửi, kể cả lượt bắt đầu từ bảng Xu hướng (Devin #961).
+        Button { chat.stop() } label: {
+          Image(systemName: "stop.fill")
+            .font(.system(size: 13, weight: .bold))
+            .foregroundStyle(DS.Color.background.swiftUI)
+            .frame(width: 36, height: 36)
+            .background(DS.Color.foreground.swiftUI, in: Circle())
+            .frame(width: 44, height: 48)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.trailing, 4)
+        .accessibilityLabel(Text("coach.stop.a11y"))
+        .accessibilityIdentifier("coach.stop")
+      } else {
+        Button(action: submit) {
+          Image(systemName: "arrow.up")
+            .font(.system(size: 16, weight: .bold))
+            .foregroundStyle(DS.Color.background.swiftUI)
+            .frame(width: 36, height: 36)
+            .background(DS.Color.foreground.swiftUI.opacity(canSend ? 1 : 0.25), in: Circle())
+            .frame(width: 44, height: 48)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!canSend)
+        .padding(.trailing, 4)
+        .accessibilityLabel(Text("coach.send.a11y"))
       }
-      .buttonStyle(.plain)
-      .disabled(!canSend)
-      .padding(.trailing, 4)
-      .accessibilityLabel(Text("coach.send.a11y"))
     }
   }
 
@@ -488,16 +537,25 @@ struct CoachChatView: View {
     let text = draft
     guard canSend else { return }
     draft = ""
+    lastSent = text
     send(text)
+  }
+
+  /// Gửi lại câu vừa hỏng (KOA-T06).
+  private func retry() {
+    let now = Date()
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    Task { await chat.retry(lang: Self.chatLanguage(chat.messages, fallback: lang.rawValue), today: today, tzOffset: Coach.tzOffset(.current, at: now)) }
   }
 
   private func send(_ text: String) {
     chat.waterUnit = waterUnit
+    chat.weightUnit = weightUnit
     // nhiệm vụ khám phá "Hỏi Koa" (#527 phần 4)
     services.exploreDone(.askkoa)
     // Trả lời một câu hỏi lại "số nào đúng" bằng chữ: đọc số người dùng chọn.
     if let (key, c) = openConflict() {
-      switch CoachLogPrompt.choice(text, for: c, unit: waterUnit) {
+      switch CoachLogPrompt.choice(text, for: c, unit: waterUnit, weight: weightUnit) {
       case .stated:
         resolved.insert(key)
         confirmUpdate = c
@@ -534,14 +592,14 @@ struct CoachChatView: View {
     if !conflicts.isEmpty || !suggestions.isEmpty {
       FlowRows(spacing: DS.Spacing.sm, centered: false) {
         ForEach(conflicts, id: \.kind) { c in
-          chip(Text("coach.check.stated \(CoachLogPrompt.display(c.kind, c.stated, lang: lang.rawValue, unit: waterUnit))"), primary: true) {
+          chip(Text("coach.check.stated \(CoachLogPrompt.display(c.kind, c.stated, lang: lang.rawValue, unit: waterUnit, weight: weightUnit))"), primary: true) {
             resolved.insert(asked.id + c.kind.rawValue)
-            send(Self.replyText(c.stated, c.kind, lang: lang, unit: waterUnit))
+            send(Self.replyText(c.stated, c.kind, lang: lang, unit: waterUnit, weight: weightUnit))
             confirmUpdate = c
           }
-          chip(Text("coach.check.logged \(CoachLogPrompt.display(c.kind, c.logged, lang: lang.rawValue, unit: waterUnit))"), primary: false) {
+          chip(Text("coach.check.logged \(CoachLogPrompt.display(c.kind, c.logged, lang: lang.rawValue, unit: waterUnit, weight: weightUnit))"), primary: false) {
             resolved.insert(asked.id + c.kind.rawValue)
-            send(Self.replyText(c.logged, c.kind, lang: lang, unit: waterUnit))
+            send(Self.replyText(c.logged, c.kind, lang: lang, unit: waterUnit, weight: weightUnit))
           }
         }
         // Lời kể nhiều việc / có bữa ăn (18/10, "log bằng chat"): MỘT nút mở màn
@@ -562,7 +620,7 @@ struct CoachChatView: View {
   }
 
   @ViewBuilder private func suggestionChip(_ d: CoachLogPrompt.Detected, key: String) -> some View {
-    let v = d.value.map { CoachLogPrompt.display(d.kind, $0, lang: lang.rawValue, unit: waterUnit) } ?? ""
+    let v = d.value.map { CoachLogPrompt.display(d.kind, $0, lang: lang.rawValue, unit: waterUnit, weight: weightUnit) } ?? ""
     switch d.kind {
     case .sleep: chip(Text("coach.log.sleep \(v)"), primary: true) { logSheet = .sleep(d.value ?? 0) }
     case .weight: chip(Text("coach.log.weight \(v)"), primary: true) { logSheet = .weight(d.value ?? 0) }
@@ -606,8 +664,8 @@ struct CoachChatView: View {
   }
 
   /// Câu gửi đi khi chạm một nút chọn số: "8 giờ mới đúng".
-  static func replyText(_ v: Double, _ kind: CoachLogPrompt.Kind, lang: AppPreferences.Lang, unit: Water.Unit = .ml) -> String {
-    String(localized: "coach.check.reply \(CoachLogPrompt.display(kind, v, lang: lang.rawValue, unit: unit))")
+  static func replyText(_ v: Double, _ kind: CoachLogPrompt.Kind, lang: AppPreferences.Lang, unit: Water.Unit = .ml, weight: WeightUnit = .kg) -> String {
+    String(localized: "coach.check.reply \(CoachLogPrompt.display(kind, v, lang: lang.rawValue, unit: unit, weight: weight))")
   }
 
   /// Màn ghi mở từ chat, điền sẵn số người dùng đã nói / đã chọn.
@@ -633,30 +691,32 @@ struct CoachChatView: View {
   /// Câu gần như không cần AI (chào, cảm ơn, gõ nhầm, tra một số của hôm nay) được
   /// trả lời ngay bằng câu mẫu điền số thật, không lặp mẫu vừa dùng
   /// (`CoachQuickReply`, 16/10, chủ dự án). Mọi câu cần suy luận vẫn đi AI.
+  /// Trả về việc gửi (để nút Dừng huỷ được — KOA-T06).
+  @discardableResult
   static func ask(
     _ chat: CoachChat, _ text: String, lang: AppPreferences.Lang, signal: AssistantSuggestions.Signal? = nil,
     logged: CoachLogPrompt.LoggedToday? = nil
-  ) {
-    let code = lang.rawValue
+  ) -> Task<Void, Never> {
+    // KOA-T36: hỏi bằng tiếng nào thì AI trả lời bằng tiếng ấy (khi nhận ra chắc), cùng tiếng với
+    // lời nhắc y tế; không chắc thì ngôn ngữ app.
+    let code = chatLanguage(chat.messages.filter { $0.role == .user }.map(\.content) + [text], fallback: lang.rawValue)
     let now = Date()
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     // Lời kể khác số đã ghi → AI hỏi lại số nào đúng (16/10); không trả lời tự động.
     let hour = Calendar.current.component(.hour, from: now)
     let checks = logged.map { CoachLogPrompt.analyze(text, logged: $0, hour: hour, unit: chat.waterUnit).conflicts } ?? []
     if !checks.isEmpty {
-      Task {
+      return Task {
         await chat.send(text, lang: code, today: today, tzOffset: Coach.tzOffset(.current, at: now), checks: checks)
       }
-      return
     }
     var memory = QuickReplyMemory.load()
     if let reply = CoachQuickReply.answer(text, signal: signal, lang: code, memory: &memory) {
       QuickReplyMemory.save(memory)
       Telemetry.capture(.coachQuickReply)
-      Task { await chat.answerLocally(text, reply: reply) }
-      return
+      return Task { await chat.answerLocally(text, reply: reply) }
     }
-    Task { await chat.send(text, lang: code, today: today, tzOffset: Coach.tzOffset(.current, at: now)) }
+    return Task { await chat.send(text, lang: code, today: today, tzOffset: Coach.tzOffset(.current, at: now)) }
   }
 }
 
@@ -780,7 +840,7 @@ private struct CoachMessageRow: View {
   }
 
   @ViewBuilder private var answer: some View {
-      let raw = CoachOverview.split(visible)
+      let raw = CoachOverview.split(visible, complete: !revealing)
       let parts = (overview: checkedOverview(raw.overview), text: raw.text)
       VStack(alignment: .leading, spacing: 14) {
         if let overview = parts.overview {
@@ -833,12 +893,29 @@ private struct CoachMessageRow: View {
 /// sáng lên như sóng (16/10, chủ dự án chọn A + Y). Ba chấm iMessage giữ cho tin
 /// nhắn giữa người với người.
 private struct CoachThinking: View {
+  /// Chờ byte đầu lâu (server đang thử nhà cung cấp khác — tới ~3 phút, KOA-T09): nói ra
+  /// thay vì để người dùng tưởng app treo.
+  @State private var slow = false
+  static let slowAfter: Duration = .seconds(8)
+
   var body: some View {
-    IntelligenceOrb(size: 32)
-      .padding(.vertical, 4)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .accessibilityElement(children: .ignore)
-      .accessibilityLabel(Text("coach.thinking.a11y"))
+    HStack(spacing: 10) {
+      IntelligenceOrb(size: 32)
+      if slow {
+        Text("coach.thinking.slow")
+          .font(DS.TextStyle.footnote)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .transition(.opacity)
+      }
+    }
+    .padding(.vertical, 4)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(Text(slow ? "coach.thinking.slow" : "coach.thinking.a11y"))
+    .task {
+      try? await Task.sleep(for: Self.slowAfter)
+      if !Task.isCancelled { slow = true }
+    }
   }
 }
 
@@ -1417,6 +1494,8 @@ private struct CoachMarkdown: View {
 /// Lịch sử (`ai_conversations`, 20 cuộc gần nhất): chạm để mở, nút xoá cạnh
 /// từng hàng (hai nút riêng như RN — VoiceOver với tới được cả hai).
 private struct CoachHistorySheet: View {
+  /// Cuộc trò chuyện đang chờ xác nhận xoá (KOA-T38).
+  @State private var pendingDelete: Coach.Conversation?
   let chat: CoachChat
   @Environment(\.dismiss) private var dismiss
 
@@ -1434,6 +1513,15 @@ private struct CoachHistorySheet: View {
     }
     .presentationDetents([.medium, .large])
     .task { await chat.loadHistory() }
+    .confirmationDialog(
+      Text("coach.delete.confirm"), isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
+      titleVisibility: .visible, presenting: pendingDelete
+    ) { convo in
+      Button("coach.delete.confirm.action", role: .destructive) { Task { await chat.delete(convo.id) } }
+      Button("common.cancel", role: .cancel) {}
+    } message: { _ in
+      Text("coach.delete.confirm.message")
+    }
     .sensoryFeedback(.error, trigger: chat.deleteFailed) { _, failed in failed }
   }
 
@@ -1446,13 +1534,26 @@ private struct CoachHistorySheet: View {
         Task { await chat.loadHistory() }
       }
     case .ready(let list) where list.isEmpty:
-      DSEmptyState(systemImage: "bubble.left.and.bubble.right", title: String(localized: "coach.history.empty"))
+      // Devin #970: lịch sử rỗng mà lần tải lại hỏng thì vẫn nói ra, có nút thử lại.
+      VStack(spacing: DS.Spacing.md) {
+        if chat.historyStale {
+          historyNotice("coach.history.stale") { Task { await chat.loadHistory() } }
+            .padding(.horizontal, DS.Spacing.lg)
+        }
+        DSEmptyState(systemImage: "bubble.left.and.bubble.right", title: String(localized: "coach.history.empty"))
+      }
     case .ready(let list):
       List {
         if chat.deleteFailed {
           Text("coach.deleteFailed")
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.destructive.swiftUI)
+        }
+        // KOA-T38: mở / tải lại hỏng thì nói ra, có nút thử lại (trước đây im lặng).
+        if let failed = chat.openFailed {
+          historyNotice("coach.history.openFailed") { Task { if await chat.open(failed) { dismiss() } } }
+        } else if chat.historyStale {
+          historyNotice("coach.history.stale") { Task { await chat.loadHistory() } }
         }
         ForEach(list) { convo in
           row(convo)
@@ -1462,13 +1563,26 @@ private struct CoachHistorySheet: View {
     }
   }
 
+  private func historyNotice(_ key: LocalizedStringKey, retry: @escaping () -> Void) -> some View {
+    HStack(spacing: DS.Spacing.sm) {
+      Label(key, systemImage: "exclamationmark.triangle")
+        .font(DS.TextStyle.footnote)
+        .foregroundStyle(DS.Color.destructive.swiftUI)
+      Spacer(minLength: 0)
+      Button(action: retry) {
+        Text("common.retry").font(DS.TextStyle.footnote.weight(.semibold)).frame(minHeight: 44)
+      }
+      .buttonStyle(.plain)
+    }
+  }
+
   private func row(_ convo: Coach.Conversation) -> some View {
     let title = convo.title.isEmpty ? "—" : convo.title
     let selected = chat.conversationId == convo.id
     return HStack(spacing: DS.Spacing.sm) {
       Button {
-        dismiss()
-        Task { await chat.open(convo.id) }
+        // Đóng màn lịch sử khi đã mở được (KOA-T38) — hỏng thì ở lại và báo.
+        Task { if await chat.open(convo.id) { dismiss() } }
       } label: {
         HStack {
           Text(verbatim: title)
@@ -1490,7 +1604,8 @@ private struct CoachHistorySheet: View {
       .accessibilityLabel(Text(verbatim: title))
       .accessibilityAddTraits(selected ? .isSelected : [])
       Button {
-        Task { await chat.delete(convo.id) }
+        // Xoá vĩnh viễn: hỏi lại trước (KOA-T38).
+        pendingDelete = convo
       } label: {
         Image(systemName: "trash")
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)

@@ -10,6 +10,10 @@ Repo `fitness-os` của ASCND. Sản phẩm đang phát triển là **app iOS na
 4. `apps/ios/docs/AGENT_SESSION.md` — quy trình: nhánh, PR, CI, gộp, báo cáo; **§6b: đi nhanh (gộp PR nhỏ, E2E chỉ khi cần) và công cụ tìm lỗi.**
 5. 20–30 comment cuối của issue **#527** (bảng điều phối, nơi báo cáo).
 
+## Làm bài tập 3D (Motion Kit)
+
+Mọi bài 3D đi theo **`docs/exercise-visual-system/EXERCISE_WORKFLOW.md`**: xem video YouTube người thật → tìm kiếm kiểm lại → mô phỏng → soi bằng mắt → simulator → Kiệt duyệt → mẹo → PR. Bài mẫu: Dumbbell Shoulder Press.
+
 ## Tóm tắt luật
 
 - Kiệt (`dnganhkiet1206`) quyết định sản phẩm. Trả lời bằng **tiếng Việt**.

@@ -21,9 +21,15 @@ import numpy as np
 PASS, FAIL, REVIEW, NOT_TESTED = "PASS", "FAIL", "REQUIRES_MANUAL_REVIEW", "NOT_TESTED"
 
 
-def rec(cid: str, stage: str, title: str, status: str, measured=None, limit=None, where=None, detail: str = "") -> dict:
-    return {"id": cid, "stage": stage, "title": title, "status": status, "measured": measured, "limit": limit,
-            "where": where, "detail": detail}
+def rec(cid: str, stage: str, title: str, status: str, measured=None, limit=None, where=None, detail: str = "",
+        per_frame: dict | None = None) -> dict:
+    """``per_frame`` (khung → số đo, cùng đơn vị với ``limit``): mọi khung vượt ngưỡng, không
+    chỉ khung cực trị ở ``where.frame`` — tờ soi đánh dấu đủ (Devin #890)."""
+    out = {"id": cid, "stage": stage, "title": title, "status": status, "measured": measured, "limit": limit,
+           "where": where, "detail": detail}
+    if per_frame:
+        out["per_frame"] = {str(int(k)): v for k, v in per_frame.items()}
+    return out
 
 
 def joint_speed(j: dict, fps: float, limit: float) -> dict:

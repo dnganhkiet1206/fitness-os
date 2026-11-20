@@ -162,6 +162,9 @@ struct HealthSyncCard: View {
     if key == "nCxHealthSyncPartSteps" { return String(localized: "hs.part.steps") }
     if key == "nCxHealthSyncPartWeight" { return String(localized: "hs.part.weight") }
     if key == "nCxHealthSyncPartWater" { return String(localized: "hs.part.water") }
+    if key == "nCxHealthSyncPartBio" { return String(localized: "hs.part.bio") }
+    if key == "nCxHealthSyncPartSleep" { return String(localized: "hs.part.sleep") }
+    if key == "nCxHealthSyncPartWorkouts" { return String(localized: "hs.part.workouts") }
     if key.hasPrefix("nCxHealthSyncPartRebuild:") {
       let day = String(key.dropFirst("nCxHealthSyncPartRebuild:".count))
       return String(localized: "hs.part.rebuild \(day)")

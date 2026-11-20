@@ -225,13 +225,6 @@ struct TodayExtras<Plan: View>: View {
         TodayCoachSection(
           userId: userId, today: flow.today.today, refresh: dayVersion,
           waterMl: water?.loaded == true ? water.map { Double($0.totalMl) } : nil)
-        // Một khối: dải ngày và lời giải thích cùng chỗ (không thẻ thứ hai cùng tên).
-        TodayKoaWeekModule(
-          days: TodayWeekStrip.days(today: flow.today.today, library: flow.today.library, trained: flow.today.trained),
-          today: flow.today.today,
-          target: flow.today.library.flatMap { lib in KoaGains.Week(lib).planned.isEmpty ? nil : KoaGains.Week(lib).target },
-          state: koaWeekState,
-          claim: services.koaWeek(userId: userId)?.claim ?? .notYet)
       } else {
         // Thẻ buổi tập ngay dưới khối ngày, mang dòng sẵn sàng.
         VStack(alignment: .leading, spacing: DS.Spacing.md) { plan(readinessRow) }
@@ -241,6 +234,13 @@ struct TodayExtras<Plan: View>: View {
       if askKoa {
         TodayAskKoaCard { services.coachRequest += 1 }
           .todayEntrance(3)
+      } else if let reason = askKoaPlaceholder {
+        // KOA-T08: chưa dò được / coach trục trặc → thẻ giữ chỗ có lý do, chạm để dò lại;
+        // không biến mất im lặng.
+        TodayAskKoaCard(unavailable: reason, checking: services.aiProbing) {
+          Task { await services.probeAI(force: true) }
+        }
+        .todayEntrance(3)
       }
       if let mascot, case .ready = mascot.phase {
         // "Hôm nay của bạn" (18/10, mock A): thay danh sách "Ngày của bạn".
@@ -514,7 +514,16 @@ struct TodayExtras<Plan: View>: View {
   /// HIỂU — ở tab Tiến bộ. GĐ3 (Kiệt 21/10): thực phẩm bổ sung chỉ còn ở
   /// Dinh dưỡng › Thêm.
   /// Thẻ "Hỏi Koa" chỉ khi Koa Coach có trên máy chủ.
-  private var askKoa: Bool { services.aiDeployed == true }
+  private var askKoa: Bool { services.isAIDeployed(.coach) }
+
+  /// Lý do thẻ "Hỏi Koa" giữ chỗ (KOA-T08); `nil` = hiện đầy đủ hoặc ẩn (chưa deploy).
+  private var askKoaPlaceholder: TodayAskKoaCard.Unavailable? {
+    switch services.aiState(.coach) {
+    case .unknown: .offline
+    case .unhealthy: .unhealthy
+    case .available, .missing: nil
+    }
+  }
 
   private var moreRows: [TodayMore.Row] {
     var rows: [TodayMore.Row] = []
@@ -742,7 +751,12 @@ struct TodayExtras<Plan: View>: View {
       kind: coach.kind, lastWeek: coach.lastWeek, highlight: coach.highlight, targets: coach.targets,
       cue: services.trainingCue(userId: userId), build: services.koaBuild,
       accept: {
-        if case .light = coach.kind { flow.today.setLighterWeek(through: coach.monday.adding(days: 6)) }
+        switch coach.kind {
+        case .light: flow.today.setLighterWeek(through: coach.monday.adding(days: 6))
+        // KOA-T23 (Kiệt 19/11: "nối thật vào buổi sau"): mục tiêu tăng tải vào các buổi tuần này.
+        case .progress: flow.today.setProgressWeek(coach.targets)
+        case .steady, .paused: break
+        }
         answerWeekCoach(coach.monday)
         dailyPlan?.recompute(services: services, flow: flow)
       },
@@ -771,12 +785,21 @@ struct TodayExtras<Plan: View>: View {
   private func weekCoach(_ flow: WorkoutFlow) -> WeekCoach? {
     _ = weekCoachAnswers
     let today = flow.today.today
-    guard let library = flow.today.library, services.koaPause(userId: userId, today: today) == nil else { return nil }
-    let monday = WeeklyChallenges.weekStart(today)
-    let last = KoaWeek.state(today: today.adding(days: -7), library: library, trained: flow.today.trained)
-    let lastWeek = KoaWeekCoach.LastWeek(planned: last?.target ?? 0, done: last?.done ?? 0)
+    guard let library = flow.today.library else { return nil }
+    let monday = today.weekStart
     let answered = AppServices.uiTest
       ? WeekCoachUITest.answers.contains(weekCoachKey(monday)) : UserDefaults.standard.bool(forKey: weekCoachKey(monday))
+    // KOA-T23 (Kiệt 19/11): đang Tạm nghỉ thì thẻ nói lời nhẹ nhàng (trước đây biến mất), một lần mỗi tuần.
+    if services.koaPause(userId: userId, today: today) != nil {
+      guard !answered else { return nil }
+      return WeekCoach(
+        monday: monday, kind: .paused, lastWeek: .init(planned: 0, done: 0), highlight: nil, targets: [])
+    }
+    // Tuần trước trừ ngày Tạm nghỉ: tuần nghỉ có chủ đích không thành "lỡ buổi" → tuần nhẹ sai.
+    let last = KoaWeek.state(
+      today: today.adding(days: -7), library: library, trained: flow.today.trained,
+      paused: services.koaPausedDay(userId: flow.today.userId, today: today))
+    let lastWeek = KoaWeekCoach.LastWeek(planned: last?.target ?? 0, done: last?.done ?? 0)
     guard KoaWeekCoach.shows(today: today, lastWeek: lastWeek, answered: answered),
       let insights = flow.insights, insights.loaded
     else { return nil }
@@ -846,8 +869,9 @@ struct TodayExtras<Plan: View>: View {
         paused: services.koaPausedDay(userId: flow.today.userId, today: flow.today.today))
       coins += await week.claimMissed(lastWeek) ?? 0
     }
-    await week.claimIfComplete(koaWeekState)
-    if case .justClaimed(let c) = week.claim { coins += c }
+    // Chỉ lượt VỪA nhận mới mới mừng (KOA-T05) — `.justClaimed` còn giữ để thẻ hiện,
+    // không phải tín hiệu mừng lại mỗi lần tải lại Hôm nay.
+    coins += await week.claimIfComplete(koaWeekState) ?? 0
     guard coins > 0 else { return }
     services.noteKoaReward(userId: userId, amount: coins, seen: dayLoaded, source: KoaWeek.key)
     await mascot?.refreshWallet()
@@ -1049,7 +1073,7 @@ struct TodayExtras<Plan: View>: View {
     case .rest: workout = String(localized: "day.tile.restDay")
     default: workout = planName ?? todo
     }
-    return [
+    let tiles: [TodayDayCard.Tile] = [
       .init(
         item: .sleep, state: states[.sleep] ?? .todo,
         detail: sleepFromHealth && states[.sleep] == .done ? "\(sleep) · \(String(localized: "hs.title"))" : sleep),
@@ -1057,6 +1081,16 @@ struct TodayExtras<Plan: View>: View {
       .init(item: .water, state: states[.water] ?? .todo, detail: waterText),
       .init(item: .workout, state: states[.workout] ?? .todo, detail: workout),
     ]
+    // Kiệt 17/11: thẻ ưu tiên theo thói quen sinh hoạt — việc vừa tới giờ quen lên đầu, đã xong
+    // xuống cuối (`DayTileOrder`). Giờ quen học trên máy (`HabitHours`), chưa có thì giờ mặc định.
+    let parts = Calendar.current.dateComponents([.hour, .minute], from: Date())
+    let now = Double(parts.hour ?? 12) + Double(parts.minute ?? 0) / 60
+    let quest: [DayCheckIn.Item: MascotRules.Quest] = [.sleep: .sleep, .meal: .meal, .water: .water, .workout: .workout]
+    let order = DayTileOrder.order(
+      tiles.map(\.item), states: states,
+      habitHour: { item in quest[item].flatMap { services.habitHours.habit($0, userId: room.userId)?.hour } },
+      now: now)
+    return order.compactMap { item in tiles.first { $0.item == item } }
   }
 
   /// Dòng cân trong thẻ: chỉ khi đã lâu chưa cân (hoặc hôm nay vừa cân).

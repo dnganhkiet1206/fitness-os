@@ -10,7 +10,8 @@ public import Observation
 /// thì ô vẫn còn (không có ảnh) — một lần ký hỏng không làm cả thư viện "không
 /// đọc được"; chụp → JPEG, đường dẫn `"{uid}/{ngày}-{tư thế}-{ms}.jpg"` (thư mục
 /// đầu là uid — chính sách Storage chặn theo nó), rồi ghi hàng; xoá HÀNG TRƯỚC
-/// (0 hàng là lỗi) rồi mới xoá file; so sánh hai ảnh với cân / vòng eo gần nhất
+/// (0 hàng là lỗi) rồi mới xoá file (xoá file thử lại một lần, vẫn hỏng thì
+/// báo lỗi thay vì để mồ côi lặng lẽ); so sánh hai ảnh với cân / vòng eo gần nhất
 /// không sau ngày ảnh. Mọi thao tác ghi chỉ khi có mạng — không qua hàng đợi.
 ///
 /// Khác RN: tấm so sánh chỉ lấy lần cân / đo trong 30 ngày tới ngày ảnh — đúng
@@ -277,6 +278,8 @@ public final class ProgressPhotosBook {
   }
 
   /// Xoá hàng trước (phải chạm đúng một hàng của mình), rồi mới xoá file.
+  /// Xoá file thử lại một lần; vẫn hỏng thì báo lỗi — hàng đã xoá, file còn
+  /// lại không được lặng lẽ thành mồ côi.
   public func delete(_ p: ProgressPhotos.Photo) async -> Outcome {
     guard deleting == nil, !closed else { return .busy }
     deleting = p.id
@@ -292,7 +295,22 @@ public final class ProgressPhotosBook {
       return .nothingWritten
     }
     let path = ProgressPhotos.storagePath(p.path)
-    if !path.isEmpty { try? await remote.removeObject(path: path) }
+    if !path.isEmpty {
+      var lastError: (any Error)?
+      for _ in 0..<2 {
+        do {
+          try await remote.removeObject(path: path)
+          lastError = nil
+          break
+        } catch {
+          lastError = error
+        }
+      }
+      if let lastError {
+        await load()
+        return .failed(Self.failure(lastError))
+      }
+    }
     await load()
     return .done
   }

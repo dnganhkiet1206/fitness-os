@@ -100,7 +100,7 @@ struct KoaBedroomView: View {
     o.flat = light
     o.build = build
     o.worn = KoaEmotion.worn(equipped)
-    return KoaBedroomSleeper(plan: KoaPaint.plan(KoaRender.figure(o)), breath: breath)
+    return KoaBedroomSleeper(plan: KoaFigurePlans.plan(o), breath: breath)
   }
 }
 
@@ -159,7 +159,7 @@ struct KoaBedtimeActor: View {
         o.flat = light
         o.build = build
         o.worn = KoaEmotion.worn(equipped)
-        KoaCanvas.draw(KoaPaint.plan(KoaRender.figure(o)), in: &c)
+        KoaCanvas.draw(KoaFigurePlans.plan(o), in: &c)
       }
     }
     .allowsHitTesting(false)

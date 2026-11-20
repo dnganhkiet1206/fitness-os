@@ -13,6 +13,9 @@ final class WidgetRefresher: @unchecked Sendable {
   private var user: String?
   private let store: (any RowStore)?
   private let data: WidgetDataStore
+  /// Báo widget vẽ lại — mặc định là `WidgetCenter`, test đếm số lần gọi
+  /// (R2-SYNC-04: tối đa một lần nạp lại timeline mỗi lượt gửi).
+  private let reloadTimelines: @Sendable () -> Void
   /// Lịch tập đã cache của người dùng (`TodayRepository.cached`), `nil` = không dùng.
   private let plans: (@Sendable (String) async -> TemplateSnapshot?)?
   /// Câu của Daily Plan cho buổi hôm nay (GĐ1) — `AppServices.widgetPlanStatus`.
@@ -30,11 +33,13 @@ final class WidgetRefresher: @unchecked Sendable {
 
   init(
     store: (any RowStore)?, data: WidgetDataStore = WidgetDataStore(),
-    plans: (@Sendable (String) async -> TemplateSnapshot?)? = nil
+    plans: (@Sendable (String) async -> TemplateSnapshot?)? = nil,
+    reloadTimelines: @escaping @Sendable () -> Void = { WidgetCenter.shared.reloadAllTimelines() }
   ) {
     self.store = store
     self.data = data
     self.plans = plans
+    self.reloadTimelines = reloadTimelines
   }
 
   /// Phiên đổi. Không còn ai: xoá ngay.
@@ -43,7 +48,7 @@ final class WidgetRefresher: @unchecked Sendable {
     if userId == nil {
       data.clear()
       Task { @MainActor in KoaWidgetResetHook.reset?() }
-      WidgetCenter.shared.reloadAllTimelines()
+      reloadTimelines()
     } else {
       Task { await refresh() }
     }
@@ -65,7 +70,7 @@ final class WidgetRefresher: @unchecked Sendable {
     // Phiên đã đổi trong lúc đọc: bỏ, không ghi số của người khác.
     guard lock.withLock({ user }) == userId else { return }
     data.write(p.today, p.streak)
-    WidgetCenter.shared.reloadAllTimelines()
+    reloadTimelines()
   }
 
   /// Ngôn ngữ trong app đổi (hoặc lúc mở app): widget và Live Activity đọc
@@ -75,7 +80,7 @@ final class WidgetRefresher: @unchecked Sendable {
     let changed = data.language() != code
     data.writeLanguage(code)
     guard changed else { return }
-    WidgetCenter.shared.reloadAllTimelines()
+    reloadTimelines()
     Task { await refresh() }
   }
 

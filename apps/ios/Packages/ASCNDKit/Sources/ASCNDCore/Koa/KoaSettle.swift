@@ -76,6 +76,11 @@ public struct KoaFaceTween: Sendable {
 public struct KoaIdleLife: Sendable {
   var gaze: KoaGaze.State
   var last: Double?
+  /// Kết quả của mốc `last` — view dựng lại cùng thời điểm (SwiftUI có thể gọi body nhiều lần
+  /// một khung) nhận lại đúng kết quả, không tiến ánh nhìn / rút lần chớp mới (KOA-T12).
+  var lastOut: KoaGaze.Output?
+  /// Số lần thật sự tiến (DEBUG / test: một lần mỗi mốc khác nhau).
+  public private(set) var steps = 0
 
   public init(seed: UInt64) {
     gaze = KoaGaze.State(seed: seed)
@@ -86,11 +91,18 @@ public struct KoaIdleLife: Sendable {
 
   /// Một khung lúc `ms`. Đồng hồ dừng lâu (cuộn khỏi màn, ra nền) thì không bù cả quãng.
   public mutating func step(at ms: Double) -> KoaGaze.Output {
+    if let last, ms == last, let lastOut { return lastOut }
     let dt = last.map { max(0, min(0.1, (ms - $0) / 1000)) } ?? 0
     last = ms
-    return gaze.step(dt, koa: (0, 0), turn: 0)
+    steps += 1
+    let out = gaze.step(dt, koa: (0, 0), turn: 0)
+    lastOut = out
+    return out
   }
 
   /// Đồng hồ dừng: lượt chạy sau bắt đầu lại không nhảy.
-  public mutating func pause() { last = nil }
+  public mutating func pause() {
+    last = nil
+    lastOut = nil
+  }
 }

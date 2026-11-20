@@ -10,12 +10,27 @@ import Foundation
 /// - Tuần lên tạ: đủ buổi theo lịch và có bài đủ điều kiện lên tạ theo `OverloadPlan` (ACSM 2009:
 ///   vượt đích ở hai buổi liên tiếp).
 /// - Giữ nhịp: còn lại.
+/// - Tạm nghỉ (KOA-T23): đang nghỉ thì thẻ chỉ nói lời nhẹ nhàng; ngày Tạm nghỉ của tuần trước
+///   không tính là buổi lỡ. Quay lại sau nghỉ ≥ 7 ngày vẫn là tuần nhẹ theo `daysOff`.
 public enum KoaWeekCoach {
   public enum Kind: Sendable, Hashable {
     /// `loadFactor` < 1: gợi ý giảm tạ theo độ dài kỳ nghỉ.
     case light(loadFactor: Double)
     case progress
     case steady
+    /// Đang Tạm nghỉ (KOA-T23, Kiệt 19/11: "hiện lời nhẹ nhàng" thay vì ẩn thẻ): không khuyên gì,
+    /// chỉ nói khi quay lại sẽ bắt đầu nhẹ.
+    case paused
+
+    /// Mặt Koa trên thẻ theo lời khuyên (KOA-T30: trước luôn `.proud`, kể cả khi khuyên tuần nhẹ).
+    public var emotion: KoaEmotion.Emotion {
+      switch self {
+      case .light: .rested
+      case .steady: .happy
+      case .progress: .proud
+      case .paused: .sleep
+      }
+    }
   }
 
   public struct LastWeek: Sendable, Hashable {
@@ -41,7 +56,12 @@ public enum KoaWeekCoach {
   /// - Parameters:
   ///   - daysOff: số ngày từ buổi gần nhất tới hôm nay (không tính hôm nay).
   ///   - targets: gợi ý tăng tải của các bài trong lịch tuần này (`OverloadPlan`).
-  public static func decide(lastWeek: LastWeek, daysOff: Int, targets: [OverloadPlan.Item]) -> Kind {
+  ///   - pausedNow: đang Tạm nghỉ (KOA-T23) — thẻ chỉ nói lời nhẹ nhàng.
+  ///
+  /// `lastWeek` phải là tuần trước ĐÃ TRỪ ngày Tạm nghỉ (`KoaWeek.state(paused:)`): tuần nghỉ có
+  /// chủ đích không phải tuần "lỡ buổi".
+  public static func decide(lastWeek: LastWeek, daysOff: Int, targets: [OverloadPlan.Item], pausedNow: Bool = false) -> Kind {
+    if pausedNow { return .paused }
     if daysOff >= lightAfterDaysOff || lastWeek.missedHalf {
       return .light(loadFactor: loadFactor(daysOff: daysOff))
     }

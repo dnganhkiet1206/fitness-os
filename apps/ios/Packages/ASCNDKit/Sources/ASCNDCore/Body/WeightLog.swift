@@ -72,7 +72,8 @@ public enum WeightLog {
 public protocol WeightLogSource: Sendable {
   /// `useTodayWeight`: `weight_kg` của (người, ngày); `nil` khi chưa cân.
   func weight(userId: String, date: LocalDate) async throws -> Double?
-  /// `useLogWeight`: upsert rồi `syncProfileWeight` — một lượt.
+  /// `useLogWeight`: upsert rồi `syncProfileWeight` — một lượt. Hồ sơ theo
+  /// không được thì ném, dù hàng cân đã lưu (AUD-35): gửi lại ghi đè cùng hàng.
   func log(userId: String, kg: Double, date: LocalDate) async throws
   /// Ngày của lần cân MỚI nhất; `nil` khi chưa cân lần nào. Hôm nay dùng nó để
   /// chỉ hỏi cân khi đã lâu chưa cân (`TodayDay.showsWeighIn`).
@@ -94,7 +95,8 @@ public final class WeightLogger {
     case queued
     /// Ngoài dải 20–400 kg — không gửi.
     case outOfRange
-    /// Mất mạng giữa chừng / lỗi server: không gì được ghi.
+    /// Mất mạng giữa chừng / lỗi server — kể cả hồ sơ theo không được sau khi
+    /// hàng cân đã lưu (AUD-35): gửi lại ghi đè cùng hàng, không thêm.
     case offline
     case failed
     /// Sổ đã đóng / đang gửi / đã xếp hàng.

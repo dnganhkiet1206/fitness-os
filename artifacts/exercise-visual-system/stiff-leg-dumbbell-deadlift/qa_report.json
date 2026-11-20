@@ -1,17 +1,16 @@
 {
   "tool": "pipeline/validate_motion.py",
-  "date": "2026-11-14",
+  "date": "2026-11-16",
   "exercise_id": "stiff_leg_dumbbell_deadlift",
   "frames": 234,
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 16,
-      "FAIL": 1
+      "PASS": 18
     },
-    "technically_validated": false,
+    "technically_validated": true,
     "states": {
-      "technically_validated": false,
+      "technically_validated": true,
       "biomechanically_reviewed": false,
       "human_approved": false,
       "production_approved": false
@@ -130,7 +129,7 @@
       "stage": "C",
       "title": "Elbow flexion inside the soft-tissue limit",
       "status": "PASS",
-      "measured": 8.006,
+      "measured": 8.007,
       "limit": 145.0,
       "where": {
         "side": "r",
@@ -182,11 +181,24 @@
       "detail": "best alignment of the farthest-travelling joint with the progress rebuilt from tempo.json"
     },
     {
+      "id": "implement_clash",
+      "stage": "C",
+      "title": "Implements do not pass through each other",
+      "status": "PASS",
+      "measured": 0,
+      "limit": 0,
+      "where": {
+        "pair": null,
+        "frame": null
+      },
+      "detail": "overlapping triangle pairs"
+    },
+    {
       "id": "skin_stretch",
       "stage": "C",
       "title": "Skin stretch stays within limits",
-      "status": "FAIL",
-      "measured": 2.795,
+      "status": "PASS",
+      "measured": 2.294,
       "limit": 2.6,
       "where": {
         "frame": 58

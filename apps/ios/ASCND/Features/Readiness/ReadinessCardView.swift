@@ -38,6 +38,14 @@ struct ReadinessCardView: View {
   @State private var helpOpen = false
   @State private var nudge = false
   @State private var taps = 0
+  /// Ngày đọc được sớm nhất của Apple Health (iOS 27, mili giây) — cùng khoá
+  /// `HealthSyncCoordinator` ghi; đổi thì thẻ tự vẽ lại. 0 = không biết.
+  @AppStorage(HealthSyncCoordinator.earliestReadableDateKey) private var earliestReadableMs: Double = 0
+
+  /// Cửa sổ lịch sử HealthKit đã biết trên máy này (iOS 27).
+  private var historyWindow: HealthHistoryWindow {
+    HealthHistoryWindow.fromStored(millis: Int64(earliestReadableMs), in: .current)
+  }
 
   /// Kho đếm lời nhắc (`ascnd-help-nudge`), theo người.
   static let nudges = HelpNudge(store: UserDefaultsStore())
@@ -292,6 +300,14 @@ struct ReadinessCardView: View {
           .font(DS.TextStyle.caption)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
+      // iOS 27: Apple Health chỉ cho đọc một cửa sổ lịch sử — ghi rõ để điểm
+      // không bị đọc như tính trên đủ lịch sử. Không biết cửa sổ thì không
+      // hiện gì.
+      if let note = Self.historyNote(window: historyWindow, date: book.date) {
+        Text(note)
+          .font(DS.TextStyle.caption)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
       // Chưa chấm thì không khuyên cách tập (19/10: "Tập theo kế hoạch — đẩy top
       // set…" ngay dưới "Chưa đủ dữ liệu để chấm"), và không cần bảng màu điểm.
       if !reco.isEmpty, !provisional {
@@ -478,6 +494,16 @@ struct ReadinessCardView: View {
       measured == 1
       ? String(localized: "rd.confidence.one") : String(localized: "rd.confidence.other \(measured)")
     return low ? "\(base)\(String(localized: "rd.confidence.lowSuffix"))" : base
+  }
+
+  /// Ghi chú "lịch sử giới hạn" (iOS 27): `nil` khi không biết hoặc không
+  /// giới hạn — khi ấy phần chi tiết như trước.
+  static func historyNote(window: HealthHistoryWindow, date: LocalDate) -> String? {
+    switch window.note(through: date) {
+    case .short: String(localized: "rd.history.short")
+    case .limited: String(localized: "rd.history.limited")
+    case nil: nil
+    }
   }
 }
 

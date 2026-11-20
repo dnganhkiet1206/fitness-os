@@ -56,6 +56,46 @@ final class HealthKitSource: @unchecked Sendable {
     return (try? await store.statusForAuthorizationRequest(toShare: shareTypes, read: readTypes)) == .unnecessary
   }
 
+  /// Kết quả đọc cửa sổ giới hạn (iOS 27): `.unknown` khi không đọc được
+  /// (iOS < 27, build bằng SDK cũ, hoặc lỗi), `.unlimited` khi HealthKit trả
+  /// về rỗng (không loại nào bị giới hạn), `.limited` với ngày sớm nhất khi
+  /// có giới hạn. Ba trạng thái phải phân biệt: lỗi thì giữ dấu đã biết, còn
+  /// rỗng thành công thì xoá dấu (người dùng đã mở rộng quyền).
+  enum HistoryWindowResult: Sendable {
+    case unknown
+    case unlimited
+    case limited(Date)
+  }
+
+  /// Ngày đọc được sớm nhất (iOS 27, màn chọn "Past 30 Days and Future Data"
+  /// / "All Recorded Data and Future Data"): `earliestAuthorizedSampleDate`
+  /// chỉ trả về các loại BỊ GIỚI HẠN — loại đủ quyền và loại bị từ chối đều
+  /// vắng mặt như nhau, nên rỗng nghĩa là "không giới hạn nào thấy được",
+  /// không phải "đủ quyền". Giới hạn theo thời gian chỉ áp cho loại mẫu
+  /// (sample types); bộ loại đọc của app toàn loại mẫu nên truyền thẳng được.
+  /// Ngày trả về là ngày HẠN CHẾ NHẤT (muộn nhất) trong các loại, để cửa sổ
+  /// chung không nền nào tính trên ngày không đọc được.
+  ///
+  /// API chỉ có trong SDK iOS 27 (Xcode 27, Swift 6.4): build bằng Xcode cũ
+  /// hơn thì nhánh này biên dịch ra `.unknown` — hành vi như iOS < 27, và CI
+  /// (Xcode cũ) không kiểm được nhánh thật; xem CONSTRAINTS. Không bao giờ
+  /// truyền tập rỗng: HealthKit coi đó là lỗi kết nối healthd.
+  func historyWindowResult() async -> HistoryWindowResult {
+    guard isAvailable, !readTypes.isEmpty else { return .unknown }
+    #if compiler(>=6.4)
+      if #available(iOS 27.0, *) {
+        do {
+          let dates = try await store.earliestAuthorizedSampleDate(for: readTypes)
+          if let latest = dates.values.max() { return .limited(latest) }
+          return .unlimited
+        } catch {
+          return .unknown
+        }
+      }
+    #endif
+    return .unknown
+  }
+
   /// Số đo cho màn Về bạn của onboarding (mock 22/10): giới tính, ngày sinh, chiều
   /// cao, cân nặng mới nhất. Chỉ xin đọc đúng bốn thứ này, lúc người dùng bấm "Lấy từ
   /// Apple Health" — không gộp vào bộ loại của đồng bộ. Không cho đọc thì Health trả
@@ -121,21 +161,31 @@ final class HealthKitSource: @unchecked Sendable {
     }
   }
 
-  /// Đọc mọi thứ một lượt đồng bộ cần.
-  func snapshot(now: EpochMillis, in tz: TimeZone) async -> HealthSync.Snapshot {
+  /// Đọc mọi thứ một lượt đồng bộ cần. `earliestReadable` (iOS 27) là sàn của
+  /// mọi cửa sổ truy vấn: không xin dữ liệu trước ngày hệ thống cho đọc —
+  /// HealthKit trả rỗng chứ không lỗi, nên không kẹp thì "không có" và "không
+  /// được đọc" lẫn nhau. Với cửa sổ 30 ngày thì kẹp này không đổi gì (mọi cửa
+  /// sổ của app đều trong 14 ngày); nó chỉ có tác dụng khi cửa sổ ngắn hơn.
+  func snapshot(now: EpochMillis, in tz: TimeZone, earliestReadable: EpochMillis? = nil) async -> HealthSync.Snapshot {
     let w = HealthData.windows(now: now, in: tz)
-    async let hr = latest(.restingHeartRate, .count().unitDivided(by: .minute()), since: w.weekAgo)
-    async let hrv = latest(.heartRateVariabilitySDNN, .secondUnit(with: .milli), since: w.weekAgo)
-    async let spo2 = latest(.oxygenSaturation, .percent(), since: w.weekAgo)
-    async let resp = latest(.respiratoryRate, .count().unitDivided(by: .minute()), since: w.weekAgo)
+    func start(_ s: EpochMillis) -> EpochMillis { earliestReadable.map { max($0, s) } ?? s }
+    let weekAgo = start(w.weekAgo)
+    let sleepSince = start(w.sleepSince)
+    let stepStart = start(w.stepHistoryStart)
+    let weightSince = start(now - Int64(HealthData.weightDays) * 86_400_000)
+    let waterSince = start(now - Int64(HealthData.waterDays) * 86_400_000)
+    async let hr = latest(.restingHeartRate, .count().unitDivided(by: .minute()), since: weekAgo)
+    async let hrv = latest(.heartRateVariabilitySDNN, .secondUnit(with: .milli), since: weekAgo)
+    async let spo2 = latest(.oxygenSaturation, .percent(), since: weekAgo)
+    async let resp = latest(.respiratoryRate, .count().unitDivided(by: .minute()), since: weekAgo)
     async let steps = total(.stepCount, .count(), from: w.todayStart, to: now)
     async let kcal = total(.activeEnergyBurned, .kilocalorie(), from: w.todayStart, to: now)
     async let minutes = total(.appleExerciseTime, .minute(), from: w.todayStart, to: now)
-    async let sleep = sleepSamples(since: w.sleepSince, to: now)
-    async let workouts = workoutSamples(since: w.weekAgo, to: now)
-    async let buckets = stepBuckets(anchor: w.todayStart, from: w.stepHistoryStart, to: now)
-    async let weights = weightSamples(since: now - Int64(HealthData.weightDays) * 86_400_000, to: now)
-    async let water = waterSamples(since: now - Int64(HealthData.waterDays) * 86_400_000, to: now)
+    async let sleep = sleepSamples(since: sleepSince, to: now)
+    async let workouts = workoutSamples(since: weekAgo, to: now)
+    async let buckets = stepBuckets(anchor: w.todayStart, from: stepStart, to: now)
+    async let weights = weightSamples(since: weightSince, to: now)
+    async let water = waterSamples(since: waterSince, to: now)
     return HealthSync.Snapshot(
       bio: HealthData.latestBiometrics(hr: await hr, hrv: await hrv, spo2: await spo2, resp: await resp),
       steps: HealthData.total(await steps), activeKcal: HealthData.total(await kcal),
@@ -252,6 +302,37 @@ final class HealthSyncCoordinator {
   /// Người dùng tắt Apple Health trong Cài đặt (Kiệt 01/11): ngừng đồng bộ, giữ quyền
   /// (app không thu hồi được quyền HealthKit — chỉ Cài đặt của iPhone làm được).
   static let pausedKey = "health:paused"
+  /// Ngày đọc được sớm nhất của Apple Health (iOS 27, mili giây), theo máy như
+  /// `health:paused`: 0 / vắng = không biết (iOS < 27, SDK cũ, hoặc không giới
+  /// hạn). UI đọc cùng khoá để ghi chú "lịch sử giới hạn".
+  static let earliestReadableDateKey = "health:earliestReadableDate"
+
+  /// Mili giây đã lưu của ngày đọc được sớm nhất, `nil` khi không biết.
+  private var earliestReadableMillis: EpochMillis? {
+    let ms = UserDefaults.standard.double(forKey: Self.earliestReadableDateKey)
+    return ms > 0 ? EpochMillis(Int64(ms)) : nil
+  }
+
+  /// Cửa sổ lịch sử đã biết trên máy này — UI và engine đọc để ghi cờ.
+  var historyWindow: HealthHistoryWindow {
+    HealthHistoryWindow.fromStored(
+      millis: Int64(UserDefaults.standard.double(forKey: Self.earliestReadableDateKey)), in: .current)
+  }
+
+  /// Đọc lại cửa sổ giới hạn từ HealthKit (iOS 27). Chạy ở đầu mỗi lượt đồng
+  /// bộ — lượt đã bị nhịp 15 phút / thao tác người dùng chặn, nên không gọi
+  /// dồn dập. Lỗi thì giữ dấu cũ; thành công mà rỗng thì xoá dấu (người dùng
+  /// đã mở rộng quyền hoặc không còn giới hạn).
+  private func refreshHistoryWindow() async {
+    switch await source.historyWindowResult() {
+    case .unknown:
+      break
+    case .unlimited:
+      UserDefaults.standard.removeObject(forKey: Self.earliestReadableDateKey)
+    case .limited(let date):
+      UserDefaults.standard.set(Double(EpochMillis(date).millis), forKey: Self.earliestReadableDateKey)
+    }
+  }
 
   var paused: Bool { UserDefaults.standard.bool(forKey: Self.pausedKey) }
 
@@ -361,13 +442,16 @@ final class HealthSyncCoordinator {
     running = true
     defer { running = false }
     let now = SystemWallClock().nowMillis()
-    let snapshot = await source.snapshot(now: now, in: .current)
+    await refreshHistoryWindow()
+    let window = historyWindow
+    let snapshot = await source.snapshot(now: now, in: .current, earliestReadable: earliestReadableMillis)
     // Báo màn đang mở đọc lại SAU khi ghi xong — cả khi lượt ghi ném lỗi
     // (`HealthSync.run` vẫn lưu phần cứu được rồi mới ném). Không có tín hiệu
     // này, Hôm nay đọc `daily_logs` cùng lúc lượt tự đồng bộ chạy và giữ số
     // bước cũ (15/10).
     defer { Task { @MainActor in NotificationCenter.default.post(name: .healthSynced, object: nil) } }
-    try await HealthSync.run(snapshot, userId: userId, lang: lang, store: store, now: now, in: .current)
+    try await HealthSync.run(
+      snapshot, userId: userId, lang: lang, store: store, now: now, in: .current, historyWindow: window)
   }
 }
 

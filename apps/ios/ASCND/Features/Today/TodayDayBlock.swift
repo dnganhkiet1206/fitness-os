@@ -63,6 +63,15 @@ struct TodayDayBlock: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   /// Nhãn "Koa" lớn theo Dynamic Type (#795 đợt 2c: bộ kiểm accessibility báo cỡ cố định); mặc định 12.
   @ScaledMetric(relativeTo: .caption) private var nameSize: CGFloat = 12
+  // Chữ còn lại của thẻ lớn theo Dynamic Type (nối tiếp #795 đợt 2c, cùng thang `ptNN` của
+  // `TodayDayCard`). Tên theo cỡ ở mức chữ mặc định, đúng bản thiết kế đã duyệt: ở mặc định thẻ
+  // không đổi. `nameSize` giữ riêng cho nhãn "Koa".
+  @ScaledMetric(relativeTo: .caption2) private var pt11: CGFloat = 11
+  @ScaledMetric(relativeTo: .caption) private var pt12: CGFloat = 12
+  @ScaledMetric(relativeTo: .footnote) private var pt13: CGFloat = 13
+  @ScaledMetric(relativeTo: .subheadline) private var pt14: CGFloat = 14
+  @ScaledMetric(relativeTo: .subheadline) private var pt15: CGFloat = 15
+  @ScaledMetric(relativeTo: .body) private var pt17: CGFloat = 17
   @Environment(\.colorScheme) private var scheme
   @Environment(AppServices.self) private var services: AppServices?
   /// Được khen hôm nay chưa (khen một lần mỗi ngày, `allowPraise`).
@@ -110,17 +119,20 @@ struct TodayDayBlock: View {
     let pending = services?.todayPending(userId: room.userId, today: room.today)
     let signals = TodayDay.merging(room.signals, localWaterMl: localWaterMl, pending: pending)
     let tubes = TodayDay.tubes(signals, stepsGoal: room.stepsGoal)
-    let line = MascotLine.line(TodayDay.mascotDay(signals, hour: hour))
-    let dayNext = line.gap.map(TodayDay.quest)
     let dayMood = KoaToday.read(
       room: room, localWaterMl: localWaterMl, pending: pending, profile: profile, riskHour: riskHour, hour: hour,
       minute: minute)
+    // KOA-T14: câu dự phòng (`MascotLine`) phải hợp với nét mặt của ngày — không khen khi Koa mệt / lo.
+    let line = MascotLine.coherent(MascotLine.line(TodayDay.mascotDay(signals, hour: hour)), with: dayMood.emotion)
+    let dayNext = line.gap.map(TodayDay.quest)
     let daySaid = KoaToday.line(dayMood, signals: signals, profile: profile, streak: room.streak.count)
     // Koa sống theo lịch tập (đợt 2): pump / đợi / mất pump / tụt hạng đè lên Koa của ngày.
     let sched = schedulePhase(hour: hour, minute: minute)
-    let mood = sched.map { KoaMood.Read(emotion: Self.emotion($0), reason: dayMood.reason) } ?? dayMood
     // mốc mới của hành trình (lên hạng, tuần đủ buổi, kỷ lục…) đi trước mọi câu khác, mỗi mốc một lần
     let moment = KoaMomentsStore.next(services, userId: room.userId, today: room.today)
+    // Mặt đi cùng câu (KOA-T14): câu mốc hành trình → mặt tự hào; câu theo lịch tập → mặt theo lịch.
+    let mood = moment != nil ? KoaMood.Read(emotion: .proud, reason: dayMood.reason)
+      : sched.map { KoaMood.Read(emotion: Self.emotion($0), reason: dayMood.reason) } ?? dayMood
     let said = moment.map { KoaMomentsStore.line($0, lang: lang) } ?? sched.map(scheduleLine) ?? daySaid
     let next = sched.map { $0 == .pump ? nil : MascotRules.Quest.workout } ?? dayNext
     // Premium (20/10, Kiệt duyệt mock `today-koa-card.html` + `today-koa-meters.html`
@@ -149,7 +161,7 @@ struct TodayDayBlock: View {
             .foregroundStyle(KoaCardInk.muted(dark))
           if let text = said ?? bubbleText(line, tubes: tubes) {
             Text(verbatim: text)
-              .font(.system(size: 17, weight: .semibold))
+              .font(.system(size: pt17, weight: .semibold))
               .foregroundStyle(KoaCardInk.ink(dark))
               .fixedSize(horizontal: false, vertical: true)
               .id(text)
@@ -166,14 +178,14 @@ struct TodayDayBlock: View {
         }
       }
       HStack {
-        Text(verbatim: "\(doneCount)/\(tubes.count)").font(.system(size: 12, weight: .bold).monospacedDigit())
+        Text(verbatim: "\(doneCount)/\(tubes.count)").font(.system(size: pt12, weight: .bold).monospacedDigit())
           .foregroundStyle(KoaCardInk.ink(dark))
-          + Text(verbatim: " ") + Text("koa.card.doneToday").font(.system(size: 12)).foregroundStyle(KoaCardInk.muted(dark))
+          + Text(verbatim: " ") + Text("koa.card.doneToday").font(.system(size: pt12)).foregroundStyle(KoaCardInk.muted(dark))
         Spacer()
         // Nhịp 30 ngày thay chuỗi ngày (Kiệt duyệt 02/11): không có số liên tiếp để gãy
         if let rhythm, rhythm.sessions > 0 {
           Label(String(localized: "rhythm.short \(rhythm.sessions)"), systemImage: "circle.grid.3x3.fill")
-            .font(.system(size: 12, weight: .bold))
+            .font(.system(size: pt12, weight: .bold))
             .foregroundStyle(MascotRoomView.signalColor(.meal))
         }
       }
@@ -185,8 +197,9 @@ struct TodayDayBlock: View {
     // Việc kế tiếp đổi → nhãn và viền trượt sang ống mới; ống dâng như chất lỏng.
     .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.6, bounce: 0.22), value: next)
     .task(id: line) { updatePraise(line) }
-    .task(id: KoaState(emotion: mood.emotion, line: said ?? bubbleText(line, tubes: tubes) ?? "", next: next)) {
-      onKoa?(KoaState(emotion: mood.emotion, line: said ?? bubbleText(line, tubes: tubes) ?? "", next: next))
+    // KOA-T40: dùng lại `state` đã dựng ở trên (trước dựng lại hai lần nữa mỗi lượt vẽ).
+    .task(id: state) {
+      onKoa?(state)
     }
     .onChange(of: reward?.id) { _, _ in celebrate() }
     }
@@ -194,9 +207,13 @@ struct TodayDayBlock: View {
 
   /// Nét mặt của Koa nhỏ ở dạng gọn: buồn / mệt / lo / ngượng / gồng sức ở cỡ 64 điểm trông như cau có
   /// (#802, 04/11, Kiệt giao E quyết) → nét bình thường. Câu Koa nói và widget vẫn theo tâm trạng thật.
+
+  /// Koa nhỏ ở Hôm nay gọn: #802 (04/11) bỏ mọi mặt cau có; Kiệt 20/11 (audit Koa KOA-T14) chọn
+  /// HIỆN mệt / lo — chúng nói điều gì đó về ngày (widget cũng hiện). Vẫn gộp buồn thoáng qua /
+  /// ngượng / gồng sức về mặt thường.
   static func compactEmotion(_ e: KoaEmotion.Emotion) -> KoaEmotion.Emotion {
     switch e {
-    case .sad, .tired, .worry, .oops, .warmup: .idle
+    case .sad, .oops, .warmup: .idle
     default: e
     }
   }
@@ -254,11 +271,21 @@ struct TodayDayBlock: View {
   // MARK: - Koa theo lịch (đợt 2)
 
   private func schedulePhase(hour: Int, minute: Int) -> KoaSchedule.Phase? {
-    guard let services, let now = services.koaGainsNow, now.userId == room.userId else { return nil }
+    guard let services else { return nil }
+    return Self.schedulePhase(
+      services: services, room: room, plannedToday: planName != nil, profile: profile, hour: hour, minute: minute)
+  }
+
+  /// Pha theo lịch của Koa — MỘT chỗ tính cho Hôm nay (kéo theo widget, qua `KoaState`) và phòng Koa
+  /// (KOA-T30: trước chỉ Hôm nay dùng, phòng Koa vẫn mặt của ngày trong khi Hôm nay đang "đợi tập").
+  @MainActor static func schedulePhase(
+    services: AppServices, room: MascotRoomController, plannedToday: Bool, profile: Profile?, hour: Int, minute: Int
+  ) -> KoaSchedule.Phase? {
+    guard let now = services.koaGainsNow, now.userId == room.userId else { return nil }
     let habit = UserRhythm.lateClock(services.habitHours.habit(.workout, userId: room.userId))?.hour
     return KoaSchedule.phase(
       gains: now.state, lastSessionAt: services.koaLastSessionAt, now: SystemWallClock().nowMillis(),
-      trainedToday: room.questDone(.workout), plannedToday: planName != nil, hour: hour, habitHour: habit,
+      trainedToday: room.questDone(.workout), plannedToday: plannedToday, hour: hour, habitHour: habit,
       minute: minute, sleep: KoaMood.SleepWindow(profile: profile))
   }
 
@@ -308,8 +335,8 @@ struct TodayDayBlock: View {
   /// "+N" vàng bay lên trên đầu Koa khi xu vừa về.
   private func coinBurst(_ amount: Int) -> some View {
     HStack(spacing: 3) {
-      Image(systemName: "circle.circle.fill").font(.system(size: 11, weight: .bold))
-      Text(verbatim: "+\(amount)").font(.system(size: 14, weight: .heavy).monospacedDigit())
+      Image(systemName: "circle.circle.fill").font(.system(size: pt11, weight: .bold))
+      Text(verbatim: "+\(amount)").font(.system(size: pt14, weight: .heavy).monospacedDigit())
     }
     .foregroundStyle(DS.Color.readinessYellow.swiftUI)
     .padding(.horizontal, 8)
@@ -355,49 +382,13 @@ struct TodayDayBlock: View {
     }
   }
 
-  /// Lời Koa trong bong bóng iMessage xám có đuôi chỉ về Koa (16/10, chủ dự án chọn
-  /// mock "A · Bong bóng iMessage"); nút việc kế tiếp nhỏ gọn nằm NGOÀI, ngay dưới.
-  private func bubble(_ text: String, next: MascotRules.Quest?) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text(verbatim: text)
-        .font(.system(size: 15))
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .fixedSize(horizontal: false, vertical: true)
-        .messageBubble(mine: false, fill: Color(uiColor: .systemGray5))
-        // Koa đổi câu: câu cũ nhoè đi, câu mới hiện ra (Reduce Motion: mờ dần).
-        .id(text)
-        .transition(reduceMotion ? AnyTransition.opacity : AnyTransition(.blurReplace))
-      if let next, next != .steps {
-        Button { onAct(next) } label: {
-          HStack(spacing: 5) {
-            Image(systemName: "plus").font(.system(size: 12, weight: .bold))
-            Text(Self.action(next)).font(.system(size: 14, weight: .semibold))
-            Text(verbatim: "· +\(TodayDay.coins(next))")
-              .font(.system(size: 13, weight: .bold).monospacedDigit())
-              .opacity(0.85)
-          }
-          .foregroundStyle(.white)
-          .padding(.horizontal, 14)
-          .frame(minHeight: 34)
-          .background(MascotRoomView.signalColor(next), in: Capsule())
-          .frame(minHeight: 44)
-          .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(Self.action(next)))
-        .accessibilityValue(Text(String(localized: "today.day.worth \(TodayDay.coins(next))")))
-      }
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-  }
-
   /// Nút "việc kế tiếp": viên đen (sáng) / trắng (tối) có chấm màu việc ấy.
   private func nextButton(_ next: MascotRules.Quest, dark: Bool) -> some View {
     Button { onAct(next) } label: {
       HStack(spacing: 6) {
         Circle().fill(MascotRoomView.signalColor(next)).frame(width: 8, height: 8)
-        Text(Self.action(next)).font(.system(size: 13, weight: .bold))
-        Text(verbatim: "+\(TodayDay.coins(next))").font(.system(size: 12, weight: .bold).monospacedDigit()).opacity(0.6)
+        Text(Self.action(next)).font(.system(size: pt13, weight: .bold))
+        Text(verbatim: "+\(TodayDay.coins(next))").font(.system(size: pt12, weight: .bold).monospacedDigit()).opacity(0.6)
       }
       .foregroundStyle(dark ? Color.black : .white)
       .padding(.horizontal, 12)
@@ -495,92 +486,9 @@ struct TodayDayBlock: View {
     return (v / 1000).formatted(.number.precision(.fractionLength(0...1)).locale(.app)) + "k"
   }
 }
-
-/// Một ống mảnh (≈ 30 × 104, bo 15): tô từ đáy theo tiến độ, vệt sáng dọc, glyph
-/// trong chip nhỏ ở đáy, số đo bên dưới. Ống "kế tiếp": viền 2 điểm màu của nó,
-/// quầng sáng nhẹ, nhãn "Next" phía trên.
-struct TodayTube: View {
-  let tube: TodayDay.Tube
-  let isNext: Bool
-  let reduceMotion: Bool
-  let space: Namespace.ID
-  @Environment(AppServices.self) private var services: AppServices?
-
-  static let size = CGSize(width: 26, height: 60)
-
-  private var unit: Water.Unit { services?.preferences.volumeUnit ?? .ml }
-
-  var body: some View {
-    let color = MascotRoomView.signalColor(tube.quest)
-    VStack(spacing: 6) {
-      ZStack {
-        // Giữ chỗ cho nhãn ở mọi ống để hàng không nhảy khi nhãn trượt đi.
-        Text(String(localized: "today.next")).font(.system(size: 11, weight: .bold)).padding(.vertical, 2).hidden()
-        if isNext {
-          Text(String(localized: "today.next"))
-            .font(.system(size: 11, weight: .bold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(color, in: Capsule())
-            .matchedGeometryEffect(id: "nextTag", in: space)
-        }
-      }
-      .accessibilityHidden(true)
-      ZStack(alignment: .bottom) {
-        // Rãnh lõm: tối hơn mặt kính một chút và nhuốm màu tín hiệu, nên ống
-        // rỗng vẫn đọc ra hình và ra "ống nào" — không hoà vào thẻ.
-        Capsule().fill(DS.Color.foreground.swiftUI.opacity(0.06))
-        Capsule().fill(color.opacity(0.10))
-        Capsule()
-          .strokeBorder(
-            LinearGradient(colors: [.black.opacity(0.10), .clear], startPoint: .top, endPoint: .center),
-            lineWidth: 3)
-          .blur(radius: 2)
-        Capsule()
-          .fill(LinearGradient(colors: [color.opacity(0.75), color], startPoint: .top, endPoint: .bottom))
-          .frame(height: max(tube.fill > 0 ? Self.size.width : 0, Self.size.height * tube.fill))
-          .opacity(tube.fill > 0 ? 1 : 0)
-          .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.8, bounce: 0.18), value: tube.fill)
-        // Vệt sáng dọc.
-        Capsule()
-          .fill(.white.opacity(0.45))
-          .frame(width: 2, height: Self.size.height * 0.62)
-          .offset(x: -7, y: -Self.size.height * 0.2)
-        Image(systemName: Self.glyph(tube.quest))
-          .font(.system(size: 11, weight: .bold))
-          .foregroundStyle(tube.fill > 0.3 ? .white : color)
-          .frame(width: 22, height: 22)
-          .background(Circle().fill(tube.fill > 0.3 ? Color.white.opacity(0.22) : color.opacity(0.12)))
-          .padding(.bottom, 4)
-      }
-      .frame(width: Self.size.width, height: Self.size.height)
-      .clipShape(Capsule())
-      .overlay(Capsule().strokeBorder(color.opacity(tube.fill > 0 ? 0.25 : 0.4), lineWidth: 1))
-      .overlay {
-        if isNext {
-          Capsule()
-            .strokeBorder(color, lineWidth: 2)
-            .shadow(color: color.opacity(0.45), radius: 8)
-            .matchedGeometryEffect(id: "nextRing", in: space)
-        }
-      }
-      Text(verbatim: TodayDayBlock.value(tube, unit: unit))
-        .font(DS.TextStyle.number(11, .caption2).weight(.bold))
-        .foregroundStyle(tube.done || isNext ? color : DS.Color.mutedForeground.swiftUI)
-        .lineLimit(1)
-        .minimumScaleFactor(0.7)
-    }
-    .frame(minWidth: 44)
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(Text(verbatim: TodayDayBlock.name(tube.quest)))
-    .accessibilityValue(Text(verbatim: [
-      TodayDayBlock.value(tube, unit: unit),
-      tube.done ? String(localized: "today.tube.done") : nil,
-      isNext ? String(localized: "today.next") : nil,
-    ].compactMap { $0 }.joined(separator: ", ")))
-  }
-
+/// Biểu tượng của từng việc trong ngày (dùng ở thanh việc). KOA-T40: view ống `TodayTube` cũ không còn chỗ
+/// nào dùng — chỉ giữ lại biểu tượng.
+enum TodayTube {
   static func glyph(_ q: MascotRules.Quest) -> String {
     switch q {
     case .sleep: "moon.fill"
@@ -656,15 +564,20 @@ struct KoaBar: View {
   let reduceMotion: Bool
   let unit: Water.Unit
 
+  // Glyph và tên chỉ số lớn theo Dynamic Type, cùng thang `ptNN` của `TodayDayCard`; mặc định
+  // 12 và 13,5.
+  @ScaledMetric(relativeTo: .caption) private var pt12: CGFloat = 12
+  @ScaledMetric(relativeTo: .footnote) private var pt13Half: CGFloat = 13.5
+
   var body: some View {
     let color = MascotRoomView.signalColor(tube.quest)
     HStack(spacing: 10) {
       Image(systemName: TodayTube.glyph(tube.quest))
-        .font(.system(size: 12, weight: .bold))
+        .font(.system(size: pt12, weight: .bold))
         .foregroundStyle(color)
         .frame(width: 18)
       Text(verbatim: TodayDayBlock.name(tube.quest))
-        .font(.system(size: 13.5, weight: isNext ? .bold : .regular))
+        .font(.system(size: pt13Half, weight: isNext ? .bold : .regular))
         .foregroundStyle(KoaCardInk.ink(dark))
         .frame(width: 64, alignment: .leading)
         .lineLimit(1).minimumScaleFactor(0.8)

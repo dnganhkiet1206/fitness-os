@@ -51,6 +51,13 @@ public struct LocalDate: Sendable, Hashable, Comparable, Codable, CustomStringCo
 
   public func adding(days: Int) -> LocalDate { LocalDate(daysSinceEpoch: daysSinceEpoch + days) }
 
+  /// Thứ trong tuần, Thứ Hai = 0 … Chủ nhật = 6 (1970-01-01 là Thứ Năm = 3).
+  public var mondayIndex: Int { ((daysSinceEpoch + 3) % 7 + 7) % 7 }
+
+  /// Thứ Hai của tuần chứa ngày này — MỘT chỗ tính cho cả app (KOA-T21: trước có ≥ 7 bản chép
+  /// tay, một bản theo công thức Chủ nhật = 0 khác hẳn).
+  public var weekStart: LocalDate { adding(days: -mondayIndex) }
+
   public var description: String {
     func pad(_ n: Int, _ w: Int) -> String {
       let s = String(n)

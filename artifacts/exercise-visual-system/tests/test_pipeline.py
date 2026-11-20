@@ -49,11 +49,60 @@ class ConfigTests(unittest.TestCase):
             finally:
                 del os.environ["EVS_BRAND_CONFIG"]
 
+    def test_aggregates_expand_to_parts_with_fibres(self):
+        # Exercises may name a whole muscle; the fibre atlases are per part.
+        parts = config.expand_muscles(["pectoralis_major", "deltoid_anterior", "pectoralis_major_sternocostal"])
+        self.assertEqual(parts, ["pectoralis_major_clavicular", "pectoralis_major_sternocostal", "pectoralis_major_abdominal", "deltoid_anterior"])
+        fibre_groups = set(config.fiber_map()["groups"])
+        for name in config.muscle_names():
+            for part in config.expand_muscles([name]):
+                self.assertIn(part, fibre_groups, name)
+
     def test_bench_press_config_is_valid(self):
         ex = config.exercise_config("bench-press")
-        problems = report.validate_exercise_config(ex, list(config.muscle_map()["groups"]), list(config.camera_presets()["presets"]))
+        problems = report.validate_exercise_config(ex, config.muscle_names(), list(config.camera_presets()["presets"]))
         self.assertEqual(problems, [])
         self.assertNotEqual(ex["status"], "APPROVED")
+
+
+class NeckFanTests(unittest.TestCase):
+    """muscle_eval.neck_fan (17/11): the upper trapezius stays on the back of the neck."""
+
+    def setUp(self):
+        self.fan = config.muscle_map()["groups"]["trapezius_upper"]["neck_fan"]
+        a, b = (np.asarray(v, dtype=float) for v in self.fan["axis"])
+        self.a, self.axis = a, (b - a) / np.linalg.norm(b - a)
+
+    def _point(self, z: float, angle_deg: float, radius: float) -> np.ndarray:
+        """Point at height ~z, ``angle_deg`` around the neck axis from straight back."""
+        centre = self.a + self.axis * (z - self.a[2]) / self.axis[2]
+        side = np.array([1.0, 0.0, 0.0])
+        back = np.cross(self.axis, side)
+        back = back if back[1] > 0 else -back
+        t = np.radians(angle_deg)
+        return centre + radius * (np.cos(t) * back + np.sin(t) * side)
+
+    def test_back_of_upper_neck_kept(self):
+        f = muscle_eval.neck_fan(self.fan, np.array([self._point(1.60, 10.0, 0.06)]))
+        self.assertGreater(f[0], 0.99)
+
+    def test_side_of_upper_neck_cut(self):
+        # The old region coloured up to ~90 degrees under the ear.
+        f = muscle_eval.neck_fan(self.fan, np.array([self._point(1.60, 85.0, 0.06)]))
+        self.assertLess(f[0], 0.01)
+
+    def test_base_of_neck_reaches_further(self):
+        f = muscle_eval.neck_fan(self.fan, np.array([self._point(1.50, 85.0, 0.06), self._point(1.60, 85.0, 0.06)]))
+        self.assertGreater(f[0], 0.99)
+        self.assertLess(f[1], 0.01)
+
+    def test_shoulder_slope_far_from_axis_untouched(self):
+        f = muscle_eval.neck_fan(self.fan, np.array([self._point(1.52, 100.0, 0.15)]))
+        self.assertGreater(f[0], 0.99)
+
+    def test_below_table_untouched(self):
+        f = muscle_eval.neck_fan(self.fan, np.array([self._point(1.40, 170.0, 0.05)]))
+        self.assertEqual(f[0], 1.0)
 
 
 class ExerciseSchemaTests(unittest.TestCase):
@@ -78,7 +127,7 @@ class ExerciseSchemaTests(unittest.TestCase):
     def test_unknown_muscle(self):
         ex = self.base()
         ex["primary_muscles"] = ["not_a_muscle"]
-        self.assertTrue(report.validate_exercise_config(ex, list(config.muscle_map()["groups"])))
+        self.assertTrue(report.validate_exercise_config(ex, config.muscle_names()))
 
     def test_required_cameras(self):
         ex = self.base()
@@ -92,9 +141,11 @@ class ApprovalGateTests(unittest.TestCase):
         recs = report.approval_records(ex)
         status = {r["id"]: r["status"] for r in recs}
         self.assertEqual(status["biomechanical_correctness"], "UNVERIFIED")
-        self.assertEqual(status["expert_approval"], "REQUIRES_MANUAL_REVIEW")
+        self.assertEqual(status["reference_comparison_approval"], "REQUIRES_MANUAL_REVIEW")
         summary = report.summarize(recs, ex)
         self.assertEqual(summary["publication_status"], "BLOCKED")
+        self.assertEqual(summary["reference_comparison_approval"], "PENDING")
+        self.assertEqual(summary["recommended_exercise_status"], "REFERENCE_REVIEW_PENDING")
 
     def test_technical_pass_is_not_approval(self):
         ex = config.exercise_config("bench-press")
@@ -108,6 +159,7 @@ class ApprovalGateTests(unittest.TestCase):
         ex.update(status="APPROVED", reviewer="Test Reviewer", approval_date="2026-01-01")
         summary = report.summarize(report.approval_records(ex), ex)
         self.assertEqual(summary["publication_status"], "PUBLISHABLE")
+        self.assertEqual(summary["reference_comparison_approval"], "APPROVED")
 
     def test_illegal_status_rejected(self):
         with self.assertRaises(ValueError):
@@ -221,7 +273,7 @@ class FiberFieldTests(unittest.TestCase):
         return muscle_eval.limb_frames(joints)
 
     def test_fan_phase_is_radial(self):
-        spec = config.fiber_map()["groups"]["pectoralis_major"]
+        spec = config.fiber_map()["groups"]["pectoralis_major_sternocostal"]
         centre = np.array(spec["center"], dtype=float)
         angles = np.radians(np.arange(120.0, 241.0, 10.0))
         # Same spoke, different radii: the phase must not change (one fibre).
@@ -239,7 +291,7 @@ class FiberFieldTests(unittest.TestCase):
         self.assertAlmostEqual(float(steps.mean()), 10.0 / spec["angular_spacing_deg"], places=9)
 
     def test_parallel_phase_varies_only_across_the_axis(self):
-        spec = config.fiber_map()["groups"]["triceps_brachii"]
+        spec = config.fiber_map()["groups"]["triceps_lateral_head"]
         axis = np.array(spec["axis"], dtype=float)
         normal = np.array([-axis[1], axis[0]])
         base = np.array([0.1, 0.0])
@@ -251,7 +303,7 @@ class FiberFieldTests(unittest.TestCase):
         self.assertAlmostEqual(float(steps.mean()), 0.05 / spec["spacing_m"], places=9)
 
     def test_wrap_is_seamless_around_the_limb(self):
-        spec = config.fiber_map()["groups"]["forearm_muscles"]
+        spec = config.fiber_map()["groups"]["wrist_extensors"]
         r = spec["radius_m"]
         pts = np.array([[0.0, -np.pi * r], [0.0, np.pi * r]])
         phase = fiber_fields.parallel_phase(spec, pts)
@@ -260,7 +312,7 @@ class FiberFieldTests(unittest.TestCase):
 
     def test_limb_chart_metric_coords(self):
         frames = self._frames()
-        spec = config.fiber_map()["groups"]["triceps_brachii"]
+        spec = config.fiber_map()["groups"]["triceps_lateral_head"]
         shoulder = np.array([0.19, 0.0, 1.45])
         elbow = np.array([0.25, 0.0, 1.15])
         mid = 0.5 * (shoulder + elbow)
@@ -272,13 +324,20 @@ class FiberFieldTests(unittest.TestCase):
         muscle_map = config.muscle_map()
         problems = fiber_fields.validate_fiber_map(fiber_map, muscle_map, self._frames())
         self.assertEqual(problems, [])
-        # The pectoral fan opens toward the sternum: a wide, genuinely
-        # fan-shaped span, not a sliver and not a wrap-around.
-        spec = fiber_map["groups"]["pectoralis_major"]
-        span, nearest = fiber_fields.fan_span_check(spec, muscle_map["groups"]["pectoralis_major"], self._frames())
-        self.assertGreater(span, 80.0)
-        self.assertLess(span, 150.0)
-        self.assertGreater(nearest, 0.01)
+        # The pectoral fan opens toward the sternum: the three parts share
+        # one centre (the bicipital groove) and together make a wide,
+        # genuinely fan-shaped span, not a sliver and not a wrap-around.
+        spans = []
+        for part in ("clavicular", "sternocostal", "abdominal"):
+            name = f"pectoralis_major_{part}"
+            self.assertEqual(fiber_map["groups"][name]["center"], fiber_map["groups"]["pectoralis_major_sternocostal"]["center"])
+            span, nearest = fiber_fields.fan_span_check(fiber_map["groups"][name], muscle_map["groups"][name], self._frames())
+            self.assertGreater(span, 10.0)
+            self.assertGreater(nearest, 0.01)
+            spans.append(span)
+        self.assertGreater(sum(spans), 80.0)
+        # Parts overlap slightly at their feathered edges; < 180 = no wrap.
+        self.assertLess(sum(spans), 180.0)
 
     def test_apply_fiber_phase_keeps_zero_and_peak(self):
         frac = np.zeros((64, 64), dtype=np.uint8)

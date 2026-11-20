@@ -12,8 +12,9 @@ public import Foundation
 /// - Bước / kcal / phút hôm nay → `daily_logs` hôm nay; lịch sử bước → các
 ///   ngày trước; rồi dựng lại MỌI ngày bị chạm (`recomputeDailyLog`).
 ///
-/// Lỗi ở ba bước đầu dừng lượt (như RN `throw`); phần `daily_logs` thì gom lỗi
-/// từng phần rồi báo một lần ("đồng bộ chưa trọn"), không bỏ dở phần còn lại.
+/// Mọi phần gom lỗi từng phần rồi báo một lần ("đồng bộ chưa trọn",
+/// `.incomplete`): một phần hỏng không bỏ dở phần còn lại — khác RN `throw`
+/// dừng lượt ở ba bước đầu (R2-SYNC-06).
 public enum HealthSync {
   /// Những gì đã đọc từ HealthKit cho một lượt.
   public struct Snapshot: Sendable {
@@ -54,9 +55,11 @@ public enum HealthSync {
   public enum Failure: Error, Sendable, Hashable {
     /// RN: "No health data found — open the Health app to confirm data exists".
     case noData
-    /// Một lệnh đọc / ghi bắt buộc hỏng: lượt dừng.
+    /// Lượt không chạy được (vd: chưa cấp quyền HealthKit — bên gọi ném trước
+    /// khi gọi `run`): khác `.incomplete` (lượt đã chạy, thiếu phần).
     case write(String)
-    /// `daily_logs` chỉ ghi được một phần (`nCxHealthSyncIncomplete`).
+    /// Lượt chỉ ghi được một phần (`nCxHealthSyncIncomplete`): tên từng phần
+    /// hỏng (`nCxHealthSyncPart*`).
     case incomplete([String])
   }
 
@@ -69,15 +72,19 @@ public enum HealthSync {
   }
 
   public static func run(
-    _ s: Snapshot, userId: String, lang: String, store: any RowStore, now: EpochMillis, in tz: TimeZone
+    _ s: Snapshot, userId: String, lang: String, store: any RowStore, now: EpochMillis, in tz: TimeZone,
+    historyWindow: HealthHistoryWindow = .unknown
   ) async throws(Failure) {
     if s.isEmpty { throw .noData }
     let me: JSONValue = .string(userId)
     func iso(_ t: EpochMillis) -> JSONValue { .string(WorkoutSessionRecord.iso8601(t)) }
     func int(_ v: Int?) -> JSONValue { v.map { .number(Double($0)) } ?? .null }
 
-    do throws(RowStoreError) {
-      if let bio = s.bio {
+    // Gom lỗi từng phần như `daily_logs`: một phần hỏng không bỏ dở phần còn
+    // lại; cuối lượt báo một lần (`.incomplete`).
+    var failures: [String] = []
+    if let bio = s.bio {
+      do {
         try await store.upsert(
           "biometric_samples",
           [[
@@ -85,9 +92,13 @@ public enum HealthSync {
             "hrv_sdnn_ms": int(bio.hrvSdnnMs), "spo2_pct": int(bio.spo2Pct), "resp_rate_rpm": int(bio.respRateRpm),
             "source": .string(HealthData.appleSource), "date_time": .string(bio.dateTime), "confidence": .number(1),
           ]], onConflict: "user_id,external_id")
+      } catch {
+        failures.append("nCxHealthSyncPartBio")
       }
+    }
 
-      if let sleep = s.sleep, let bed = EpochMillis(iso8601: sleep.bedtime) {
+    if let sleep = s.sleep, let bed = EpochMillis(iso8601: sleep.bedtime) {
+      do {
         let manual = try await store.select(
           RowQuery(
             table: "sleep_logs", columns: "id",
@@ -104,8 +115,12 @@ public enum HealthSync {
               "rem_min": int(sleep.remMin), "source": .string(HealthData.appleSource), "external_id": .string(sleep.externalId),
             ]], onConflict: "user_id,external_id")
         }
+      } catch {
+        failures.append("nCxHealthSyncPartSleep")
       }
+    }
 
+    do {
       let times = s.workouts.compactMap { EpochMillis(iso8601: $0.dateTime) }
       if let first = times.min(), let last = times.max() {
         let manuals = try await store.select(
@@ -133,12 +148,12 @@ public enum HealthSync {
         }
       }
     } catch {
-      throw .write(error.message)
+      failures.append("nCxHealthSyncPartWorkouts")
     }
 
-    // `writeHealthSync`: phần `daily_logs`, gom lỗi từng phần.
+    // `writeHealthSync`: phần `daily_logs`, gom lỗi từng phần vào chung mảng
+    // `failures` với ba phần đầu.
     let today = LocalDate(now, in: tz)
-    var failures: [String] = []
     var measured: [String: JSONValue] = [:]
     if let v = s.steps { measured["steps"] = int(v) }
     if let v = s.activeKcal { measured["active_kcal"] = int(v) }
@@ -190,7 +205,8 @@ public enum HealthSync {
     touched.formUnion(s.water.map(\.date))
     for day in touched.sorted() {
       do {
-        try await DailyLog.recompute(userId: userId, date: day, store: store, now: now, in: tz)
+        try await DailyLog.recompute(
+          userId: userId, date: day, store: store, now: now, in: tz, historyWindow: historyWindow)
       } catch {
         failures.append("nCxHealthSyncPartRebuild:\(day)")
       }

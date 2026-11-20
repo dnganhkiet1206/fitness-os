@@ -154,7 +154,7 @@ public final class WaterBook {
         let day = today()
         date = day
         serverLogs = cached.date == day ? cached.logs : []
-        serverRows = cached.rows.filter { $0.date >= Water.weekStart(day) }
+        serverRows = cached.rows.filter { $0.date >= Water.rollingWindowStart(day) }
         loaded = true
         if let pending = await pendingEdits(), !closed, gen == generation { merge(pending, since: editSeq, replacing: false) }
         publish()
@@ -187,7 +187,7 @@ public final class WaterBook {
     let source = self.source, userId = self.userId
     do {
       async let dayLogs = source.logs(userId: userId, date: day)
-      async let weekRows = source.rows(userId: userId, from: Water.weekStart(day))
+      async let weekRows = source.rows(userId: userId, from: Water.rollingWindowStart(day))
       let (fresh, rows) = try await (dayLogs, weekRows)
       guard !closed, gen == generation else { return }
       serverLogs = fresh
@@ -304,7 +304,7 @@ public final class WaterBook {
     if let h = hidden, !serverLogs.contains(where: { $0.id == h }) { hidden = nil }
     let dayLocal = local.filter { $0.row.date == date && !serverIds.contains($0.log.id) }.map(\.log)
     logs = Water.newestFirst(serverLogs.filter { $0.id != hidden } + dayLocal)
-    let start = Water.weekStart(date)
+    let start = Water.rollingWindowStart(date)
     let rows = serverRows.filter { $0.id != hidden }
       + local.filter { $0.row.date >= start && !serverIds.contains($0.row.id) }.map(\.row)
     week = Water.week(rows, today: date)

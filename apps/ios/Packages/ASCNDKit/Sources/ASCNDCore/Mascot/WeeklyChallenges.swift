@@ -39,7 +39,7 @@ public enum WeeklyChallenges {
 
   /// Thứ Hai của tuần chứa `date` (`weekStartOf`).
   public static func weekStart(_ date: LocalDate) -> LocalDate {
-    date.adding(days: -WorkoutPlanning.routineIndex(date))
+    date.weekStart
   }
 
   // MARK: - Một lượt đo (`challengeStep`)
@@ -278,12 +278,18 @@ public final class WeeklyChallengesBook {
   @ObservationIgnored private let english: @Sendable (String) -> (title: String, desc: String, reward: String)
   @ObservationIgnored private var initialized = false
   @ObservationIgnored private var closed = false
+  /// Đã mừng (tuần, thử thách) — bền qua lần mở app (KOA-T24, như khoá "đã thấy" của KoaWeek).
+  @ObservationIgnored private let defaults: UserDefaults
+  private func celebratedKey(_ key: String) -> String {
+    "ascnd_challenge_celebrated.\(userId).\(weekStart.description).\(key)"
+  }
 
   public init(
     userId: String, today: LocalDate, store: any RowStore, economy: any MascotEconomy,
     english: @escaping @Sendable (String) -> (title: String, desc: String, reward: String),
-    timeZone: TimeZone = .current
+    timeZone: TimeZone = .current, defaults: UserDefaults = .standard
   ) {
+    self.defaults = defaults
     self.userId = userId
     self.weekStart = WeeklyChallenges.weekStart(today)
     self.store = store
@@ -296,16 +302,13 @@ public final class WeeklyChallengesBook {
 
   /// Đọc; lần đầu: gieo nếu trống, rồi đo lại tiến độ, rồi đọc lại.
   public func load() async {
-    guard let rows = await read() else { return }
+    guard await read() != nil else { return }
     guard !initialized else { return }
     initialized = true
-    if rows.count < 3 {
-      guard await seed(existing: Set(rows.map(\.key))) else {
-        progressFailure = .seed
-        return
-      }
-    }
-    await refreshProgress()
+    // Gieo hỏng thì lần sau thử lại (KOA-T24). CHỈ màn Thử thách gieo: Hôm nay gọi
+    // `refreshProgress()` không gieo — V1 mục 2 thay bộ thử thách chung bằng Tuần của Koa (Devin #971).
+    await refreshProgress(seedIfMissing: true)
+    if progressFailure == .seed { initialized = false }
   }
 
   @discardableResult
@@ -345,20 +348,34 @@ public final class WeeklyChallengesBook {
   /// `useUpdateChallengeProgress`: mỗi thử thách chưa xong đo riêng; vừa xong
   /// thì TRẢ trước (bước lặp lại vô hại — `ref_key` cố định cả tuần) rồi mới
   /// ghi hàng; một cái hỏng không kéo cái khác; lỗi đầu tiên được báo.
-  public func refreshProgress() async {
+  public func refreshProgress(seedIfMissing: Bool = false) async {
     guard !refreshing, !closed else { return }
     refreshing = true
     defer { refreshing = false }
     progressFailure = nil
     justCompleted = []
 
-    let all: [WeeklyChallenges.Row]
+    var all: [WeeklyChallenges.Row]
     do {
       all = try await store.select(WeeklyChallenges.query(userId: userId, weekStart: weekStart))
         .compactMap(WeeklyChallenges.Row.init(row:))
     } catch {
       progressFailure = .measure
       return
+    }
+    // Tuần chưa đủ ba thử thách: gieo phần thiếu (trùng 23505 không phải lỗi) rồi đọc lại.
+    if seedIfMissing, all.count < 3 {
+      guard await seed(existing: Set(all.map(\.key))), !closed else {
+        if !closed { progressFailure = .seed }
+        return
+      }
+      do {
+        all = try await store.select(WeeklyChallenges.query(userId: userId, weekStart: weekStart))
+          .compactMap(WeeklyChallenges.Row.init(row:))
+      } catch {
+        progressFailure = .measure
+        return
+      }
     }
     let open = all.filter { !$0.completed }
     guard !open.isEmpty else { return }
@@ -401,28 +418,40 @@ public final class WeeklyChallengesBook {
         currentValue: ch.currentValue, targetValue: ch.targetValue, completed: ch.completed,
         completedAt: ch.completedAt, newValue: value)
 
+      // Thưởng đã trả ở máy khác (server trả 0, KOA-T01): vẫn ghi tiến độ, nhưng không mừng.
+      var paidElsewhere = false
+      var paid = false
+      var claimFailed = false
       if step.justCompleted {
         let tier = ch.rewardTier ?? "bronze"
         do {
-          _ = try await economy.claimReward(
+          paidElsewhere = MascotRules.isDuplicateClaim(try await economy.claimReward(
             refKey: MascotRules.challengeRefKey(tier: tier, weekStart: weekStart.description, key: ch.key),
-            reason: "challenge \(ch.key)")
+            reason: "challenge \(ch.key)"))
+          paid = !paidElsewhere
         } catch let f as MascotFailure {
-          if f != .server(code: "23505") {
-            firstFailure = firstFailure ?? .reward(f)
-            continue
-          }
+          // Trùng khoá không còn là lỗi (server trả 0, KOA-T01) — mọi lỗi ở đây là lỗi thật.
+          firstFailure = firstFailure ?? .reward(f)
+          claimFailed = true
         } catch {
           firstFailure = firstFailure ?? .reward(.server(code: nil))
-          continue
+          claimFailed = true
         }
       }
+      // Trả xong (không trùng) thì mừng NGAY, kể cả khi ghi hàng hỏng dưới đây (KOA-T24: trước đây ghi
+      // hỏng → không mừng, lượt sau server trả 0 → không bao giờ mừng). Mỗi (tuần, thử thách) một lần.
+      if paid, ch.rewardTitle != nil, !defaults.bool(forKey: celebratedKey(ch.key)) {
+        defaults.set(true, forKey: celebratedKey(ch.key))
+        justCompleted.append(ch.key)
+      }
 
-      if !step.unchanged {
+      // Trả hỏng (mất mạng, trần thưởng…): vẫn ghi TIẾN ĐỘ nhưng chưa "xong", để lượt sau trả lại.
+      let writeValueOnly = claimFailed && Double(step.value) != ch.currentValue
+      if (!step.unchanged && !claimFailed) || writeValueOnly {
         var patch: [String: JSONValue] = [
-          "current_value": .number(Double(step.value)), "completed": .bool(step.completed),
+          "current_value": .number(Double(step.value)), "completed": .bool(claimFailed ? false : step.completed),
         ]
-        if step.completed && (ch.completedAt ?? "").isEmpty {
+        if !claimFailed, step.completed && (ch.completedAt ?? "").isEmpty {
           patch["completed_at"] = .string(WorkoutSessionRecord.iso8601(EpochMillis(Date())))
         }
         do {
@@ -437,7 +466,6 @@ public final class WeeklyChallengesBook {
           continue
         }
       }
-      if step.justCompleted && ch.rewardTitle != nil { justCompleted.append(ch.key) }
     }
     guard !closed else { return }
     progressFailure = firstFailure

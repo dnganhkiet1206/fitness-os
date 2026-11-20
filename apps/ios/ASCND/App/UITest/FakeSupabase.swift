@@ -51,6 +51,8 @@
       var status: Int
       var body: Data
       var headers: [String: String] = ["Content-Type": "application/json"]
+      /// Trả lời muộn (giây) — mô phỏng byte đầu chậm của AI (KOA-T09).
+      var delay: TimeInterval = 0
     }
 
     func handle(_ request: URLRequest, body: Data?) -> Reply {
@@ -321,10 +323,28 @@
       let value: JSONValue =
         switch name {
         case "current_tier": .string("free")
-        case "claim_quest_reward", "buy_streak_freeze": .number(10)
+        case "claim_quest_reward": .number(10)
         case "buy_mascot_item": .number(0)
+        // KOA-T18 / T19: mua + mặc nguyên khối, đặt cả nhóm mặc nguyên khối.
+        case "buy_and_wear_mascot_item": .number(0)
+        case "set_mascot_worn": .bool(true)
         case "dm_open": .string(UUID().uuidString.lowercased())
         case "community_user_stats": .object([:])
+        // Kiểm duyệt Cộng đồng (#915): người test là ADMIN, dữ liệu mẫu ở
+        // `UITestModerationSeed`. Ghi (mod_hide / mod_decide_appeal / …) không
+        // cần trả gì — client chỉ `.execute()` — nên rơi về `[]` mặc định.
+        case "my_app_role": .string("admin")
+        case "mod_dashboard": UITestModerationSeed.dashboard()
+        case "mod_reports": UITestModerationSeed.reports(status: params?["p_status"]?.stringValue)
+        case "mod_appeals": UITestModerationSeed.appeals(status: params?["p_status"]?.stringValue)
+        case "mod_target": UITestModerationSeed.target(
+          type: params?["p_type"]?.stringValue, id: params?["p_id"]?.stringValue)
+        case "mod_user_restriction": UITestModerationSeed.restriction(user: params?["p_user"]?.stringValue)
+        case "admin_users": UITestModerationSeed.users(query: params?["p_query"]?.stringValue)
+        case "admin_user": UITestModerationSeed.userDetail(id: params?["p_user"]?.stringValue)
+        case "admin_audit": UITestModerationSeed.audit(action: params?["p_action"]?.stringValue)
+        case "admin_art": UITestModerationSeed.art()
+        case "community_my_reports": UITestModerationSeed.myReports()
         // Ví gộp (round 3, AUD-28): như `mascot_wallet()` — số dư, XP theo loại khoá, khoá đã nhận.
         case "mascot_wallet": Self.wallet(rows("mascot_transactions"))
         default: .array([])
@@ -360,6 +380,21 @@
 
     private func function(_ name: String, _ body: JSONValue?) -> Reply {
       if name == EdgeFunction.Name.coach.rawValue {
+        // Câu mồi cho kiểm lỗi luồng (KOA-T06/T07/T09): "#cut" → luồng đứt không có [DONE];
+        // "#quota" → 429 với thân lỗi thật của `guard.ts`; "#slow" → byte đầu sau 12 giây.
+        let last: String = {
+          guard case .array(let msgs)? = body?["messages"], let m = msgs.last else { return "" }
+          return m["content"]?.stringValue ?? ""
+        }()
+        if last.contains("#quota") {
+          return Reply(status: 429, body: Data(#"{"error":"Đã dùng hết lượt AI hôm nay. Vui lòng thử lại vào ngày mai."}"#.utf8))
+        }
+        if last.contains("#slow") {
+          return Reply(status: 200, body: UITestSeed.coachStream, headers: ["Content-Type": "text/event-stream"], delay: 12)
+        }
+        if last.contains("#cut") {
+          return Reply(status: 200, body: UITestSeed.coachStreamCut, headers: ["Content-Type": "text/event-stream"])
+        }
         return Reply(status: 200, body: UITestSeed.coachStream, headers: ["Content-Type": "text/event-stream"])
       }
       let value: JSONValue? = UITestSeed.edgeReply(name, body: body)
@@ -476,12 +511,21 @@
       guard
         let response = HTTPURLResponse(url: url, statusCode: reply.status, httpVersion: "HTTP/1.1", headerFields: reply.headers)
       else { return }
-      client.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-      if !reply.body.isEmpty { client.urlProtocol(self, didLoad: reply.body) }
-      client.urlProtocolDidFinishLoading(self)
+      let deliver = { [weak self] in
+        guard let self, !self.stopped else { return }
+        client.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        if !reply.body.isEmpty { client.urlProtocol(self, didLoad: reply.body) }
+        client.urlProtocolDidFinishLoading(self)
+      }
+      if reply.delay > 0 {
+        DispatchQueue.global().asyncAfter(deadline: .now() + reply.delay, execute: deliver)
+      } else {
+        deliver()
+      }
     }
 
-    override func stopLoading() {}
+    private var stopped = false
+    override func stopLoading() { stopped = true }
 
     /// `URLSession` chuyển thân request thành luồng trước khi tới `URLProtocol`.
     private static func body(of request: URLRequest) -> Data? {

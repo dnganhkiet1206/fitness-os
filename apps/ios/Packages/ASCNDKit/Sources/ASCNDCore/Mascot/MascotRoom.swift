@@ -4,10 +4,10 @@ public import Observation
 // Phòng linh vật (#527 Phase 7) — dữ liệu và hành động của `app/mascot-room.tsx`
 // @ fac9ac2 (`hooks/use-mascot-room.ts`, `use-daily-quests.ts`, `use-extras.ts`).
 //
-// Kinh tế: SERVER là chủ. App chỉ gọi hai RPC — `claim_quest_reward(ref_key)`
+// Kinh tế: SERVER là chủ. App chỉ gọi RPC `claim_quest_reward(ref_key)`
 // (server định giá theo `reward_prices`, chặn trùng bằng `UNIQUE(user_id,
-// ref_key)`, trần 800 xu/ngày) và `buy_streak_freeze(request_id)` (giá
-// `shop_prices`, kiểm số dư, giữ tối đa 2, idempotent theo `request_id`).
+// ref_key)`, trần 800 xu/ngày). Băng chuỗi đã đóng bán (AUD-14): không còn
+// lối mua trong app; băng đã mua giữ nguyên.
 // Số dư / XP / cấp là PHÉP CỘNG trên sổ `mascot_transactions` mà RLS cho đọc —
 // đúng như RN `useMascotWallet`; app không ghi sổ, không gửi số xu.
 
@@ -135,12 +135,10 @@ public protocol MascotSource: Sendable {
   func dailySignals(userId: String, date: LocalDate) async throws -> DailySignals
 }
 
-/// Hai RPC của server. Ném `MascotFailure` (adapter dịch thông điệp Postgres).
+/// RPC của server. Ném `MascotFailure` (adapter dịch thông điệp Postgres).
 public protocol MascotEconomy: Sendable {
   /// `claim_quest_reward(p_ref_key, p_reason)` → số xu server trả.
   func claimReward(refKey: String, reason: String) async throws -> Int
-  /// `buy_streak_freeze(p_request_id)` → số dư sau khi mua.
-  func buyStreakFreeze(requestId: UUID) async throws -> Int
 }
 
 /// Vì sao một hành động kinh tế không xong — theo thứ người dùng làm được.
@@ -196,22 +194,21 @@ public final class MascotRoomController {
   public private(set) var awardCount: Int?
   public private(set) var signals: DailySignals?
   public private(set) var claiming = false
-  public private(set) var buyingFreeze = false
-  /// Lỗi của hành động gần nhất (nhận thưởng / mua băng); xoá khi thử lại.
+  /// Lỗi của hành động gần nhất (nhận thưởng); xoá khi thử lại.
   public private(set) var actionFailure: MascotFailure?
   /// Lần nhận thưởng chào mừng vừa thành công (số xu) — màn báo một lần.
   public private(set) var welcomeGranted: Int?
   /// Thưởng chuỗi vừa tự về (Koa đợt 1) — màn ăn mừng một lần rồi gọi
   /// `streakAutoClaimShown()`.
   public private(set) var streakAutoClaim: ClaimOutcome?
+  /// Sổ xu lần này đọc hỏng, đang hiện số của lần trước (KOA-T17) — màn nói ra + thử lại.
+  public private(set) var walletStale = false
+  @ObservationIgnored private var loadGeneration = 0
+  @ObservationIgnored private var frozenDays: [LocalDate] = []
 
   @ObservationIgnored private let source: any MascotSource
   @ObservationIgnored private let economy: any MascotEconomy
-  @ObservationIgnored private let makeRequestId: @Sendable () -> UUID
   @ObservationIgnored private let stepsGoalSource: @Sendable () -> Int
-  /// Mã của lần mua băng đang dở: GIỮ tới khi server nhận, để bấm lại sau một
-  /// lần lỗi mạng không trừ tiền hai lần (`pendingFreezeBuy`).
-  @ObservationIgnored private var pendingFreezeRequest: UUID?
   /// Chốt của thưởng chào mừng: đặt TRƯỚC khi gọi, gỡ khi bị từ chối (RN).
   @ObservationIgnored private var welcomeTried = false
   @ObservationIgnored private var closed = false
@@ -222,7 +219,6 @@ public final class MascotRoomController {
 
   public init(
     userId: String, today: LocalDate, source: any MascotSource, economy: any MascotEconomy,
-    makeRequestId: @escaping @Sendable () -> UUID = { UUID() },
     stepsGoal: @escaping @Sendable () -> Int = { DailySignals.defaultStepsGoal },
     questObserver: QuestObserver? = nil
   ) {
@@ -232,7 +228,6 @@ public final class MascotRoomController {
     self.today = today
     self.source = source
     self.economy = economy
-    self.makeRequestId = makeRequestId
   }
 
   /// Phiên kết thúc: mọi kết quả về sau bị bỏ.
@@ -242,9 +237,12 @@ public final class MascotRoomController {
 
   /// Đọc tất cả, song song. Sổ xu là bắt buộc; phần khác lỗi thì phần đó ẩn.
   public func load() async {
+    // Lượt tải chồng nhau: chỉ lượt bắt đầu sau cùng được áp (KOA-T17).
+    loadGeneration += 1
+    let mine = loadGeneration
     let uid = userId, day = today, src = source
     let token = questObserver?.begin()
-    let weekStart = day.adding(days: -WorkoutPlanning.routineIndex(day))
+    let weekStart = day.weekStart
     async let ledger = capture { try await src.ledger(userId: uid) }
     async let dates = capture { try await src.loggedDates(userId: uid, limit: Streak.window) }
     async let freezes = capture { try await src.freezes(userId: uid) }
@@ -252,17 +250,28 @@ public final class MascotRoomController {
     async let awards = capture { try await src.awardCount(userId: uid) }
     async let daily = capture { try await src.dailySignals(userId: uid, date: day) }
     let (l, d, f, w, a, s) = await (ledger, dates, freezes, weekly, awards, daily)
-    guard !closed else { return }
+    guard !closed, mine == loadGeneration else { return }
 
     switch l {
-    case .success(let rows): wallet = MascotWallet(rows: rows)
-    case .failure(let e): if wallet == nil { phase = .failed(TodayController.failure([e]) ?? .unavailable) }
+    case .success(let rows):
+      wallet = MascotWallet(rows: rows)
+      walletStale = false
+    case .failure(let e):
+      if wallet == nil {
+        phase = .failed(TodayController.failure([e]) ?? .unavailable)
+      } else {
+        // Đã có số cũ: giữ, nhưng NÓI là số cũ (KOA-T17 — trước đây im lặng như mới).
+        walletStale = true
+      }
     }
-    // Băng đọc lỗi thì coi như không có (RN: lỗi `streak_freezes` → []).
-    let frozenRows = (try? f.get()) ?? []
-    let used = frozenRows.compactMap(\.usedOn)
-    freezesHeld = frozenRows.count - used.count
-    freezesUsed = used.count
+    // Băng đọc lỗi: giữ số đã biết (KOA-T17 — trước đây về 0, như thể mất hết băng).
+    if let frozenRows = try? f.get() {
+      let used = frozenRows.compactMap(\.usedOn)
+      freezesHeld = frozenRows.count - used.count
+      freezesUsed = used.count
+      frozenDays = used
+    }
+    let used = frozenDays
     if let logged = try? d.get() {
       // `streakFrom` — cùng một bản port với widget (#66).
       streak = Streak.from(logged.map(\.description), today: day.description, frozen: used.map(\.description))
@@ -272,7 +281,8 @@ public final class MascotRoomController {
     if let sig = try? s.get() {
       signals = sig
       // Một lượt `useDailyQuests` đã `ready`.
-      if let token { questObserver?.observe(token: token, day: day, signals: sig, claimed: wallet?.claimed ?? []) }
+      // Sổ xu chưa đọc được thì `nil`: bộ quan sát không nhận gì lượt này (KOA-T16).
+      if let token { questObserver?.observe(token: token, day: day, signals: sig, claimed: wallet?.claimed) }
     }
     if wallet != nil { phase = .ready }
     await grantWelcomeIfNeeded()
@@ -282,19 +292,11 @@ public final class MascotRoomController {
   /// Đọc lại sổ xu — sau khi bộ quan sát tự nhận một nhiệm vụ ở nơi khác.
   public func refreshWallet() async { await reloadLedger() }
 
-  /// Chỉ đọc lại sổ (sau một lần nhận / mua).
+  /// Chỉ đọc lại sổ (sau một lần nhận).
   private func reloadLedger() async {
     let uid = userId, src = source
     guard let rows = try? await src.ledger(userId: uid), !closed else { return }
     wallet = MascotWallet(rows: rows)
-  }
-
-  private func reloadFreezes() async {
-    let uid = userId, src = source
-    guard let rows = try? await src.freezes(userId: uid), !closed else { return }
-    let used = rows.compactMap(\.usedOn)
-    freezesHeld = rows.count - used.count
-    freezesUsed = used.count
   }
 
   // MARK: - Hiện
@@ -344,9 +346,6 @@ public final class MascotRoomController {
   /// (9…25), lệch với số thật được trả ở chuỗi 2–9 ngày.
   public var streakBonus: Int { MascotRules.streakPayout }
 
-  public var freezeFull: Bool { freezesHeld >= MascotRules.freezeMax }
-  public var canBuyFreeze: Bool { !freezeFull && !buyingFreeze && balance >= MascotRules.freezePrice }
-
   public var completedChallenges: [WeeklyChallenge] { (challenges ?? []).filter(\.completed) }
 
   // MARK: - Hành động
@@ -378,6 +377,8 @@ public final class MascotRoomController {
       let amount = try await economy.claimReward(refKey: refKey, reason: reason)
       guard !closed else { return nil }
       await reloadLedger()
+      // Đã nhận ở lượt / máy khác: sổ xu đã đúng, không mừng lần hai (KOA-T01).
+      if MascotRules.isDuplicateClaim(amount) { return nil }
       let oldLevel = MascotRules.level(xp: before), newLevel = MascotRules.level(xp: before + xpGain)
       // Hạng giờ theo Gains, không đổi khi nhận xu / XP.
       return ClaimOutcome(amount: amount, newLevel: newLevel > oldLevel ? newLevel : nil, newRank: nil)
@@ -388,30 +389,6 @@ public final class MascotRoomController {
     }
   }
 
-  /// Mua một băng chuỗi. Cùng một mã yêu cầu cho tới khi server nhận.
-  @discardableResult
-  public func buyFreeze() async -> Bool {
-    guard canBuyFreeze else { return false }
-    buyingFreeze = true
-    actionFailure = nil
-    defer { buyingFreeze = false }
-    let request = pendingFreezeRequest ?? makeRequestId()
-    pendingFreezeRequest = request
-    do {
-      _ = try await economy.buyStreakFreeze(requestId: request)
-      guard !closed else { return false }
-      pendingFreezeRequest = nil
-      async let l: Void = reloadLedger()
-      async let f: Void = reloadFreezes()
-      _ = await (l, f)
-      return true
-    } catch {
-      guard !closed else { return false }
-      actionFailure = Self.failure(error)
-      return false
-    }
-  }
-
   /// Túi chào mừng 300 xu (`welcome`, server định giá, idempotent theo khoá).
   private func grantWelcomeIfNeeded() async {
     guard let wallet, !wallet.claimed.contains("welcome"), !welcomeTried else { return }
@@ -419,11 +396,14 @@ public final class MascotRoomController {
     do {
       let amount = try await economy.claimReward(refKey: "welcome", reason: "welcome bonus")
       guard !closed else { return }
-      welcomeGranted = amount
+      // Túi chào mừng đã nhận ở máy khác: không hiện lại "+300" (KOA-T01).
+      if !MascotRules.isDuplicateClaim(amount) { welcomeGranted = amount }
       await reloadLedger()
     } catch {
-      // Bị từ chối thì lần mở sau được thử lại — khoá là duy nhất mỗi tài khoản.
-      welcomeTried = false
+      // KOA-T51: chỉ lỗi tạm (mất mạng, server tạm hỏng) mới thử lại ở lần mở sau — bị từ chối hẳn thì thôi,
+      // không gõ cửa mãi. Khoá là duy nhất mỗi tài khoản, server trả 0 nếu đã nhận (KOA-T01).
+      let failure = (error as? MascotFailure) ?? (NetworkFailure.isOffline(error) ? .offline : .server(code: nil))
+      if QuestRetry.shouldRetry(failure) { welcomeTried = false }
     }
   }
 

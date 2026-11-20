@@ -47,7 +47,19 @@ class SquatTemplate:
         "bar_above_shoulders_m": 0.05,
         "bar_shaft_radius_m": 0.0145,
         "bar_into_soft_tissue_m": 0.003,
-        "grip_width_between_hand_centres_m": 0.8,
+        # 16/11 (Kiệt: shoulders ballooned): 2 videos (PureGym back view,
+        # Dave Watkeys side view) + Catalyst Athletics / Squat University:
+        # hands just outside the shoulders (~1.45 x the 0.43 m shoulder
+        # width), forearms near parallel, elbows down and a little back.
+        # 0.8 m put the upper arm near horizontal (118 deg from rest); 0.62 m
+        # folded the elbow to 151 deg (soft-tissue limit 145), 0.68 m to
+        # 145.1 on the posed rig. 0.74 m: hands about a fist outside the
+        # deltoids, as in the PureGym back view, with margin to the limit.
+        "grip_width_between_hand_centres_m": 0.74,
+        # "Squeeze the shoulder blades": retraction builds the trapezius
+        # shelf for the bar; the shoulders are not shrugged.
+        "scapular_retraction_deg": 15.0,
+        "clavicle_elevation_deg": 3.0,
         "pelvis_share_of_lean": 0.8,
         "head_extension_share_of_lean": 0.35,
         "elbow_pole_from_hand_m": [0.22, 0.16, -0.55],
@@ -79,12 +91,27 @@ class SquatTemplate:
         self.bar_offset_deg = math.degrees(math.atan2(-d[1], d[2]))  # + = forward of the hip
         self.arms = {side: self._arm(side) for side in ("l", "r")}
 
+    def girdle_shoulder(self, side: str) -> np.ndarray:
+        """Rest-frame shoulder joint after the clavicle elevates then retracts
+        (generate_exercise.pose_girdle order, about the clavicle's head)."""
+        from ..primitives import rotation
+        t, s = self.t, self.s
+        sign = 1.0 if side == "l" else -1.0
+        p = np.asarray(s[f"shoulder_{side}"], float)
+        c = s.get(f"clavicle_{side}_head")
+        if c is None:
+            return p
+        c = np.asarray(c, float)
+        r = rotation(np.array([0.0, 0.0, 1.0]), sign * t["scapular_retraction_deg"]) @ rotation(
+            np.array([0.0, 1.0, 0.0]), -sign * t["clavicle_elevation_deg"])
+        return c + r @ (p - c)
+
     def _arm(self, side: str) -> dict:
         """Rest-frame arm on the bar (the bar rides with the trunk, so this
         holds for every frame): hand centre, elbow, wrist, palm normal."""
         t, s = self.t, self.s
         sign = 1.0 if side == "l" else -1.0
-        sh = np.asarray(s[f"shoulder_{side}"], float)
+        sh = self.girdle_shoulder(side)
         grip = self.bar_rest + np.array([sign * t["grip_width_between_hand_centres_m"] * 0.5, 0.0, 0.0])
         off = np.array(t["elbow_pole_from_hand_m"], float) * [sign, 1.0, 1.0]
         wrist = grip - UP * t["wrist_from_palm_centre_m"]
@@ -140,6 +167,8 @@ class SquatTemplate:
         out = {"body": {"hip_centre": hip, "trunk_lean_deg": lean, "pelvis_share": t["pelvis_share_of_lean"],
                         "head_extension_deg": lean * t["head_extension_share_of_lean"]},
                "poles": {}, "implements": {},
+               "girdle": {side: {"clavicle_elevation_deg": t["clavicle_elevation_deg"],
+                                 "clavicle_retraction_deg": t["scapular_retraction_deg"]} for side in ("l", "r")},
                "metrics": {"knee_flexion_deg": knee, "ankle_dorsiflexion_deg": ankle, "trunk_lean_deg": lean, "hip_flexion_deg": hip_flex}}
         for side, sign in (("l", 1.0), ("r", -1.0)):
             toe = math.radians(sign * t["toe_out_deg"])

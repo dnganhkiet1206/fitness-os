@@ -1,6 +1,7 @@
 @testable import ASCNDBackend
 import ASCNDCore
 import Foundation
+import Supabase
 import Testing
 
 /// Phòng linh vật (#527 Phase 7): thông điệp `RAISE EXCEPTION` của các hàm kinh
@@ -38,5 +39,26 @@ struct MascotMappingTests {
     #expect(w.balance == 365)
     #expect(w.xp == 30 * MascotRules.xpForRefKey("d:2000-01-03:meal"))
     #expect(w.claimed == ["welcome", "x:photo"])
+  }
+
+  /// KOA-T18: mua chạy chồng ở server cũ nổ 23505 → "đã có" (đọc lại tủ đồ), không phải lỗi chung.
+  @Test func buyUniqueViolationIsAlreadyOwned() {
+    let dup = PostgrestError(code: "23505", message: "duplicate key value violates unique constraint")
+    #expect(SupabaseMascotWardrobe.buyFailure(dup) == .alreadyOwned)
+    #expect(SupabaseMascotWardrobe.buyFailure(PostgrestError(code: "P0001", message: "already owned")) == .alreadyOwned)
+    #expect(SupabaseMascotWardrobe.buyFailure(PostgrestError(code: "P0001", message: "insufficient coins")) == .insufficientCoins)
+    #expect(SupabaseMascotWardrobe.missingFunction(PostgrestError(code: "PGRST202", message: "Could not find the function")))
+    #expect(!SupabaseMascotWardrobe.missingFunction(dup))
+  }
+
+  /// Devin #967: cởi đồ vẫn gửi `p_on: null` — thiếu khoá thì PostgREST không khớp hàm (PGRST202).
+  @Test func wornParamsAlwaysCarryOn() throws {
+    let off = try JSONSerialization.jsonObject(
+      with: JSONEncoder().encode(SupabaseMascotWardrobe.WornParams(p_on: nil, p_off: ["head_band"]))) as? [String: Any]
+    #expect(off?.keys.contains("p_on") == true)
+    #expect(off?["p_on"] is NSNull)
+    let on = try JSONSerialization.jsonObject(
+      with: JSONEncoder().encode(SupabaseMascotWardrobe.WornParams(p_on: "head_cap", p_off: []))) as? [String: Any]
+    #expect(on?["p_on"] as? String == "head_cap")
   }
 }

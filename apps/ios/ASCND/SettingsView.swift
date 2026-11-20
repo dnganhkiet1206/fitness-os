@@ -51,6 +51,7 @@ public struct SettingsView: View {
   @Environment(AppServices.self) private var services: AppServices?
   /// Khoá Face ID (#527 mục 7) — có trong app thật; preview không có thì ẩn.
   @Environment(AppLockController.self) private var lock: AppLockController?
+  @AppStorage(KoaSound.offKey) private var koaSoundOff = false
   @State private var passwordChanged = false
   @Environment(\.dismiss) private var dismiss
   @State private var deleting = false
@@ -268,6 +269,21 @@ public struct SettingsView: View {
                 Image(systemName: "sparkles")
               }
             }
+            // KOA-T28: tiếng Koa tắt được ở Cài đặt (trước chỉ có nút loa trong phòng — vẫn giữ).
+            Toggle(isOn: Binding(get: { !koaSoundOff }, set: { koaSoundOff = !$0 })) {
+              Label {
+                VStack(alignment: .leading, spacing: 2) {
+                  Text(String(localized: "settings.koaSound"))
+                  Text(String(localized: "settings.koaSound.desc"))
+                    .font(DS.TextStyle.caption)
+                    .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                }
+              } icon: {
+                Image(systemName: "speaker.wave.2")
+              }
+            }
+            .accessibilityIdentifier("settings.koaSound")
+            .onChange(of: koaSoundOff) { _, off in if off { KoaSound.stopRoom(); KoaSound.hush() } }
           }
         }
 

@@ -65,9 +65,31 @@ jobs:
 
   app-macos:
     runs-on: macos-15
-    timeout-minutes: 40
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
+
+      # Đo lường (17/11, #527 mục 4): ba secret khoá client (ASCND_SENTRY_DSN,
+      # ASCND_POSTHOG_KEY, ASCND_POSTHOG_HOST) đã có từ 16/10 nhưng chưa workflow
+      # nào dùng — mọi bản build CI đều tắt đo lường hẳn, và không bản build
+      # tự động nào từng chạy đúng đường đo lường. Ghi chúng vào
+      # Config/Backend.local.xcconfig (gitignore, chỉ tồn tại trên runner) để
+      # bản build CI chạy đúng đường đo lường như bản phát hành. Khoá client
+      # vốn nằm trong app nên không phải bí mật. Thiếu secret (ví dụ PR từ
+      # fork) thì file trống, build vẫn chạy, đo lường tắt. Không in giá trị.
+      - name: Khoá đo lường cho bản build CI
+        working-directory: apps/ios
+        env:
+          W4_SENTRY_DSN: ${{ secrets.ASCND_SENTRY_DSN }}
+          W4_POSTHOG_KEY: ${{ secrets.ASCND_POSTHOG_KEY }}
+          W4_POSTHOG_HOST: ${{ secrets.ASCND_POSTHOG_HOST }}
+        run: |
+          out=Config/Backend.local.xcconfig
+          : > "$out"
+          if [ -n "$W4_SENTRY_DSN" ]; then printf 'ASCND_SENTRY_DSN = %s\n' "${W4_SENTRY_DSN#https://}" >> "$out"; fi
+          if [ -n "$W4_POSTHOG_KEY" ]; then printf 'ASCND_POSTHOG_KEY = %s\n' "$W4_POSTHOG_KEY" >> "$out"; fi
+          if [ -n "$W4_POSTHOG_HOST" ]; then printf 'ASCND_POSTHOG_HOST = %s\n' "${W4_POSTHOG_HOST#https://}" >> "$out"; fi
+          echo "telemetry keys written: $(wc -l < "$out") of 3 (values never printed)"
 
       # Ảnh runner có nhiều bản Xcode; lấy bản mới nhất để SDK iOS mới nhất
       # (Liquid Glass cần SDK iOS 26) mà không ghim một số phiên bản sẽ cũ.
@@ -76,6 +98,10 @@ jobs:
           latest=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
           sudo xcode-select -s "$latest"
           xcodebuild -version
+      # Tô cơ 3D dùng shader Metal (MuscleSurface.metal); Xcode 26 tách Metal Toolchain
+      # thành gói tải riêng. Ảnh runner thiếu thì tải (~700 MB), có rồi thì bỏ qua.
+      - name: Metal Toolchain
+        run: xcrun -f metal >/dev/null 2>&1 || xcodebuild -downloadComponent MetalToolchain
 
       # Cache build giữa các lượt (Kiệt 28/10: tăng tốc CI). `irgaly/xcode-cache`
       # giữ DerivedData + gói SPM VÀ khôi phục mtime của mã nguồn, nên Xcode build

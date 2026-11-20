@@ -38,6 +38,13 @@
       return FileManager.default.fileExists(atPath: dir.appendingPathComponent("uitest-offline").path)
     }
 
+    /// Chỉ lượt dò AI không tới được (KOA-T08): tệp `Documents/uitest-ai-offline` — app vẫn
+    /// tải dữ liệu bình thường, riêng lối vào AI hiện giữ chỗ "chưa kết nối".
+    static var aiOffline: Bool {
+      guard let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return false }
+      return FileManager.default.fileExists(atPath: dir.appendingPathComponent("uitest-ai-offline").path)
+    }
+
     /// `-uiTestTierUp`: tài khoản giả sát mốc bậc (100 Gains), một buổi nữa là lên Gym Rat II (`UITestSeed`).
     static var tierUp: Bool {
       ProcessInfo.processInfo.arguments.contains {

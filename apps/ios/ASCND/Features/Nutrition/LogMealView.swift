@@ -288,7 +288,7 @@ struct LogMealView: View {
           if browsing, logger.showsRepeat { repeatBlock(logger) }
           if browsing, !logger.quickAdds.isEmpty { recents(logger) }
           // Gợi ý bữa cần edge function AI — ẩn khi chưa deploy.
-          if browsing, services.aiDeployed == true {
+          if browsing, services.isAIDeployed(.mealSuggest) {
             MealSuggestCard(logger: logger)
           }
           customRow
@@ -358,7 +358,7 @@ struct LogMealView: View {
       .autocorrectionDisabled()
       .submitLabel(.search)
       // Chụp ảnh / quét là cách tìm (RN đặt nút mã vạch cạnh ô tìm). Chụp ảnh cần AI.
-      if services.aiDeployed == true {
+      if services.isAIDeployed(.scanFood) {
         Button { photographing = true } label: {
           Image(systemName: "camera")
             .font(.body.weight(.semibold))

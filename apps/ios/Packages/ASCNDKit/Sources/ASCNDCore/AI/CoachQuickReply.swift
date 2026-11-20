@@ -58,7 +58,8 @@ public enum CoachQuickReply {
     if letters < 2 { return .vague }
     if greetings.contains(joined) { return .greeting }
     if acks.contains(joined) { return .ack }
-    if words.count <= 6, thanks.contains(where: { has(joined, $0) }) { return .thanks }
+    // Cảm ơn kèm câu hỏi ("cảm ơn, vậy mai tập gì?") không phải lời cảm ơn suông (KOA-T34).
+    if words.count <= 6, thanks.contains(where: { has(joined, $0) }), !asks(raw, joined) { return .thanks }
     if testy.contains(joined) { return .vague }
 
     // Cần suy luận → AI, dù có nhắc số liệu. Nhắc thời gian khác hôm nay (hôm
@@ -100,6 +101,15 @@ public enum CoachQuickReply {
     "got it", "cool", "nice", "great", "vale", "bueno", "ya", "si", "de acuerdo", "perfecto",
   ]
   static let thanks = ["cam on", "thank", "thanks", "thank you", "thx", "tks", "gracias", "muchas gracias"]
+  /// Câu có dấu hỏi hay từ hỏi — không đi đường trả lời dựng sẵn cho cảm ơn.
+  static func asks(_ raw: String, _ joined: String) -> Bool {
+    raw.contains("?") || raw.contains("¿") || questionWords.contains(where: { has(joined, $0) })
+  }
+  static let questionWords = [
+    "sao", "gi", "nao", "khong", "bao nhieu", "the nao", "lam sao", "o dau", "khi nao",
+    "what", "why", "how", "when", "where", "which", "should", "can i", "do i",
+    "que", "por que", "como", "cuando", "donde", "cual", "cuanto", "cuanta", "puedo",
+  ]
   static let testy: Set<String> = ["test", "testing", "thu", "asdf", "qwerty", "abc", "aaa", "prueba"]
   static let advice = [
     "vi sao", "tai sao", "sao lai", "lam sao", "nen", "the nao de", "goi y", "cai thien", "tang", "giam",
@@ -119,7 +129,7 @@ public enum CoachQuickReply {
     // "mấy" bỏ dấu là "may" — trùng tiếng Anh ("may I…"), nên chỉ nhận theo cụm.
     "bao nhieu", "bao lau", "duoc bao", "may tieng", "may gio", "may buoc", "may calo", "may kcal", "may diem",
     "may gam", "how much", "how many", "how long", "what s my", "whats my", "what is my",
-    "cuanto", "cuantos", "cuantas", "cual es mi",
+    "cuanto", "cuanta", "cuantos", "cuantas", "cual es mi",
   ]
   static let today = [
     "hom nay the nao", "hom nay toi the nao", "tong quan", "tom tat", "how am i doing", "today summary",
@@ -181,14 +191,17 @@ public enum CoachQuickReply {
     var items: [String] = []
     switch intent {
     case .readiness: if let r = s.scoredReadiness { items = [item(n.readiness, Double(r), 100, "", "readiness")] }
-    case .calories: items = [item(n.kcal, s.kcal, s.kcalTarget, "kcal", "meal")]
-    case .protein: items = [item(n.protein, s.proteinG, s.proteinTarget, "g", "protein")]
+    // Chưa ghi ăn uống: không vẽ "0 / 2200 kcal" như thể đã ăn 0 (KOA-T03).
+    case .calories: if s.hasNutrition { items = [item(n.kcal, s.kcal, s.kcalTarget, "kcal", "meal")] }
+    case .protein: if s.hasNutrition { items = [item(n.protein, s.proteinG, s.proteinTarget, "g", "protein")] }
     case .steps: if s.steps > 0 { items = [item(n.steps, s.steps, nil, "", "steps")] }
     case .sleep: break  // dựng riêng bên dưới (cần một chữ số thập phân)
     case .today:
       if let r = s.scoredReadiness { items.append(item(n.readiness, Double(r), 100, "", "readiness")) }
-      items.append(item(n.kcal, s.kcal, s.kcalTarget, "kcal", "meal"))
-      items.append(item(n.protein, s.proteinG, s.proteinTarget, "g", "protein"))
+      if s.hasNutrition {
+        items.append(item(n.kcal, s.kcal, s.kcalTarget, "kcal", "meal"))
+        items.append(item(n.protein, s.proteinG, s.proteinTarget, "g", "protein"))
+      }
       if s.steps > 0 { items.append(item(n.steps, s.steps, nil, "", "steps")) }
     default: break
     }

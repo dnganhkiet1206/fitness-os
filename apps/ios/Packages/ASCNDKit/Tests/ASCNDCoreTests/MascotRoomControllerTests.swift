@@ -25,10 +25,19 @@ struct MascotRoomControllerTests {
 
     private func note(_ uid: String) { lock.withLock { askedFor.append(uid) } }
 
+    /// Độ trễ của lần đọc sổ xu kế tiếp (thử tải chồng — KOA-T17), dùng một lần.
+    var nextLedgerDelayMs = 0
+    var freezesError: (any Error)?
     func ledger(userId: String) async throws -> [LedgerRow] {
       note(userId)
-      if let ledgerError { throw ledgerError }
-      return lock.withLock { ledgerRows }
+      let (delay, rows, err) = lock.withLock { () -> (Int, [LedgerRow], (any Error)?) in
+        let d = nextLedgerDelayMs
+        nextLedgerDelayMs = 0
+        return (d, ledgerRows, ledgerError)
+      }
+      if delay > 0 { try? await Task.sleep(for: .milliseconds(delay)) }
+      if let err { throw err }
+      return rows
     }
     func loggedDates(userId: String, limit: Int) async throws -> [LocalDate] {
       note(userId)
@@ -36,6 +45,7 @@ struct MascotRoomControllerTests {
     }
     func freezes(userId: String) async throws -> [FreezeRow] {
       note(userId)
+      if let freezesError { throw freezesError }
       return lock.withLock { freezeRows }
     }
     func weeklyChallenges(userId: String, weekStart: LocalDate) async throws -> [WeeklyChallenge] {
@@ -60,43 +70,25 @@ struct MascotRoomControllerTests {
     let source: FakeSource
     var claims: [String] = []
     var claimError: (any Error)?
-    var freezeRequests: [UUID] = []
-    var freezeError: (any Error)?
+    /// Server trả 0 = khoá đã nhận ở máy khác (KOA-T01); sổ không thêm dòng.
+    var duplicate = false
 
     init(source: FakeSource) { self.source = source }
 
     func claimReward(refKey: String, reason: String) async throws -> Int {
       lock.withLock { claims.append(refKey) }
       if let claimError { throw claimError }
+      if duplicate { return 0 }
       let amount = refKey == "welcome" ? 300 : 25
       source.lock.withLock { source.ledgerRows.append(LedgerRow(amount: amount, refKey: refKey)) }
       return amount
     }
-
-    func buyStreakFreeze(requestId: UUID) async throws -> Int {
-      lock.withLock { freezeRequests.append(requestId) }
-      if let freezeError { throw freezeError }
-      source.lock.withLock {
-        source.ledgerRows.append(LedgerRow(amount: -MascotRules.freezePrice, refKey: "freeze:\(requestId)"))
-        source.freezeRows.append(FreezeRow(usedOn: nil))
-      }
-      return 0
-    }
   }
 
-  func make(_ source: FakeSource, user: String = "u1", ids: [UUID] = []) -> (MascotRoomController, FakeEconomy) {
+  func make(_ source: FakeSource, user: String = "u1") -> (MascotRoomController, FakeEconomy) {
     let economy = FakeEconomy(source: source)
-    let queue = IdQueue(ids)
-    let c = MascotRoomController(
-      userId: user, today: today, source: source, economy: economy, makeRequestId: { queue.next() })
+    let c = MascotRoomController(userId: user, today: today, source: source, economy: economy)
     return (c, economy)
-  }
-
-  final class IdQueue: @unchecked Sendable {
-    let lock = NSLock()
-    var ids: [UUID]
-    init(_ ids: [UUID]) { self.ids = ids }
-    func next() -> UUID { lock.withLock { ids.isEmpty ? UUID() : ids.removeFirst() } }
   }
 
   static let welcomed = [LedgerRow(amount: 300, refKey: "welcome")]
@@ -160,6 +152,44 @@ struct MascotRoomControllerTests {
 
   // MARK: - Thưởng chào mừng
 
+  /// KOA-T17: hai lượt tải chồng nhau — lượt bắt đầu sau thắng, lượt cũ về muộn không đè.
+  @Test func overlappingLoadsLatestWins() async {
+    let s = FakeSource()
+    s.ledgerRows = Self.welcomed
+    let (c, _) = make(s)
+    await c.load()
+    s.nextLedgerDelayMs = 120  // lượt 1 chậm, còn sổ CŨ
+    let first = Task { await c.load() }
+    try? await Task.sleep(for: .milliseconds(20))
+    s.ledgerRows = Self.welcomed + [LedgerRow(amount: 40, refKey: "x:photo")]
+    await c.load()  // lượt 2 nhanh, sổ MỚI
+    #expect(c.balance == 340)
+    await first.value
+    #expect(c.balance == 340, "lượt cũ về muộn không được đè số mới")
+  }
+
+  /// KOA-T17: sổ xu đọc hỏng sau khi đã có số → giữ số, nhưng báo là số cũ; băng hỏng
+  /// không về 0.
+  @Test func aFailedReloadIsShownAsStaleAndFreezesAreKept() async {
+    let s = FakeSource()
+    s.ledgerRows = Self.welcomed
+    s.freezeRows = [FreezeRow(usedOn: nil), FreezeRow(usedOn: nil)]
+    let (c, _) = make(s)
+    await c.load()
+    #expect(!c.walletStale)
+    #expect(c.freezesHeld == 2)
+    s.ledgerError = URLError(.timedOut)
+    s.freezesError = URLError(.timedOut)
+    await c.load()
+    #expect(c.walletStale)
+    #expect(c.phase == .ready)
+    #expect(c.balance == 300)
+    #expect(c.freezesHeld == 2, "băng đọc hỏng: giữ số đã biết, không về 0")
+    s.ledgerError = nil
+    await c.load()
+    #expect(!c.walletStale)
+  }
+
   @Test func welcomeIsClaimedOnceThroughTheServer() async {
     let s = FakeSource()
     let (c, e) = make(s)
@@ -169,6 +199,16 @@ struct MascotRoomControllerTests {
     #expect(c.balance == 300)
     await c.load()
     #expect(e.claims == ["welcome"], "đã có trong sổ thì không hỏi lại")
+  }
+
+  /// KOA-T01: túi chào mừng đã nhận ở máy khác (server trả 0) → không hiện "+300".
+  @Test func welcomeAlreadyClaimedElsewhereIsNotCelebrated() async {
+    let s = FakeSource()
+    let (c, e) = make(s)
+    e.duplicate = true
+    await c.load()
+    #expect(e.claims == ["welcome"])
+    #expect(c.welcomeGranted == nil)
   }
 
   /// Bị từ chối thì lần sau được thử lại (chốt gỡ khi lỗi — RN).
@@ -182,6 +222,18 @@ struct MascotRoomControllerTests {
     await c.load()
     #expect(e.claims == ["welcome", "welcome"])
     #expect(c.welcomeGranted == 300)
+  }
+
+  /// KOA-T51: bị từ chối HẲN (lỗi không tạm) thì không gõ cửa lại mỗi lần mở phòng.
+  @Test func permanentlyRefusedWelcomeIsNotRetried() async {
+    let s = FakeSource()
+    let (c, e) = make(s)
+    e.claimError = MascotFailure.server(code: "P0001")
+    await c.load()
+    e.claimError = nil
+    await c.load()
+    #expect(e.claims == ["welcome"])
+    #expect(c.welcomeGranted == nil)
   }
 
   // MARK: - Nhiệm vụ, năng lượng
@@ -271,51 +323,16 @@ struct MascotRoomControllerTests {
 
   // MARK: - Băng chuỗi
 
-  @Test func freezeButtonFollowsBalanceAndCap() async {
+  /// Băng đã mua giữ nguyên sau khi đóng bán: số đang giữ / đã dùng vẫn đọc
+  /// từ hàng `streak_freezes` (lối mua đã gỡ — AUD-14).
+  @Test func freezeCountsComeFromHeldAndUsedRows() async {
     let s = FakeSource()
-    s.ledgerRows = [LedgerRow(amount: 100, refKey: "welcome")]
-    let (c, _) = make(s)
-    await c.load()
-    #expect(!c.canBuyFreeze, "100 < 150")
     s.ledgerRows = Self.welcomed
     s.freezeRows = [FreezeRow(usedOn: nil), FreezeRow(usedOn: nil), FreezeRow(usedOn: LocalDate("2026-10-01"))]
+    let (c, _) = make(s)
     await c.load()
     #expect(c.freezesHeld == 2)
     #expect(c.freezesUsed == 1)
-    #expect(c.freezeFull)
-    #expect(!c.canBuyFreeze)
-  }
-
-  /// Lỗi mạng giữa chừng: lần bấm lại dùng CÙNG mã yêu cầu (server không trừ hai lần);
-  /// xong thì mã mới cho lần mua sau.
-  @Test func freezePurchaseReusesItsRequestIdUntilAccepted() async {
-    let a = UUID(), b = UUID()
-    let s = FakeSource()
-    s.ledgerRows = Self.welcomed
-    let (c, e) = make(s, ids: [a, b])
-    await c.load()
-    e.freezeError = URLError(.networkConnectionLost)
-    #expect(await c.buyFreeze() == false)
-    #expect(c.actionFailure == .offline)
-    e.freezeError = nil
-    #expect(await c.buyFreeze())
-    #expect(e.freezeRequests == [a, a])
-    #expect(c.balance == 150)
-    #expect(c.freezesHeld == 1)
-    #expect(await c.buyFreeze())
-    #expect(e.freezeRequests == [a, a, b])
-    #expect(c.balance == 0)
-    #expect(c.freezeFull)
-  }
-
-  @Test func serverFreezeRefusalIsNamed() async {
-    let s = FakeSource()
-    s.ledgerRows = Self.welcomed
-    let (c, e) = make(s)
-    await c.load()
-    e.freezeError = MascotFailure.insufficientCoins
-    #expect(await c.buyFreeze() == false)
-    #expect(c.actionFailure == .insufficientCoins)
   }
 
   // MARK: - Thử thách tuần
