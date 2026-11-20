@@ -19,13 +19,11 @@ enum KoaTalkLine {
     case .nudge: return String(localized: "koa.talk.nudge")
     case .birthday: return String(localized: "koa.talk.birthday")
     case .rested, .shortSleep:
-      guard let minutes = signals?.sleepMinutes, minutes > 0 else { return nil }
-      let m = Int(minutes.rounded())
-      let slept = String(localized: "today.d.sleep \(m / 60) \(m % 60)")
+      guard let slept = KoaLineNumbers.slept(signals) else { return nil }
       return b.topic == .rested ? String(localized: "koa.talk.rested \(slept)") : String(localized: "koa.talk.shortSleep \(slept)")
     case .overate:
-      guard let kcal = signals?.kcal, let profile else { return nil }
-      return String(localized: "koa.talk.overate \(KoaMood.kcalPercent(kcal: kcal, target: NutritionToday.calorieTarget(profile)))")
+      guard let pct = KoaLineNumbers.overatePercent(signals, profile) else { return nil }
+      return String(localized: "koa.talk.overate \(pct)")
     // câu của mốc / của kệ cúp do phòng dựng từ số thật (`MascotRoomView.talkLine`)
     case .milestone, .shelf: return nil
     case .dusty: return v == 0 ? String(localized: "koa.talk.dusty.0") : String(localized: "koa.talk.dusty.1")
