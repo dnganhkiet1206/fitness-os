@@ -360,11 +360,15 @@ public final class AwardsBook {
     }
     if !checked {
       checked = true
-      await grant(s)
+      // KOA-T54 (2): trao hỏng (mất mạng…) thì lần `load()` sau xét lại — trước đây cờ đặt TRƯỚC khi biết kết
+      // quả nên huy chương trao hỏng không bao giờ được trao lại trong phiên.
+      if await !grant(s), !closed { checked = false }
     }
   }
 
-  private func grant(_ s: Awards.Sources) async {
+  /// `true` khi mọi lần trao đã xong (trao được hoặc đã có sẵn).
+  @discardableResult
+  private func grant(_ s: Awards.Sources) async -> Bool {
     let uid = userId, src = source, text = englishText
     let outcome = await Awards.grantAll(Awards.toGrant(s, earned: Set(earned.keys))) { d in
       let t = text(d.key)
@@ -377,13 +381,14 @@ public final class AwardsBook {
         throw error
       }
     }
-    guard !closed else { return }
+    guard !closed else { return true }
     newlyGranted = outcome.granted
     if !outcome.failed.isEmpty || !outcome.granted.isEmpty {
       if let rows = try? await src.earned(userId: uid), !closed {
         earned = Dictionary(rows.map { ($0.key, $0) }, uniquingKeysWith: { first, _ in first })
       }
     }
+    return outcome.failed.isEmpty
   }
 }
 

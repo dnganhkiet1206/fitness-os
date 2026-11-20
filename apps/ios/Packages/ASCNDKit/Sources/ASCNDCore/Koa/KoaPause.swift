@@ -22,8 +22,18 @@ public struct KoaPause: Sendable, Hashable, Codable {
     self.last = max(start, min(last, start.adding(days: Self.maxDays - 1)))
   }
 
+  /// Đợt đọc từ server: GIỮ độ dài thật (KOA-T54 (6): trước kẹp lặng lẽ về `maxDays`, một đợt 20 ngày đặt ở máy
+  /// khác mất 6 ngày nghỉ — Tuần của Koa, Nhịp 30 ngày đếm sai). Trần `maxDays` chỉ cho đợt người dùng tạo mới.
+  /// `nil` khi ngày cuối trước ngày đầu.
+  public init?(stored start: LocalDate, last: LocalDate) {
+    guard last >= start else { return nil }
+    self.start = start
+    self.last = last
+  }
+
   public func contains(_ day: LocalDate) -> Bool { day >= start && day <= last }
-  public func active(on today: LocalDate) -> Bool { today <= last }
+  /// KOA-T54 (6): đang nghỉ khi hôm nay NẰM TRONG đợt (trước chỉ xét ngày cuối — đợt chưa bắt đầu cũng "đang nghỉ").
+  public func active(on today: LocalDate) -> Bool { contains(today) }
   /// Ngày đầu tiên tập lại.
   public var returnDay: LocalDate { last.adding(days: 1) }
   public func daysLeft(from today: LocalDate) -> Int { max(0, last.daysSinceEpoch - today.daysSinceEpoch + 1) }
@@ -59,7 +69,7 @@ public enum KoaPauseSync {
     guard let s = row?["starts_on"]?.stringValue.flatMap(LocalDate.init),
       let e = row?["ends_on"]?.stringValue.flatMap(LocalDate.init)
     else { return nil }
-    return KoaPause(start: s, last: e)
+    return KoaPause(stored: s, last: e)
   }
 
   /// `nil` = không nghỉ: ghi một ngày đã qua để dòng cũ hết hiệu lực.
@@ -126,9 +136,9 @@ public enum KoaPauseLogSync {
   public static func decode(_ rows: [JSONValue], today: LocalDate) -> KoaPauseLog {
     let spells = rows.compactMap { r -> KoaPause? in
       guard let s = r["starts_on"]?.stringValue.flatMap(LocalDate.init),
-        let e = r["ends_on"]?.stringValue.flatMap(LocalDate.init), e >= s
+        let e = r["ends_on"]?.stringValue.flatMap(LocalDate.init)
       else { return nil }
-      return KoaPause(start: s, last: e)
+      return KoaPause(stored: s, last: e)
     }
     return KoaPauseLog(spells).pruned(today: today)
   }
