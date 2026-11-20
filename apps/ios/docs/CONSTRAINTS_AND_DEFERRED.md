@@ -872,3 +872,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 20/11/2026: Koa P2 đợt 4 — sân khấu chung màn nghỉ / xong buổi, bỏ ba cảnh nghỉ cũ, pha lịch ở phòng, mascot khác Koa có mặt, đích tuần thống nhất; xem mục 4.
 - 20/11/2026: Koa P3 trợ năng — cảnh Koa toàn màn hình (VoiceOver, chớp, Dynamic Type), chữ kịch bản có khoá dịch, chạm Koa khi Giảm chuyển động, Dynamic Type + định danh, peek với VoiceOver; ngoại lệ vùng chạm kệ ghi lại; xem mục 4.
 - 20/11/2026: Koa P3 dọn dẹp — lời Koa không đốt chủ đề, 6 âm tiết, thưởng chào mừng không mừng lại, băng mock cũ, xoá code chết; xem mục 4.
+- 20/11/2026: PR #892 gộp phần TEMPLATE squat (đầu bù đủ độ đổ thân, ánh nhìn không cúi ở đáy, có test) — CHƯA xuất lại USDZ / ảnh: tệp squat trong app và `artifacts/` giữ bản làm lại 16/11 (nhân vật 3.3); squat trong app vẫn cúi mặt ở đáy cho tới lần render sau, theo lệnh Kiệt "khoan hãy render lại … đợi tới khi chốt hẳn" (dáng nhân vật).
