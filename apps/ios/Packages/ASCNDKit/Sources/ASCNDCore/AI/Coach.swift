@@ -131,9 +131,10 @@ public enum Coach {
 
 /// Luồng trả lời của `ai-coach`: mỗi phần tử là một mẩu chữ. Lỗi là
 /// `EdgeFunction.Failure` (cùng bảng chữ với các màn AI khác).
+///
+/// KOA-T37: MỘT hàm bắt buộc mang đủ `checks` / `waterUnit` — trước đây bản mặc định của
+/// protocol lặng lẽ bỏ hai thứ này, bên triển khai quên thì AI không biết chỗ lệch số.
 public protocol CoachStream: Sendable {
-  func stream(messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int)
-    -> AsyncThrowingStream<String, any Error>
   /// Kèm các chỗ lời người dùng khác số đã ghi (`CoachLogPrompt.Conflict`) để AI
   /// hỏi lại số nào đúng (16/10), và đơn vị nước của người dùng (27/10: `ai-coach`
   /// viết nước bằng oz / ml theo nó; số trong `checks` vẫn là ml).
@@ -141,15 +142,6 @@ public protocol CoachStream: Sendable {
     messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
     waterUnit: Water.Unit
   ) -> AsyncThrowingStream<String, any Error>
-}
-
-extension CoachStream {
-  public func stream(
-    messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
-    waterUnit: Water.Unit
-  ) -> AsyncThrowingStream<String, any Error> {
-    stream(messages: messages, lang: lang, date: date, tzOffset: tzOffset)
-  }
 }
 
 /// Kho cuộc trò chuyện (`ai_conversations`, `ai_messages`) — RLS theo người dùng.
@@ -182,6 +174,8 @@ public final class CoachChat {
   @ObservationIgnored public var sanitize: ((String) -> String)?
   /// Đơn vị nước của người dùng cho câu hỏi lại dựng sẵn ("16 oz" thay "473 ml"). App gán.
   @ObservationIgnored public var waterUnit: Water.Unit = .ml
+  /// Đơn vị cân của tài khoản — câu hỏi lại dựng sẵn viết cân theo nó (KOA-T34).
+  @ObservationIgnored public var weightUnit: WeightUnit = .kg
   public private(set) var messages: [Coach.Message] = []
   /// Chỗ lệch giữa lời kể và số đã ghi, theo id tin của người dùng — màn chat hiện
   /// nút chọn số đúng dưới câu trả lời ngay sau tin đó.
@@ -336,8 +330,9 @@ public final class CoachChat {
     }
     lastAsk = nil
     // Hỏi lại khi lệch: AI chép chỉ dẫn ra thay vì hỏi → câu hỏi dựng sẵn.
+    // KOA-T34: chỉ bỏ những câu lộ chỉ dẫn; còn lại quá ít mới thay cả câu trả lời.
     if let c = checks.first, CoachLogPrompt.leaksInstructions(answer) {
-      answer = CoachLogPrompt.question(c, lang: lang, unit: waterUnit)
+      answer = CoachLogPrompt.strippingLeaks(answer) ?? CoachLogPrompt.question(c, lang: lang, unit: waterUnit, weight: weightUnit)
     }
     let final = sanitize?(answer) ?? answer
     if final != answer, let id = answerId, let i = messages.lastIndex(where: { $0.id == id }) {

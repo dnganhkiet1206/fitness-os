@@ -58,7 +58,8 @@ public enum CoachQuickReply {
     if letters < 2 { return .vague }
     if greetings.contains(joined) { return .greeting }
     if acks.contains(joined) { return .ack }
-    if words.count <= 6, thanks.contains(where: { has(joined, $0) }) { return .thanks }
+    // Cảm ơn kèm câu hỏi ("cảm ơn, vậy mai tập gì?") không phải lời cảm ơn suông (KOA-T34).
+    if words.count <= 6, thanks.contains(where: { has(joined, $0) }), !asks(raw, joined) { return .thanks }
     if testy.contains(joined) { return .vague }
 
     // Cần suy luận → AI, dù có nhắc số liệu. Nhắc thời gian khác hôm nay (hôm
@@ -100,6 +101,15 @@ public enum CoachQuickReply {
     "got it", "cool", "nice", "great", "vale", "bueno", "ya", "si", "de acuerdo", "perfecto",
   ]
   static let thanks = ["cam on", "thank", "thanks", "thank you", "thx", "tks", "gracias", "muchas gracias"]
+  /// Câu có dấu hỏi hay từ hỏi — không đi đường trả lời dựng sẵn cho cảm ơn.
+  static func asks(_ raw: String, _ joined: String) -> Bool {
+    raw.contains("?") || raw.contains("¿") || questionWords.contains(where: { has(joined, $0) })
+  }
+  static let questionWords = [
+    "sao", "gi", "nao", "khong", "bao nhieu", "the nao", "lam sao", "o dau", "khi nao",
+    "what", "why", "how", "when", "where", "which", "should", "can i", "do i",
+    "que", "por que", "como", "cuando", "donde", "cual", "cuanto", "cuanta", "puedo",
+  ]
   static let testy: Set<String> = ["test", "testing", "thu", "asdf", "qwerty", "abc", "aaa", "prueba"]
   static let advice = [
     "vi sao", "tai sao", "sao lai", "lam sao", "nen", "the nao de", "goi y", "cai thien", "tang", "giam",
@@ -119,7 +129,7 @@ public enum CoachQuickReply {
     // "mấy" bỏ dấu là "may" — trùng tiếng Anh ("may I…"), nên chỉ nhận theo cụm.
     "bao nhieu", "bao lau", "duoc bao", "may tieng", "may gio", "may buoc", "may calo", "may kcal", "may diem",
     "may gam", "how much", "how many", "how long", "what s my", "whats my", "what is my",
-    "cuanto", "cuantos", "cuantas", "cual es mi",
+    "cuanto", "cuanta", "cuantos", "cuantas", "cual es mi",
   ]
   static let today = [
     "hom nay the nao", "hom nay toi the nao", "tong quan", "tom tat", "how am i doing", "today summary",
