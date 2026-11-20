@@ -131,9 +131,10 @@ public enum Coach {
 
 /// Luồng trả lời của `ai-coach`: mỗi phần tử là một mẩu chữ. Lỗi là
 /// `EdgeFunction.Failure` (cùng bảng chữ với các màn AI khác).
+///
+/// KOA-T37: MỘT hàm bắt buộc mang đủ `checks` / `waterUnit` — trước đây bản mặc định của
+/// protocol lặng lẽ bỏ hai thứ này, bên triển khai quên thì AI không biết chỗ lệch số.
 public protocol CoachStream: Sendable {
-  func stream(messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int)
-    -> AsyncThrowingStream<String, any Error>
   /// Kèm các chỗ lời người dùng khác số đã ghi (`CoachLogPrompt.Conflict`) để AI
   /// hỏi lại số nào đúng (16/10), và đơn vị nước của người dùng (27/10: `ai-coach`
   /// viết nước bằng oz / ml theo nó; số trong `checks` vẫn là ml).
@@ -141,15 +142,6 @@ public protocol CoachStream: Sendable {
     messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
     waterUnit: Water.Unit
   ) -> AsyncThrowingStream<String, any Error>
-}
-
-extension CoachStream {
-  public func stream(
-    messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
-    waterUnit: Water.Unit
-  ) -> AsyncThrowingStream<String, any Error> {
-    stream(messages: messages, lang: lang, date: date, tzOffset: tzOffset)
-  }
 }
 
 /// Kho cuộc trò chuyện (`ai_conversations`, `ai_messages`) — RLS theo người dùng.

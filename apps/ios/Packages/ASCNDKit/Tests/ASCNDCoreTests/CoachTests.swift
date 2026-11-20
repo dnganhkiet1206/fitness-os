@@ -58,8 +58,10 @@ struct CoachChatTests {
     var failure: EdgeFunction.Failure?
     private var log: [(Int, String, String, Int)] = []
     var calls: [(Int, String, String, Int)] { lock.withLock { log } }
-    func stream(messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int)
-      -> AsyncThrowingStream<String, any Error>
+    func stream(
+      messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
+      waterUnit: Water.Unit
+    ) -> AsyncThrowingStream<String, any Error>
     {
       lock.withLock { log.append((messages.count, lang, date.description, tzOffset)) }
       let (chunks, failure) = lock.withLock { (self.chunks, self.failure) }
@@ -125,11 +127,6 @@ struct CoachChatTests {
     let lock = NSLock()
     private var units: [Water.Unit] = []
     var seen: [Water.Unit] { lock.withLock { units } }
-    func stream(messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int)
-      -> AsyncThrowingStream<String, any Error>
-    {
-      AsyncThrowingStream { $0.finish() }
-    }
     func stream(
       messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
       waterUnit: Water.Unit
@@ -260,8 +257,10 @@ struct CoachChatTests {
 
   /// Một luồng chảy một mẩu rồi treo — để thử nút Dừng.
   final class HangingStream: CoachStream, @unchecked Sendable {
-    func stream(messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int)
-      -> AsyncThrowingStream<String, any Error>
+    func stream(
+      messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
+      waterUnit: Water.Unit
+    ) -> AsyncThrowingStream<String, any Error>
     {
       AsyncThrowingStream { c in c.yield("Đang nói dở") }
     }
