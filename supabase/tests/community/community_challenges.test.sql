@@ -127,4 +127,30 @@ END $$;
 -- đỏ đúng nhờ chính cái sub còn sót ấy.
 DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.community_challenges_overview(integer)', 'EXECUTE'), 'C19 anon đọc được tổng quan'; END $$;
 DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.claim_community_challenge(uuid, integer)', 'EXECUTE'), 'C20 anon nhận được thưởng'; END $$;
-\echo TẤT CẢ 23 KỊCH BẢN THỬ THÁCH ĐÚNG
+
+-- KOA-T54 (5): trần 800 xu / ngày KHÔNG tính xu khám phá (`x:`), như claim_quest_reward.
+-- Z: 3 ngày tập (đạt thử thách 'a'), 700 xu khám phá hôm nay → vẫn nhận được 200.
+-- V: như Z nhưng 700 xu NHIỆM VỤ hôm nay → bị chặn ở trần (22023).
+INSERT INTO auth.users VALUES ('c3c3c3c3-0000-0000-0000-00000000000c'), ('c4c4c4c4-0000-0000-0000-00000000000c');
+INSERT INTO workout_sessions (user_id, date_time, sets)
+SELECT u::uuid, date_trunc('day', now()) - (g || ' days')::interval + interval '9 hours', '[]'
+FROM unnest(ARRAY['c3c3c3c3-0000-0000-0000-00000000000c', 'c4c4c4c4-0000-0000-0000-00000000000c']) u, generate_series(1, 3) g;
+INSERT INTO mascot_transactions (user_id, amount, reason, ref_key)
+SELECT 'c3c3c3c3-0000-0000-0000-00000000000c', 100, 'khám phá', 'x:k' || g FROM generate_series(1, 7) g;
+INSERT INTO mascot_transactions (user_id, amount, reason, ref_key)
+SELECT 'c4c4c4c4-0000-0000-0000-00000000000c', 100, 'nhiệm vụ', 'd:' || current_date || ':q' || g FROM generate_series(1, 7) g;
+SELECT pg_temp.who('c3c3c3c3-0000-0000-0000-00000000000c'); SET ROLE authenticated;
+INSERT INTO community_challenge_members (challenge_id) VALUES ('cc000000-0000-0000-0000-00000000000a');
+DO $$ BEGIN
+  ASSERT pg_temp.errcode($q$SELECT claim_community_challenge('cc000000-0000-0000-0000-00000000000a', 0)$q$) = 'ok',
+    'T54a xu khám phá ăn vào trần của thử thách cộng đồng (nhiệm vụ thì không)';
+END $$;
+RESET ROLE;
+SELECT pg_temp.who('c4c4c4c4-0000-0000-0000-00000000000c'); SET ROLE authenticated;
+INSERT INTO community_challenge_members (challenge_id) VALUES ('cc000000-0000-0000-0000-00000000000a');
+DO $$ BEGIN
+  ASSERT pg_temp.errcode($q$SELECT claim_community_challenge('cc000000-0000-0000-0000-00000000000a', 0)$q$) = '22023',
+    'T54b 700 xu nhiệm vụ + 200 vẫn nhận được — trần ngày không còn tác dụng';
+END $$;
+RESET ROLE;
+\echo TẤT CẢ 25 KỊCH BẢN THỬ THÁCH ĐÚNG
