@@ -400,8 +400,10 @@ public final class MascotRoomController {
       if !MascotRules.isDuplicateClaim(amount) { welcomeGranted = amount }
       await reloadLedger()
     } catch {
-      // Bị từ chối thì lần mở sau được thử lại — khoá là duy nhất mỗi tài khoản.
-      welcomeTried = false
+      // KOA-T51: chỉ lỗi tạm (mất mạng, server tạm hỏng) mới thử lại ở lần mở sau — bị từ chối hẳn thì thôi,
+      // không gõ cửa mãi. Khoá là duy nhất mỗi tài khoản, server trả 0 nếu đã nhận (KOA-T01).
+      let failure = (error as? MascotFailure) ?? (NetworkFailure.isOffline(error) ? .offline : .server(code: nil))
+      if QuestRetry.shouldRetry(failure) { welcomeTried = false }
     }
   }
 
