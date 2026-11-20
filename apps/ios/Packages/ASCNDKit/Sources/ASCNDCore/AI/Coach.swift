@@ -338,6 +338,8 @@ public final class CoachChat {
     if final != answer, let id = answerId, let i = messages.lastIndex(where: { $0.id == id }) {
       messages[i].content = final
     }
+    // Vừa có câu trả lời = mạng đang tốt: gửi lại các lượt học còn chờ (KOA-T31).
+    flushLearns()
     guard let convo else { return }
     try? await store.saveMessage(conversationId: convo, role: .assistant, content: final)
     try? await store.touch(conversationId: convo, userId: userId)
@@ -414,13 +416,57 @@ public final class CoachChat {
   }
 
   /// App vào nền — "xong rồi" thật sự trông như thế này (RN: `AppState`).
-  public func appBackgrounded() { learn() }
+  public func appBackgrounded() {
+    learn()
+    flushLearns()
+  }
+
+  /// Một lượt học đang chờ: bản chụp cuộc trò chuyện + số lần đã thử.
+  struct PendingLearn { let body: [String: JSONValue]; var attempts: Int }
+  /// KOA-T31: trước đây `learnedAt` được đặt TRƯỚC khi biết kết quả và lỗi bị nuốt — học hỏng (mất mạng,
+  /// máy chủ bận) là điều người dùng vừa kể (chấn thương, mục tiêu) mất hẳn. Nay giữ trong hàng đợi và thử
+  /// lại ở lần gửi thành công kế tiếp / lần vào nền kế tiếp; tối đa `maxLearnAttempts` lần mỗi lượt.
+  @ObservationIgnored private var pendingLearns: [PendingLearn] = []
+  @ObservationIgnored private var flushingLearns = false
+  public static let maxLearnAttempts = 3
+  /// Giữ tối đa chừng này lượt chờ (mới nhất) — không phình mãi khi mất mạng lâu.
+  public static let maxPendingLearns = 4
+  /// Số lượt học đang chờ thử lại (test).
+  public var pendingLearnCount: Int { pendingLearns.count }
 
   private func learn() {
-    guard let edge, Coach.shouldLearn(messages, learnedAt: learnedAt) else { return }
+    guard edge != nil, Coach.shouldLearn(messages, learnedAt: learnedAt) else { return }
     learnedAt = messages.count
-    let body = ["messages": Coach.wire(messages)]
-    Task.detached { _ = try? await edge.call(.coachMemory, body: body) }
+    pendingLearns.append(PendingLearn(body: ["messages": Coach.wire(messages)], attempts: 0))
+    if pendingLearns.count > Self.maxPendingLearns { pendingLearns.removeFirst(pendingLearns.count - Self.maxPendingLearns) }
+    flushLearns()
+  }
+
+  /// Gửi các lượt học đang chờ, lần lượt. Thành công → bỏ khỏi hàng. Lỗi tạm (mất mạng, hết giờ, máy chủ
+  /// bận) → giữ, lần sau thử lại. Hết lượt AI / chưa đăng nhập / chưa triển khai → bỏ (thử lại không giúp).
+  private func flushLearns() {
+    guard let edge, !flushingLearns, !pendingLearns.isEmpty else { return }
+    flushingLearns = true
+    Task { @MainActor [weak self] in
+      defer { self?.flushingLearns = false }
+      while let self, !self.pendingLearns.isEmpty {
+        let item = self.pendingLearns[0]
+        do {
+          _ = try await edge.call(.coachMemory, body: item.body)
+          if !self.pendingLearns.isEmpty { self.pendingLearns.removeFirst() }
+        } catch {
+          guard !self.pendingLearns.isEmpty else { return }
+          let f = error as? EdgeFunction.Failure
+          let permanent = f == .quotaExceeded || f == .unauthorised || f == .notDeployed
+          if permanent || item.attempts + 1 >= Self.maxLearnAttempts {
+            self.pendingLearns.removeFirst()
+          } else {
+            self.pendingLearns[0].attempts += 1
+            return  // để lần sau (gửi thành công / vào nền)
+          }
+        }
+      }
+    }
   }
 
   /// Mở một cuộc trò chuyện cũ. Lượt mở về muộn không đè lượt mới hơn.
