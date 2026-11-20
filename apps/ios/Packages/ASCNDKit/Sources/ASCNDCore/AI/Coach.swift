@@ -203,7 +203,12 @@ public final class CoachChat {
     self.edge = edge
   }
 
-  public func close() { closed = true }
+  public func close() {
+    closed = true
+    // Devin #978: lượt học chờ là chuyện của người vừa rời phiên — lời gọi lấy token của phiên ĐANG mở, gửi
+    // sau khi đổi tài khoản là ghi ký ức của người này vào người kia.
+    pendingLearns = []
+  }
 
   private func nextId() -> String {
     seq += 1
@@ -422,7 +427,7 @@ public final class CoachChat {
   }
 
   /// Một lượt học đang chờ: bản chụp cuộc trò chuyện + số lần đã thử.
-  struct PendingLearn { let body: [String: JSONValue]; var attempts: Int }
+  struct PendingLearn { let id = UUID(); let body: [String: JSONValue]; var attempts: Int }
   /// KOA-T31: trước đây `learnedAt` được đặt TRƯỚC khi biết kết quả và lỗi bị nuốt — học hỏng (mất mạng,
   /// máy chủ bận) là điều người dùng vừa kể (chấn thương, mục tiêu) mất hẳn. Nay giữ trong hàng đợi và thử
   /// lại ở lần gửi thành công kế tiếp / lần vào nền kế tiếp; tối đa `maxLearnAttempts` lần mỗi lượt.
@@ -435,7 +440,7 @@ public final class CoachChat {
   public var pendingLearnCount: Int { pendingLearns.count }
 
   private func learn() {
-    guard edge != nil, Coach.shouldLearn(messages, learnedAt: learnedAt) else { return }
+    guard edge != nil, !closed, Coach.shouldLearn(messages, learnedAt: learnedAt) else { return }
     learnedAt = messages.count
     pendingLearns.append(PendingLearn(body: ["messages": Coach.wire(messages)], attempts: 0))
     if pendingLearns.count > Self.maxPendingLearns { pendingLearns.removeFirst(pendingLearns.count - Self.maxPendingLearns) }
@@ -445,23 +450,23 @@ public final class CoachChat {
   /// Gửi các lượt học đang chờ, lần lượt. Thành công → bỏ khỏi hàng. Lỗi tạm (mất mạng, hết giờ, máy chủ
   /// bận) → giữ, lần sau thử lại. Hết lượt AI / chưa đăng nhập / chưa triển khai → bỏ (thử lại không giúp).
   private func flushLearns() {
-    guard let edge, !flushingLearns, !pendingLearns.isEmpty else { return }
+    guard let edge, !closed, !flushingLearns, !pendingLearns.isEmpty else { return }
     flushingLearns = true
     Task { @MainActor [weak self] in
       defer { self?.flushingLearns = false }
-      while let self, !self.pendingLearns.isEmpty {
-        let item = self.pendingLearns[0]
+      while let self, !self.closed, let item = self.pendingLearns.first {
         do {
           _ = try await edge.call(.coachMemory, body: item.body)
-          if !self.pendingLearns.isEmpty { self.pendingLearns.removeFirst() }
+          // Trong lúc chờ mạng hàng có thể đổi (lượt mới đẩy lượt cũ ra, đóng phiên): chỉ chạm ĐÚNG lượt vừa gửi.
+          self.pendingLearns.removeAll { $0.id == item.id }
         } catch {
-          guard !self.pendingLearns.isEmpty else { return }
           let f = error as? EdgeFunction.Failure
           let permanent = f == .quotaExceeded || f == .unauthorised || f == .notDeployed
+          guard let i = self.pendingLearns.firstIndex(where: { $0.id == item.id }) else { continue }
           if permanent || item.attempts + 1 >= Self.maxLearnAttempts {
-            self.pendingLearns.removeFirst()
+            self.pendingLearns.remove(at: i)
           } else {
-            self.pendingLearns[0].attempts += 1
+            self.pendingLearns[i].attempts += 1
             return  // để lần sau (gửi thành công / vào nền)
           }
         }

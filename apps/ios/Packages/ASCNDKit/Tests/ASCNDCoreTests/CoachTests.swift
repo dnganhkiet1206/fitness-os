@@ -383,6 +383,23 @@ struct CoachChatTests {
     #expect(chat.pendingLearnCount == 0, "gửi lại thành công")
   }
 
+  /// Devin #978: đổi tài khoản (chat đóng) thì lượt học chờ của người trước không được gửi bằng token người mới.
+  @Test func closedChatDropsPendingLearning() async {
+    let edge = FlakyEdge()
+    edge.failures = [.offline]
+    let chat = CoachChat(userId: "u", stream: Stream(), store: Store(), edge: edge)
+    await chat.send("Một", lang: "vi", today: Self.today, tzOffset: 0)
+    await chat.send("Hai", lang: "vi", today: Self.today, tzOffset: 0)
+    chat.appBackgrounded()
+    try? await Task.sleep(nanoseconds: 50_000_000)
+    #expect(chat.pendingLearnCount == 1)
+    chat.close()
+    #expect(chat.pendingLearnCount == 0)
+    chat.appBackgrounded()
+    try? await Task.sleep(nanoseconds: 50_000_000)
+    #expect(edge.calls == 1, "không gửi gì sau khi đóng")
+  }
+
   /// Hết lượt AI: thử lại không giúp gì → bỏ. Lỗi tạm: tối đa `maxLearnAttempts` lần.
   @Test func learningGivesUpWhenRetryingCannotHelp() async {
     let edge = FlakyEdge()
