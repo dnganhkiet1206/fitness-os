@@ -54,6 +54,18 @@ struct CoachInputUnderstandingTests {
     #expect(CoachLogPrompt.choice("keep it", for: c) == .logged)
     #expect(CoachLogPrompt.choice("lo que dije", for: c) == .stated)
     #expect(CoachLogPrompt.choice("ừ", for: c) == .unclear)
+    // Phủ định không tự chọn (Devin #972).
+    #expect(CoachLogPrompt.choice("the app is wrong", for: c) == .unclear)
+    #expect(CoachLogPrompt.choice("không phải số cũ", for: c) == .unclear)
+  }
+
+  /// Devin #972: nút lb hiện đúng số mà `choice` nhận.
+  @Test func poundButtonsMatchTheChoiceReader() {
+    let c = CoachLogPrompt.Conflict(kind: .weight, logged: 64, stated: 63.2)
+    let shown = CoachLogPrompt.display(.weight, c.stated, lang: "en", weight: .lbs)
+    #expect(shown == "139.3 lb")
+    #expect(CoachLogPrompt.choice(String(shown.dropLast(3)), for: c, weight: .lbs) == .stated)
+    #expect(CoachLogPrompt.choice("141.1", for: c, weight: .lbs) == .logged)
   }
 
   @Test func leakGuardIsNarrowAndKeepsTheRest() {
@@ -66,5 +78,8 @@ struct CoachInputUnderstandingTests {
     #expect(kept?.contains("user just said") == false)
     #expect(CoachLogPrompt.strippingLeaks("The user just said 8 hours.") == nil)
     #expect(CoachLogPrompt.strippingLeaks("Ngủ đủ giấc nhé.") == "Ngủ đủ giấc nhé.")
+    // Số thập phân trong câu bị bỏ không để lại mẩu "5 hours." (Devin #972).
+    #expect(CoachLogPrompt.strippingLeaks("The user just said 7.5 hours. Keep a regular bedtime and wind down early.")
+      == "Keep a regular bedtime and wind down early.")
   }
 }

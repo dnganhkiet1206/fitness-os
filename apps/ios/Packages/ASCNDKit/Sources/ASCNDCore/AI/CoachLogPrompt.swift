@@ -127,7 +127,9 @@ public enum CoachLogPrompt {
     case .sleep, .workout: return CoachQuickReply.duration(v, l)
     case .water where unit == .oz: return "\(Int(Water.jsRound(v / Water.mlPerFloz))) oz"
     case .water: return v >= 1000 ? "\(CoachOverview.format((v / 100).rounded() / 10)) L" : "\(Int(v.rounded())) ml"
-    case .weight: return "\(CoachOverview.format((weight.convert(v) * 10).rounded() / 10)) \(weight.label)"
+    // Một chữ số thập phân như mọi chỗ khác của app (Devin #972: `format` làm tròn ≥ 100 thành số
+    // nguyên — "139 lb" trên nút nhưng `choice` đối chiếu 139,3).
+    case .weight: return "\(weight.text(v)) \(weight.label)"
     case .meal: return ""
     }
   }
@@ -163,9 +165,12 @@ public enum CoachLogPrompt {
     guard leaksInstructions(answer) else { return answer }
     var kept: [String] = []
     var current = ""
-    for ch in answer {
+    for idx in answer.indices {
+      let ch = answer[idx]
       current.append(ch)
-      if ".!?\n".contains(ch) {
+      // Dấu chấm giữa hai chữ số là dấu thập phân, không phải hết câu (Devin #972: "7.5" → "5 hours").
+      let prev = current.dropLast().last, nextIsDigit = answer[answer.index(after: idx)...].first?.isNumber == true
+      if ".!?\n".contains(ch), !(ch == "." && prev?.isNumber == true && nextIsDigit) {
         if !leaks(CoachQuickReply.fold(current)) { kept.append(current) }
         current = ""
       }
@@ -187,14 +192,16 @@ public enum CoachLogPrompt {
       .map { r in r.matches(in: t, range: NSRange(t.startIndex..., in: t)).compactMap { Range($0.range, in: t).map { Double(t[$0]) ?? .nan } } } ?? []
     func display(_ v: Double) -> Double {
       if c.kind == .water, unit == .oz { return v / Water.mlPerFloz }
-      if c.kind == .weight { return weight.convert(v) }
+      if c.kind == .weight { return Units.jsRound1(weight.convert(v)) }
       return c.kind == .sleep ? v / 60 : c.kind == .water && v >= 1000 ? v / 1000 : v
     }
     let near = { (v: Double, target: Double) in abs(v - target) < 0.26 || abs(v - target * 60) < 10 }
     let saysStated = numbers.contains { near($0, display(c.stated)) || near($0, c.stated) }
     let saysLogged = numbers.contains { near($0, display(c.logged)) || near($0, c.logged) }
     if saysStated != saysLogged { return saysStated ? .stated : .logged }
-    if numbers.isEmpty, wordsStated != wordsLogged { return wordsStated ? .stated : .logged }
+    // Phủ định ("the app is wrong", "không phải số cũ"): không tự chọn (Devin #972).
+    let negated = negations.contains { t.contains(" \($0) ") }
+    if numbers.isEmpty, !negated, wordsStated != wordsLogged { return wordsStated ? .stated : .logged }
     return .unclear
   }
 
@@ -204,9 +211,12 @@ public enum CoachLogPrompt {
     "lo que dije", "el nuevo", "el mio", "mi numero",
   ]
   static let loggedCues = [
-    "so cu", "so da ghi", "cai da ghi", "app ghi", "app dung", "trong app", "giu nguyen", "cai cu",
-    "the logged one", "the app", "app is right", "keep it", "the old one", "what s logged", "whats logged",
-    "lo registrado", "el de la app", "la app", "el anterior", "dejalo",
+    "so cu", "so da ghi", "cai da ghi", "app ghi dung", "app dung", "giu nguyen", "cai cu",
+    "the logged one", "app is right", "keep it", "the old one", "what s logged is right", "whats logged is right",
+    "lo registrado", "el de la app", "el anterior", "dejalo",
+  ]
+  static let negations = [
+    "khong", "sai", "chua dung", "not", "don t", "dont", "wrong", "isn t", "isnt", "incorrect", "no es", "mal", "incorrecto",
   ]
 
   // MARK: - Nhận diện
