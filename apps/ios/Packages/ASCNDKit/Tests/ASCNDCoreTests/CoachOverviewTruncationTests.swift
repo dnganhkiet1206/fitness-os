@@ -45,4 +45,14 @@ struct CoachOverviewTruncationTests {
     #expect(json == #"{"title":"a } b","items":[]}"#)
     #expect(tail == " rồi")
   }
+
+  /// Devin #970: gộp nhiều khối không vượt trần 5 bước của `parse` — mở lại không mất bước.
+  @Test func mergedStepsKeepTheParseCeiling() {
+    func block(_ n: Int, _ tag: String) -> String {
+      let steps = (1...n).map { #"{"title":"\#(tag)\#($0)","detail":"d"}"# }.joined(separator: ",")
+      return "```ascnd\n{\"items\":[\(item)],\"steps\":[\(steps)]}\n```"
+    }
+    let r = CoachOverview.split(block(3, "A") + "\nGiữa.\n" + block(3, "B"), complete: true)
+    #expect(r.overview?.steps.count == 5)
+  }
 }
