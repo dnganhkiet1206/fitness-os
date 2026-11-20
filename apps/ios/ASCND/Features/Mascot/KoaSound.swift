@@ -84,8 +84,10 @@ enum KoaSound {
   /// Bật phiên MỘT lần (trước đây đặt lại mỗi lần phát, lỗi bị nuốt); bị ngắt (cuộc gọi, Siri) xong
   /// thì bật lại. Lỗi được ghi log.
   private static func activate() {
-    guard !activated else { return }
     let session = AVAudioSession.sharedInstance()
+    // Phiên là của CẢ app: micro (Kể cho Koa) đổi sang `.record` rồi tắt phiên (Devin #971) — thấy
+    // loại phiên khác thì đặt lại, không tin cờ cũ.
+    guard !activated || session.category != .ambient else { return }
     do {
       try session.setCategory(.ambient, options: .mixWithOthers)
       try session.setActive(true)
@@ -139,6 +141,12 @@ enum KoaSound {
       ambience?.player.play()
       snore?.play()
     }
+  }
+
+  /// Một phần khác của app lấy phiên (micro bắt đầu thu): dừng giọng, lần phát sau đặt lại phiên.
+  static func yieldSession() {
+    activated = false
+    hush()
   }
 
   /// Dừng giọng đang nói.

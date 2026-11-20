@@ -305,9 +305,9 @@ public final class WeeklyChallengesBook {
     guard await read() != nil else { return }
     guard !initialized else { return }
     initialized = true
-    // Gieo nằm trong `refreshProgress` (KOA-T24): gieo hỏng thì lần sau thử lại, và Hôm nay
-    // (chỉ gọi `refreshProgress`) cũng gieo được cho người chưa từng mở màn Thử thách.
-    await refreshProgress()
+    // Gieo hỏng thì lần sau thử lại (KOA-T24). CHỈ màn Thử thách gieo: Hôm nay gọi
+    // `refreshProgress()` không gieo — V1 mục 2 thay bộ thử thách chung bằng Tuần của Koa (Devin #971).
+    await refreshProgress(seedIfMissing: true)
     if progressFailure == .seed { initialized = false }
   }
 
@@ -348,7 +348,7 @@ public final class WeeklyChallengesBook {
   /// `useUpdateChallengeProgress`: mỗi thử thách chưa xong đo riêng; vừa xong
   /// thì TRẢ trước (bước lặp lại vô hại — `ref_key` cố định cả tuần) rồi mới
   /// ghi hàng; một cái hỏng không kéo cái khác; lỗi đầu tiên được báo.
-  public func refreshProgress() async {
+  public func refreshProgress(seedIfMissing: Bool = false) async {
     guard !refreshing, !closed else { return }
     refreshing = true
     defer { refreshing = false }
@@ -364,7 +364,7 @@ public final class WeeklyChallengesBook {
       return
     }
     // Tuần chưa đủ ba thử thách: gieo phần thiếu (trùng 23505 không phải lỗi) rồi đọc lại.
-    if all.count < 3 {
+    if seedIfMissing, all.count < 3 {
       guard await seed(existing: Set(all.map(\.key))), !closed else {
         if !closed { progressFailure = .seed }
         return

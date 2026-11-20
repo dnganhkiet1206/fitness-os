@@ -292,13 +292,17 @@ struct WeeklyChallengesBookTests {
     #expect(again.justCompleted.isEmpty)
   }
 
-  /// Hôm nay chỉ gọi `refreshProgress`: tuần trống vẫn được gieo (KOA-T24).
-  @Test func refreshAloneSeedsAnEmptyWeek() async {
+  /// Hôm nay chỉ gọi `refreshProgress`: KHÔNG gieo bộ thử thách chung, không phát sinh thưởng
+  /// (V1 mục 2 — Tuần của Koa thay bộ này; Devin #971).
+  @Test func todayRefreshDoesNotSeed() async {
     let s = FakeStore()
-    let b = book(s)
+    s.daily = (0..<7).map { _ in .object(["calories": .number(2000)]) }
+    let e = FakeEconomy()
+    let b = book(s, e)
     await b.refreshProgress()
-    #expect(s.inserts.count == 3)
-    #expect(b.progressFailure == nil)
+    #expect(s.inserts.isEmpty)
+    #expect(e.claims.isEmpty)
+    #expect(b.justCompleted.isEmpty)
   }
 
   /// Gieo hỏng lần đầu không kẹt: lần `load()` sau gieo lại (KOA-T24).
