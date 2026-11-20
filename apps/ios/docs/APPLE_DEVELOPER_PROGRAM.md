@@ -28,8 +28,9 @@ Cột (a) là chạy trên simulator, (b) là chạy trên máy thật với Per
 
 [^1]: Bảng của Apple: Sign in with Apple chỉ có ở cột ADP, không có ở ADEP và cột Apple Developer.
 
-Không dùng: Push notifications, Time Sensitive Notifications, Associated domains, iCloud, In-App Purchase,
-Apple Pay, WeatherKit. Theo bảng, các mục này đều cần ADP. Repo không khai entitlement nào trong số đó.
+Không dùng: Push notifications, Time Sensitive Notifications, Associated domains, iCloud, Apple Pay, WeatherKit. Theo bảng, các mục này đều cần ADP. Repo không khai entitlement nào trong số đó.
+
+**In-App Purchase (17/11, nhánh `agent/c/storekit-purchase`):** app đã có code StoreKit 2 + màn paywall, nhưng chưa bán được — cần ADP, product trong App Store Connect, deploy `verify-purchase` / `store-webhook`, và quyết định sản phẩm (quyền lợi, giá, chu kỳ). Khi chưa đủ điều kiện, màn paywall hiện "chưa mở bán" và không có nút mua nào chạy (cùng lý do như nút Sign in with Apple: không hứa sai). IAP không cần entitlement riêng.
 
 **Kết luận:** chỉ một tính năng người dùng bị chặn bởi membership là nút Sign in with Apple. Mọi tính năng
 khác chạy được với Personal Team miễn phí, nên **không ẩn**.

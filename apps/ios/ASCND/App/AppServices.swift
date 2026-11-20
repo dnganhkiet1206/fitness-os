@@ -142,6 +142,11 @@ final class AppServices {
   }
   @ObservationIgnored private let reminderPresenter = ReminderPresenter()
   let sync: SyncWorker
+  /// StoreKit (must-do #2, 17/11): lớp duy nhất chạm App Store. Một instance
+  /// cho cả app để luồng nghe giao dịch nền sống suốt phiên.
+  @ObservationIgnored private let storeKit = StoreKitClient()
+  /// Luồng nghe giao dịch nền đã chạy chưa — chỉ chạy một lần mỗi lần mở app.
+  private var observingTransactions = false
   /// Hai widget màn hình chính (#66): dữ liệu thật, xoá khi phiên kết thúc.
   @ObservationIgnored let widgets: WidgetRefresher
   /// Apple Health (#66): đồng bộ vào server, ghi ngược buổi ghi tay.
@@ -394,6 +399,8 @@ final class AppServices {
   /// liệu của người của phiên vừa khôi phục (`pruneParkedStaleDays`).
   func start() async {
     await session.start()
+    startTransactionObserving()
+    reconcilePurchases()
     // Ngoại lệ #469 (xem `AccountLifecycle.pruneParkedStaleDays`): chỉ ngày
     // đỗ quá hạn của chủ khác với phiên vừa khôi phục; không có phiên thì
     // dọn của mọi người — ngày trong cửa sổ 14 ngày không bao giờ bị chạm.
@@ -1736,6 +1743,74 @@ final class AppServices {
     return tier == "plus" || tier == "max"
   }
 
+  /// Gói hiện tại qua `current_tier()` — cùng nguồn với `isPaid()`, nhưng trả
+  /// đủ ba gói để màn paywall và hàng Cài đặt hiện đúng tên gói.
+  func currentTier() async -> PurchaseTier {
+    #if DEBUG
+      if let fake = ProcessInfo.processInfo.environment["ASCND_FAKE_TIER"] {
+        return PurchaseTier(serverValue: fake) ?? .free
+      }
+    #endif
+    guard let backend, let raw = try? await SupabaseTier(backend: backend).current() else { return .free }
+    return PurchaseTier(serverValue: raw) ?? .free
+  }
+
+  /// Nghe giao dịch StoreKit đẩy về trong nền (gia hạn, chờ duyệt xong, hoàn
+  /// tiền): xác minh với server rồi mới cho finish. Chạy một lần mỗi lần mở
+  /// app; không chạy trong UI test; chưa cấu hình product ID thì không chạy.
+  func startTransactionObserving() {
+    guard !observingTransactions, !Self.uiTest else { return }
+    guard StoreProductConfig(infoDictionary: Bundle.main.infoDictionary ?? [:]).isConfigured else { return }
+    observingTransactions = true
+    Task { [weak self] in
+      guard let self else { return }
+      await storeKit.observeTransactions { [weak self] attempt in
+        guard let self else { return false }
+        return await self.verifyStoreUpdate(attempt)
+      }
+    }
+  }
+
+  /// Gửi xác minh lại mọi giao dịch StoreKit chưa finish (Devin #920): gọi khi mở app, đổi phiên, có mạng
+  /// lại, về tiền cảnh. Chưa đăng nhập thì thôi — giao dịch chờ tới khi chính chủ đăng nhập.
+  func reconcilePurchases() {
+    guard !Self.uiTest, session.session?.userId != nil else { return }
+    guard StoreProductConfig(infoDictionary: Bundle.main.infoDictionary ?? [:]).isConfigured else { return }
+    Task { [weak self] in
+      guard let self else { return }
+      await storeKit.reconcileUnfinished { [weak self] attempt in
+        guard let self else { return false }
+        return await self.verifyStoreUpdate(attempt)
+      }
+    }
+  }
+
+  private func verifyStoreUpdate(_ attempt: PurchaseAttempt) async -> Bool {
+    guard let userId = session.session?.userId, let coordinator = makePurchaseCoordinator() else { return false }
+    return await coordinator.verifyUpdate(attempt, userId: userId)
+  }
+
+  private func makePurchaseCoordinator() -> PurchaseCoordinator? {
+    guard let edge else { return nil }
+    let config = StoreProductConfig(infoDictionary: Bundle.main.infoDictionary ?? [:])
+    return PurchaseCoordinator(
+      config: config,
+      client: storeKit,
+      verifier: EdgePurchaseVerifier(edge: edge),
+      tierSource: ClosurePurchaseTierSource(read: { [weak self] in
+        guard let self else { return .free }
+        return await self.currentTier()
+      }))
+  }
+
+  /// Controller cho màn paywall — `nil` khi chưa đăng nhập hoặc chưa có
+  /// backend (preview, đã đăng xuất): hàng Gói khi ấy không hiện.
+  func makePurchaseController() -> PurchaseController? {
+    guard let userId = session.session?.userId, let coordinator = makePurchaseCoordinator() else { return nil }
+    let config = StoreProductConfig(infoDictionary: Bundle.main.infoDictionary ?? [:])
+    return PurchaseController(coordinator: coordinator, config: config, userId: userId)
+  }
+
   func makeCommunityInbox(userId: String) -> CommunityInboxBook? {
     guard let backend else { return nil }
     return CommunityInboxBook(userId: userId, remote: SupabaseCommunity(backend: backend))
@@ -1851,6 +1926,7 @@ final class AppServices {
     sync.setOnline(usable)
     if cameBack, let userId = session.session?.userId {
       Task { await retryPendingQuests(userId: userId) }
+      reconcilePurchases()
     }
     net.apply(connected: connected, internetReachable: reachable)
   }

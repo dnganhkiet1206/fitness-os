@@ -251,6 +251,7 @@ struct SettingsSheet: View {
         if let t = AppPreferences.Theme(rawValue: code) { services.preferences.setTheme(t) }
       },
       makePasswordChange: { PasswordChangeController(session: services.session) },
+      makePurchase: { services.makePurchaseController() },
       legalLang: services.preferences.lang,
       healthAvailable: services.health.isAvailable,
       healthSync: { () async throws(HealthSync.Failure) in

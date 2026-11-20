@@ -130,7 +130,11 @@ struct ASCNDApp: App {
           // Lúc mở app phiên còn `.loading` (chưa khôi phục): `nil` ở đây KHÔNG phải
           // đăng xuất — xoá widget lúc này làm mỗi lần mở app widget trống và Koa phải
           // vẽ lại trên luồng chính (Sentry APPLE-IOS-B, 26/10). Đăng xuất thật: bên dưới.
-          if user != nil { services.widgets.setUser(user) }
+          if user != nil {
+            services.widgets.setUser(user)
+            // Giao dịch mua trước khi chính chủ đăng nhập (Devin #920): xác minh khi có phiên.
+            services.reconcilePurchases()
+          }
           Telemetry.setUser(user)
         }
         .onChange(of: services.session.phase == .signedOut, initial: true) { _, signedOut in
@@ -155,6 +159,7 @@ struct ASCNDApp: App {
       if phase == .active {
         rest.settle()
         services.didBecomeActive()
+        services.reconcilePurchases()
         // `app_opened` (ngày 1 / ngày 7… cho tỉ lệ quay lại) — tắt khi chưa có khoá.
         Telemetry.appOpened()
       } else if phase == .background {
