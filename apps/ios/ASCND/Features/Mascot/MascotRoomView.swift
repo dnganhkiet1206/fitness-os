@@ -722,13 +722,22 @@ struct MascotRoomView: View {
         RoomSummaryCard(
           symbol: "calendar", tint: DS.Color.readinessGreen.swiftUI, title: String(localized: "dp.week"),
           value: "\(min(state.done, state.target))", unit: String(localized: "mr.week.of \(state.target)"),
-          detail: state.complete
-            ? String(localized: "kw.claimed") : String(localized: "kw.reward \(KoaGains.fullWeek) \(KoaWeek.rewardCoins)")
+          detail: Self.weekDetail(complete: state.complete, claim: services.koaWeek(userId: room.userId)?.claim ?? .notYet)
         ) {
           RoomWeekBars(days: state.days, today: TodayPlanHero.today(), tint: DS.Color.readinessGreen.swiftUI)
         }
       }
       .buttonStyle(TodayPressStyle())
+    }
+  }
+
+  /// Dòng dưới số tuần. KOA-T54 (3): theo TRẠNG THÁI NHẬN như thẻ tuần (`KoaWeekCard`), không theo "đủ tuần" —
+  /// đủ tuần mà nhận hỏng (mất mạng) trước đây vẫn ghi "đã nhận".
+  static func weekDetail(complete: Bool, claim: KoaWeekBook.Claim) -> String {
+    switch claim {
+    case .claimed, .justClaimed: String(localized: "kw.claimed")
+    case .failed where complete: String(localized: "kw.retry")
+    default: String(localized: "kw.reward \(KoaGains.fullWeek) \(KoaWeek.rewardCoins)")
     }
   }
 

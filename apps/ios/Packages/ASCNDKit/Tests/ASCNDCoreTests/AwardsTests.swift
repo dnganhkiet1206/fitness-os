@@ -187,6 +187,22 @@ struct AwardsBookTests {
     #expect(s.grants.count == 1)
   }
 
+  /// KOA-T54 (2): trao hỏng (mất mạng) thì lần mở sau trao lại; trao xong thì thôi.
+  @Test func failedGrantIsRetriedOnTheNextLoad() async {
+    let s = FakeSource()
+    s.raw.workoutCount = 10
+    s.earnedRows = [EarnedAward(key: "first_workout", earnedAt: nil)]
+    s.refuse = ["workouts_10": nil]
+    let b = book(s)
+    await b.load()
+    #expect(s.grants.isEmpty)
+    s.refuse = [:]
+    await b.load()
+    #expect(s.grants.map(\.0) == ["workouts_10"])
+    await b.load()
+    #expect(s.grants.count == 1, "đã trao thì không xét lại")
+  }
+
   /// Không đọc được cái đã có → lỗi, và KHÔNG trao gì (xét trên tập rỗng sẽ trao lại mọi thứ).
   @Test func unreadableEarnedListGrantsNothing() async {
     let s = FakeSource()
