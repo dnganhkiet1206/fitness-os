@@ -71950,7 +71950,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¡ENTRENO HECHO!"
+            "value": "¡SESIÓN LISTA!"
           }
         }
       }
@@ -81565,6 +81565,52 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cuando vuelvas, Koa empezará suave. Los días de pausa no cuentan como sesiones perdidas."
+          }
+        }
+      }
+    },
+    "koa.reaction.record": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NEW RECORD!"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KỶ LỤC MỚI!"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¡NUEVO RÉCORD!"
+          }
+        }
+      }
+    },
+    "koa.reaction.a11y %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa celebrates: %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa ăn mừng: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa celebra: %@"
           }
         }
       }

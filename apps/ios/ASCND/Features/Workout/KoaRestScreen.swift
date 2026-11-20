@@ -208,13 +208,13 @@ struct KoaRestScreen: View {
     let since = big.map { b.t - $0.from } ?? 0
     return VStack(spacing: 6) {
       if let big, let t = big.title {
-        Text(verbatim: t == "XONG SET!" ? String(localized: "koa.rest.setDone") : t == "LƯỢT MÌNH!" ? String(localized: "koa.rest.go") : t)
+        Text(verbatim: KoaShowStage.title(big) ?? t)
           .font(.system(size: 40, weight: .heavy, design: .rounded))
           .foregroundStyle(.white)
           .shadow(color: .black.opacity(0.45), radius: 10, y: 4)
           .scaleEffect(reduceMotion ? 1 : 1 + 0.3 * max(0, 1 - since / 220))
           .opacity(min(1, since / 120) * min(1, (big.to - big.from - since) / 160))
-        if t == "XONG SET!", let sub = subtitle ?? justDone {
+        if big.titleKey == .setDone, let sub = subtitle ?? justDone {
           Text(verbatim: sub).font(.system(size: 17, weight: .medium)).foregroundStyle(.white.opacity(0.8))
         }
       } else if let justDone {

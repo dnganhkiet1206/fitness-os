@@ -60,7 +60,9 @@ struct KoaBubble: View {
   var body: some View {
     VStack(spacing: 0) {
       Text(verbatim: line)
-        .font(.system(size: 15, weight: .semibold))
+        // KOA-T45: cỡ chữ theo Dynamic Type (subheadline = 15 pt ở cỡ mặc định); trước là 15 pt cố định nên
+        // trần `xxLarge` bên dưới không có tác dụng.
+        .font(.system(.subheadline, weight: .semibold))
         .foregroundStyle(Color.black.opacity(0.85))
         .multilineTextAlignment(.center)
         .fixedSize(horizontal: false, vertical: true)

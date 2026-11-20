@@ -174,6 +174,8 @@ struct KoaMonthSection: View {
 
 /// Trang "Tháng N của bạn": tập, ghi, ngày hay tập, mốc nổi bật, một câu Koa và nút Chia sẻ.
 struct KoaMonthView: View {
+  /// Khung icon co theo cỡ chữ cùng icon (KOA-T45: icon to theo Dynamic Type, khung 22 pt cố định thì đè chữ).
+  @ScaledMetric(relativeTo: .subheadline) private var iconWidth: CGFloat = 22
   let history: AppServices.GainsHistory
   let key: KoaMonthRecap.Key
   let today: LocalDate
@@ -330,9 +332,9 @@ struct KoaMonthView: View {
       ForEach(r.highlights) { m in
         HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
           Image(systemName: KoaMomentsStore.symbol(m.kind))
-            .font(.system(size: 15, weight: .semibold))
+            .font(.system(.subheadline, weight: .semibold))
             .foregroundStyle(m.major ? Self.tint : DS.Color.mutedForeground.swiftUI)
-            .frame(width: 22)
+            .frame(width: iconWidth)
             .accessibilityHidden(true)
           VStack(alignment: .leading, spacing: 2) {
             Text(verbatim: m.kind == .record ? records[m.date].map { String(localized: "month.record \($0.exercise)") } ?? KoaMomentsStore.line(m, lang: lang) : KoaMomentsStore.line(m, lang: lang))
@@ -392,6 +394,7 @@ struct KoaMonthShareCard: View {
         .tracking(1)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       Text(String(localized: "journey.month.sessions \(recap.sessions)"))
+        // thẻ vẽ thành ẢNH để chia sẻ: cỡ cố định có chủ đích (Dynamic Type làm vỡ bố cục của ảnh) — KOA-T45
         .font(.system(size: 44, weight: .bold).monospacedDigit())
         .foregroundStyle(DS.Color.foreground.swiftUI)
       if recap.logged > 0 {

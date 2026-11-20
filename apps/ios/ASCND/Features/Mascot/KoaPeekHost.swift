@@ -16,9 +16,13 @@ struct KoaPeekHost: View {
 
   @Environment(AppServices.self) private var services
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
   @State private var showing: AppServices.KoaReward?
 
   static let holdFor: Duration = .milliseconds(3200)
+  /// VoiceOver (KOA-T46): 3,2 giây không đủ để tìm tới thẻ và nghe hết — giữ tới khi người dùng tắt
+  /// (chạm / vuốt chữ Z), trần an toàn 30 giây để thẻ không nằm lại mãi.
+  static let holdForVoiceOver: Duration = .seconds(30)
 
   var body: some View {
     ZStack(alignment: .bottomLeading) {
@@ -47,12 +51,12 @@ struct KoaPeekHost: View {
       .offset(y: 10)
       VStack(alignment: .leading, spacing: 4) {
         Text(verbatim: Self.line(r))
-          .font(.system(size: 15, weight: .semibold))
+          .font(.system(.subheadline, weight: .semibold))
           .foregroundStyle(DS.Color.foreground.swiftUI)
           .fixedSize(horizontal: false, vertical: true)
         HStack(spacing: 3) {
-          Image(systemName: "circle.circle.fill").font(.system(size: 11, weight: .bold))
-          Text(verbatim: "+\(r.amount)").font(.system(size: 13, weight: .heavy).monospacedDigit())
+          Image(systemName: "circle.circle.fill").font(.system(.caption2, weight: .bold))
+          Text(verbatim: "+\(r.amount)").font(.system(.footnote, weight: .heavy).monospacedDigit())
         }
         .foregroundStyle(DS.Color.readinessYellow.swiftUI)
       }
@@ -77,6 +81,8 @@ struct KoaPeekHost: View {
     .accessibilityElement(children: .combine)
     .accessibilityAddTraits(.isButton)
     .accessibilityHint(Text(String(localized: "koa.peek.dismiss")))
+    .accessibilityAction(.escape) { dismiss(r) }
+    .accessibilityIdentifier("koa.peek")
   }
 
   private func present() {
@@ -95,7 +101,7 @@ struct KoaPeekHost: View {
     AccessibilityNotification.Announcement("\(Self.line(r)) · \(String(localized: "koa.say.coins \(r.amount)"))").post()
     withAnimation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.5, bounce: 0.3)) { showing = r }
     Task {
-      try? await Task.sleep(for: Self.holdFor)
+      try? await Task.sleep(for: voiceOver ? Self.holdForVoiceOver : Self.holdFor)
       dismiss(r)
     }
   }

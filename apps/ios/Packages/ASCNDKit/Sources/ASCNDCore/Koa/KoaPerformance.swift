@@ -51,6 +51,27 @@ public enum KoaPerformance {
     }
   }
 
+  /// Tiêu đề cố định của kịch bản — có khoá dịch riêng (KOA-T59: trước đây chữ tiếng Việt cứng, màn nghỉ
+  /// chỉ dịch hai tiêu đề bằng cách so chuỗi). Chữ thật của buổi (`Content`) không có khoá.
+  public enum Title: String, Sendable, CaseIterable {
+    case setDone, newRecord, yourTurn, workoutDone
+
+    /// Chữ gốc trong kịch bản (tiếng Việt, đúng như storyboard Kiệt duyệt).
+    public var script: String {
+      switch self {
+      case .setDone: "XONG SET!"
+      case .newRecord: "KỶ LỤC MỚI!"
+      case .yourTurn: "LƯỢT MÌNH!"
+      case .workoutDone: "XONG BUỔI!"
+      }
+    }
+
+    public init?(script: String) {
+      guard let t = Self.allCases.first(where: { $0.script == script }) else { return nil }
+      self = t
+    }
+  }
+
   /// Chữ / hiệu ứng hiện trong một khoảng.
   public struct Cue: Sendable {
     public let from: Double
@@ -61,6 +82,8 @@ public enum KoaPerformance {
     public let stats: [KoaReaction.Stat]
     public let effects: Set<KoaReaction.Effect>
     public let haptic: KoaReaction.Haptic
+    /// Khoá dịch của tiêu đề, nếu là tiêu đề cố định của kịch bản.
+    public var titleKey: Title? { title.flatMap(Title.init(script:)) }
     init(
       _ from: Double, _ to: Double, title: String? = nil, subtitle: String? = nil, chip: String? = nil,
       stats: [KoaReaction.Stat] = [], effects: Set<KoaReaction.Effect> = [], haptic: KoaReaction.Haptic = .none

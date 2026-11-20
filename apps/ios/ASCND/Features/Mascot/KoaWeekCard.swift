@@ -14,7 +14,7 @@ struct KoaWeekCard: View {
     DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         Text("dp.week")
-          .font(.system(size: 11, weight: .semibold))
+          .font(.system(.caption2, weight: .semibold))
           .tracking(1.2)
           .textCase(.uppercase)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)

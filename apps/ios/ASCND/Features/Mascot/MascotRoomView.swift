@@ -1727,13 +1727,15 @@ struct MascotStage: View {
       walks: walks, direct: direct,
       // chạm Koa (Kiệt 04/11): không nhảy nữa — giật mình tại chỗ, rồi cảm xúc và câu nói theo
       // chỗ chạm (`KoaTap`); giọng koala kiểu mèo Tom thay tiếng "boop"
-      onTap: walks && !reduceMotion
+      // KOA-T44: Giảm chuyển động chỉ bỏ cú nhún / giật, KHÔNG bỏ phản ứng — chạm vẫn ra nét mặt, tiếng, câu
+      // nói (đúng hợp đồng của `KoaFigureView.onTap`; trước đây chạm Koa không làm gì).
+      onTap: walks
         ? {
-          director.boost()
+          if !reduceMotion { director.boost() }
           director.touched()
           visit.poked()
         } : nil,
-      onTapZone: walks && !reduceMotion ? { zone in director.tapped(zone) } : nil,
+      onTapZone: walks ? { zone in director.tapped(zone) } : nil,
       // phòng: Koa theo đồng hồ của sân khấu (một đồng hồ, không vẽ hai lần)
       date: walks ? date : nil, onTouch: walks ? { director.boost() } : nil,
       idleClock: walks ? director.frame?.idleClock : nil)
