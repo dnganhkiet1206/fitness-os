@@ -1,4 +1,4 @@
-import { callAI, forSpanish, promptLang } from "../_shared/ai.ts";
+import { callAI, DATA_SLOT, fillData, forSpanish, promptLang } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { aiGate, aiPayload, corsHeaders, json, localDate, opaque, quotaExceeded, requireUser, toolArgs } from "../_shared/guard.ts";
@@ -157,10 +157,10 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: forSpanish(lang === "en"
+            content: fillData(forSpanish(lang === "en"
               ? `You are an AI assistant for weekly lifestyle-habit tracking. Analyze the data and give observations + suggestions in English.
 
-DATA: ${JSON.stringify(ctx)}
+DATA: ${DATA_SLOT}
 
 READING THE DATA:
 - readiness is 0-100 and measures TRAINING CAPACITY — HRV, resting heart rate, sleep and training load combined over whichever were actually measured. readiness_status describes that capacity state. Neither is a direct measurement of recovery
@@ -177,7 +177,7 @@ IMPORTANT PRINCIPLES:
 Return insights (observations from the data) and recommendations (concrete actions for next week). All text in English.`
               : `Bạn là AI hỗ trợ theo dõi thói quen sinh hoạt hàng tuần. Phân tích dữ liệu và đưa ra nhận xét + gợi ý bằng tiếng Việt.
 
-DỮ LIỆU: ${JSON.stringify(ctx)}
+DỮ LIỆU: ${DATA_SLOT}
 
 CÁCH ĐỌC DỮ LIỆU:
 - readiness thang 0-100, đo KHẢ NĂNG TẬP LUYỆN — ghép HRV, nhịp tim nghỉ, giấc ngủ và tải tập trên những chiều thật sự đo được. readiness_status mô tả trạng thái khả năng đó. Cả hai đều KHÔNG phải phép đo trực tiếp về phục hồi
@@ -191,7 +191,7 @@ NGUYÊN TẮC QUAN TRỌNG:
 - Gợi ý phải là những điều người bình thường đều biết nhưng hay bỏ qua
 - Không đưa lời khuyên y tế dưới bất kỳ hình thức nào
 
-Trả về insights (quan sát từ dữ liệu) và recommendations (hành động cụ thể cho tuần tới).`, asked_lang),
+Trả về insights (quan sát từ dữ liệu) và recommendations (hành động cụ thể cho tuần tới).`, asked_lang), JSON.stringify(ctx)),
           },
         ],
         tools: [

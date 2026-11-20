@@ -1,4 +1,4 @@
-import { callAI, forSpanish, promptLang } from "../_shared/ai.ts";
+import { callAI, DATA_SLOT, fillData, forSpanish, promptLang } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { aiGate, aiPayload, corsHeaders, localDate, oneOf, opaque, quotaExceeded, requireUser, toolArgs } from "../_shared/guard.ts";
@@ -109,10 +109,10 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: forSpanish(lang === "en"
+            content: fillData(forSpanish(lang === "en"
               ? `You are a nutrition AI. Suggest 3 meals that fit the remaining macros and the user's preferences. Reply in English.
 
-DATA: ${JSON.stringify(ctx)}
+DATA: ${DATA_SLOT}
 
 PRINCIPLES:
 - A null or missing field was NOT MEASURED. It is not a zero. Never state or imply a number the data does not contain
@@ -125,7 +125,7 @@ PRINCIPLES:
 - Realistic, easy-to-cook suggestions. All names/descriptions in English.`
               : `Bạn là AI dinh dưỡng. Gợi ý 3 bữa ăn phù hợp với macros còn lại và sở thích người dùng. Trả lời bằng tiếng Việt.
 
-DỮ LIỆU: ${JSON.stringify(ctx)}
+DỮ LIỆU: ${DATA_SLOT}
 
 NGUYÊN TẮC:
 - Trường nào null hoặc không có nghĩa là CHƯA ĐO ĐƯỢC, không phải bằng 0. Đừng bao giờ nêu hay ám chỉ một con số mà dữ liệu không có
@@ -135,7 +135,7 @@ NGUYÊN TẮC:
 - Phù hợp với thời điểm trong ngày; nếu current_hour là null thì không nhắc và không suy đoán thời điểm trong ngày
 - Nếu remaining_macros là null nghĩa là app không đọc được mục tiêu của người này: gợi ý bữa cân đối và TUYỆT ĐỐI không nói hay ám chỉ còn bao nhiêu calo/macro
 - Nếu một giá trị remaining âm nghĩa là hôm nay họ đã vượt mục tiêu đó: gợi ý bữa nhẹ, và không trình bày con số âm như một hạn mức còn được ăn
-- Gợi ý thực tế, dễ nấu`, asked_lang),
+- Gợi ý thực tế, dễ nấu`, asked_lang), JSON.stringify(ctx)),
           },
         ],
         tools: [
