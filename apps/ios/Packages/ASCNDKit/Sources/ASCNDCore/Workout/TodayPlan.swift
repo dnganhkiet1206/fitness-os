@@ -245,7 +245,7 @@ public enum WorkoutPlanning {
 
   /// Thứ Hai = 0 (`(getDay() + 6) % 7`). 1970-01-01 là Thứ Năm (= 3).
   public static func routineIndex(_ date: LocalDate) -> Int {
-    ((date.daysSinceEpoch + 3) % 7 + 7) % 7
+    date.mondayIndex
   }
 
   /// `expand()`: mỗi bài thành `sets` hàng; khoá `"<bài>-<hiệp>"` theo VỊ TRÍ

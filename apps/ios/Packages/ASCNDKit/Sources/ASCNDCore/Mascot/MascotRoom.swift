@@ -242,7 +242,7 @@ public final class MascotRoomController {
     let mine = loadGeneration
     let uid = userId, day = today, src = source
     let token = questObserver?.begin()
-    let weekStart = day.adding(days: -WorkoutPlanning.routineIndex(day))
+    let weekStart = day.weekStart
     async let ledger = capture { try await src.ledger(userId: uid) }
     async let dates = capture { try await src.loggedDates(userId: uid, limit: Streak.window) }
     async let freezes = capture { try await src.freezes(userId: uid) }

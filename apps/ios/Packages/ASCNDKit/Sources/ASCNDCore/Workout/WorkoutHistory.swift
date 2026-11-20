@@ -236,13 +236,13 @@ public enum HistoryWeeks {
     _ entries: [HistoryEntry], count: Int = 8, timeZone: TimeZone, now: EpochMillis
   ) -> [Week] {
     let today = LocalDate(now, in: timeZone)
-    let thisMonday = today.adding(days: -WorkoutPlanning.routineIndex(today))
+    let thisMonday = today.weekStart
     let starts = (0..<max(0, count)).reversed().map { thisMonday.adding(days: -7 * $0) }
     var volume: [LocalDate: Int] = [:]
     var sessions: [LocalDate: Int] = [:]
     for e in entries {
       let d = LocalDate(e.at, in: timeZone)
-      let monday = d.adding(days: -WorkoutPlanning.routineIndex(d))
+      let monday = d.weekStart
       volume[monday, default: 0] += e.volumeKg
       sessions[monday, default: 0] += 1
     }
