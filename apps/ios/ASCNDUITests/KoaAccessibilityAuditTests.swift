@@ -98,6 +98,12 @@ final class KoaAccessibilityAuditTests: XCTestCase {
     let app = try launch()
     try scrollTo(app, "today.askKoa").tap()
     guard app.navigationBars["Koa Coach"].waitForExistence(timeout: 20) else { throw NotOpened(screen: "coach") }
+    // Chip gợi ý bị làm mờ (`disabled`) khi Coach còn đang tải: kiểm lúc ấy thì bộ kiểm báo tương phản
+    // và "chữ không truy cập được" oan (CI #983 run 44823334524). Chờ chip bật lại.
+    let chip = element(app, "coach.starter")
+    guard chip.waitForExistence(timeout: 20) else { throw NotOpened(screen: "coach") }
+    let enabled = expectation(for: NSPredicate(format: "isEnabled == true"), evaluatedWith: chip)
+    wait(for: [enabled], timeout: 30)
     try audit(app, "coach")
   }
 
@@ -207,8 +213,10 @@ final class KoaAccessibilityAuditTests: XCTestCase {
     attachment.name = "a11y-\(screen)"
     attachment.lifetime = .keepAlways
     add(attachment)
-    for o in over {
-      XCTFail("A11y \(screen): \(o.kind) có \(o.count) vấn đề, mốc cho phép \(o.allowed) — sửa, hoặc nếu chủ ý thì nâng mốc trong KoaA11yBaseline.swift và ghi lý do")
+    // Một lần báo cho mọi loại vượt mốc: `continueAfterFailure = false` dừng test ở lần báo đầu.
+    if !over.isEmpty {
+      let list = over.map { "\($0.kind) \($0.count)/\($0.allowed)" }.joined(separator: ", ")
+      XCTFail("A11y \(screen) vượt mốc (số/cho phép): \(list) — sửa, hoặc nếu chủ ý thì nâng mốc trong KoaA11yBaseline.swift và ghi lý do")
     }
   }
 

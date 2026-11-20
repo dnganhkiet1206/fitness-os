@@ -288,6 +288,7 @@ struct CoachChatView: View {
           .buttonStyle(.plain)
           .disabled(chat.isLoading)
           .accessibilityLabel(Text(verbatim: s.question(lang)))
+          .accessibilityIdentifier("coach.starter")
         }
       }
       .padding(.horizontal, DS.Spacing.md)
