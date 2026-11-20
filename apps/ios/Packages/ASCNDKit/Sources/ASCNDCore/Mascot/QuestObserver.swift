@@ -51,6 +51,9 @@ public final class QuestObserver {
   private let onQuestDone: @MainActor (MascotRules.Quest, Int) -> Void
   private let economy: (any MascotEconomy)?
   private let onClaimed: @MainActor (Claimed) -> Void
+  /// Cổng nhận thưởng chung của tài khoản (KOA-T55): bộ quan sát nạp tập khoá server đọc được vào
+  /// đây và ghi khoá vừa nhận, để các chỗ nhận khác (tuần của Koa, tăng tải…) cùng biết.
+  private let gate: ClaimGate?
   /// Khoá đã gửi trong phiên này (đang chờ hoặc đã nhận).
   private var sent: Set<String> = []
   /// Khoá bị từ chối, còn nợ: khoá → (nhiệm vụ, ngày).
@@ -72,10 +75,12 @@ public final class QuestObserver {
     stepsGoal: @escaping @Sendable () -> Int = { DailySignals.defaultStepsGoal },
     clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current,
     economy: (any MascotEconomy)? = nil,
+    gate: ClaimGate? = nil,
     onClaimed: @escaping @MainActor (Claimed) -> Void = { _ in },
     onQuestDone: @escaping @MainActor (MascotRules.Quest, Int) -> Void
   ) {
     self.economy = economy
+    self.gate = gate
     self.onClaimed = onClaimed
     self.userId = userId
     self.source = source
@@ -132,6 +137,7 @@ public final class QuestObserver {
   public func observe(token: Int, day: LocalDate, signals: DailySignals, claimed known: Set<String>?) {
     let claimed = known ?? []
     guard !closed, token > applied else { return }
+    if let known { gate?.absorbServer(known) }
     if let lastDay, day < lastDay { return }
     applied = token
     lastDay = day
@@ -142,6 +148,7 @@ public final class QuestObserver {
     let unclaimed = MascotRules.dailyQuests.map(\.key).filter { q in
       counts(q, signals) && done[q] == true
         && !claimed.contains(MascotRules.questRefKey(day, q))
+        && gate?.isClaimed(MascotRules.questRefKey(day, q)) != true
     }
     let seen = watch.read(today: day.description, done: done, unclaimed: unclaimed)
     let active = MascotRules.dailyQuests.map(\.key).filter { counts($0, signals) }
@@ -181,6 +188,7 @@ public final class QuestObserver {
           let amount = try await economy.claimReward(refKey: key, reason: q.rawValue)
           guard let self, !self.closed else { return }
           self.owed[key] = nil
+          self.gate?.markClaimed(key)
           // Đã nhận ở lượt / máy khác: không báo "+xu" lần hai (KOA-T01).
           if MascotRules.isDuplicateClaim(amount) { return }
           // "Xong hết" chỉ gắn với nhiệm vụ của hôm nay, không với khoá nợ hôm qua.
