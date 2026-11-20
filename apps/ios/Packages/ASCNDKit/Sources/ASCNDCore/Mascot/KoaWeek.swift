@@ -121,20 +121,22 @@ public final class KoaWeekBook {
   public let userId: String
   public private(set) var claim: Claim = .notYet
   @ObservationIgnored private let economy: any MascotEconomy
-  @ObservationIgnored private let defaults: UserDefaults
-  /// Khoá đang có lượt nhận chạy (KOA-T17: phòng / Hôm nay / có mạng lại gọi chồng nhau).
-  @ObservationIgnored private var inFlight: Set<String> = []
+  /// Cổng nhận thưởng chung của tài khoản (KOA-T55): biết khoá đã nhận ở server / máy này / chỗ khác
+  /// đang gửi. App truyền MỘT cổng cho mọi chỗ nhận; test tự dựng.
+  @ObservationIgnored public let gate: ClaimGate
 
-  public init(userId: String, economy: any MascotEconomy, defaults: UserDefaults = .standard) {
+  public init(userId: String, economy: any MascotEconomy, gate: ClaimGate) {
     self.userId = userId
     self.economy = economy
-    self.defaults = defaults
+    self.gate = gate
   }
 
-  private func seenKey(_ ref: String) -> String { "ascnd_koa_week.\(userId).\(ref)" }
+  public convenience init(userId: String, economy: any MascotEconomy, defaults: UserDefaults = .standard) {
+    self.init(userId: userId, economy: economy, gate: ClaimGate(userId: userId, defaults: defaults))
+  }
 
   /// Đủ tuần mà chưa nhận → nhận. Gọi lại bao nhiêu lần cũng chỉ một giao dịch:
-  /// máy nhớ đã nhận, và server bỏ trùng theo `ref_key` (trả 0 = đã nhận, KOA-T01).
+  /// cổng nhớ đã nhận, và server bỏ trùng theo `ref_key` (trả 0 = đã nhận, KOA-T01).
   /// Trả số xu khi VỪA nhận mới ở lượt này (số server trả), `nil` khi đã nhận / chưa
   /// đủ / hỏng / đang có lượt khác nhận. Màn chỉ ăn mừng theo giá trị trả về — trạng
   /// thái `.justClaimed` giữ cho thẻ hiện "vừa nhận", nhưng tải lại Hôm nay không mừng
@@ -147,7 +149,7 @@ public final class KoaWeekBook {
       return nil
     }
     let ref = state.refKey
-    if defaults.bool(forKey: seenKey(ref)) {
+    if gate.isClaimed(ref) {
       if case .justClaimed = claim { return nil }
       claim = .claimed
       return nil
@@ -156,19 +158,16 @@ public final class KoaWeekBook {
       claim = .notYet
       return nil
     }
-    guard !inFlight.contains(ref) else { return nil }
-    inFlight.insert(ref)
-    defer { inFlight.remove(ref) }
-    do {
-      let amount = try await economy.claimReward(refKey: ref, reason: "koa week \(state.weekStart)")
-      defaults.set(true, forKey: seenKey(ref))
-      if MascotRules.isDuplicateClaim(amount) {
-        claim = .claimed
-        return nil
-      }
+    switch await gate.claim(ref, send: { try await economy.claimReward(refKey: ref, reason: "koa week \(state.weekStart)") }) {
+    case .paid(let amount):
       claim = .justClaimed(coins: amount)
       return amount
-    } catch {
+    case .alreadyClaimed:
+      claim = .claimed
+      return nil
+    case .busy:
+      return nil
+    case .failed:
       claim = .failed
       return nil
     }
@@ -179,16 +178,12 @@ public final class KoaWeekBook {
   public func claimMissed(_ state: KoaWeek.State?) async -> Int? {
     guard let state, state.complete else { return nil }
     let ref = state.refKey
-    guard !defaults.bool(forKey: seenKey(ref)), !inFlight.contains(ref) else { return nil }
-    inFlight.insert(ref)
-    defer { inFlight.remove(ref) }
-    do {
-      let amount = try await economy.claimReward(refKey: ref, reason: "koa week \(state.weekStart)")
-      defaults.set(true, forKey: seenKey(ref))
-      return MascotRules.isDuplicateClaim(amount) ? nil : amount
-    } catch {
-      return nil
+    if case .paid(let amount) = await gate.claim(ref, send: {
+      try await economy.claimReward(refKey: ref, reason: "koa week \(state.weekStart)")
+    }) {
+      return amount
     }
+    return nil
   }
 
 }

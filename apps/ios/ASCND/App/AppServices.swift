@@ -646,26 +646,31 @@ final class AppServices {
 
   // MARK: - Nhiệm vụ Koa phần 4 (29/10)
 
-  /// Khoá đã nhận trên máy này. Từ 19/11 (KOA-T01) server trả 0 khi khoá đã có; máy vẫn
-  /// nhớ để khỏi gọi lại, và để chặn mừng hai lần với server cũ (trả đủ giá khi trùng).
-  private func questSeenKey(_ userId: String, _ ref: String) -> String { "ascnd_koa_quest.\(userId).\(ref)" }
-  @ObservationIgnored private var claimingQuests: Set<String> = []
+  /// Cổng nhận thưởng chung của tài khoản (KOA-T55): bộ quan sát nhiệm vụ, Tuần của Koa, tăng tải,
+  /// khám phá cùng hỏi một nơi "khoá này nhận chưa / đang nhận". Một cổng mỗi tài khoản đang đăng nhập.
+  @ObservationIgnored private var claimGateCache: ClaimGate?
+  func claimGate(userId: String) -> ClaimGate {
+    if let g = claimGateCache, g.userId == userId { return g }
+    let g = ClaimGate(userId: userId)
+    claimGateCache = g
+    return g
+  }
 
-  /// Một khoá nhiệm vụ tự nhận (tăng tải, khám phá): một lượt một lúc, nhớ khi xong;
-  /// hỏng (mất mạng, server chưa có giá) thì lần sau thử lại.
+  /// Một khoá nhiệm vụ tự nhận (tăng tải, khám phá) qua cổng chung: một lượt một lúc, nhớ khi
+  /// server đã trả lời; hỏng (mất mạng, server chưa có giá) thì lần sau thử lại.
   private func claimOnce(userId: String, ref: String, reason: String) async -> Int? {
     guard let backend else { return nil }
-    let seen = questSeenKey(userId, ref)
-    guard !UserDefaults.standard.bool(forKey: seen), !claimingQuests.contains(ref) else { return nil }
-    claimingQuests.insert(ref)
-    defer { claimingQuests.remove(ref) }
-    do {
-      let amount = try await SupabaseMascotEconomy(backend: backend).claimReward(refKey: ref, reason: reason)
-      UserDefaults.standard.set(true, forKey: seen)
+    let economy = SupabaseMascotEconomy(backend: backend)
+    switch await claimGate(userId: userId).claim(ref, send: { try await economy.claimReward(refKey: ref, reason: reason) }) {
+    case .paid(let amount):
       setPendingQuests(userId, pendingQuests(userId).filter { $0.ref != ref })
-      if MascotRules.isDuplicateClaim(amount) { return nil }
       return session.session?.userId == userId ? amount : nil
-    } catch {
+    case .alreadyClaimed:
+      setPendingQuests(userId, pendingQuests(userId).filter { $0.ref != ref })
+      return nil
+    case .busy:
+      return nil
+    case .failed(let error):
       // Mất mạng / không rõ đã tới server: giữ lại để nhận bù (`retryPendingQuests`).
       if let f = error as? MascotFailure, QuestRetry.shouldRetry(f) {
         setPendingQuests(userId, QuestRetry.adding(.init(ref: ref, reason: reason), to: pendingQuests(userId)))
@@ -1519,7 +1524,7 @@ final class AppServices {
   func koaWeek(userId: String) -> KoaWeekBook? {
     if let b = koaWeekBook, b.userId == userId { return b }
     guard let backend else { return nil }
-    let b = KoaWeekBook(userId: userId, economy: SupabaseMascotEconomy(backend: backend))
+    let b = KoaWeekBook(userId: userId, economy: SupabaseMascotEconomy(backend: backend), gate: claimGate(userId: userId))
     koaWeekBook = b
     return b
   }
@@ -1550,6 +1555,7 @@ final class AppServices {
     let o = QuestObserver(
       userId: userId, source: SupabaseMascotSource(backend: backend), stepsGoal: { goals.goal },
       economy: SupabaseMascotEconomy(backend: backend),
+      gate: claimGate(userId: userId),
       onClaimed: { [weak self] claimed in
         guard self?.session.session?.userId == userId else { return }
         self?.noteKoaReward(
