@@ -320,6 +320,8 @@ extension KoaPerformanceFixTests {
     }
     #expect(KoaPerformance.Title(script: "XONG SET!") == .setDone)
     #expect(KoaPerformance.Title(script: "Full Body A") == nil, "chữ thật của buổi không bị đổi")
+  }
+}
 
 /// KOA-T50: còn 6 âm tiết; số cũ 7…10 phát đúng tệp mà chúng vốn trùng.
 @Suite struct KoaTalkSyllableTests {
