@@ -25,7 +25,9 @@ enum KoaA11yBaseline {
     "shop": ["contrast": 10, "dynamicType": 13, "hitRegion": 1, "textClipped": 4],
     // Gồm cả phần tử của buổi tập nằm dưới màn nghỉ Koa (bộ kiểm vẫn thấy chúng).
     "rest": ["contrast": 25, "dynamicType": 14, "textClipped": 4],
-    "coach": ["dynamicType": 4, "textClipped": 1],
+    // contrast / elementDetection: chỉ trên máy CI, hai lượt liên tiếp cùng số (run 44823334524, 44831052930),
+    // ở chip gợi ý dưới dải nền mờ dần — simulator máy dev ra 0.
+    "coach": ["contrast": 4, "dynamicType": 4, "elementDetection": 1, "textClipped": 1],
   ]
 
   /// Loại phụ thuộc môi trường: tương phản đo trên nền sau kính (cảnh phòng đổi theo giờ ngày / đêm),

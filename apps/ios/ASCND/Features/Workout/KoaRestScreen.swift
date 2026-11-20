@@ -295,6 +295,7 @@ struct KoaRestScreen: View {
       HStack(spacing: DS.Spacing.sm) {
         chip(Image(systemName: paused ? "play.fill" : "pause.fill"),
              String(localized: paused ? "workout.rest.resume" : "workout.rest.pause")) { onSetPaused(!paused) }
+          .accessibilityIdentifier("workout.rest.pause")
         Button(action: onSkip) {
           VStack(spacing: 1) {
             Text(String(localized: next == nil ? "ws.rest.skip" : "koa.rest.startNext"))

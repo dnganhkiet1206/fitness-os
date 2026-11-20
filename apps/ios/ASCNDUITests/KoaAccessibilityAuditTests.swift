@@ -90,6 +90,10 @@ final class KoaAccessibilityAuditTests: XCTestCase {
     guard done.waitForExistence(timeout: 30) else { throw NotOpened(screen: "workout") }
     done.tap()
     guard element(app, "workout.rest.skip").waitForExistence(timeout: 20) else { throw NotOpened(screen: "rest") }
+    // Tạm dừng đồng hồ nghỉ: số đếm giây thay phần tử mỗi giây, phần tử bộ kiểm vừa báo biến mất
+    // trước khi đọc được ("No matches found", CI #983 run 44831052930).
+    let pause = element(app, "workout.rest.pause")
+    if pause.waitForExistence(timeout: 5) { pause.tap() }
     try audit(app, "rest")
   }
 
