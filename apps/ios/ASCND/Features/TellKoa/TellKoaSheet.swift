@@ -175,6 +175,8 @@ struct TellKoaSheet: View {
             dictation.stop()
             dismiss()
           }
+          // KOA-T45: định danh cho UI test (trước đây cả màn không có định danh nào).
+          .accessibilityIdentifier("tellkoa.close")
         }
       }
       .navigationBarTitleDisplayMode(.inline)
@@ -252,9 +254,10 @@ struct TellKoaSheet: View {
         correcting.map { String(localized: "logday.fix.placeholder.part \(fixExample($0))") } ?? String(localized: "logday.type"),
         text: correcting == nil ? $text : $correction, axis: .vertical
       )
-        .font(.system(size: 16))
+        .font(.callout)
         .lineLimit(1...4)
         .focused($typing)
+        .accessibilityIdentifier("tellkoa.input")
         .submitLabel(correcting == nil ? .return : .send)
         .onSubmit { if let part = correcting { Task { await correct(part) } } }
         .padding(.vertical, 12)
@@ -279,6 +282,7 @@ struct TellKoaSheet: View {
             .frame(width: 36, height: 44)
         }
         .accessibilityLabel(Text("tellkoa.clear"))
+        .accessibilityIdentifier("tellkoa.clear")
       }
       Button { toggleMic() } label: {
         Image(systemName: dictation.isListening ? "stop.fill" : "mic.fill")
@@ -291,6 +295,7 @@ struct TellKoaSheet: View {
       }
       .buttonStyle(TodayPressStyle())
       .accessibilityLabel(Text(dictation.isListening ? "tellkoa.mic.stop" : "tellkoa.mic.start"))
+      .accessibilityIdentifier("tellkoa.mic")
     }
     .padding(.trailing, 5)
     .glassComposer(radius: 24)
@@ -1387,6 +1392,7 @@ struct TellKoaSheet: View {
       }
       .buttonStyle(TodayPressStyle())
       .disabled(saving || included.isEmpty || unanswered || dictation.isListening || thinking)
+      .accessibilityIdentifier("tellkoa.save")
       .padding(.top, 2)
       .opacity(included.isEmpty || unanswered ? 0.45 : 1)
       if unanswered, !included.isEmpty {
@@ -1549,7 +1555,7 @@ struct TellKoaSheet: View {
   private func followButton(_ label: String, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       HStack {
-        Text(verbatim: label).font(.system(size: 16, weight: .semibold))
+        Text(verbatim: label).font(.system(.callout, weight: .semibold))
         Spacer()
         Image(systemName: "chevron.right").foregroundStyle(DS.Color.mutedForeground.swiftUI)
       }
@@ -1557,6 +1563,7 @@ struct TellKoaSheet: View {
       .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
     .buttonStyle(.plain)
+    .accessibilityIdentifier("tellkoa.follow")
   }
 
   // MARK: - Đọc câu

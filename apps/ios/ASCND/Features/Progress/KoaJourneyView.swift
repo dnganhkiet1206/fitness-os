@@ -267,7 +267,7 @@ struct KoaJourneyContent: View {
   private func row(_ m: KoaJourney.Moment, lang: AppPreferences.Lang) -> some View {
     HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
       Image(systemName: KoaMomentsStore.symbol(m.kind))
-        .font(.system(size: 15, weight: .semibold))
+        .font(.system(.subheadline, weight: .semibold))
         .foregroundStyle(m.major ? DS.Color.readinessYellow.swiftUI : DS.Color.mutedForeground.swiftUI)
         .frame(width: 22)
         .accessibilityHidden(true)

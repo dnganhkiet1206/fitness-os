@@ -330,7 +330,7 @@ struct KoaMonthView: View {
       ForEach(r.highlights) { m in
         HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
           Image(systemName: KoaMomentsStore.symbol(m.kind))
-            .font(.system(size: 15, weight: .semibold))
+            .font(.system(.subheadline, weight: .semibold))
             .foregroundStyle(m.major ? Self.tint : DS.Color.mutedForeground.swiftUI)
             .frame(width: 22)
             .accessibilityHidden(true)
@@ -392,6 +392,7 @@ struct KoaMonthShareCard: View {
         .tracking(1)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       Text(String(localized: "journey.month.sessions \(recap.sessions)"))
+        // thẻ vẽ thành ẢNH để chia sẻ: cỡ cố định có chủ đích (Dynamic Type làm vỡ bố cục của ảnh) — KOA-T45
         .font(.system(size: 44, weight: .bold).monospacedDigit())
         .foregroundStyle(DS.Color.foreground.swiftUI)
       if recap.logged > 0 {

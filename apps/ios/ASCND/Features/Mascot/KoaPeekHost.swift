@@ -47,12 +47,12 @@ struct KoaPeekHost: View {
       .offset(y: 10)
       VStack(alignment: .leading, spacing: 4) {
         Text(verbatim: Self.line(r))
-          .font(.system(size: 15, weight: .semibold))
+          .font(.system(.subheadline, weight: .semibold))
           .foregroundStyle(DS.Color.foreground.swiftUI)
           .fixedSize(horizontal: false, vertical: true)
         HStack(spacing: 3) {
-          Image(systemName: "circle.circle.fill").font(.system(size: 11, weight: .bold))
-          Text(verbatim: "+\(r.amount)").font(.system(size: 13, weight: .heavy).monospacedDigit())
+          Image(systemName: "circle.circle.fill").font(.system(.caption2, weight: .bold))
+          Text(verbatim: "+\(r.amount)").font(.system(.footnote, weight: .heavy).monospacedDigit())
         }
         .foregroundStyle(DS.Color.readinessYellow.swiftUI)
       }
