@@ -642,11 +642,15 @@ struct MascotRoomView: View {
   private var mood: KoaEmotion.Emotion { moodRead.emotion }
 
   private var moodRead: KoaMood.Read {
-    KoaToday.read(
+    let hour = Calendar.current.component(.hour, from: clock), minute = Calendar.current.component(.minute, from: clock)
+    let day = KoaToday.read(
       room: room, localWaterMl: nil, profile: profile?.profile,
-      riskHour: KoaToday.riskHour(services.habitHours, userId: room.userId),
-      hour: Calendar.current.component(.hour, from: clock),
-      minute: Calendar.current.component(.minute, from: clock))
+      riskHour: KoaToday.riskHour(services.habitHours, userId: room.userId), hour: hour, minute: minute)
+    // KOA-T30: cùng pha theo lịch với Hôm nay (vừa tập xong → tự hào, tới giờ tập → khởi động).
+    let phase = TodayDayBlock.schedulePhase(
+      services: services, room: room, plannedToday: room.questDay == .training, profile: profile?.profile,
+      hour: hour, minute: minute)
+    return phase.map { KoaMood.Read(emotion: TodayDayBlock.emotion($0), reason: day.reason) } ?? day
   }
 
   // MARK: - Thẻ tóm tắt (kiểu Apple Health, 24/10)

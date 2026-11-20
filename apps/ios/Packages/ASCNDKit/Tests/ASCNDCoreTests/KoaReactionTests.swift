@@ -296,3 +296,14 @@ extension KoaPerformanceFixTests {
     }
   }
 }
+
+/// KOA-T30: mascot khác Koa có mặt theo ngày.
+@Suite struct VectorMascotMoodTests {
+  @Test func everyEmotionMapsToAMood() {
+    #expect(VectorMascot.Mood(.proud) == .happy)
+    #expect(VectorMascot.Mood(.tired) == .tired)
+    #expect(VectorMascot.Mood(.worry) == .tired)
+    #expect(VectorMascot.Mood(.idle) == .neutral)
+    #expect(Set(KoaEmotion.Emotion.allCases.map(VectorMascot.Mood.init)) == Set(VectorMascot.Mood.allCases))
+  }
+}

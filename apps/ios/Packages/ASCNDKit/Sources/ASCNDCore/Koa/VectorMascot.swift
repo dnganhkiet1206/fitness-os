@@ -12,7 +12,19 @@ import Foundation
 public enum VectorMascot {
   public typealias Element = KoaRender.Element
 
-  public enum Mood: String, Sendable, Hashable, CaseIterable { case happy, neutral, tired }
+  public enum Mood: String, Sendable, Hashable, CaseIterable {
+    case happy, neutral, tired
+
+    /// Nét mặt của ngày → mặt của mascot khác Koa (KOA-T30: trước luôn `neutral`, nên chọn mascot
+    /// khác thì không còn biết hôm nay ra sao). Ba mặt nên gộp: vui / bình thường / mệt.
+    public init(_ e: KoaEmotion.Emotion) {
+      switch e {
+      case .happy, .celebrate, .proud, .rested, .victory, .pumped, .ready, .warmup, .hat, .coat: self = .happy
+      case .sad, .tired, .sleep, .worry, .oops, .breather: self = .tired
+      case .idle, .curl: self = .neutral
+      }
+    }
+  }
 
   public static let rigWidth = 240.0
   public static let rigHeight = 350.0

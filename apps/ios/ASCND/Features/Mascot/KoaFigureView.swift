@@ -293,7 +293,7 @@ struct MascotFigureView: View {
         headLook: direct?.gaze.head, eyes: direct?.gaze.eyes, blink: direct?.gaze.blink,
         blinkRight: direct?.gaze.blinkRight, gestureAmount: dress ? 1 : amount, date: date, onTouch: onTouch, idleClock: idleClock)
     } else {
-      VectorMascotView(id: mascotId, size: size, equipped: Set(equipped))
+      VectorMascotView(id: mascotId, size: size, mood: VectorMascot.Mood(emotion), equipped: Set(equipped))
     }
   }
 }
