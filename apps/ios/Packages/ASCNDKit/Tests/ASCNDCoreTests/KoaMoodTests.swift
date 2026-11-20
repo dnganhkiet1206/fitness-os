@@ -195,6 +195,9 @@ struct QuestAutoClaimTests {
     let o2 = Self.observer(s2, e2, clock: Clock("2026-10-08T09:00:00Z"), got: got2)
     await o2.refresh()
     await Self.settle { e2.claims.count == 1 }
+    // Lỗi về trong một `Task` riêng: chờ nhánh `catch` gỡ khoá khỏi `sent` rồi mới đọc lại (Linux CI chậm hơn —
+    // đọc lại ngay thì khoá còn "đang gửi" và không được gửi lại, test đỏ chập chờn).
+    try? await Task.sleep(for: .milliseconds(50))
     e2.claimError = nil
     await o2.refresh()
     await Self.settle { got2.all.count == 1 }
