@@ -40,16 +40,31 @@ enum KoaToday {
     case .worry: return String(localized: "koa.say.worry \(streak)")
     case .allDone: return String(localized: "koa.say.allDone")
     case .rested, .shortSleep:
-      let min = Int((signals?.sleepMinutes ?? 0).rounded())
-      let slept = String(localized: "today.d.sleep \(min / 60) \(min % 60)")
+      guard let slept = KoaLineNumbers.slept(signals) else { return nil }
       return read.reason == .rested
         ? String(localized: "koa.say.rested \(slept)") : String(localized: "koa.say.shortSleep \(slept)")
     case .overate:
-      guard let kcal = signals?.kcal, let profile else { return nil }
-      let pct = KoaMood.kcalPercent(kcal: kcal, target: NutritionToday.calorieTarget(profile))
+      guard let pct = KoaLineNumbers.overatePercent(signals, profile) else { return nil }
       return String(localized: "koa.say.overate \(pct)")
     case .unread, .trained, .fed, .emptyLate, .calm:
       return nil
     }
+  }
+}
+
+/// Con số trong câu của Koa — MỘT chỗ dựng cho Koa ở Hôm nay (`KoaToday.line`) và Koa nói trong phòng
+/// (`KoaTalkLine`) (KOA-T40: trước hai bản chép tay; bản Hôm nay còn nói "ngủ 0 giờ 0 phút" khi chưa có giấc ngủ).
+enum KoaLineNumbers {
+  /// "7 giờ 30 phút" từ giấc ngủ đêm qua; `nil` khi chưa có.
+  static func slept(_ signals: DailySignals?) -> String? {
+    guard let minutes = signals?.sleepMinutes, minutes > 0 else { return nil }
+    let m = Int(minutes.rounded())
+    return String(localized: "today.d.sleep \(m / 60) \(m % 60)")
+  }
+
+  /// Phần trăm calo đã ăn so với mục tiêu; `nil` khi chưa có calo hay hồ sơ.
+  static func overatePercent(_ signals: DailySignals?, _ profile: Profile?) -> Int? {
+    guard let kcal = signals?.kcal, let profile else { return nil }
+    return KoaMood.kcalPercent(kcal: kcal, target: NutritionToday.calorieTarget(profile))
   }
 }
