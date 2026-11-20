@@ -224,6 +224,18 @@ struct MascotRoomControllerTests {
     #expect(c.welcomeGranted == 300)
   }
 
+  /// KOA-T51: bị từ chối HẲN (lỗi không tạm) thì không gõ cửa lại mỗi lần mở phòng.
+  @Test func permanentlyRefusedWelcomeIsNotRetried() async {
+    let s = FakeSource()
+    let (c, e) = make(s)
+    e.claimError = MascotFailure.server(code: "P0001")
+    await c.load()
+    e.claimError = nil
+    await c.load()
+    #expect(e.claims == ["welcome"])
+    #expect(c.welcomeGranted == nil)
+  }
+
   // MARK: - Nhiệm vụ, năng lượng
 
   @Test func questsFollowTheDaysSignals() async {

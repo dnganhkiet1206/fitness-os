@@ -32,7 +32,19 @@ public struct SupabaseMascotSource: MascotSource {
         .select("amount, ref_key")
         .eq("user_id", value: userId)
         .execute().value
-      return rows.map { LedgerRow(amount: $0.amount, refKey: $0.ref_key) }
+      // KOA-T51: sổ dài bị `max_rows` cắt LẶNG LẼ, thứ tự tuỳ ý — dòng "welcome" có thể rơi ra ngoài, app
+      // tưởng chưa nhận rồi nhận lại + mừng lại. Hỏi riêng khoá ấy (một dòng, có chỉ mục `ref_key`).
+      var out = rows.map { LedgerRow(amount: $0.amount, refKey: $0.ref_key) }
+      if !out.contains(where: { $0.refKey == "welcome" }) {
+        let welcome: [LedgerDTO] = try await client.from("mascot_transactions")
+          .select("amount, ref_key")
+          .eq("user_id", value: userId)
+          .eq("ref_key", value: "welcome")
+          .limit(1)
+          .execute().value
+        out += welcome.map { LedgerRow(amount: $0.amount, refKey: $0.ref_key) }
+      }
+      return out
     }
   }
 
