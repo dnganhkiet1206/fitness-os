@@ -751,7 +751,12 @@ struct TodayExtras<Plan: View>: View {
       kind: coach.kind, lastWeek: coach.lastWeek, highlight: coach.highlight, targets: coach.targets,
       cue: services.trainingCue(userId: userId), build: services.koaBuild,
       accept: {
-        if case .light = coach.kind { flow.today.setLighterWeek(through: coach.monday.adding(days: 6)) }
+        switch coach.kind {
+        case .light: flow.today.setLighterWeek(through: coach.monday.adding(days: 6))
+        // KOA-T23 (Kiệt 19/11: "nối thật vào buổi sau"): mục tiêu tăng tải vào các buổi tuần này.
+        case .progress: flow.today.setProgressWeek(coach.targets)
+        case .steady, .paused: break
+        }
         answerWeekCoach(coach.monday)
         dailyPlan?.recompute(services: services, flow: flow)
       },
@@ -780,12 +785,21 @@ struct TodayExtras<Plan: View>: View {
   private func weekCoach(_ flow: WorkoutFlow) -> WeekCoach? {
     _ = weekCoachAnswers
     let today = flow.today.today
-    guard let library = flow.today.library, services.koaPause(userId: userId, today: today) == nil else { return nil }
-    let monday = WeeklyChallenges.weekStart(today)
-    let last = KoaWeek.state(today: today.adding(days: -7), library: library, trained: flow.today.trained)
-    let lastWeek = KoaWeekCoach.LastWeek(planned: last?.target ?? 0, done: last?.done ?? 0)
+    guard let library = flow.today.library else { return nil }
+    let monday = today.weekStart
     let answered = AppServices.uiTest
       ? WeekCoachUITest.answers.contains(weekCoachKey(monday)) : UserDefaults.standard.bool(forKey: weekCoachKey(monday))
+    // KOA-T23 (Kiệt 19/11): đang Tạm nghỉ thì thẻ nói lời nhẹ nhàng (trước đây biến mất), một lần mỗi tuần.
+    if services.koaPause(userId: userId, today: today) != nil {
+      guard !answered else { return nil }
+      return WeekCoach(
+        monday: monday, kind: .paused, lastWeek: .init(planned: 0, done: 0), highlight: nil, targets: [])
+    }
+    // Tuần trước trừ ngày Tạm nghỉ: tuần nghỉ có chủ đích không thành "lỡ buổi" → tuần nhẹ sai.
+    let last = KoaWeek.state(
+      today: today.adding(days: -7), library: library, trained: flow.today.trained,
+      paused: services.koaPausedDay(userId: flow.today.userId, today: today))
+    let lastWeek = KoaWeekCoach.LastWeek(planned: last?.target ?? 0, done: last?.done ?? 0)
     guard KoaWeekCoach.shows(today: today, lastWeek: lastWeek, answered: answered),
       let insights = flow.insights, insights.loaded
     else { return nil }

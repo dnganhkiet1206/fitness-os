@@ -89,7 +89,7 @@ struct KoaWeekCoachCard: View {
   }
 
   @ViewBuilder private var actions: some View {
-    if case .steady = kind {
+    if kind == .steady || kind == .paused {
       DSButton(String(localized: "coach.ok"), style: .secondary, action: keep)
         .accessibilityIdentifier("today.coach.keep")
     } else {
@@ -109,6 +109,7 @@ struct KoaWeekCoachCard: View {
   }
 
   private func recap(_ text: ExerciseCompareText) -> String {
+    if kind == .paused { return String(localized: "coach.paused.recap") }
     let sessions = String(localized: "coach.recap.sessions \(lastWeek.done) \(lastWeek.planned)")
     guard let h = highlight else { return sessions }
     return sessions + " " + String(localized: "coach.recap.best \(h.name) \(text.chip(h.delta))")
@@ -120,6 +121,7 @@ struct KoaWeekCoachCard: View {
     case .light: String(localized: "coach.light.title")
     case .progress: String(localized: "coach.progress.title")
     case .steady: String(localized: "coach.steady.title")
+    case .paused: String(localized: "coach.paused.title")
     }
   }
 
@@ -130,6 +132,7 @@ struct KoaWeekCoachCard: View {
     case .light: String(localized: "coach.light.detail")
     case .progress: String(localized: "coach.progress.detail")
     case .steady: String(localized: "coach.steady.detail")
+    case .paused: String(localized: "coach.paused.detail")
     }
   }
 
