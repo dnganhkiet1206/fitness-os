@@ -53,7 +53,7 @@ struct KoaWeekCoachCard: View {
         .tracking(0.8)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       HStack(alignment: .top, spacing: DS.Spacing.sm) {
-        MascotFigureView(emotion: .proud, size: 48, animated: false, build: build)
+        MascotFigureView(emotion: kind.emotion, size: 48, animated: false, build: build)
           .accessibilityHidden(true)
         Text(verbatim: recap(text))
           .font(DS.TextStyle.body)

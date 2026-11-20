@@ -41,3 +41,12 @@ struct WeekStartTests {
     #expect(Water.rollingWindowStart(today) == min(today.adding(days: -6), AverageWindow.first(before: today)))
   }
 }
+
+/// KOA-T30: mặt Koa trên thẻ tuần theo lời khuyên.
+struct KoaWeekCoachEmotionTests {
+  @Test func emotionFollowsKind() {
+    #expect(KoaWeekCoach.Kind.light(loadFactor: 0.8).emotion == .rested)
+    #expect(KoaWeekCoach.Kind.steady.emotion == .happy)
+    #expect(KoaWeekCoach.Kind.progress.emotion == .proud)
+  }
+}

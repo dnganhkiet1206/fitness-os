@@ -16,6 +16,15 @@ public enum KoaWeekCoach {
     case light(loadFactor: Double)
     case progress
     case steady
+
+    /// Mặt Koa trên thẻ theo lời khuyên (KOA-T30: trước luôn `.proud`, kể cả khi khuyên tuần nhẹ).
+    public var emotion: KoaEmotion.Emotion {
+      switch self {
+      case .light: .rested
+      case .steady: .happy
+      case .progress: .proud
+      }
+    }
   }
 
   public struct LastWeek: Sendable, Hashable {

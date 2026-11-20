@@ -81338,6 +81338,52 @@
           }
         }
       }
+    },
+    "settings.koaSound": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa sounds"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiếng Koa"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonidos de Koa"
+          }
+        }
+      }
+    },
+    "settings.koaSound.desc": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koa's voice, room sounds and cheers. Follows the silent switch."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giọng Koa, tiếng phòng và tiếng reo. Im theo công tắc im lặng."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La voz de Koa, sonidos de la habitación y aplausos. Sigue el interruptor de silencio."
+          }
+        }
+      }
     }
   }
 }
