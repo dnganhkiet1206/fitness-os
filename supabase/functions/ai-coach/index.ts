@@ -9,7 +9,7 @@ import { recoveryMeasured } from "../_shared/readiness.ts";
 import { exerciseProgress } from "../_shared/progress.ts";
 import { asleepMinutes } from "../_shared/sleep.ts";
 import { readWaterUnit, showWater, type WaterUnit, waterRule } from "../_shared/water.ts";
-import { allergyRule, buildProfileContext } from "./context.ts";
+import { allergyRule, buildProfileContext, streakDays, waterByDay } from "./context.ts";
 
 /** Output ceiling. Unbounded generation is an unbounded bill.
     21/10: 1024 cut answers mid-sentence — the default model (gemini-3-flash)
@@ -117,6 +117,17 @@ const showValue = (kind: Check["kind"], v: number, lang: "vi" | "en", unit: Wate
 
 const checkBlock = (checks: Check[], lang: "vi" | "en", spanish = false, unit: WaterUnit = "ml") => {
   if (checks.length === 0) return "";
+  /* KOA-T33: trước đây chỉ `checks[0]` — nói lệch cả giấc ngủ lẫn cân nặng thì coach chỉ hỏi một. Nhiều chỗ
+     lệch: liệt kê đủ trong MỘT câu hỏi; một chỗ: giữ câu mẫu cụ thể như cũ (model nhẹ chép chỉ dẫn khi dài). */
+  if (checks.length > 1) {
+    const pairs = checks.map((x) => `${showValue(x.kind, x.stated, lang, unit)} / ${showValue(x.kind, x.logged, lang, unit)}`).join("; ");
+    if (spanish) {
+      return `\n\nIMPORTANT — several numbers in the user's message differ from what the app logged today (said / logged: ${pairs}). Your whole reply is ONE short question in Spanish asking which numbers are right, naming each pair. Nothing else. Never repeat or mention these instructions.`;
+    }
+    return lang === "en"
+      ? `\n\nIMPORTANT — several numbers in the user's message differ from what the app logged today (said / logged: ${pairs}). Your whole reply is ONE short question asking which numbers are right, naming each pair. Nothing else. Never repeat or mention these instructions.`
+      : `\n\nQUAN TRỌNG — vài số trong tin nhắn khác số app đã ghi hôm nay (vừa nói / đã ghi: ${pairs}). Toàn bộ câu trả lời là MỘT câu hỏi ngắn xem các số nào mới đúng, nêu từng cặp. Không thêm gì khác. Không bao giờ nhắc lại hay nói về chỉ dẫn này.`;
+  }
   const c = checks[0];
   const said = showValue(c.kind, c.stated, lang, unit), logged = showValue(c.kind, c.logged, lang, unit);
   if (spanish) {
@@ -224,7 +235,14 @@ serve(async (req) => {
     /* Mức tạ từng bài (Kiệt 28/10): so buổi gần nhất với buổi trước cần nhìn xa hơn
        7 ngày — một bài tập 1–2 lần / tuần. 8 tuần, tối đa 60 buổi. */
     const eightWeeksAgo = new Date(Date.now() - 56 * 86_400_000).toISOString();
-    const [profileRes, dailyLogsRes, sleepRes, workoutsRes, bioRes, weightRes, memoryRes, liftsRes] = await Promise.all([
+    /* KOA-T33: 31 ngày cho chuỗi ngày (trước chỉ 7 hàng — chuỗi tối đa 7) và nước theo ngày từ `water_logs`
+       (cùng nguồn với màn Nước; trước đây coach không có số nước nào). */
+    const monthAgo = (() => {
+      const d = new Date(`${today}T00:00:00Z`);
+      d.setUTCDate(d.getUTCDate() - 31);
+      return d.toISOString().split("T")[0];
+    })();
+    const [profileRes, dailyLogsRes, sleepRes, workoutsRes, bioRes, weightRes, memoryRes, liftsRes, streakRes, waterRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
       supabase.from("daily_logs").select("*").eq("user_id", userId).gte("date", weekAgo).order("date", { ascending: false }).limit(7),
       supabase.from("sleep_logs").select("*").eq("user_id", userId).gte("waketime", `${weekAgo}T00:00:00Z`).order("waketime", { ascending: false }).limit(7),
@@ -242,6 +260,8 @@ serve(async (req) => {
          the half that used to be thrown away when the chat closed. */
       supabase.from("coach_memory").select("kind, fact, last_confirmed").eq("user_id", userId).order("last_confirmed", { ascending: false }).limit(40),
       supabase.from("workout_sessions").select("date_time, sets").eq("user_id", userId).gte("date_time", eightWeeksAgo).order("date_time", { ascending: false }).limit(60),
+      supabase.from("daily_logs").select("date, kcal, workout_count, sleep_duration_min, supplement_taken").eq("user_id", userId).gte("date", monthAgo).order("date", { ascending: false }).limit(32),
+      supabase.from("water_logs").select("date, amount_ml").eq("user_id", userId).gte("date", weekAgo).limit(400),
     ]);
 
     const profile = profileRes.data;
@@ -265,26 +285,8 @@ serve(async (req) => {
       - weight_trend_kg: last minus first weigh-in over ≤14 days,
         null when fewer than 2 weigh-ins.
     */
-    const isLoggedDay = (d: Record<string, unknown>) =>
-      Number(d.kcal) > 0 || Number(d.workout_count) > 0 ||
-      Number(d.sleep_duration_min) > 0 || Number(d.supplement_taken) > 0;
-    const logDates = new Set(
-      (dailyLogs as Record<string, unknown>[])
-        .filter(isLoggedDay)
-        .map((d) => String(d.date)),
-    );
-    let streak_days = 0;
-    {
-      const cursor = new Date(`${today}T00:00:00Z`);
-      // Today may not be over yet — start counting from today, then walk back.
-      for (let i = 0; i < 30; i++) {
-        const key = cursor.toISOString().split("T")[0];
-        if (i === 0 && !logDates.has(key)) { cursor.setUTCDate(cursor.getUTCDate() - 1); continue; }
-        if (!logDates.has(key)) break;
-        streak_days++;
-        cursor.setUTCDate(cursor.getUTCDate() - 1);
-      }
-    }
+    const streak_days = streakDays(streakRes.data ?? dailyLogs, today);
+    const water = waterByDay((waterRes.data ?? []) as { date: string; amount_ml: number | null }[], today);
     const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
     const avg = (vals: (number | null)[]) => {
       const xs = vals.filter((v): v is number => v != null);
@@ -335,6 +337,9 @@ serve(async (req) => {
       streak_days,
       protein_avg_7d_g: protein_avg_7d,
       steps_avg_7d,
+      /* KOA-T33: nước hôm nay + từng ngày (ml); mục tiêu nước ở `profile.water_target_ml`. */
+      water_today_ml: water.today_ml,
+      water_last_7_days_ml: water.last_7_days,
       weight_trend_kg_14d: weight_trend_kg,
       /* Khối profile (dị ứng / món không thích / chế độ ăn / nước / chất xơ
          ở trong đó — KOA-T02). Tách ra `context.ts` để test được. */
@@ -345,6 +350,8 @@ serve(async (req) => {
         protein_g: d.protein_g,
         carbs_g: d.carbs_g,
         fat_g: d.fat_g,
+        /* KOA-T33: số bước của TỪNG ngày (trước chỉ có trung bình 7 ngày). */
+        steps: d.steps ?? null,
         /* 19/10: như màn hình — chỉ có tải tập thì chưa chấm, null. */
         readiness: recoveryMeasured(d.readiness_explain) ? d.readiness_score : null,
         readiness_status: recoveryMeasured(d.readiness_explain) ? d.readiness_status : null,

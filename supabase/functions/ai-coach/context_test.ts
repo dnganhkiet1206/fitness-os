@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.168.0/testing/asserts.ts";
-import { allergyRule, buildProfileContext } from "./context.ts";
+import { allergyRule, buildProfileContext, streakDays, waterByDay } from "./context.ts";
 
 Deno.test("profile block carries the five safety fields (KOA-T02)", () => {
   const block = buildProfileContext({
@@ -62,4 +62,30 @@ Deno.test("vi rule forbids allergens, disliked foods and diet violations", () =>
   assertStringIncludes(rule, "không thích");
   assertStringIncludes(rule, "chế độ ăn");
   assertStringIncludes(rule, "Danh sách rỗng nghĩa là không có hạn chế");
+});
+
+
+// KOA-T33: chuỗi ngày không còn trần 7 (trước chỉ đọc 7 hàng).
+Deno.test("streakDays đếm quá 7 ngày, bắt đầu từ hôm qua nếu hôm nay chưa ghi", () => {
+  const today = "2026-11-20";
+  const rows = Array.from({ length: 20 }, (_, i) => {
+    const d = new Date(`${today}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - 1 - i);
+    return { date: d.toISOString().split("T")[0], kcal: 1800 };
+  });
+  assertEquals(streakDays(rows, today), 20);
+  assertEquals(streakDays([...rows, { date: today, workout_count: 1 }], today), 21);
+  assertEquals(streakDays([{ date: "2026-11-17", kcal: 1 }], today), 0, "đứt quãng thì 0");
+  assertEquals(streakDays([{ date: "2026-11-19", kcal: 0 }], today), 0, "hàng không ghi gì không tính");
+});
+
+Deno.test("waterByDay cộng theo ngày, chỉ 7 ngày, hôm nay riêng", () => {
+  const w = waterByDay([
+    { date: "2026-11-20", amount_ml: 250 }, { date: "2026-11-20", amount_ml: 500 },
+    { date: "2026-11-18", amount_ml: 1000 }, { date: "2026-11-10", amount_ml: 900 },
+    { date: "2026-11-19", amount_ml: null },
+  ], "2026-11-20");
+  assertEquals(w.today_ml, 750);
+  assertEquals(w.last_7_days, [{ date: "2026-11-18", ml: 1000 }, { date: "2026-11-20", ml: 750 }]);
+  assertEquals(waterByDay([], "2026-11-20").today_ml, null, "chưa ghi là null, không phải 0");
 });
