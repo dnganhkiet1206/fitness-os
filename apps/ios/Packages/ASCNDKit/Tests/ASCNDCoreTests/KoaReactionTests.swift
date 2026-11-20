@@ -307,3 +307,11 @@ extension KoaPerformanceFixTests {
     #expect(Set(KoaEmotion.Emotion.allCases.map(VectorMascot.Mood.init)) == Set(VectorMascot.Mood.allCases))
   }
 }
+
+/// KOA-T50: còn 6 âm tiết; số cũ 7…10 phát đúng tệp mà chúng vốn trùng.
+@Suite struct KoaTalkSyllableTests {
+  @Test func oldNumbersMapToTheSameSound() {
+    #expect((1...6).map(KoaTalk.syllable) == (1...6).map { "koa-talk-\($0)" })
+    #expect([7, 8, 9, 10].map(KoaTalk.syllable) == ["koa-talk-5", "koa-talk-4", "koa-talk-3", "koa-talk-2"])
+  }
+}

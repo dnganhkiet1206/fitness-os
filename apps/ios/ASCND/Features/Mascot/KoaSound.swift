@@ -167,7 +167,7 @@ enum KoaSound {
 
   /// Mọi tên tiếng code dùng — kiểm tài nguyên lúc mở app (DEBUG) và trong test.
   static var expectedAssets: [String] {
-    Cue.allCases.map(\.rawValue) + (1...10).map { "koa-talk-\($0)" }
+    Cue.allCases.map(\.rawValue) + (1...talkSyllables).map { "koa-talk-\($0)" }
       + ["koa-amb-day", "koa-amb-night", "koa-snore"]
       + ["giggle", "hehe", "hm", "mmm", "nonono", "oi", "ui", "yay"].map { "koa-v-\($0)" }
   }
@@ -244,6 +244,9 @@ enum KoaSound {
 
   /// Koa nói (kiểu Animalese): mỗi khẩu hình mở miệng là một âm tiết giọng koala, đúng nhịp miệng
   /// (`KoaTalk.mouthStart`, `mouthStep`); câu hỏi thì âm cuối lên giọng. Câu mới thay câu cũ.
+  /// Số âm tiết giọng nói khác nhau (`koa-talk-1…6`, `tools/koa-sound/koala.py`).
+  static let talkSyllables = 6
+
   static func talk(_ beat: KoaTalk.Beat) {
     talking?.cancel()
     guard !off, !beat.mouth.isEmpty else { return }
@@ -260,8 +263,8 @@ enum KoaSound {
         if m != .content { opens += 1 }
         if m != .content, opens % 2 == 1, said < 6 {
           said += 1
-          var n = Int.random(in: 1...10)
-          if n == previous { n = n % 10 + 1 }
+          var n = Int.random(in: 1...talkSyllables)
+          if n == previous { n = n % talkSyllables + 1 }
           previous = n
           voice("koa-talk-\(n)", volume: 0.16)
         }
