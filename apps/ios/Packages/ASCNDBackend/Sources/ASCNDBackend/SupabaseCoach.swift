@@ -22,12 +22,6 @@ public struct SupabaseCoachStream: CoachStream {
     self.session = session
   }
 
-  public func stream(messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int)
-    -> AsyncThrowingStream<String, any Error>
-  {
-    stream(messages: messages, lang: lang, date: date, tzOffset: tzOffset, checks: [], waterUnit: .ml)
-  }
-
   public func stream(
     messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
     waterUnit: Water.Unit
