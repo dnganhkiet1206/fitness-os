@@ -428,13 +428,38 @@ public enum KoaGains {
 
 /// Đọc lịch sử tập cho Gains: mọi buổi của người dùng, chỉ ngày + cờ kỷ lục.
 public enum KoaGainsSync {
-  /// Trần số buổi đọc — ~5 năm tập mỗi ngày; đủ cho một đời Koa.
-  public static let limit = 2000
+  /// Một trang đọc. KOA-T52: bản cũ đọc MỘT lần `limit 2000` — vượt trần `max_rows` của PostgREST (thường
+  /// 1000) thì bị cắt LẶNG LẼ, và người tập lâu năm mất các buổi cũ nhất → Gains thấp đi. Nay đọc từng trang
+  /// tới hết.
+  public static let pageSize = 1000
+  /// Trần an toàn: 50 trang = 50 000 buổi. Chạm trần thì `Loaded.truncated` báo ra, không im lặng.
+  public static let maxPages = 50
+  /// Giữ tên cũ cho chỗ gọi đọc một trang.
+  public static var limit: Int { pageSize }
 
-  public static func query(userId: String) -> RowQuery {
+  public static func query(userId: String, page: Int = 0) -> RowQuery {
     RowQuery(
-      table: "workout_sessions", columns: "date_time, pr_detected, source, template_name",
-      filters: [.eq("user_id", .string(userId))], order: .init(column: "date_time", ascending: false), limit: limit)
+      table: "workout_sessions", columns: "id, date_time, pr_detected, source, template_name",
+      filters: [.eq("user_id", .string(userId))], order: .init(column: "date_time", ascending: false),
+      limit: pageSize, offset: page * pageSize)
+  }
+
+  /// Đọc mọi trang (mới → cũ). Một hàng mới chen vào giữa hai trang làm lệch offset nên có thể đọc lặp
+  /// một hàng — bỏ trùng theo `id` (hàng không có `id` giữ nguyên). Ném lỗi nếu một trang hỏng.
+  public static func readAll(
+    _ store: any RowStore, _ page: (Int) -> RowQuery
+  ) async throws -> (rows: [JSONValue], truncated: Bool) {
+    var out: [JSONValue] = []
+    var seen = Set<String>()
+    for p in 0..<maxPages {
+      let rows = try await store.select(page(p))
+      for r in rows {
+        if let id = r["id"]?.stringValue, !seen.insert(id).inserted { continue }
+        out.append(r)
+      }
+      if rows.count < pageSize { return (out, false) }
+    }
+    return (out, true)
   }
 
   /// Hàng `workout_sessions` → ngày tập theo giờ địa phương.
@@ -460,7 +485,14 @@ public enum KoaGainsSync {
     RowQuery(
       table: "mascot_transactions", columns: "ref_key",
       filters: [.eq("user_id", .string(userId)), .or("ref_key.like.\"*\(OverloadQuest.suffix)\"")],
-      order: .init(column: "created_at", ascending: false), limit: limit)
+      order: .init(column: "created_at", ascending: false), limit: pageSize, offset: 0)
+  }
+
+  public static func overloadQuery(userId: String, page: Int) -> RowQuery {
+    RowQuery(
+      table: "mascot_transactions", columns: "id, ref_key",
+      filters: [.eq("user_id", .string(userId)), .or("ref_key.like.\"*\(OverloadQuest.suffix)\"")],
+      order: .init(column: "created_at", ascending: false), limit: pageSize, offset: page * pageSize)
   }
 
   public static func overloadDays(_ rows: [JSONValue]) -> Set<LocalDate> {
@@ -477,18 +509,19 @@ public enum KoaGainsSync {
     }
   }
 
-  /// `nil` khi đọc hỏng — giữ Gains cũ. Sổ tăng tải hỏng thì tính như chưa có ngày nào
-  /// (Gains có thể thấp hơn một chút tới lần đọc sau, không bao giờ cao hơn).
+  /// `nil` khi đọc hỏng — giữ Gains cũ. KOA-T52: sổ tăng tải hỏng cũng là đọc hỏng (trước đây tính như
+  /// chưa có ngày nào và CÔNG BỐ Gains thấp hơn — người dùng thấy Gains tụt rồi lại lên).
   public static func load(
     userId: String, store: any RowStore, plans: TemplateSnapshot?, now: EpochMillis, in tz: TimeZone
   ) async -> Loaded? {
-    guard let rows = try? await store.select(query(userId: userId)) else { return nil }
-    let overload = (try? await store.select(overloadQuery(userId: userId))).map(overloadDays) ?? []
-    let days = mark(days(rows, in: tz), overload: overload)
+    guard let sessions = try? await readAll(store, { query(userId: userId, page: $0) }),
+      let overload = try? await readAll(store, { overloadQuery(userId: userId, page: $0) })
+    else { return nil }
+    let days = mark(days(sessions.rows, in: tz), overload: overloadDays(overload.rows))
     let week = plans.map(KoaGains.Week.init) ?? .none
     return Loaded(
       days: days, week: week, state: KoaGains.compute(days, week: week, today: LocalDate(now, in: tz)),
-      lastSessionAt: lastSessionAt(rows))
+      lastSessionAt: lastSessionAt(sessions.rows), truncated: sessions.truncated || overload.truncated)
   }
 
   public struct Loaded: Sendable {
@@ -497,6 +530,12 @@ public enum KoaGainsSync {
     public let state: KoaGains.State
     /// Giờ của buổi tập gần nhất — cho trạng thái "pump" (2 giờ sau buổi tập).
     public let lastSessionAt: EpochMillis?
+    /// Chạm trần `maxPages` — lịch sử dài hơn mức đọc được (KOA-T52: nói ra, không cắt lặng lẽ).
+    public var truncated = false
+
+    public init(days: [KoaGains.Day], week: KoaGains.Week, state: KoaGains.State, lastSessionAt: EpochMillis?, truncated: Bool = false) {
+      self.days = days; self.week = week; self.state = state; self.lastSessionAt = lastSessionAt; self.truncated = truncated
+    }
   }
 
   public static func lastSessionAt(_ rows: [JSONValue]) -> EpochMillis? {

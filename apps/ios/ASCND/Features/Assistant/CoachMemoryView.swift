@@ -141,22 +141,24 @@ struct CoachMemoryView: View {
     .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: DS.Radius.md))
   }
 
-  private static func title(_ kind: CoachMemory.Kind) -> String {
+  private static func title(_ kind: CoachMemory.Kind?) -> String {
     switch kind {
-    case .constraint: String(localized: "cm.kind.constraint")
-    case .goal: String(localized: "cm.kind.goal")
-    case .preference: String(localized: "cm.kind.preference")
-    case .context: String(localized: "cm.kind.context")
+    case .constraint?: String(localized: "cm.kind.constraint")
+    case .goal?: String(localized: "cm.kind.goal")
+    case .preference?: String(localized: "cm.kind.preference")
+    case .context?: String(localized: "cm.kind.context")
+    case nil: String(localized: "cm.kind.other")
     }
   }
 
   /// `GROUPS[].tint`.
-  private static func tint(_ kind: CoachMemory.Kind) -> Color {
+  private static func tint(_ kind: CoachMemory.Kind?) -> Color {
     switch kind {
-    case .constraint: DS.Color.readinessRed.swiftUI
-    case .goal: DS.Color.readinessGreen.swiftUI
-    case .preference: DS.Color.metricBlue.swiftUI
-    case .context: DS.Color.metricPurple.swiftUI
+    case .constraint?: DS.Color.readinessRed.swiftUI
+    case .goal?: DS.Color.readinessGreen.swiftUI
+    case .preference?: DS.Color.metricBlue.swiftUI
+    case .context?: DS.Color.metricPurple.swiftUI
+    case nil: DS.Color.mutedForeground.swiftUI
     }
   }
 }

@@ -239,16 +239,23 @@ public struct SupabaseMascotEconomy: MascotEconomy {
     return failure(message: e.message, code: e.code)
   }
 
+  /// Cụm chữ trong `RAISE EXCEPTION` của các hàm kinh tế → lỗi có tên. MỘT bảng (KOA-T53): test
+  /// `MascotRaiseContractTests` đọc thẳng `supabase/migrations/` và khẳng định mỗi cụm còn nằm trong một câu
+  /// `RAISE` — sửa câu chữ SQL mà quên app thì test đỏ, không lặng lẽ thành `.server`. (Chuyển hẳn sang
+  /// ERRCODE cần migration + deploy, như `claim_community_challenge`; chưa làm.)
+  static let raisePhrases: [(phrase: String, failure: MascotFailure)] = [
+    ("not signed in", .notSignedIn),
+    ("insufficient coins", .insufficientCoins),
+    ("freeze limit", .freezeLimit),
+    ("daily reward ceiling", .dailyCeiling),
+    ("unknown reward", .unknownReward),
+    ("already owned", .alreadyOwned),
+    ("unknown item", .unknownItem),
+  ]
+
   static func failure(message: String, code: String?) -> MascotFailure {
     let m = message.lowercased()
-    if m.contains("not signed in") { return .notSignedIn }
-    if m.contains("insufficient coins") { return .insufficientCoins }
-    if m.contains("freeze limit") { return .freezeLimit }
-    if m.contains("daily reward ceiling") { return .dailyCeiling }
-    if m.contains("unknown reward") { return .unknownReward }
-    if m.contains("already owned") { return .alreadyOwned }
-    if m.contains("unknown item") { return .unknownItem }
-    return .server(code: code)
+    return raisePhrases.first { m.contains($0.phrase) }?.failure ?? .server(code: code)
   }
 }
 
