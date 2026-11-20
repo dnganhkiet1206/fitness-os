@@ -351,6 +351,79 @@ struct CoachChatTests {
     #expect(chat.conversationId == nil)
   }
 
+  final class FlakyEdge: EdgeCaller, @unchecked Sendable {
+    let lock = NSLock()
+    var failures: [EdgeFunction.Failure] = []
+    private var n = 0
+    var calls: Int { lock.withLock { n } }
+    func call(_ fn: EdgeFunction.Name, body: [String: JSONValue]) async throws(EdgeFunction.Failure) -> JSONValue? {
+      let f: EdgeFunction.Failure? = lock.withLock {
+        n += 1
+        return failures.isEmpty ? nil : failures.removeFirst()
+      }
+      if let f { throw f }
+      return nil
+    }
+  }
+
+  /// KOA-T31: học hỏng vì lỗi tạm thì giữ lại, gửi lại ở lần có câu trả lời kế tiếp — không mất điều vừa kể.
+  @Test func failedLearningIsRetriedOnTheNextGoodAnswer() async {
+    let edge = FlakyEdge()
+    edge.failures = [.offline]
+    let chat = CoachChat(userId: "u", stream: Stream(), store: Store(), edge: edge)
+    await chat.send("Mình bị đau gối trái", lang: "vi", today: Self.today, tzOffset: 0)
+    await chat.send("Nên tập gì", lang: "vi", today: Self.today, tzOffset: 0)
+    chat.appBackgrounded()
+    try? await Task.sleep(nanoseconds: 50_000_000)
+    #expect(edge.calls == 1)
+    #expect(chat.pendingLearnCount == 1, "hỏng: còn trong hàng đợi")
+    await chat.send("Còn gì nữa", lang: "vi", today: Self.today, tzOffset: 0)
+    try? await Task.sleep(nanoseconds: 50_000_000)
+    #expect(edge.calls == 2)
+    #expect(chat.pendingLearnCount == 0, "gửi lại thành công")
+  }
+
+  /// Devin #978: đổi tài khoản (chat đóng) thì lượt học chờ của người trước không được gửi bằng token người mới.
+  @Test func closedChatDropsPendingLearning() async {
+    let edge = FlakyEdge()
+    edge.failures = [.offline]
+    let chat = CoachChat(userId: "u", stream: Stream(), store: Store(), edge: edge)
+    await chat.send("Một", lang: "vi", today: Self.today, tzOffset: 0)
+    await chat.send("Hai", lang: "vi", today: Self.today, tzOffset: 0)
+    chat.appBackgrounded()
+    try? await Task.sleep(nanoseconds: 50_000_000)
+    #expect(chat.pendingLearnCount == 1)
+    chat.close()
+    #expect(chat.pendingLearnCount == 0)
+    chat.appBackgrounded()
+    try? await Task.sleep(nanoseconds: 50_000_000)
+    #expect(edge.calls == 1, "không gửi gì sau khi đóng")
+  }
+
+  /// Hết lượt AI: thử lại không giúp gì → bỏ. Lỗi tạm: tối đa `maxLearnAttempts` lần.
+  @Test func learningGivesUpWhenRetryingCannotHelp() async {
+    let edge = FlakyEdge()
+    edge.failures = [.quotaExceeded]
+    let chat = CoachChat(userId: "u", stream: Stream(), store: Store(), edge: edge)
+    await chat.send("Một", lang: "vi", today: Self.today, tzOffset: 0)
+    await chat.send("Hai", lang: "vi", today: Self.today, tzOffset: 0)
+    chat.appBackgrounded()
+    try? await Task.sleep(nanoseconds: 50_000_000)
+    #expect(chat.pendingLearnCount == 0)
+
+    let edge2 = FlakyEdge()
+    edge2.failures = Array(repeating: .timedOut, count: 10)
+    let chat2 = CoachChat(userId: "u", stream: Stream(), store: Store(), edge: edge2)
+    await chat2.send("Một", lang: "vi", today: Self.today, tzOffset: 0)
+    await chat2.send("Hai", lang: "vi", today: Self.today, tzOffset: 0)
+    for _ in 0..<5 {
+      chat2.appBackgrounded()
+      try? await Task.sleep(nanoseconds: 30_000_000)
+    }
+    #expect(edge2.calls == CoachChat.maxLearnAttempts)
+    #expect(chat2.pendingLearnCount == 0)
+  }
+
   /// KOA-T38: mở hỏng thì báo (không im lặng); tải lại lịch sử hỏng thì báo danh sách cũ.
   @Test func historyFailuresAreSurfaced() async {
     final class FailingStore: CoachStore, @unchecked Sendable {
