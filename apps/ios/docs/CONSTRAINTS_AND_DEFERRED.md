@@ -884,3 +884,4 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 20/11/2026: dọn ranh kinh tế phía app (huy chương thử lại, thẻ tuần theo trạng thái nhận, Tạm nghỉ); mục SQL còn chờ; xem mục 4.
 - 20/11/2026: deploy production `ai-coach` v30 (KOA-T33) theo duyệt của Kiệt; xem mục 4.
 - 20/11/2026: KOA-T54 phần SQL — hai migration (ví chỉ trả khoá cần hỏi; trần cộng đồng không tính xu khám phá), chờ duyệt deploy; xem mục 4.
+- 20/11/2026: KOA-T41 — test `EconomyContractTests` đọc thẳng migration (`reward_prices`, `shop_prices`, lần ghi sau thắng) và so với hằng Swift (nhiệm vụ, chuỗi, thử thách, khám phá, tăng tải, bộ sưu tập, giá từng món); phép thử ngược đổi một giá thì đỏ. App vẫn dùng hằng Swift để hiện số (không đọc bảng giá lúc chạy) — test giữ hai bên khớp.
