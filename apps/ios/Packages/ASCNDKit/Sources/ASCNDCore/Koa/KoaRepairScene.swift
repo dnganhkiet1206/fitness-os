@@ -270,7 +270,7 @@ extension KoaRepairScene {
     public static var cues: [Cue] {
       var c: [(Double, String, Double)] = []
       for l in [yay, wait, thanks] {
-        for (i, r) in l.syllables.enumerated() { c.append((r.lowerBound, "koa-talk-\((i * 7 + l.text.count) % 10 + 1)", 0.55)) }
+        for (i, r) in l.syllables.enumerated() { c.append((r.lowerBound, KoaTalk.syllable((i * 7 + l.text.count) % 10 + 1), 0.55)) }
       }
       c += [(T("tap") + 0.45, "koa-coin", 0.6), (T("yay"), "koa-v-yay", 0.7),
             (T("down") + 0.1, "koa-hop", 0.6), (T("down") + 0.62, "koa-land", 0.6)]
@@ -568,7 +568,7 @@ extension KoaRepairScene {
     public static var cues: [Cue] {
       var c: [(Double, String, Double)] = []
       for l in [yay, thanks] {
-        for (i, r) in l.syllables.enumerated() { c.append((r.lowerBound, "koa-talk-\((i * 7 + l.text.count) % 10 + 1)", 0.55)) }
+        for (i, r) in l.syllables.enumerated() { c.append((r.lowerBound, KoaTalk.syllable((i * 7 + l.text.count) % 10 + 1), 0.55)) }
       }
       c += [(T("tap") + 0.45, "koa-coin", 0.6), (T("yay"), "koa-v-yay", 0.7), (T("tube"), "koa-rustle", 0.6), (T("tube") + 0.2, "koa-v-hehe", 0.6)]
       for k in 0..<3 { c.append((T("walk") + Double(k) * 0.22, "koa-step-wood-1", 0.35)) }
@@ -871,7 +871,7 @@ extension KoaRepairScene {
     public static var cues: [Cue] {
       var c: [(Double, String, Double)] = []
       for l in [yay, thanks] {
-        for (i, r) in l.syllables.enumerated() { c.append((r.lowerBound, "koa-talk-\((i * 7 + l.text.count) % 10 + 1)", 0.55)) }
+        for (i, r) in l.syllables.enumerated() { c.append((r.lowerBound, KoaTalk.syllable((i * 7 + l.text.count) % 10 + 1), 0.55)) }
       }
       for t0 in [T("pop"), T("pop2")] { c += [(t0, "koa-creak", 0.9), (t0 + 0.02, "koa-boop-3", 0.9), (t0 + 0.12, "koa-boop-2", 0.6)] }
       c += [(T("tap") + 0.45, "koa-coin", 0.6), (T("yay"), "koa-v-yay", 0.7), (T("down") + 0.1, "koa-hop", 0.6), (T("down") + 0.62, "koa-land", 0.6)]
@@ -1156,7 +1156,7 @@ extension KoaRepairScene {
     public static var cues: [Cue] {
       var c: [(Double, String, Double)] = []
       for l in [yay, show, thanks] {
-        for (i, r) in l.syllables.enumerated() { c.append((r.lowerBound, "koa-talk-\((i * 7 + l.text.count) % 10 + 1)", 0.55)) }
+        for (i, r) in l.syllables.enumerated() { c.append((r.lowerBound, KoaTalk.syllable((i * 7 + l.text.count) % 10 + 1), 0.55)) }
       }
       c += [(T("tap") + 0.45, "koa-coin", 0.6), (T("yay"), "koa-v-yay", 0.7)]
       for k in 0..<5 { c.append((T("go") + Double(k) * 0.07, "koa-step-\(k % 3 + 1)", 0.5)) }

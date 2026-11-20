@@ -87,7 +87,7 @@ extension KoaRepairScene {
     public static var cues: [Cue] {
       var c: [(Double, String, Double)] = []
       for l in [yay, oops, done] {
-        for (i, r) in l.syllables.enumerated() { c.append((r.lowerBound, "koa-talk-\((i * 7 + l.text.count) % 10 + 1)", 0.55)) }
+        for (i, r) in l.syllables.enumerated() { c.append((r.lowerBound, KoaTalk.syllable((i * 7 + l.text.count) % 10 + 1), 0.55)) }
       }
       c += [(T("tap") + 0.45, "koa-coin", 0.6), (T("yay"), "koa-v-yay", 0.7), (T("yay") + 0.8, "koa-rustle", 0.6),
             (T("down") + 0.1, "koa-hop", 0.6), (T("down") + 0.6, "koa-land", 0.6)]
