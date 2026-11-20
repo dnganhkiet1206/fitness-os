@@ -1,0 +1,20 @@
+{
+  "sockets": [
+    {
+      "socket": "Dumbbell_l",
+      "key": "dumbbell_12kg"
+    },
+    {
+      "socket": "Dumbbell_r",
+      "key": "dumbbell_12kg"
+    },
+    {
+      "socket": "Bench_Pad",
+      "key": "utility_bench_2c513b"
+    },
+    {
+      "socket": "Bench_Frame",
+      "key": "utility_bench_08e5dd"
+    }
+  ]
+}

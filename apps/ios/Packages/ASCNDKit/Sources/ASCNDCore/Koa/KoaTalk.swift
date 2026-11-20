@@ -2,6 +2,13 @@
 /// hoạt động thật của người dùng"). Một `Topic` là một việc thật, luôn kèm đúng một nét mặt,
 /// nên mặt và câu không lệch nhau. Câu chữ nằm ở bảng dịch, khoá theo `Topic`.
 public enum KoaTalk {
+  /// Tên tệp âm tiết giọng nói cho số 1…10 của các kịch bản (KOA-T50): chỉ còn 6 tệp (`koa-talk-1…6`); số 7…10
+  /// trước là bản trùng từng byte của 5, 4, 3, 2 nên ánh xạ về đúng tệp ấy — tiếng phát ra không đổi.
+  public static func syllable(_ n: Int) -> String {
+    let k = ((n - 1) % 10 + 10) % 10 + 1
+    return "koa-talk-\(k <= 6 ? k : 12 - k)"
+  }
+
   public enum Topic: String, Sendable, Hashable, CaseIterable, Codable {
     case greet, trained, record, comeback, restDay, allDone, rested, shortSleep, overate
     case emptyLate, fed, nudge, birthday, calm, poke

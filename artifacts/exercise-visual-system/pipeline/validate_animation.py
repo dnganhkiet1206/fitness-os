@@ -26,7 +26,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evs import FAIL, NOT_TESTED, PASS, PIPELINE_VERSION, REQUIRES_MANUAL_REVIEW, UNVERIFIED_LABEL, config, movement_gate  # noqa: E402
+from evs import FAIL, NOT_TESTED, PASS, PIPELINE_VERSION, REQUIRES_MANUAL_REVIEW, UNVERIFIED_LABEL, config, movement_gate, reference_check  # noqa: E402
 from evs.validation import checks, report, video  # noqa: E402
 
 
@@ -48,8 +48,11 @@ def sample_with_blender(exercise_path, exercise) -> tuple[dict, dict]:
         return int(round(seconds * fps))
 
     ecc, con = phase["eccentric"], phase["concentric"]
+    # Extreme poses: setup, eccentric start/mid/end (bottom), concentric mid
+    # and concentric end (lockout). The lockout frame was added 14/11: the
+    # old set never measured the arms-extended pose.
     deformation_frames = sorted({0, frame(ecc["start_s"]), frame(0.5 * (ecc["start_s"] + ecc["end_s"])), frame(ecc["end_s"]),
-                                 frame(0.5 * (con["start_s"] + con["end_s"]))})
+                                 frame(0.5 * (con["start_s"] + con["end_s"])), frame(con["end_s"])})
     inventory = sampling.scene_inventory(scene, exercise)
     samples = sampling.sample_scene(scene, rig, body, bar, exercise, deformation_frames)
     return samples, inventory
@@ -81,6 +84,38 @@ def movement_gate_checks(clip, exercise: dict) -> list[dict]:
     return out
 
 
+def reference_measurement_checks(clip, exercise: dict, exercise_path) -> list[dict]:
+    """Golden measurements (evs/reference_check.py): the animation's
+    top/bottom joint angles against <exercise>/reference_measurements.json
+    for the checks declared in movement.reference_checks. Same comparison
+    logic as pipeline/validate_motion.py; an exercise with no reference
+    file reports NOT_TESTED, never a silent pass."""
+    movement = exercise.get("movement")
+    if not movement:
+        return [checks.record("reference_measurements", "anatomy", "Golden measurements: reference comparison", NOT_TESTED,
+                              detail="exercise.json has no 'movement'.")]
+    phases = [p for p in movement.get("rep_phases", []) if clip.has(p)]
+    if phases:
+        sl = slice(clip.span(phases[0]).start, clip.span(phases[-1]).stop)
+        joints = {k: v[sl] for k, v in clip.j.items()}
+    else:
+        joints = clip.j
+    out = []
+    # Góc AT đỉnh / đáy của từng lần lặp (cuối pha nâng / hạ), không phải cực trị cả đoạn.
+    # Khung → chỉ số mẫu gần nhất (clip lấy mẫu theo danh sách khung riêng).
+    def index(f: int) -> int:
+        return int(min(range(len(clip.frames)), key=lambda i: abs(int(clip.frames[i]) - f)))
+    posed = {pos: reference_check.metrics_at(clip.j, [index(f) for f in frames], movement_gate.metrics)
+             for pos, frames in reference_check.position_frames(exercise.get("exercise_phases"), clip.fps).items()}
+    for r in reference_check.check(exercise_path, movement, movement_gate.metrics(joints), at=posed):
+        status = {reference_check.PASS: PASS, reference_check.FAIL: FAIL, reference_check.NOT_TESTED: NOT_TESTED}[r["outcome"]]
+        limit = [round(r["reference"] - r["tolerance"], 3), round(r["reference"] + r["tolerance"], 3)] \
+            if r["reference"] is not None and r["tolerance"] is not None else None
+        out.append(checks.record(r["id"], "anatomy", r["title"], status, measured=r["measured"], limit=limit, unit="",
+                                 detail=r["detail"]))
+    return out
+
+
 def main(exercise_name: str | None = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--exercise", default=exercise_name, required=exercise_name is None)
@@ -108,7 +143,7 @@ def main(exercise_name: str | None = None) -> None:
     cameras = config.camera_presets()["presets"]
 
     results = []
-    problems = report.validate_exercise_config(exercise, list(muscle_map["groups"]), list(cameras))
+    problems = report.validate_exercise_config(exercise, config.muscle_names(), list(cameras))
     results.append(checks.record("exercise_config", "configuration", "exercise.json has every required field and consistent phases",
                                  "PASS" if not problems else "FAIL", detail="; ".join(problems)))
     clip = checks.Clip(samples, exercise)
@@ -116,6 +151,7 @@ def main(exercise_name: str | None = None) -> None:
     results += checks.movement_checks(clip, profile)
     results += checks.equipment_checks(clip, profile, exercise, inventory, config.equipment_config())
     results += movement_gate_checks(clip, exercise)
+    results += reference_measurement_checks(clip, exercise, exercise_path)
 
     render_meta_path = exercise_path / "render_metadata.json"
     render_meta = config.load_json(render_meta_path) if render_meta_path.exists() else None
@@ -152,7 +188,8 @@ def main(exercise_name: str | None = None) -> None:
         "validation_profile": profile["profile_id"],
         "allowed_statuses": ["PASS", "FAIL", "NOT_TESTED", "REQUIRES_MANUAL_REVIEW", "UNVERIFIED"],
         "what_this_report_is": "Automated quality control of animation data, files and renders. It is not a biomechanical review. "
-                               "Expert approval is recorded separately and is PENDING until a qualified person signs off.",
+                               "Reference-comparison approval is recorded separately and is PENDING until the motion has been compared "
+                               "against measured reference movement and a reviewer and approval date are recorded. It is not an expert review.",
         "summary": summary,
         "checks": results,
     }
@@ -167,7 +204,7 @@ def main(exercise_name: str | None = None) -> None:
 
     print(f"[evs] {summary['counts']}")
     print(f"[evs] technical QA: {summary['technical_qa']}; recommended status: {summary['recommended_exercise_status']}; "
-          f"expert approval: {summary['expert_approval']}; publication: {summary['publication_status']}")
+          f"reference-comparison approval: {summary['reference_comparison_approval']}; publication: {summary['publication_status']}")
     for c in results:
         if c["status"] != "PASS":
             print(f"[evs]   {c['status']:22s} {c['category']:11s} {c['id']}: measured {json.dumps(c['measured'])[:150]} limit {json.dumps(c['limit'])[:90]}")

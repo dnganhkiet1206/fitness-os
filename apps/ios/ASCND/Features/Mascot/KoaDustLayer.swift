@@ -432,7 +432,7 @@ struct KoaDustHighAngle: View {
       f.translateBy(x: me.x, y: me.y)
       f.scaleBy(x: kk * 2, y: kk * 2 * 0.9)
       f.translateBy(x: -120, y: -294)
-      KoaCanvas.draw(KoaPaint.plan(KoaRender.figure(o)), in: &f)
+      KoaCanvas.draw(KoaFigurePlans.plan(o), in: &f)
       // loé trắng lúc cắt vào / ra
       let flash = max(1 - KoaRepairScene.seg(d.t, 18.65, 18.8), KoaRepairScene.seg(d.t, 20.63, 20.75))
       ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.white.opacity(0.7 * flash)))

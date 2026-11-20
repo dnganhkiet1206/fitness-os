@@ -26,6 +26,9 @@ struct CommunityInboxGoldenTests {
     case .challengeHalf: "half"
     case .like: "like"
     case .likeMany(let n): "likeMany:\(n)"
+    // Golden của RN @ fac9ac2 chưa có dòng kiểm duyệt (kind `moderation` là
+    // native thêm ở #915 lát 2) — chỉ cần đủ case để switch exhaustive.
+    case .moderation: "moderation"
     }
   }
 

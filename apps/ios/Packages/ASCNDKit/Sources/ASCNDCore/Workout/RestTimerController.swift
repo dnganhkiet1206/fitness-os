@@ -49,6 +49,11 @@ public struct RestActivityContent: Sendable, Hashable, Codable {
   public var showsKoa: Bool { hidesKoa != true }
 
   /// Koa trên màn khoá. Không đổi theo đồng hồ: Live Activity chỉ vẽ lại khi app cập nhật.
+  ///
+  /// KOA-T27 (20/11): đổi Koa theo nhịp (mở đầu → hoạt động → "Lượt mình!") ở màn khoá KHÔNG làm được
+  /// khi chưa có push: lúc màn khoá hiện, app ở nền và không được chạy để gọi `update`; Live Activity chỉ
+  /// tự chạy `Text(timerInterval:)` / `ProgressView(timerInterval:)`, không tự đổi hình theo mốc giờ. Cần
+  /// push ActivityKit từ server (APNs — mục "đầu tư" của sổ hạn chế). Trong app, màn nghỉ vẫn diễn đủ nhịp.
   public var koa: RestKoa {
     if pausedLeft != nil { return .waiting }
     return recordNote == nil ? .resting : .record

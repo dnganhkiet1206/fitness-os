@@ -131,9 +131,10 @@ public enum Coach {
 
 /// Luồng trả lời của `ai-coach`: mỗi phần tử là một mẩu chữ. Lỗi là
 /// `EdgeFunction.Failure` (cùng bảng chữ với các màn AI khác).
+///
+/// KOA-T37: MỘT hàm bắt buộc mang đủ `checks` / `waterUnit` — trước đây bản mặc định của
+/// protocol lặng lẽ bỏ hai thứ này, bên triển khai quên thì AI không biết chỗ lệch số.
 public protocol CoachStream: Sendable {
-  func stream(messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int)
-    -> AsyncThrowingStream<String, any Error>
   /// Kèm các chỗ lời người dùng khác số đã ghi (`CoachLogPrompt.Conflict`) để AI
   /// hỏi lại số nào đúng (16/10), và đơn vị nước của người dùng (27/10: `ai-coach`
   /// viết nước bằng oz / ml theo nó; số trong `checks` vẫn là ml).
@@ -141,15 +142,6 @@ public protocol CoachStream: Sendable {
     messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
     waterUnit: Water.Unit
   ) -> AsyncThrowingStream<String, any Error>
-}
-
-extension CoachStream {
-  public func stream(
-    messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
-    waterUnit: Water.Unit
-  ) -> AsyncThrowingStream<String, any Error> {
-    stream(messages: messages, lang: lang, date: date, tzOffset: tzOffset)
-  }
 }
 
 /// Kho cuộc trò chuyện (`ai_conversations`, `ai_messages`) — RLS theo người dùng.
@@ -182,6 +174,8 @@ public final class CoachChat {
   @ObservationIgnored public var sanitize: ((String) -> String)?
   /// Đơn vị nước của người dùng cho câu hỏi lại dựng sẵn ("16 oz" thay "473 ml"). App gán.
   @ObservationIgnored public var waterUnit: Water.Unit = .ml
+  /// Đơn vị cân của tài khoản — câu hỏi lại dựng sẵn viết cân theo nó (KOA-T34).
+  @ObservationIgnored public var weightUnit: WeightUnit = .kg
   public private(set) var messages: [Coach.Message] = []
   /// Chỗ lệch giữa lời kể và số đã ghi, theo id tin của người dùng — màn chat hiện
   /// nút chọn số đúng dưới câu trả lời ngay sau tin đó.
@@ -216,60 +210,169 @@ public final class CoachChat {
     return "local-\(seq)"
   }
 
+  /// Câu hỏi của lượt hỏng gần nhất — để "Thử lại" gửi lại đúng câu ấy (KOA-T06).
+  @ObservationIgnored private var lastAsk: (text: String, checks: [CoachLogPrompt.Conflict])?
+  /// Tin trả lời dở của lượt hỏng (đã đánh dấu "…") — "Thử lại" thay nó bằng câu mới.
+  @ObservationIgnored private var truncatedId: String?
+  /// Câu hỏi của `lastAsk` đã vào lịch sử chưa (Devin #961: gửi lúc mất mạng thì chưa —
+  /// "Thử lại" phải lưu bù, không thì lịch sử chỉ còn câu trả lời).
+  @ObservationIgnored private var askSaved = false
+  /// Việc đọc luồng đang chạy — `stop()` huỷ nó (nút Dừng, mọi đường gửi).
+  @ObservationIgnored private var streamTask: Task<(any Error)?, Never>?
+  @ObservationIgnored private var stopRequested = false
+  /// Câu trả lời đang chảy của lượt hiện tại (chữ + id tin trên màn).
+  @ObservationIgnored private var live: (text: String, id: String?) = ("", nil)
+
+  /// Nút Dừng (KOA-T06): cắt luồng đang chảy, giữ phần đã nhận. Dùng được cho mọi lượt
+  /// gửi, kể cả lượt bắt đầu từ ngoài màn chat (bảng Xu hướng — Devin #961).
+  public func stop() {
+    guard isLoading else { return }
+    stopRequested = true
+    streamTask?.cancel()
+  }
+
   /// Gửi một câu (đã cắt khoảng trắng); không làm gì khi rỗng hoặc đang gửi.
   public func send(
     _ raw: String, lang: String, today: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict] = []
   ) async {
     let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !text.isEmpty, !isLoading, !closed else { return }
+    await run(text, lang: lang, today: today, tzOffset: tzOffset, checks: checks, isRetry: false)
+  }
+
+  /// Gửi lại câu của lượt vừa hỏng (KOA-T06): không thêm bong bóng câu hỏi lần hai,
+  /// không lưu câu hỏi lần hai; tin trả lời dở (nếu có) được thay bằng câu mới.
+  public func retry(lang: String, today: LocalDate, tzOffset: Int) async {
+    guard let ask = lastAsk, failure != nil, !isLoading, !closed else { return }
+    if let id = truncatedId, let i = messages.lastIndex(where: { $0.id == id }) { messages.remove(at: i) }
+    truncatedId = nil
+    await run(ask.text, lang: lang, today: today, tzOffset: tzOffset, checks: ask.checks, isRetry: true)
+  }
+
+  /// Có thể thử lại lượt vừa hỏng không. Hết lượt trong ngày, phiên hết hạn, hàm chưa
+  /// triển khai: thử lại không giúp gì — không đưa nút.
+  public var canRetry: Bool {
+    guard let failure, lastAsk != nil, !isLoading else { return false }
+    return ![.quotaExceeded, .unauthorised, .notDeployed].contains(failure)
+  }
+
+  private func run(
+    _ text: String, lang: String, today: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict], isRetry: Bool
+  ) async {
     isLoading = true
     failure = nil
-    let askedId = nextId()
-    messages.append(Coach.Message(id: askedId, role: .user, content: text))
-    if !checks.isEmpty { conflicts[askedId] = checks }
+    stopRequested = false
+    lastAsk = (text, checks)
+    if !isRetry {
+      askSaved = false
+      let askedId = nextId()
+      messages.append(Coach.Message(id: askedId, role: .user, content: text))
+      if !checks.isEmpty { conflicts[askedId] = checks }
+    }
     let outgoing = messages
     defer { if !closed { isLoading = false } }
 
-    // Lưu là việc phụ: hỏng thì vẫn hỏi coach.
+    // Lưu là việc phụ: hỏng thì vẫn hỏi coach. Câu hỏi lưu NGAY khi gửi (KOA-T06) —
+    // thử lại không lưu lần hai.
     if conversationId == nil, let id = try? await store.createConversation(userId: userId, title: Coach.title(text)) {
       guard !closed else { return }
       conversationId = id
     }
     let convo = conversationId
-    if let convo { try? await store.saveMessage(conversationId: convo, role: .user, content: text) }
+    // Câu hỏi chưa vào lịch sử (lần đầu, hoặc lần trước lưu hỏng) thì lưu — kể cả khi thử lại.
+    if let convo, !askSaved {
+      do {
+        try await store.saveMessage(conversationId: convo, role: .user, content: text)
+        askSaved = true
+      } catch {}
+    }
 
-    var answer = ""
-    do {
-      for try await chunk in stream.stream(
-        messages: Array(outgoing.suffix(Coach.sendWindow)), lang: lang, date: today, tzOffset: tzOffset,
-        checks: checks, waterUnit: waterUnit)
-      {
-        guard !closed else { return }
-        answer += chunk
-        if let last = messages.last, last.role == .assistant {
-          messages[messages.count - 1].content = answer
-        } else {
-          messages.append(Coach.Message(id: nextId(), role: .assistant, content: answer))
+    live = ("", nil)
+    let source = stream.stream(
+      messages: Array(outgoing.suffix(Coach.sendWindow)), lang: lang, date: today, tzOffset: tzOffset,
+      checks: checks, waterUnit: waterUnit)
+    // Đọc luồng trong một việc riêng để `stop()` huỷ được từ bất kỳ đâu.
+    let reader = Task<(any Error)?, Never> { [weak self] in
+      do {
+        for try await chunk in source {
+          guard let self, !self.closed else { return nil }
+          self.append(chunk)
         }
+        return nil
+      } catch {
+        return error
       }
-    } catch {
-      // Như RN: lượt hỏng không lưu phần trả lời dở (lệnh lưu nằm sau vòng đọc).
-      guard !closed else { return }
-      failure = (error as? EdgeFunction.Failure) ?? .unknown
+    }
+    streamTask = reader
+    let streamError = await withTaskCancellationHandler { await reader.value } onCancel: { reader.cancel() }
+    streamTask = nil
+    guard !closed else { return }
+    var answer = live.text
+    let answerId = live.id
+
+    // Người dùng bấm Dừng (huỷ việc gửi): giữ phần đã nhận, đánh dấu chưa xong, không báo lỗi.
+    if stopRequested || Task.isCancelled || reader.isCancelled || streamError is CancellationError {
+      await keepPartial(answer, id: answerId, convo: convo)
+      lastAsk = nil
       return
     }
-    guard !closed, !answer.isEmpty else { return }
+    if let streamError {
+      // KOA-T06: lượt hỏng giữ phần trả lời dở (đánh dấu "…") cả trên màn lẫn trong lịch
+      // sử, để mở lại thấy đúng điều đã thấy; "Thử lại" thay nó.
+      failure = (streamError as? EdgeFunction.Failure) ?? .unknown
+      truncatedId = await keepPartial(answer, id: answerId, convo: convo)
+      return
+    }
+    // Luồng "xong" mà không có chữ nào: không im lặng — báo để thử lại.
+    guard !answer.isEmpty else {
+      failure = .incomplete
+      return
+    }
+    lastAsk = nil
     // Hỏi lại khi lệch: AI chép chỉ dẫn ra thay vì hỏi → câu hỏi dựng sẵn.
+    // KOA-T34: chỉ bỏ những câu lộ chỉ dẫn; còn lại quá ít mới thay cả câu trả lời.
     if let c = checks.first, CoachLogPrompt.leaksInstructions(answer) {
-      answer = CoachLogPrompt.question(c, lang: lang, unit: waterUnit)
+      answer = CoachLogPrompt.strippingLeaks(answer) ?? CoachLogPrompt.question(c, lang: lang, unit: waterUnit, weight: weightUnit)
     }
     let final = sanitize?(answer) ?? answer
-    if final != answer, let last = messages.last, last.role == .assistant {
-      messages[messages.count - 1].content = final
+    if final != answer, let id = answerId, let i = messages.lastIndex(where: { $0.id == id }) {
+      messages[i].content = final
     }
     guard let convo else { return }
     try? await store.saveMessage(conversationId: convo, role: .assistant, content: final)
     try? await store.touch(conversationId: convo, userId: userId)
+  }
+
+  /// Một mẩu chữ của luồng: nối vào tin trả lời đang hiện (tạo tin ở mẩu đầu).
+  private func append(_ chunk: String) {
+    live.text += chunk
+    if let id = live.id, let i = messages.lastIndex(where: { $0.id == id }) {
+      messages[i].content = live.text
+    } else {
+      let id = nextId()
+      live.id = id
+      messages.append(Coach.Message(id: id, role: .assistant, content: live.text))
+    }
+  }
+
+  /// Phần trả lời dở: đối chiếu số liệu như câu hoàn chỉnh (Devin #961: lịch sử không
+  /// được hiện số sai đã bị ẩn), thêm dấu `cutOffMark`, lưu vào lịch sử. Lệnh lưu chạy
+  /// trong một việc MỚI: bấm Dừng huỷ lượt gửi, và lệnh lưu trong việc đã huỷ cũng bị huỷ
+  /// theo (Devin #961). Trả id tin.
+  @discardableResult
+  private func keepPartial(_ answer: String, id: String?, convo: String?) async -> String? {
+    guard !answer.isEmpty, let id, let i = messages.lastIndex(where: { $0.id == id }) else { return nil }
+    let checked = sanitize?(answer) ?? answer
+    let marked = checked.hasSuffix(Coach.cutOffMark) ? checked : checked + Coach.cutOffMark
+    messages[i].content = marked
+    if let convo {
+      let store = self.store, userId = self.userId
+      await Task {
+        try? await store.saveMessage(conversationId: convo, role: .assistant, content: marked)
+        try? await store.touch(conversationId: convo, userId: userId)
+      }.value
+    }
+    return id
   }
 
   /// Trả lời không qua AI (`CoachQuickReply`, 16/10): câu hỏi và câu trả lời dựng
@@ -305,6 +408,8 @@ public final class CoachChat {
     messages = []
     conflicts = [:]
     failure = nil
+    lastAsk = nil
+    truncatedId = nil
     learnedAt = 0
   }
 
@@ -319,17 +424,32 @@ public final class CoachChat {
   }
 
   /// Mở một cuộc trò chuyện cũ. Lượt mở về muộn không đè lượt mới hơn.
-  public func open(_ id: String) async {
+  /// Mở một cuộc trò chuyện cũ. `false` khi không đọc được (KOA-T38: trước đây im lặng —
+  /// màn lịch sử đã đóng, người dùng không biết vì sao không có gì xảy ra).
+  @discardableResult
+  public func open(_ id: String) async -> Bool {
     loadGeneration += 1
     let mine = loadGeneration
-    guard let loaded = try? await store.messages(conversationId: id) else { return }
-    guard !closed, mine == loadGeneration else { return }
+    openFailed = nil
+    guard let loaded = try? await store.messages(conversationId: id) else {
+      if !closed, mine == loadGeneration { openFailed = id }
+      return false
+    }
+    guard !closed, mine == loadGeneration else { return false }
     conversationId = id
     messages = loaded
     failure = nil
+    lastAsk = nil
+    truncatedId = nil
     // Đã học từ những tin này rồi (hoặc chúng đến từ máy khác) — không trả lại.
     learnedAt = loaded.count
+    return true
   }
+
+  /// Cuộc trò chuyện vừa mở không được (KOA-T38) — màn lịch sử báo + thử lại.
+  public private(set) var openFailed: String?
+  /// Danh sách lịch sử đang hiện là bản cũ: lần tải lại vừa hỏng (KOA-T38).
+  public private(set) var historyStale = false
 
   /// Đọc bảng lịch sử.
   public func loadHistory() async {
@@ -338,9 +458,13 @@ public final class CoachChat {
       let list = try await store.conversations(userId: userId)
       guard !closed else { return }
       history = .ready(list)
+      historyStale = false
     } catch {
       guard !closed else { return }
-      if case .ready = history { return }
+      if case .ready = history {
+        historyStale = true
+        return
+      }
       history = .failed
     }
   }

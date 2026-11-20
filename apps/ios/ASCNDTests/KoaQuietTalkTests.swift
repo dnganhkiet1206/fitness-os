@@ -46,4 +46,22 @@ import Testing
     await settle(d) { $0.speech != nil }
     #expect(d.speech == nil, "giờ ngủ thì Koa không nói, như khi đồng hồ chạy")
   }
+
+  /// KOA-T50: chủ đề thiếu số liệu (câu `nil`) không bị ghi "đã nói" — Koa nói chủ đề khác, chủ đề kia
+  /// còn nguyên cho lúc có số.
+  @Test func missingNumbersDoNotBurnTheTopic() async throws {
+    let d = driver()
+    var refused: KoaTalk.Topic?
+    d.lineOf = { beat in
+      if refused == nil { refused = beat.topic }
+      return beat.topic == refused ? nil : "Koa says hi"
+    }
+    d.quietTick(Date().addingTimeInterval(KoaTalk.Schedule.first + 0.5))
+    await settle(d) { $0.speech != nil }
+    let beat = try #require(d.speech, "vẫn nói, bằng chủ đề khác")
+    #expect(beat.topic != refused)
+    let saved = UserDefaults.standard.data(forKey: "koa.talk.\(Self.user)")
+      .flatMap { try? JSONDecoder().decode(KoaTalk.Log.self, from: $0) }
+    #expect(saved?.said.contains(where: { $0 == refused }) == false, "chủ đề thiếu số không bị đốt")
+  }
 }

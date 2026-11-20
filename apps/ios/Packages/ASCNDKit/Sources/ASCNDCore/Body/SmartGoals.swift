@@ -180,9 +180,7 @@ public enum SmartGoals {
 
   /// `weekStartOf`: Thứ Hai của tuần chứa `d`; Chủ Nhật là ngày cuối tuần.
   public static func weekStart(_ d: LocalDate) -> LocalDate {
-    // 1970-01-01 là Thứ Năm; 0 = Chủ Nhật như `getDay()`.
-    let dow = ((d.daysSinceEpoch + 4) % 7 + 7) % 7
-    return d.adding(days: dow == 0 ? -6 : 1 - dow)
+    d.weekStart
   }
 
   /// `profile.goal || 'maintain'`.

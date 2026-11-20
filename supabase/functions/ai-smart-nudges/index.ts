@@ -1,4 +1,5 @@
-import { callAI, forSpanish, promptLang } from "../_shared/ai.ts";
+import { callAI, promptLang } from "../_shared/ai.ts";
+import { DATA_SLOT, fillData, forSpanish } from "../_shared/prompt-slots.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 import { aiGate, aiPayload, corsHeaders, localDate, opaque, quotaExceeded, requireUser, toolArgs } from "../_shared/guard.ts";
@@ -125,10 +126,10 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: forSpanish(lang === "en"
+            content: fillData(forSpanish(lang === "en"
               ? `You are an AI habit-reminder assistant. Reply in English. Based on the user's data, create 2-4 short nudges for today.
 
-DATA: ${JSON.stringify(ctx)}
+DATA: ${DATA_SLOT}
 
 IMPORTANT PRINCIPLES:
 - A null or missing field was NOT MEASURED. Never say the user slept nothing, drank nothing or trained none because a field is null — skip that topic instead
@@ -147,7 +148,7 @@ IMPORTANT PRINCIPLES:
 ${waterRule(water_unit, "en")}`
               : `Bạn là AI hỗ trợ nhắc nhở thói quen sinh hoạt. Trả lời bằng tiếng Việt. Dựa trên dữ liệu người dùng, tạo 2-4 gợi ý ngắn gọn cho hôm nay.
 
-DỮ LIỆU: ${JSON.stringify(ctx)}
+DỮ LIỆU: ${DATA_SLOT}
 
 NGUYÊN TẮC QUAN TRỌNG:
 - Trường nào null hoặc không có nghĩa là CHƯA ĐO ĐƯỢC. Đừng bao giờ nói người dùng không ngủ, không uống nước hay không tập chỉ vì trường đó null — hãy bỏ qua chủ đề đó
@@ -163,7 +164,7 @@ NGUYÊN TẮC QUAN TRỌNG:
 - Thời điểm theo current_hour: 5-10 giờ sáng → uống nước + protein; 11-17 giờ → bữa ăn, bước chân, tập; 18-21 giờ tối → đạm bữa tối, thả lỏng, ngủ sớm; 22-4 giờ đêm khuya → CHỈ nhắc ngủ và nghỉ (không bao giờ nhắc uống nước, ăn, đi bộ hay tập lúc đêm)
 - Không đưa lời khuyên y tế dưới bất kỳ hình thức nào
 - Mọi gợi ý viết bằng tiếng Việt
-${waterRule(water_unit, "vi")}`, asked_lang),
+${waterRule(water_unit, "vi")}`, asked_lang), JSON.stringify(ctx)),
           },
         ],
         tools: [

@@ -130,25 +130,34 @@ class PostureTests(unittest.TestCase):
 
 
 class SquatArmTests(unittest.TestCase):
-    SK = {"shoulder_l": np.array([0.2, 0.0, 1.42]), "shoulder_r": np.array([-0.2, 0, 1.42]),
+    # Character 003 (16/11): shoulders, clavicle heads and the back profile
+    # with the trapezius volume (the bar sits ~0.11 m behind the shoulders).
+    SK = {"shoulder_l": np.array([0.215, -0.018, 1.43]), "shoulder_r": np.array([-0.215, -0.018, 1.43]),
+          "clavicle_l_head": np.array([0.023, -0.024, 1.458]), "clavicle_r_head": np.array([-0.023, -0.024, 1.458]),
           "hip_l": np.array([0.1, 0.0, 0.95]), "hip_r": np.array([-0.1, 0, 0.95]),
           "ankle_l": np.array([0.1, 0.02, 0.08]), "ankle_r": np.array([-0.1, 0.02, 0.08]),
           "upper_arm_m": 0.266, "forearm_m": 0.275, "thigh_m": 0.44, "shin_m": 0.42,
-          "back_profile": [[1.44, 0.06], [1.47, 0.065], [1.50, 0.05]]}
+          "back_profile": [[1.42, 0.114], [1.45, 0.109], [1.48, 0.091], [1.51, 0.082]]}
 
     def test_elbow_down_outside_wrist_straight(self):
         tpl = FAMILIES["squat"]({}, self.SK)
         arm = tpl.arms["l"]
         self.assertLess(arm["elbow"][2], self.SK["shoulder_l"][2] - 0.15)   # elbow below the shoulder
-        self.assertGreater(arm["elbow"][0], self.SK["shoulder_l"][0])        # not folded in
-        self.assertLess(arm["elbow_flexion_deg"], 145)
+        # Not folded in: same 2 cm tolerance as the QA gate elbow_inside_shoulder
+        # (elbows straight down under a retracted shoulder sit ~4 mm inside).
+        self.assertGreater(arm["elbow"][0], tpl.girdle_shoulder("l")[0] - 0.02)
+        # The planned angle runs ~8 deg above the posed rig (0.68 m grip:
+        # plan 153, validate_motion elbow_flexion_anatomical 145.1); that QA
+        # gate on the posed rig is the anatomical check, this one catches a
+        # grip that closes the elbow far past it.
+        self.assertLess(arm["elbow_flexion_deg"], 150)
         fore = arm["grip"] - arm["elbow"]
         self.assertAlmostEqual(float(np.dot(arm["palm"], fore / np.linalg.norm(fore))), 0.0, places=6)
 
     def test_bar_rests_on_skin(self):
         tpl = FAMILIES["squat"]({}, self.SK)
         r = tpl.t["bar_shaft_radius_m"] - tpl.t["bar_into_soft_tissue_m"]
-        self.assertAlmostEqual(tpl.bar_rest[1], 0.065 + r, places=6)
+        self.assertAlmostEqual(tpl.bar_rest[1], 0.091 + r, places=6)  # profile at bar height 1.48
 
 
 class SquatHeadTests(unittest.TestCase):

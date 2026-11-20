@@ -82,7 +82,11 @@ struct FoodListView: View {
     }
     .ascndPage()
     .refreshable { await book.load() }
-    .task { await book.load() }
+    .task {
+      await book.load()
+      // Ý sao khôi phục từ đĩa (AUD-29): danh sách đã đọc thì nhận lại, gửi khi có mạng.
+      book.reattach(writer: services.stateWriter)
+    }
     .sheet(item: $editing) { req in
       FoodEditorView(book: book, food: req.food)
     }

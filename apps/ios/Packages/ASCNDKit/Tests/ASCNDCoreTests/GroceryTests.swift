@@ -171,4 +171,28 @@ struct GroceryTests {
   @Test func checkedKeyIsPerItem() {
     #expect(Grocery.checkedKey("ABC-1") == "grocery:checked:abc-1")
   }
+
+  @Test func reattachSendsRestoredTickAfterRelaunch() async {
+    let server = FakeGroceryServer()
+    await server.put(GroceryItem(id: "a", name: "Milk", quantity: nil, checked: false))
+    let book = GroceryBook(userId: "u1", source: server)
+    await book.refresh()
+    let store = FakeStateIntentPersistence()
+    // Lần mở app trước: tick lúc mất mạng, ý lưu xuống đĩa.
+    let net = FakeNetwork(online: false)
+    let w1 = StateWriter(environment: .init(online: { net.online }, isOffline: { NetworkFailure.isOffline($0) }))
+    w1.attachPersistence(store)
+    #expect(book.setChecked(book.items[0], checked: true, writer: w1) == .queued)
+    // Mở app lại: ý về từ đĩa, màn vẫn hiện đã tick; đọc xong thì nhận lại,
+    // có mạng thì gửi — một lệnh duy nhất.
+    let w2 = StateWriter(environment: .init(online: { net.online }, isOffline: { NetworkFailure.isOffline($0) }))
+    w2.attachPersistence(store)
+    #expect(book.isPending(book.items[0], writer: w2))
+    net.online = true
+    book.reattach(writer: w2)
+    await drain()
+    #expect(await server.writes == [true])
+    #expect(!book.isPending(book.items[0], writer: w2))
+    #expect(store.snapshot.isEmpty)
+  }
 }

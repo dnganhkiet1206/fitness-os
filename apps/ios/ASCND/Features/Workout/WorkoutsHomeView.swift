@@ -14,9 +14,10 @@ import SwiftUI
 /// - thẻ hôm nay bốn trạng thái: có buổi → "Bắt đầu buổi tập" (nút đặc);
 ///   đã tập → nút nhạt; ngày nghỉ → gợi ý vận động nhẹ + chọn buổi; chưa có
 ///   kế hoạch → "Chọn buổi tập";
-/// - "Mẫu buổi tập (n)" — 3 mẫu mới nhất, "Xem tất cả", "Tạo mới" ở cuối danh
-///   sách; đọc lỗi khác trống;
-/// - "Thư viện & lịch sử" (số buổi gần đây) và "Tiến bộ từng bài".
+/// - ~~"Mẫu buổi tập (n)" trên trang, "Thư viện & lịch sử" ở hàng dưới~~ —
+///   Kiệt 15/11 đổi chỗ: "Thư viện bài tập" (lưới nhóm cơ + "Xem tất cả") nằm
+///   ngay trên trang; hàng dưới là "Mẫu buổi tập & lịch sử"
+///   (`TemplatesHistoryView`), rồi "Tiến bộ từng bài".
 ///
 /// Khác RN:
 /// - trạng thái thứ năm "Đang tập" (đã tick, chưa chốt): màn tập là lớp toàn
@@ -29,18 +30,11 @@ struct WorkoutsHomeView: View {
 
   @Environment(AppServices.self) private var services
   @Environment(\.dynamicTypeSize) private var typeSize
-  @State private var showsBuilder = false
-  /// Mẫu đang chờ xác nhận xoá (menu ⋯ của hàng mẫu, 14/10).
-  @State private var deletingTemplate: WorkoutTemplate?
-  @State private var templateFailed = false
   @State private var showsManualLog = false
   @State private var showsPicker = false
 
   static let accent = MascotRoomView.signalColor(.workout)
 
-  private var templates: [WorkoutTemplate] {
-    (flow.today.library?.templates ?? []).sorted(by: WorkoutTemplate.newestFirst)
-  }
 
   private var userId: String { flow.today.userId }
 
@@ -50,35 +44,23 @@ struct WorkoutsHomeView: View {
         header
         weekStrip
         hero
-        templatesSection
+        librarySection
         tools
       }
       .padding(DS.Spacing.md)
       .padding(.bottom, DS.Spacing.lg)
     }
     .refreshable { await flow.refresh() }
+    // Sao yêu thích bài tập (đồng bộ) + độ phổ biến từ số liệu thật (16/11).
+    .task {
+      await services.syncExerciseFavorites(userId: userId)
+      await services.refreshExercisePopularity()
+    }
     // Đầu trang trong nội dung như Hôm nay / Dinh dưỡng.
     .navigationTitle(Text("tab.workouts"))
     .toolbar(.hidden, for: .navigationBar)
     .statusBarScrim()
     .background { TodayAmbient(accent: .workout) }
-    .sheet(isPresented: $showsBuilder) { TemplateFormView(flow: flow) }
-    .alert(
-      String(localized: "wb.delete.title"),
-      isPresented: Binding(get: { deletingTemplate != nil }, set: { if !$0 { deletingTemplate = nil } }),
-      presenting: deletingTemplate
-    ) { t in
-      Button(String(localized: "common.cancel"), role: .cancel) {}
-      Button(String(localized: "wb.delete.title"), role: .destructive) {
-        // swiftlint:disable:next unhandled_throwing_task - templateAction tự bắt lỗi
-        Task { await templateAction { try await $0.delete(templateId: t.id) } }
-      }
-    } message: { t in
-      Text(String(localized: "wh.tpl.deleteMessage \(t.name)"))
-    }
-    .alert(String(localized: "workout.finishError.generic"), isPresented: $templateFailed) {
-      Button(String(localized: "workout.ok")) {}
-    }
     .sheet(isPresented: $showsManualLog) { ManualLogView(flow: flow) }
     .sheet(isPresented: $showsPicker) { WorkoutPickerSheet(flow: flow) }
   }
@@ -406,19 +388,22 @@ struct WorkoutsHomeView: View {
       .buttonStyle(TodayPressStyle())
   }
 
-  // MARK: - Mẫu buổi tập
+  // MARK: - Thư viện
 
-  @ViewBuilder private var templatesSection: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      HStack {
-        Text("workoutshome.templates \(templates.count.formatted(.number.locale(.app)))")
-          .font(DS.TextStyle.title)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .accessibilityAddTraits(.isHeader)
-        Spacer()
-        if !templates.isEmpty {
+  /// Thư viện bài tập ngay trên trang (Kiệt 15/11: "đưa thư viện ra bên ngoài
+  /// trang tập luyện chính thay cho mẫu buổi tập"): lưới nhóm cơ + lối vào
+  /// toàn bộ thư viện. Mẫu buổi tập chuyển vào "Mẫu buổi tập & lịch sử".
+  @ViewBuilder private var librarySection: some View {
+    if let library = flow.library {
+      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+        HStack {
+          Text("workoutshome.library")
+            .font(DS.TextStyle.title)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .accessibilityAddTraits(.isHeader)
+          Spacer()
           NavigationLink {
-            TemplateListView(flow: flow)
+            ExercisesView(library: library, insights: flow.insights)
           } label: {
             Text("workoutshome.seeall")
               .font(DS.TextStyle.footnote.weight(.semibold))
@@ -426,130 +411,14 @@ struct WorkoutsHomeView: View {
               .frame(minHeight: 44)
           }
         }
+        .padding(.horizontal, 4)
+        .padding(.top, DS.Spacing.sm)
+        MuscleGrid(library: library, insights: flow.insights)
       }
-      .padding(.horizontal, 4)
-      .padding(.top, DS.Spacing.sm)
-      if flow.today.library == nil, flow.today.failure != nil {
-        DSErrorView(message: String(localized: "history.loadFailed")) {
-          Task { await flow.refresh() }
-        }
-      } else {
-        VStack(spacing: 0) {
-          if templates.isEmpty {
-            Text("workoutshome.notemplates")
-              .font(DS.TextStyle.footnote)
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .frame(maxWidth: .infinity, minHeight: 52)
-          }
-          ForEach(Array(templates.prefix(3).enumerated()), id: \.element.id) { i, t in
-            if i > 0 { Divider().padding(.leading, 58).opacity(0.6) }
-            templateRow(t)
-          }
-          if flow.plan != nil {
-            if !templates.isEmpty { Divider().padding(.leading, 58).opacity(0.6) }
-            Button {
-              showsBuilder = true
-            } label: {
-              HStack(spacing: 12) {
-                Image(systemName: "plus")
-                  .font(.body.weight(.semibold))
-                  .foregroundStyle(Self.accent)
-                  .frame(width: 32, height: 32)
-                  .background(Self.accent.opacity(0.12), in: Circle())
-                  .accessibilityHidden(true)
-                Text("wh.createWorkout")
-                  .font(DS.TextStyle.body.weight(.semibold))
-                  .foregroundStyle(Self.accent)
-                Spacer()
-              }
-              .padding(.horizontal, DS.Spacing.md)
-              .frame(minHeight: 56)
-              .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-          }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-        .todayCard()
+    } else if flow.today.failure != nil {
+      DSErrorView(message: String(localized: "history.loadFailed")) {
+        Task { await flow.refresh() }
       }
-    }
-  }
-
-  private func templateRow(_ t: WorkoutTemplate) -> some View {
-    let sets = t.exercises.reduce(0) { $0 + $1.sets }
-    return HStack(spacing: 12) {
-      Image(systemName: "dumbbell.fill")
-        .font(.footnote)
-        .foregroundStyle(Self.accent)
-        .frame(width: 32, height: 32)
-        .background(Self.accent.opacity(0.12), in: Circle())
-        .accessibilityHidden(true)
-      VStack(alignment: .leading, spacing: 2) {
-        Text(verbatim: t.name)
-          .font(DS.TextStyle.body.weight(.semibold))
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .lineLimit(1)
-        Text(String(localized: "wb.list.meta \(t.exercises.count) \(sets)"))
-          .font(DS.TextStyle.caption)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-      }
-      Spacer(minLength: 0)
-      if flow.plan != nil {
-        Menu {
-          templateMenu(t)
-        } label: {
-          Image(systemName: "ellipsis")
-            .font(.body.weight(.semibold))
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .frame(minWidth: 44, minHeight: 44)
-        }
-        .accessibilityLabel(Text(String(localized: "wh.tpl.actions \(t.name)")))
-      }
-    }
-    .padding(.leading, DS.Spacing.md)
-    .padding(.trailing, DS.Spacing.xs)
-    .frame(minHeight: 60)
-    .contentShape(Rectangle())
-    .contextMenu { if flow.plan != nil { templateMenu(t) } }
-  }
-
-  /// Thao tác nhanh của một mẫu (14/10): gán cho thứ hôm nay (kế hoạch tuần
-  /// là lịch lặp — nói rõ "mọi Thứ X"), nhân bản, xoá (hỏi lại). Mẫu không sửa
-  /// tại chỗ được: builder chỉ TẠO (như RN), nhân bản là đường sửa an toàn.
-  @ViewBuilder private func templateMenu(_ t: WorkoutTemplate) -> some View {
-    let day = WorkoutPlanning.routineIndex(flow.today.today)
-    Button {
-      // swiftlint:disable:next unhandled_throwing_task - templateAction tự bắt lỗi
-      Task { await templateAction { try await $0.assign(day: day, templateId: t.id) } }
-    } label: {
-      Label(String(localized: "wh.tpl.assignToday \(Self.longWeekday(flow.today.today))"), systemImage: "calendar.badge.plus")
-    }
-    Button {
-      // swiftlint:disable:next unhandled_throwing_task - templateAction tự bắt lỗi
-      Task {
-        await templateAction { editor in
-          try await editor.create(
-            id: editor.newTemplateId(), name: String(localized: "wh.tpl.copyName \(t.name)"),
-            type: t.type ?? PlanEdit.defaultType, exercises: t.exercises)
-        }
-      }
-    } label: {
-      Label(String(localized: "wh.tpl.duplicate"), systemImage: "plus.square.on.square")
-    }
-    Divider()
-    Button(role: .destructive) {
-      deletingTemplate = t
-    } label: {
-      Label(String(localized: "wb.delete.short"), systemImage: "trash")
-    }
-  }
-
-  private func templateAction(_ op: (PlanEditor) async throws -> Void) async {
-    guard let editor = flow.plan else { return }
-    do {
-      try await op(editor)
-    } catch {
-      templateFailed = true
     }
   }
 
@@ -557,11 +426,11 @@ struct WorkoutsHomeView: View {
 
   @ViewBuilder private var tools: some View {
     VStack(spacing: 0) {
-      if flow.history != nil || flow.library != nil {
+      if flow.history != nil || flow.today.library != nil {
         NavigationLink {
-          LibraryHistoryView(flow: flow)
+          TemplatesHistoryView(flow: flow)
         } label: {
-          Self.toolRow("books.vertical", String(localized: "wh.libraryHistory"), sub: sessionsLine)
+          Self.toolRow("dumbbell.fill", String(localized: "wh.templatesHistory"), sub: templatesLine)
         }
         .buttonStyle(.plain)
       }
@@ -579,9 +448,13 @@ struct WorkoutsHomeView: View {
     .todayCard()
   }
 
-  private var sessionsLine: String? {
-    guard let n = flow.history?.entries.count, n > 0 else { return nil }
-    return String(localized: "wh.sessions \(n)")
+  /// "7 mẫu · 13 buổi gần đây" dưới hàng "Mẫu buổi tập & lịch sử".
+  private var templatesLine: String? {
+    let t = flow.today.library?.templates.count ?? 0
+    let n = flow.history?.entries.count ?? 0
+    let parts = [t > 0 ? String(localized: "wh.templatesCount \(t)") : nil,
+                 n > 0 ? String(localized: "wh.sessions \(n)") : nil].compactMap { $0 }
+    return parts.isEmpty ? nil : parts.joined(separator: " · ")
   }
 
   static func toolRow(_ symbol: String, _ title: String, sub: String?, tint: Color = Self.accent) -> some View {
@@ -634,70 +507,6 @@ struct WorkoutsHomeView: View {
   }
 }
 
-/// "Thư viện & lịch sử" (`(tabs)/workouts/library.tsx`): thứ bạn TRA CỨU —
-/// thư viện bài tập trước, lịch sử buổi tập sau.
-struct LibraryHistoryView: View {
-  let flow: WorkoutFlow
-
-  var body: some View {
-    ScrollView {
-      VStack(spacing: DS.Spacing.md) {
-        if let library = flow.library {
-          MuscleGrid(library: library)
-        }
-        VStack(spacing: 0) {
-          if let library = flow.library {
-            NavigationLink { ExercisesView(library: library) } label: {
-              row("books.vertical", String(localized: "workoutshome.library"), sub: nil)
-            }
-            .buttonStyle(.plain)
-          }
-          if let history = flow.history {
-            if flow.library != nil { Divider().padding(.leading, 58).opacity(0.6) }
-            NavigationLink { WorkoutHistoryView(book: history) } label: {
-              row(
-                "clock.arrow.circlepath", String(localized: "history.title"),
-                sub: history.entries.isEmpty ? nil : String(localized: "wh.sessions \(history.entries.count)"))
-            }
-            .buttonStyle(.plain)
-          }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
-        .todayCard()
-      }
-      .padding(DS.Spacing.md)
-    }
-    .navigationTitle(String(localized: "wh.libraryHistory"))
-    .navigationBarTitleDisplayMode(.large)
-    .ascndPage()
-  }
-
-  private func row(_ symbol: String, _ title: String, sub: String?) -> some View {
-    HStack(spacing: 12) {
-      Image(systemName: symbol)
-        .font(.footnote.weight(.semibold))
-        .foregroundStyle(WorkoutsHomeView.accent)
-        .frame(width: 32, height: 32)
-        .background(WorkoutsHomeView.accent.opacity(0.12), in: Circle())
-        .accessibilityHidden(true)
-      VStack(alignment: .leading, spacing: 2) {
-        Text(verbatim: title).font(DS.TextStyle.body).foregroundStyle(DS.Color.foreground.swiftUI)
-        if let sub {
-          Text(verbatim: sub).font(DS.TextStyle.caption).foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        }
-      }
-      Spacer()
-      Image(systemName: "chevron.right")
-        .font(.footnote.weight(.semibold))
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .accessibilityHidden(true)
-    }
-    .padding(.horizontal, DS.Spacing.md)
-    .frame(minHeight: 60)
-    .contentShape(Rectangle())
-  }
-}
-
 /// Vào thư viện theo NHÓM CƠ (`muscle-grid.tsx` @ fac9ac2, 14/10): đủ mười ô
 /// theo thứ tự tập một cơ thể (không đổi chỗ khi có thêm bài), số bài dưới
 /// mỗi ô; thu gọn hai hàng, "Xem tất cả nhóm" mở phần còn lại. Chạm → thư
@@ -708,6 +517,7 @@ struct LibraryHistoryView: View {
 struct MuscleGrid: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   let library: ExerciseLibrary
+  var insights: InsightBook?
   @Environment(\.locale) private var locale
   @State private var expanded = false
 
@@ -724,7 +534,7 @@ struct MuscleGrid: View {
       LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: DS.Spacing.sm), count: 3), spacing: DS.Spacing.sm) {
         ForEach(tiles, id: \.self) { g in
           NavigationLink {
-            ExercisesView(library: library, only: g)
+            ExercisesView(library: library, only: g, insights: insights)
           } label: {
             tile(g, count: counts[g] ?? 0)
           }

@@ -64,4 +64,47 @@ struct KoaDustTests {
     }
     #expect(counts[0] > 0 && counts[1] > counts[0] && counts[2] > counts[1])
   }
+
+  /// Kho giả theo đúng ngữ nghĩa PostgREST mà `SupabaseRowStore` thực thi:
+  /// xếp theo `order` của truy vấn rồi mới cắt `limit` (bộ lọc `or` bỏ qua —
+  /// mọi hàng trong test đều là hàng cần đọc).
+  final class OrderedStore: RowStore, @unchecked Sendable {
+    var rows: [JSONValue] = []
+    func select(_ q: RowQuery) async throws(RowStoreError) -> [JSONValue] {
+      var out = rows
+      if let o = q.order {
+        out = out.enumerated().sorted {
+          let a = $0.element[o.column]?.stringValue ?? "", b = $1.element[o.column]?.stringValue ?? ""
+          let c = (a < b ? -1 : a > b ? 1 : 0) * (o.ascending ? 1 : -1)
+          return c != 0 ? c < 0 : $0.offset < $1.offset
+        }.map(\.element)
+      }
+      if let l = q.limit { out = Array(out.prefix(l)) }
+      return out
+    }
+    func insert(_ table: String, _ row: [String: JSONValue]) async throws(RowStoreError) {}
+    func update(_ table: String, _ row: [String: JSONValue], where filters: [RowQuery.Filter]) async throws(RowStoreError)
+      -> Int { 0 }
+  }
+
+  /// R2-ECO-11: 61 lần dọn — trần 60 phải giữ 60 lần MỚI nhất, không phải 60
+  /// lần cũ nhất mà thứ tự không xác định có thể trả về.
+  @Test func cleanQueryKeepsTheNewestSixtyCleans() async throws {
+    let q = KoaDustSync.cleanQuery(userId: "u")
+    #expect(q.order == RowQuery.Order(column: "created_at", ascending: false))
+    #expect(q.limit == 60)
+    let start = LocalDate("2026-08-01")!
+    let store = OrderedStore()
+    store.rows = (0..<61).map { i in
+      let day = start.adding(days: i)
+      return JSONValue.object([
+        "ref_key": .string("clean:\(day)"), "created_at": .string("\(day)T00:00:00.000Z"),
+      ])
+    }
+    let keys = try await store.select(q).compactMap { $0["ref_key"]?.stringValue }
+    #expect(keys.count == 60)
+    #expect(keys.first == "clean:\(start.adding(days: 60))")
+    #expect(keys.last == "clean:\(start.adding(days: 1))")
+    #expect(!keys.contains("clean:\(start)"))
+  }
 }

@@ -138,10 +138,16 @@ interface SubscriptionStatus {
   signedTransactionInfo?: string;
 }
 
-function b64urlToBytes(s: string): Uint8Array {
+/* `Uint8Array<ArrayBuffer>`, not bare `Uint8Array`: Web Crypto's
+   `BufferSource` requires an `ArrayBuffer`-backed view, and the bare
+   type widens to `ArrayBufferLike` (which admits `SharedArrayBuffer`),
+   so `importKey` below would not type-check. The bytes were always
+   `ArrayBuffer`-backed — `new Uint8Array(n)` allocates one — so this
+   annotation changes no runtime behavior. */
+function b64urlToBytes(s: string): Uint8Array<ArrayBuffer> {
   const b64 = s.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(s.length / 4) * 4, "=");
   const bin = atob(b64);
-  const out = new Uint8Array(bin.length);
+  const out: Uint8Array<ArrayBuffer> = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
 }

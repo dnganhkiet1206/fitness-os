@@ -32,29 +32,37 @@ from .hinge import HingeTemplate
 
 @register("row")
 class RowTemplate(HingeTemplate):
+    # 15/11 Kiệt "bent over sai tư thế", re-checked on two real-person
+    # videos (YouTube QFq5jdwWwX4, fFmwY2dA2ds) and coaching pages
+    # (Garage Gym Reviews, PowerliftingTechnique, Muscle & Strength,
+    # PureGym): torso hinged about 45-55 deg and held there, knees soft,
+    # neck neutral (eyes a little ahead of the feet), elbows close to the
+    # body and driven back toward the hips. The first version hinged to
+    # 75 deg, flared the elbows 24 deg out (pole pulled sideways) and
+    # extended the head 41 deg, which read as a rear-delt fly.
     defaults = {
         **HingeTemplate.defaults,
         # Knees bent enough that the shins stand about vertical and the hips
         # sit back (14/11 Kiệt: at 20 deg the shins sloped back and the
         # legs looked locked, the body leaning on stiff legs).
-        "trunk_lean_deg": 75.0,
-        "knee_flexion_deg": 31.0,
+        "trunk_lean_deg": 52.0,
+        "knee_flexion_deg": 26.0,
         # Flat back, chest up: the whole lean at the hips, and the spine a
         # little extended (pelvis share > 1). 14/11 Kiệt: the first version
         # bent the spine (rounded upper back, shoulders hunched) and the head
         # hung to the chest; the source says "keep the head up".
         "pelvis_share_of_lean": 1.12,
-        "head_extension_share_of_lean": 0.55,
+        "head_extension_share_of_lean": 0.3,
         # Shoulder blades squeeze back at the top of the pull.
         "top_scapular_retraction_deg": 16.0,
         # Top of the pull: the upper arm lies along the trunk towards the
         # hips, lifted a little above the line of the back, slightly out
         # from the side. The forearm hangs plumb the whole time (the weight
         # pulls straight down), so the hand path follows from the elbow.
-        "top_upper_arm_above_back_deg": 12.0,
-        "top_upper_arm_out_deg": 24.0,
+        "top_upper_arm_above_back_deg": 28.0,
+        "top_upper_arm_out_deg": 18.0,
         "start_elbow_flexion_deg": 7.0,
-        "start_arm_out_deg": 7.0,
+        "start_arm_out_deg": 9.0,
         "grip_half_width_m": 0.17,
     }
 
@@ -107,7 +115,7 @@ class RowTemplate(HingeTemplate):
             # A fixed bend side (towards the hips, up and out): a pole taken
             # from the nearly straight start arm is a tiny noisy vector and
             # flipped the upper arm 180 deg between frames (14/11).
-            pole_dir = unit(-self.up_trunk * 0.3 + self.dorsal + LEFT * sign * 0.4)
+            pole_dir = unit(-self.up_trunk * 0.5 + self.dorsal + LEFT * sign * 0.1)
             fore = unit(wrist - elbow)
             # Neutral grip: palm towards the body's midline, thumb towards
             # the head end of the trunk.

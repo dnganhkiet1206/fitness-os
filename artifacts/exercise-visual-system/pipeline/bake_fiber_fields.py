@@ -108,7 +108,8 @@ def main() -> None:
     config.save_json(atlas_dir / "fiber_facts.json", facts)
 
     debug = np.zeros((res, res, 3), dtype=np.uint8)
-    for channel, group in enumerate(("pectoralis_major", "deltoid_anterior", "triceps_brachii")):
+    # One part per channel (muscle_map v2: parts are the groups now).
+    for channel, group in enumerate(("pectoralis_major_sternocostal", "deltoid_anterior", "triceps_lateral_head")):
         debug[..., channel] = packed[group]
     pngio.write_png(atlas_dir / "_fiber_phase_debug.png", np.flipud(debug)[::2, ::2])
     print(f"[evs] phase atlas: {atlas_dir / 'fiber_phase.npz'} (+ fiber_facts.json, _fiber_phase_debug.png)")

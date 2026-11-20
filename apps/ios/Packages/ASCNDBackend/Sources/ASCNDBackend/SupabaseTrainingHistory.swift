@@ -1,45 +1,29 @@
 public import ASCNDCore
 import Foundation
-import Supabase
 
-/// `TrainingHistory` thật: thời điểm các buổi trong cửa sổ, như
-/// `useWorkoutSessions` của baseline (`use-fitness-data.ts`) nhưng chỉ lấy cột
-/// `date_time` — màn Today chỉ cần biết ngày nào đã tập.
+/// `TrainingHistory` thật: thời điểm các buổi trong cửa sổ + buổi của một ngày
+/// — qua lượt đọc chung `SharedWorkoutSessions` (R2-OPS-08), lọc trong bộ nhớ
+/// theo đúng cửa sổ, thay cho hai truy vấn riêng. Màn Today chỉ cần biết ngày
+/// nào đã tập + buổi trong ngày để nhận buổi ghi từ máy khác.
 public struct SupabaseTrainingHistory: TrainingHistory {
-  private let client: SupabaseClient
+  private let shared: SharedWorkoutSessions
 
   public init(backend: Backend) {
-    self.client = backend.client
+    self.shared = backend.sharedSessions
   }
 
   public func sessionTimes(userId: String, since: EpochMillis) async throws -> [EpochMillis] {
-    let rows: [Row] = try await client.from("workout_sessions")
-      .select("date_time")
-      .eq("user_id", value: userId)
-      .gte("date_time", value: WorkoutSessionRecord.iso8601(since))
-      .order("date_time", ascending: false)
-      .execute().value
-    return Self.times(rows)
+    Self.times(try await shared.rows(userId: userId, since: since))
   }
 
   /// Buổi của một ngày, mới trước — đủ cột để nhận buổi ghi từ máy khác
   /// (RN `day-plan.tsx` đọc `sessions` của ngày để tính `proven`).
   public func sessions(userId: String, from: EpochMillis, to: EpochMillis) async throws -> [JSONValue] {
-    try await client.from("workout_sessions")
-      .select("id, date_time, session_rpe, pr_detected, sets, template_id")
-      .eq("user_id", value: userId)
-      .gte("date_time", value: WorkoutSessionRecord.iso8601(from))
-      .lt("date_time", value: WorkoutSessionRecord.iso8601(to))
-      .order("date_time", ascending: false)
-      .execute().value
-  }
-
-  struct Row: Decodable, Sendable {
-    let date_time: String
+    try await shared.rows(userId: userId, from: from, to: to)
   }
 
   /// Hàng không đọc được thời điểm thì bỏ — không đoán ngày.
-  static func times(_ rows: [Row]) -> [EpochMillis] {
-    rows.compactMap { EpochMillis(iso8601: $0.date_time) }
+  static func times(_ rows: [JSONValue]) -> [EpochMillis] {
+    rows.compactMap { $0["date_time"]?.stringValue.flatMap { EpochMillis(iso8601: $0) } }
   }
 }

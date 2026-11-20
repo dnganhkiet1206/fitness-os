@@ -51,18 +51,48 @@ struct KoaWeekTests {
   final class Economy: MascotEconomy, @unchecked Sendable {
     var claims: [String] = []
     var failWith: MascotFailure?
+    /// Số xu server trả (mặc định giá hiện tại) và độ trễ (thử chạy chồng).
+    var amount = KoaWeek.rewardCoins
+    var delayMs = 0
     func claimReward(refKey: String, reason: String) async throws -> Int {
+      if delayMs > 0 { try? await Task.sleep(for: .milliseconds(delayMs)) }
       if let failWith { throw failWith }
-      if claims.contains(refKey) { throw MascotFailure.server(code: "23505") }
+      if claims.contains(refKey) { return 0 }  // server mới: trùng → 0 (KOA-T01)
       claims.append(refKey)
-      return KoaWeek.rewardCoins
+      return amount
     }
-    func buyStreakFreeze(requestId: UUID) async throws -> Int { 0 }
   }
 
   static func complete() -> KoaWeek.State {
     let days = [Self.mon, Self.mon.adding(days: 2), Self.mon.adding(days: 4)]
     return KoaWeek.state(today: days[2], library: Self.lib(), trained: Set(days))!
+  }
+
+  /// KOA-T05: tải lại Hôm nay không mừng lần hai — chỉ lượt vừa nhận trả số xu; số đó là
+  /// số server trả, không phải hằng 50.
+  @Test func onlyAFreshClaimReturnsCoinsAndItUsesTheServerAmount() async throws {
+    let defaults = try #require(UserDefaults(suiteName: "koaweek-\(UUID())"))
+    let econ = Economy()
+    econ.amount = 70
+    let book = KoaWeekBook(userId: "u", economy: econ, defaults: defaults)
+    #expect(await book.claimIfComplete(Self.complete()) == 70)
+    #expect(book.claim == .justClaimed(coins: 70))
+    #expect(await book.claimIfComplete(Self.complete()) == nil, "tải lại: không có tín hiệu mừng")
+    #expect(book.claim == .justClaimed(coins: 70), "thẻ vẫn hiện 'vừa nhận'")
+    #expect(econ.claims.count == 1)
+  }
+
+  /// KOA-T17: phòng, Hôm nay và lượt "có mạng lại" gọi chồng nhau → một lượt nhận.
+  @Test func overlappingClaimsSendOneRequest() async throws {
+    let defaults = try #require(UserDefaults(suiteName: "koaweek-\(UUID())"))
+    let econ = Economy()
+    econ.delayMs = 80
+    let book = KoaWeekBook(userId: "u", economy: econ, defaults: defaults)
+    async let a = book.claimIfComplete(Self.complete())
+    async let b = book.claimIfComplete(Self.complete())
+    let got = await [a, b]
+    #expect(econ.claims.count == 1)
+    #expect(got.compactMap { $0 } == [50], "chỉ một lượt mừng")
   }
 
   @Test func claimsOncePerWeekEvenWhenCalledAgainOrFromAnotherDevice() async throws {
@@ -96,6 +126,17 @@ struct KoaWeekTests {
 
   /// Đủ tuần lúc mất mạng, sang tuần mới mới có mạng: nhận bù tuần trước một lần,
   /// không đụng trạng thái nhận của tuần này.
+  /// KOA-T01: tuần đã nhận ở máy khác — nhận bù trả 0 → không báo "+50", nhớ đã nhận.
+  @Test func missedWeekPaidElsewhereIsNotCelebrated() async throws {
+    let econ = Economy()
+    econ.claims = [Self.complete().refKey]  // máy khác đã nhận
+    let defaults = try #require(UserDefaults(suiteName: "koaweek-\(UUID())"))
+    let book = KoaWeekBook(userId: "u", economy: econ, defaults: defaults)
+    #expect(await book.claimMissed(Self.complete()) == nil)
+    await book.claimIfComplete(Self.complete())
+    #expect(book.claim == .claimed, "đã nhận ở máy khác: hiện 'đã nhận', không 'vừa nhận'")
+  }
+
   @Test func missedWeekIsClaimedOnceLaterWithoutTouchingThisWeek() async throws {
     let defaults = try #require(UserDefaults(suiteName: "koaweek-\(UUID())"))
     let econ = Economy()
@@ -127,6 +168,50 @@ struct KoaWeekTests {
     #expect(
       s.gains == 2 * KoaGains.plannedSession + KoaGains.restPerWeek * KoaGains.plannedRest,
       "chỉ Gains của tuần này; buổi dời sang T5 vẫn là buổi trong lịch")
+  }
+
+  /// KOA-T22: Hôm nay / phòng (`state`) và Tổng kết tuần (`summary`) cùng một đích khi có Tạm nghỉ.
+  @Test func stateAndSummaryAgreeOnTheTargetWithAPause() throws {
+    let fri = Self.mon.adding(days: 4), sun = Self.mon.adding(days: 6)
+    let paused: (LocalDate) -> Bool = { $0 == fri }
+    let trained: Set<LocalDate> = [Self.mon]
+    let st = try #require(KoaWeek.state(today: sun, library: Self.lib(), trained: trained, paused: paused))
+    let su = KoaWeek.summary(
+      weekStart: Self.mon, today: sun, library: Self.lib(),
+      history: trained.map { KoaGains.Day(date: $0, personalRecord: false) }, paused: paused)
+    #expect(st.target == 2 && su.target == st.target && su.done == st.done)
+  }
+
+  /// KOA-T22: buổi T6 dời sang T2 tuần sau — đích tuần này không đổi, buổi được tính ở tuần tập thật.
+  @Test func crossWeekMoveCountsWhereItIsTrained() throws {
+    let fri = Self.mon.adding(days: 4), nextMon = Self.mon.adding(days: 7)
+    let lib = Self.lib([
+      DayOverride(date: fri, templateId: nil, isRest: true, movedTo: nextMon),
+      DayOverride(date: nextMon, templateId: "t", isRest: false, movedFrom: fri),
+    ])
+    let history = [Self.mon, Self.mon.adding(days: 2), nextMon].map { KoaGains.Day(date: $0, personalRecord: false) }
+    let this = KoaWeek.summary(weekStart: Self.mon, today: nextMon, library: lib, history: history)
+    let next = KoaWeek.summary(weekStart: nextMon, today: nextMon, library: lib, history: history)
+    #expect(this.target == 3 && this.done == 2 && this.moved == 0)
+    #expect(next.done == 1 && next.moved == 1)
+  }
+
+  /// KOA-T22: 14 ngày lịch sử của Hôm nay phủ trọn tuần trước từ mọi ngày trong tuần (thẻ đầu tuần,
+  /// nhận bù Tuần của Koa đều đọc tuần trước từ nguồn này).
+  @Test func todayHistoryWindowCoversLastWeek() {
+    for o in 0..<7 {
+      let today = Self.mon.adding(days: o)
+      let firstRead = today.adding(days: -(TodayController.historyDays - 1))
+      #expect(firstRead <= today.weekStart.adding(days: -7), "thứ \(o + 2)")
+    }
+  }
+
+  /// KOA-T22: chưa có lịch — Tuần của Koa không có đích (ẩn), dải tuần Tập luyện vẫn hiện ngày đã tập.
+  @Test func noLibraryModelIsPinned() {
+    let trained: Set<LocalDate> = [Self.mon]
+    #expect(KoaWeek.state(today: Self.mon, library: nil, trained: trained) == nil)
+    let strip = WorkoutHome.week(today: Self.mon, library: nil, trained: trained)
+    #expect(strip.first?.status == .done && strip.dropFirst().allSatisfy { $0.status == .unplanned })
   }
 
   /// Vòng ngày của màn Tổng kết tuần: một tuần đã qua vẫn đọc đúng lịch và buổi đã tập.

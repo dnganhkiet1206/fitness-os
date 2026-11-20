@@ -287,5 +287,11 @@
       data: [DONE]
 
       """.utf8)
+    /// Luồng bị cắt giữa chừng: có chữ nhưng không có `[DONE]` (KOA-T06).
+    static let coachStreamCut = Data(
+      """
+      data: {"choices":[{"delta":{"content":"Nice work today. Stay hydrated and"}}]}
+
+      """.utf8)
   }
 #endif

@@ -99,17 +99,23 @@ struct WorkoutHistoryVectorTests {
       #expect(b.loaded && b.entries.isEmpty, "WH-1c")
 
     case "WH-1d":
-      // Hợp đồng cột: native hỏi đúng các cột RN đọc (`SupabaseHistorySource`).
+      // Hợp đồng cột: native hỏi đúng các cột RN đọc — `SupabaseHistorySource`
+      // qua lượt đọc chung, cột nằm ở `SharedWorkoutSessions.columns` (R2-OPS-08).
       let src = try String(
         contentsOf: RepoPaths.root.appendingPathComponent(
           "apps/ios/Packages/ASCNDBackend/Sources/ASCNDBackend/SupabaseHistorySource.swift"),
+        encoding: .utf8)
+      #expect(src.contains("SharedWorkoutSessions"), "WH-1d: SupabaseHistorySource không qua lượt đọc chung")
+      let shared = try String(
+        contentsOf: RepoPaths.root.appendingPathComponent(
+          "apps/ios/Packages/ASCNDBackend/Sources/ASCNDBackend/SharedWorkoutSessions.swift"),
         encoding: .utf8)
       guard case .array(let fields)? = expected?["fields"] else {
         Issue.record("WH-1d: thiếu fields")
         return
       }
       for f in fields.compactMap(\.stringValue) {
-        #expect(src.contains(f), "WH-1d: SupabaseHistorySource không select cột \(f)")
+        #expect(shared.contains(f), "WH-1d: SharedWorkoutSessions không select cột \(f)")
       }
 
     case "WH-2a", "WH-2b":

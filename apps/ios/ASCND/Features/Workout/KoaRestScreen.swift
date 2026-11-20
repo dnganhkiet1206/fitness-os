@@ -84,17 +84,25 @@ struct KoaRestScreen: View {
   /// Lúc quãng nghỉ này mở lần đầu: thu nhỏ rồi mở lại thì Koa diễn tiếp, không diễn lại mở đầu.
   var startedAt: Date?
   var onStarted: (Date) -> Void = { _ in }
+  /// Đồng hồ hoạt động của quãng nghỉ này, giữ ở màn tập qua các lần thu nhỏ (Devin #970: màn
+  /// dựng lại sau khi thu nhỏ thì quên quãng đã dừng, Koa nhảy nhịp). `nil`: đồng hồ riêng.
+  var clock: RestClockBox? = nil
 
   @State private var start = Date.now
   @State private var heard = Heard()
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  /// Ra nền thì đồng hồ cảnh dừng (KOA-T11).
+  @Environment(\.scenePhase) private var scenePhase
 
-  final class Heard { var scene: KoaReaction.Scene?; var played = Set<Int>(); var tick = -1 }
+  final class Heard {
+    var scene: KoaReaction.Scene?; var played = Set<Int>(); var tick = -1; var buzzed = Set<Double>()
+    let active = RestClockBox()
+  }
 
-  private static let bg = Color(red: 0.055, green: 0.059, blue: 0.071)
-  private static let orange = Color(red: 0.91, green: 0.52, blue: 0.16)
-  private static let gold = Color(red: 0.91, green: 0.70, blue: 0.23)
-  private static let rose = Color(red: 0.90, green: 0.33, blue: 0.42)
+  private static let bg = KoaShowStage.bg
+  private static let orange = KoaShowStage.orange
+  private static let gold = KoaShowStage.gold
+  private static let rose = KoaShowStage.rose
   /// Màu Tập luyện (Kiệt 07/11: "nút vào set và thanh thời gian nên là màu đỏ cho khớp với tập luyện").
   private static let train = DS.Color.metricRose.swiftUI
 
@@ -124,9 +132,14 @@ struct KoaRestScreen: View {
   }
 
   var body: some View {
+    // KOA-T11: tối đa 60 khung/giây, dừng khi app không ở tiền cảnh (giờ nghỉ tính theo mốc thời
+    // gian nên không lệch khi quay lại).
     // reduce-motion: Koa đứng yên ở khung đầu của mỗi cảnh, không nhún, không pháo giấy; chữ, thẻ và đồng hồ vẫn chạy
-    TimelineView(.animation) { ctx in
-      let elapsed = frozen ?? max(0, ctx.date.timeIntervalSince(startedAt ?? start) * 1000)
+    TimelineView(.animation(minimumInterval: 1.0 / 60, paused: scenePhase != .active)) { ctx in
+      // KOA-T26: màn diễn chạy theo thời gian HOẠT ĐỘNG (trừ quãng dừng) — dừng thì Koa đứng yên
+      // cùng đồng hồ đếm ngược, tiếp tục không nhảy cóc nhịp.
+      let elapsed = frozen ?? (clock ?? heard.active).clock.elapsed(
+        now: max(0, ctx.date.timeIntervalSince(startedAt ?? start) * 1000), paused: timer.isPaused)
       let now = frozen.map { EpochMillis((startedAt ?? start).addingTimeInterval($0 / 1000)) } ?? EpochMillis(ctx.date)
       let leftMs = timer.pausedLeft.map { Double($0) * 1000 } ?? Double(timer.endsAt.millis - now.millis)
       let left = timer.remaining(at: now)
@@ -139,17 +152,11 @@ struct KoaRestScreen: View {
         // đứng của koa phải khớp với story xong buổi tập"): quầng cam ở 46 %, vũng sáng sàn ở 79 %, Koa 82 % bề ngang
         // (tối đa 340) đứng giữa ở 54 %. Chữ + thẻ ở trên, đồng hồ + nút gọn ở dải dưới chân.
         ZStack {
-          Self.bg.ignoresSafeArea()
-          RadialGradient(colors: [Self.orange.opacity(0.30), .clear], center: UnitPoint(x: 0.5, y: 0.46), startRadius: 0,
-                         endRadius: geo.size.width * 0.85)
-            .ignoresSafeArea()
-          Ellipse().fill(RadialGradient(colors: [Self.orange.opacity(0.22), .clear], center: .center, startRadius: 0,
-                                        endRadius: geo.size.width * 0.38))
-            .frame(width: geo.size.width * 0.8, height: geo.size.width * 0.18)
-            .position(x: geo.size.width / 2, y: geo.size.height * 0.79)
-          effects(cues, t: b.t)
-          koa(f, size: geo.size)
-            .position(x: geo.size.width / 2, y: geo.size.height * 0.54)
+          KoaShowStage.Backdrop(size: geo.size)
+          KoaShowStage.Effects(
+            cues: cues, t: b.t, reduceMotion: reduceMotion, centerY: 0.36, sweatRise: 110, confetti: 60, confettiFloor: 0.6)
+          KoaShowStage.Figure(frame: f, size: geo.size, reduceMotion: reduceMotion)
+            .position(x: geo.size.width / 2, y: geo.size.height * KoaShowStage.koaY)
           VStack(spacing: 8) {
             topBar
             title(cues: cues, b: b)
@@ -224,32 +231,6 @@ struct KoaRestScreen: View {
       }
     }
     .frame(height: 84)
-  }
-
-  // MARK: Koa (như `KoaReactionView.koa`)
-
-  private func koa(_ f: KoaPerformance.Frame, size: CGSize) -> some View {
-    // như `KoaReactionView.koa`: cùng cỡ, bóng đứng yên trên sàn, nhảy dời cả hình
-    let fig = min(size.width * 0.82, 340.0)
-    let unit = fig / 240
-    let still = reduceMotion
-    let air = (still ? 0 : f.air) * unit
-    let lift = min(1, f.air / 40)
-    return ZStack {
-      Ellipse().fill(Color(red: 0.68, green: 0.71, blue: 0.75).opacity(0.32 * (1 - 0.55 * lift)))
-        .frame(width: 128 * unit * (1 - 0.35 * lift), height: 18 * unit * (1 - 0.35 * lift))
-        .offset(y: (294 - 150) * unit)
-      KoaFigureView(
-        expression: f.expression, pose: .idle, gesture: nil, size: fig, animated: true,
-        stage: false, walk: still ? KoaWalk.Pose() : f.walk, bleeds: true,
-        headLook: KoaMath.Gaze(x: f.look.x, y: f.look.y, k: 1), eyes: KoaMath.Gaze(x: f.eyes.x, y: f.eyes.y, k: 1),
-        groundShadow: false, gestureAmount: 0
-      )
-      .scaleEffect(x: still ? 1 : f.sx, y: still ? 1 : f.sy, anchor: .bottom)
-      .offset(y: -air)
-    }
-    .scaleEffect(still ? 1 : f.zoom, anchor: UnitPoint(x: 0.5, y: 0.32 + 0.28 * f.focus))
-    .accessibilityHidden(true)
   }
 
   /// Thẻ số của set: hiện từ giữa mở đầu (đếm lên như cảnh xong buổi), rồi ở lại suốt quãng nghỉ để đọc.
@@ -346,40 +327,6 @@ struct KoaRestScreen: View {
 
   // MARK: hiệu ứng (như cảnh xong buổi)
 
-  private func effects(_ cues: [KoaPerformance.Cue], t: Double) -> some View {
-    Canvas { c, sz in
-      guard !reduceMotion else { return }
-      func rnd(_ i: Double) -> Double { let x = sin(i * 12.9898) * 43758.5453; return x - floor(x) }
-      let cx = sz.width / 2, cy = sz.height * 0.36
-      for cue in cues {
-        let local = t - cue.from
-        if cue.effects.contains(.sweat) {
-          for i in 0..<3 {
-            let q = (local / 800 + Double(i) / 3).truncatingRemainder(dividingBy: 1)
-            let r = CGRect(x: cx - 80 + Double(i) * 75, y: cy - 110 + q * 80, width: 12, height: 18)
-            c.fill(Path(ellipseIn: r), with: .color(Color(red: 0.62, green: 0.85, blue: 0.95).opacity(1 - q)))
-          }
-        }
-        if cue.effects.contains(.confetti) {
-          let cols: [Color] = [Self.orange, Self.gold, Self.rose, Color(red: 0.49, green: 0.78, blue: 0.93), .white]
-          for i in 0..<60 {
-            let d = Double(i)
-            let life = local / 1000 + rnd(d + 11) * 0.4
-            let x = rnd(d + 5) * sz.width + (rnd(d) - 0.5) * 60 * life
-            let y = -20 - rnd(d + 7) * 200 + (170 + rnd(d + 9) * 150) * life + 110 * life * life
-            guard y < sz.height * 0.6 else { continue }
-            var g = c
-            g.translateBy(x: x, y: y)
-            g.rotate(by: .radians(life * (rnd(d + 3) * 10 - 5)))
-            g.fill(Path(CGRect(x: -4, y: -7, width: 8, height: 14 * abs(cos(life * 6 + d)))), with: .color(cols[i % 5]))
-          }
-        }
-      }
-    }
-    .ignoresSafeArea()
-    .allowsHitTesting(false)
-  }
-
   // MARK: tiếng + nhịp
 
   private func fire(_ b: Beat, elapsed: Double) {
@@ -387,11 +334,34 @@ struct KoaRestScreen: View {
     let sec = Int(elapsed / 1000)
     if sec != heard.tick { heard.tick = sec; onSettle() }
     guard heard.played != [-1] || b.scene != .restIntro else { return }   // mở lại giữa chừng: không phát lại mở đầu
-    if heard.scene != b.scene { heard.scene = b.scene; heard.played = [] }
+    if heard.scene != b.scene { heard.scene = b.scene; heard.played = []; heard.buzzed = [] }
     guard let s = b.scene else { return }
     for (i, snd) in KoaPerformance.sounds(s).enumerated() where snd.t <= b.t && !heard.played.contains(i) {
       heard.played.insert(i)
       if b.t - snd.t < 250 { KoaSound.reaction(snd.name, gain: snd.gain) }
     }
+    // KOA-T15: rung theo mốc của kịch bản, kể cả nhịp "LƯỢT MÌNH!" (đúng mốc, không trễ 1 giây
+    // như rung hết giờ toàn cục — rung toàn cục bỏ qua khi nhịp này vừa rung).
+    guard KoaHaptics.allowed(reduceMotion: reduceMotion) else { return }
+    for m in KoaHaptics.due(KoaHaptics.marks(KoaPerformance.cues(s)), at: b.t, fired: heard.buzzed) {
+      heard.buzzed.insert(m.t)
+      KoaHapticPlayer.play(m.haptic, restGo: s == .restGo)
+    }
+  }
+}
+
+/// Hộp đồng hồ hoạt động (KOA-T26) — tham chiếu, để cập nhật mỗi khung hình không làm view vẽ lại.
+final class RestClockBox {
+  var clock = RestActiveClock()
+}
+
+/// Đồng hồ hoạt động theo khoá quãng nghỉ, sống cùng màn tập (Devin #970).
+final class RestClockStore {
+  private var boxes: [String: RestClockBox] = [:]
+  func box(_ key: String) -> RestClockBox {
+    if let b = boxes[key] { return b }
+    let b = RestClockBox()
+    boxes[key] = b
+    return b
   }
 }

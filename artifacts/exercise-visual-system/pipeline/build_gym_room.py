@@ -62,6 +62,12 @@ def wall_slats(prefix, center, along, normal, length, gap_half, mat, yaw, coll):
         cube(f"{prefix}Slat{i}", (0.05, 0.06, 3.0), p, mat, yaw, coll)
 
 
+# Rack dumbbells as sockets instead of meshes (Kiệt 17/11, "--rack-items"): the app mounts the
+# shared equipment model (equipment_<key>.usdz) there, so changing the dumbbell model changes the
+# room and every exercise at once. Each item: Z-up world centre, handle axis, head radius.
+RACK_ITEMS: list[dict] | None = None
+
+
 def rack(prefix, base, side, view, yaw, steel, chrome, coll):
     cube(f"{prefix}Shelf1", (0.5, 1.6, 0.05), base + Vector((0, 0, 0.45)), steel, yaw, coll)
     cube(f"{prefix}Shelf2", (0.5, 1.6, 0.05), base + Vector((0, 0, 0.85)) + view * 0.08, steel, yaw, coll)
@@ -70,6 +76,10 @@ def rack(prefix, base, side, view, yaw, steel, chrome, coll):
     for row, z, size in ((0, 0.55, 0.11), (1, 0.95, 0.09)):
         for j in range(5):
             c = base + side * (-0.6 + j * 0.3) + view * (0.08 * row) + Vector((0, 0, z))
+            if RACK_ITEMS is not None:
+                RACK_ITEMS.append({"center": c.copy(), "axis": view.copy(), "radius": size - 0.01 * j,
+                                   "length": 0.33})
+                continue
             for end in (-0.13, 0.13):
                 bpy.ops.mesh.primitive_cylinder_add(vertices=6, radius=size - 0.01 * j, depth=0.07, location=c + view * end,
                                                     rotation=(math.pi / 2, 0, yaw - math.pi / 2))
@@ -247,6 +257,74 @@ def bake(obj, size, path, samples):
             obj.data.uv_layers.remove(layer)
 
 
+USD_ROOM = dict(selected_objects_only=True, export_animation=False, export_materials=True,
+                generate_preview_surface=True, export_textures_mode="NEW", relative_paths=True,
+                convert_orientation=True, export_global_forward_selection="NEGATIVE_Z", export_global_up_selection="Y",
+                convert_scene_units="METERS", export_lights=False, export_cameras=False, evaluation_mode="RENDER",
+                check_existing=False)
+
+
+def export_parts(look_name: str, objs, out_dir: str, center: Vector, view: Vector) -> None:
+    """Room as blocks (MODULAR_3D_PLAN.md, Kiệt 16/11): one USDZ per part so a
+    floor, the racks or the logo sign can change alone, and a manifest with
+    the parts and the anchor points that decor packs hang on. Anchors are in
+    RealityKit metres (Y up), derived from the logo sign on the back wall."""
+    import json
+    parts = []
+    for o in objs:
+        key = "logo" if o.name == "Logo" else o.name.removeprefix("Room_")
+        bpy.ops.object.select_all(action="DESELECT")
+        o.select_set(True)
+        path = os.path.join(out_dir, f"gym_room_{look_name}_{key}.usdz")
+        bpy.ops.wm.usd_export(filepath=path, **USD_ROOM)
+        parts.append({"part": key, "file": f"gym_room_{look_name}_{key}", "logo": key == "logo"})
+        print(f"[evs] room part {look_name} {key}: {os.path.getsize(path)} bytes")
+    side = view.cross(Vector((0, 0, 1))).normalized()
+    logo = bpy.data.objects["Logo"].matrix_world.translation.copy()
+    floor = Vector((logo.x, logo.y, 0.0))
+
+    def rk(v: Vector) -> list:
+        return [round(v.x, 3), round(v.z, 3), round(-v.y, 3)]
+
+    anchors = {
+        "logo": rk(logo),
+        "ceiling_l": rk(logo + side * 1.5 - view * 0.6 + Vector((0, 0, HEIGHT - logo.z))),
+        "ceiling_r": rk(logo - side * 1.5 - view * 0.6 + Vector((0, 0, HEIGHT - logo.z))),
+        "wall_l": rk(logo + side * 1.6 - view * 0.06),
+        "wall_r": rk(logo - side * 1.6 - view * 0.06),
+        "floor_l": rk(floor + side * 3.2 - view * 0.9),
+        "floor_r": rk(floor - side * 3.2 - view * 0.9),
+        "string_a": rk(logo + side * 5.4 - view * 0.15 + Vector((0, 0, 3.05 - logo.z))),
+        "string_b": rk(logo - side * 5.4 - view * 0.15 + Vector((0, 0, 3.05 - logo.z))),
+    }
+    manifest = {"look": look_name, "parts": parts, "anchors": anchors,
+                # Lights on the character (the room itself is baked + unlit), B2 17/11: the app
+                # reads them here instead of hard-coding them. ``from`` is an offset from the
+                # camera target the light points at; intensity in lux, like RealityKit.
+                "lights": DEFAULT_LIGHTS,
+                # Equipment on the racks (--rack-items): shared model, world pose, size (Kiệt 17/11).
+                "rack_items": [
+                    {"key": "dumbbell_12kg", "position": rk(i["center"]), "axis": rk(i["axis"]),
+                     "radius_m": round(i["radius"], 4), "length_m": i["length"]}
+                    for i in (RACK_ITEMS or [])
+                ],
+                # The racks are baked, the rack items are lit by the character lights: the dark
+                # look dims them to sit in the room (Kiệt 17/11, measured on the simulator).
+                "rack_item_brightness": 0.5 if look_name == "dark" else 1.0,
+                "facing": {"into_room": rk(-view), "along_wall": rk(side)},
+                "room": {"half_width_m": HALF, "height_m": HEIGHT, "center": rk(center)}}
+    path = os.path.join(out_dir, f"room_manifest_{look_name}.json")
+    with open(path, "w") as fh:
+        json.dump(manifest, fh, indent=2)
+    print(f"[evs] room manifest {path}")
+
+
+DEFAULT_LIGHTS = [
+    {"name": "key", "color": "#FFFFFF", "intensity": 1200, "from": [2.0, 4.0, 2.0]},
+    {"name": "fill", "color": "#FFFFFF", "intensity": 400, "from": [-3.0, 1.0, -2.0]},
+]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--exercise", default="bench-press")
@@ -257,6 +335,15 @@ def main() -> None:
     parser.add_argument("--looks", default="light,dark")
     parser.add_argument("--samples", type=int, default=128)
     parser.add_argument("--scale", type=float, default=1.0, help="texture size factor, 0.5 for a quick test")
+    parser.add_argument("--parts", action="store_true",
+                        help="also write every part (floor, walls, ceiling, slats, racks, leds, logo) as its own USDZ "
+                             "plus room_manifest_<look>.json with the parts and the decor anchors (Kiệt 16/11)")
+    parser.add_argument("--rack-items", action="store_true",
+                        help="racks without dumbbells; their poses go to room_manifest rack_items and the app "
+                             "mounts the shared equipment model there (Kiệt 17/11)")
+    parser.add_argument("--empty", action="store_true",
+                        help="bake the room without the exercise (16/11: the room is shared by every exercise; "
+                             "the bench and the lifter baked their shadows into the floor of all of them)")
     args = bl_util.script_args(parser)
     os.makedirs(args.out, exist_ok=True)
     exercise_path = config.exercise_dir(args.exercise)
@@ -270,6 +357,11 @@ def main() -> None:
         scene.frame_set(scene.frame_start)
         for o in list(scene.objects):
             if o.type in ("CAMERA", "LIGHT") or o.name.startswith(("EVS_Floor", "EVS_LightRig")) or o.type == "EMPTY" and o.name == "EVS_LightRig":
+                bpy.data.objects.remove(o, do_unlink=True)
+        if args.empty:
+            # Same room placement (from --exercise's default camera), nothing
+            # in it: the floor bake carries no exercise shadow.
+            for o in list(scene.objects):
                 bpy.data.objects.remove(o, do_unlink=True)
         scene.render.engine = "CYCLES"
         scene.cycles.device = "GPU"
@@ -299,6 +391,8 @@ def main() -> None:
         view.normalize()
         center = Vector((target.x, target.y, 0))
         coll = bl_util.get_collection(ROOM)
+        global RACK_ITEMS
+        RACK_ITEMS = [] if args.rack_items else None
         groups = build_room(look, args, center, view, coll)
 
         sizes = {"floor": 2048, "walls": 2048, "slats": 1024, "racks": 1024, "ceiling": 512, "leds": 256}
@@ -324,6 +418,8 @@ def main() -> None:
             convert_scene_units="METERS", export_lights=False, export_cameras=False, evaluation_mode="RENDER",
             check_existing=False)
         print(f"[evs] room {look_name}: {usdz} {os.path.getsize(usdz)} bytes")
+        if args.parts:
+            export_parts(look_name, baked + [bpy.data.objects["Logo"]], args.out, center, view)
 
 
 if __name__ == "__main__":

@@ -81,10 +81,13 @@ public enum KoaDustSync {
   }
 
   /// `or=` có `:` (ký tự dành riêng của PostgREST) nên giá trị bọc ngoặc kép.
+  /// Mới → cũ: trần 60 chỉ giữ 60 lần dọn gần nhất (chỉ mục
+  /// `(user_id, created_at DESC)` đã có ở migration kinh tế).
   public static func cleanQuery(userId: String) -> RowQuery {
     RowQuery(
       table: "mascot_transactions", columns: "ref_key",
-      filters: [.eq("user_id", .string(userId)), .or("ref_key.like.\"clean:*\"")], limit: 60)
+      filters: [.eq("user_id", .string(userId)), .or("ref_key.like.\"clean:*\"")],
+      order: .init(column: "created_at", ascending: false), limit: 60)
   }
 
   /// Số việc ghi mỗi ngày: bữa (kcal > 0), nước, giấc ngủ, cân.

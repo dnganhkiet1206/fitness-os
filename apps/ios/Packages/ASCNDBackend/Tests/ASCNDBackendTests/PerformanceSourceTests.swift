@@ -17,4 +17,19 @@ struct PerformanceSourceTests {
       WeighIn(date: LocalDate("2026-10-01")!, kg: 72.4), WeighIn(date: LocalDate("2026-10-02")!, kg: 72.6),
     ])
   }
+
+  /// `historyRows`: id về chữ thường, hàng thiếu id hay không đọc được thời
+  /// điểm thì bỏ, `sets` đi theo (R2-OPS-08: ánh xạ từ hàng JSON của lượt đọc chung).
+  @Test func historyRowsMapIdTimeAndSets() {
+    let rows: [JSONValue] = [
+      .object(["id": .string("AAAA"), "date_time": .string("2026-10-05T07:00:00Z"), "sets": .array([])]),
+      .object(["id": .string("b"), "date_time": .string("bad"), "sets": .array([])]),
+      .object(["date_time": .string("2026-10-04T07:00:00Z"), "sets": .array([])]),
+    ]
+    let mapped = SupabasePerformanceSource.historyRows(rows)
+    #expect(mapped.count == 1)
+    #expect(mapped.first?.id == "aaaa")
+    #expect(mapped.first?.at == EpochMillis(iso8601: "2026-10-05T07:00:00Z"))
+    #expect(mapped.first?.sets == .array([]))
+  }
 }

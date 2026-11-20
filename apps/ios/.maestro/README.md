@@ -17,6 +17,7 @@ hạn: `docs/CONSTRAINTS_AND_DEFERRED.md` §4, mục "E2E Maestro".
 | `08-settings` | Nhắc nhở / Đổi mật khẩu / Pháp lý trong Cài đặt mở và quay lại |
 | `09-koa-room` | chạm sàn sau bục thì Koa xuống sàn, chạm bục thì Koa về bục (`koa.stage.floor` / `koa.stage.stage`) |
 | `13-ux-glance` | ảnh sáng và tối: Hôm nay, Tiến bộ (đầu trang + Kết quả), Tất cả công cụ, thanh và bảng Ghi nhanh, Dinh dưỡng |
+| `14-moderation` | ảnh bảng kiểm duyệt (#915): bảng số, hàng đợi báo cáo, chi tiết đích, hàng đợi kháng nghị, quản trị (người dùng, nhật ký, ảnh) |
 
 Phần tử tìm theo `accessibilityIdentifier` (không đổi gì nhìn thấy): `koa.stage.*`, `today.*`,
 `logMeal.*`, `workout.*`, `summary.*`, `progress.segment.<nhóm>`, `profile.settings`,

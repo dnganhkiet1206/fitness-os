@@ -62,6 +62,10 @@ public final class QuestObserver {
   private var applied = 0
   private var lastDay: LocalDate?
   private var closed = false
+  /// Khoá server từ chối vì trần thưởng, kèm ngày bị từ chối: khoá ấy không gửi lại trong
+  /// ngày đó. Server kiểm trần riêng cho TỪNG khoá (`v_today + v_amount > 800`), nên khoá
+  /// rẻ hơn vẫn có thể vừa — không chặn cả ngày (Devin #964).
+  private var ceilingKeys: [String: LocalDate] = [:]
 
   public init(
     userId: String, source: any MascotSource,
@@ -104,8 +108,9 @@ public final class QuestObserver {
     let (s, l) = await (signals, ledger)
     // Tín hiệu hỏng = chưa `ready`: không chạm mốc.
     guard let sig = try? s.get() else { return }
-    // Sổ xu hỏng = chưa biết đã nhận gì (`claimedList(undefined)`).
-    let claimed = (try? l.get()).map { MascotWallet(rows: $0).claimed } ?? []
+    // Sổ xu hỏng = CHƯA BIẾT đã nhận gì: không nhận lượt này (KOA-T16 — trước đây coi
+    // như chưa nhận gì và gửi lại cả những khoá đã nhận).
+    let claimed = (try? l.get()).map { MascotWallet(rows: $0).claimed }
     observe(token: token, day: day, signals: sig, claimed: claimed)
   }
 
@@ -122,7 +127,10 @@ public final class QuestObserver {
     MascotRules.counts(q, day: questDay, stepsEverRecorded: signals.stepsEverRecorded)
   }
 
-  public func observe(token: Int, day: LocalDate, signals: DailySignals, claimed: Set<String>) {
+  /// `claimed == nil`: sổ xu chưa đọc được — vẫn ghi mốc / thói quen, nhưng không gửi
+  /// lệnh nhận nào (KOA-T16).
+  public func observe(token: Int, day: LocalDate, signals: DailySignals, claimed known: Set<String>?) {
+    let claimed = known ?? []
     guard !closed, token > applied else { return }
     if let lastDay, day < lastDay { return }
     applied = token
@@ -137,7 +145,9 @@ public final class QuestObserver {
     }
     let seen = watch.read(today: day.description, done: done, unclaimed: unclaimed)
     let active = MascotRules.dailyQuests.map(\.key).filter { counts($0, signals) }
-    claim(unclaimed, day: day, seen: Set(seen), claimed: claimed, allDone: active.allSatisfy { done[$0] == true })
+    if known != nil {
+      claim(unclaimed, day: day, seen: Set(seen), claimed: claimed, allDone: active.allSatisfy { done[$0] == true })
+    }
     guard !seen.isEmpty else { return }
     // `new Date().getHours()`: giờ nguyên địa phương lúc thấy.
     var cal = Calendar(identifier: .gregorian)
@@ -152,6 +162,7 @@ public final class QuestObserver {
     _ quests: [MascotRules.Quest], day: LocalDate, seen: Set<MascotRules.Quest>, claimed: Set<String>, allDone: Bool
   ) {
     guard let economy else { return }
+    ceilingKeys = ceilingKeys.filter { $0.value == day }
     var jobs = quests.map { (MascotRules.questRefKey(day, $0), $0, seen.contains($0)) }
     let oldest = day.adding(days: -Self.claimRetryDays)
     for (key, (q, d)) in owed.sorted(by: { $0.key < $1.key }) where !jobs.contains(where: { $0.0 == key }) {
@@ -161,7 +172,8 @@ public final class QuestObserver {
         jobs.append((key, q, false))
       }
     }
-    for (key, q, saw) in jobs where !sent.contains(key) {
+    // Khoá vừa chạm trần hôm nay: mai thử lại (KOA-T16: không gõ cửa mỗi lượt đọc).
+    for (key, q, saw) in jobs where !sent.contains(key) && ceilingKeys[key] != day {
       sent.insert(key)
       let date = LocalDate(String(key.dropFirst(2).prefix(10))) ?? day
       Task { @MainActor [weak self] in
@@ -169,13 +181,26 @@ public final class QuestObserver {
           let amount = try await economy.claimReward(refKey: key, reason: q.rawValue)
           guard let self, !self.closed else { return }
           self.owed[key] = nil
+          // Đã nhận ở lượt / máy khác: không báo "+xu" lần hai (KOA-T01).
+          if MascotRules.isDuplicateClaim(amount) { return }
           // "Xong hết" chỉ gắn với nhiệm vụ của hôm nay, không với khoá nợ hôm qua.
           self.onClaimed(Claimed(quest: q, refKey: key, amount: amount, seen: saw, allDone: allDone && date == day))
         } catch {
           guard let self, !self.closed else { return }
-          // Im lặng (như RN): lượt đọc sau thử lại, không mất gì.
-          self.sent.remove(key)
-          self.owed[key] = (q, date)
+          let failure = (error as? MascotFailure) ?? (NetworkFailure.isOffline(error) ? .offline : .server(code: nil))
+          if failure == .dailyCeiling {
+            // Hết trần hôm nay: giữ nợ, ngày mai mới thử lại.
+            self.ceilingKeys[key] = day
+            self.sent.remove(key)
+            self.owed[key] = (q, date)
+          } else if QuestRetry.shouldRetry(failure) {
+            // Mất mạng / lỗi tạm thời: lượt đọc sau thử lại, không mất gì.
+            self.sent.remove(key)
+            self.owed[key] = (q, date)
+          } else {
+            // Server từ chối hẳn (khoá lạ, chưa đăng nhập…): không gửi lại mãi (KOA-T16).
+            self.owed[key] = nil
+          }
         }
       }
     }
