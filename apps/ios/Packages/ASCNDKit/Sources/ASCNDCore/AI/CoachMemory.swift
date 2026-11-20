@@ -5,7 +5,8 @@ public import Observation
 ///
 /// Bảng `coach_memory`: server (`ai-coach-memory`) ghi, app chỉ đọc và xoá.
 /// Như RN: mới nhắc → cũ (`last_confirmed` giảm dần), nhóm theo loại theo thứ
-/// tự Giới hạn · Mục tiêu · Thói quen · Hoàn cảnh (loại lạ không hiện), ngày
+/// tự Giới hạn · Mục tiêu · Thói quen · Hoàn cảnh, rồi "Khác" cho loại lạ (KOA-T32: server gửi MỌI loại
+/// cho coach, nên điều coach dùng phải thấy được và xoá được từng điều — trước đây loại lạ bị ẩn), ngày
 /// "nhắc lần cuối" là ngày THEO GIỜ MÁY của `timestamptz` (không cắt chuỗi
 /// UTC); xoá một / xoá hết phải chạm ít nhất một hàng (`confirmWrite`).
 public enum CoachMemory {
@@ -29,17 +30,20 @@ public enum CoachMemory {
   }
 
   public struct Group: Sendable, Hashable, Identifiable {
-    public let kind: Kind
+    /// `nil` = "Khác": loại server ghi mà app chưa biết.
+    public let kind: Kind?
     public let facts: [Fact]
-    public var id: Kind { kind }
+    public var id: String { kind?.rawValue ?? "other" }
   }
 
-  /// `GROUPS.map(g => rows.filter(r => r.kind === g.kind))`, bỏ nhóm rỗng.
+  /// `GROUPS.map(g => rows.filter(r => r.kind === g.kind))`, bỏ nhóm rỗng; loại lạ vào nhóm "Khác" cuối cùng.
   public static func groups(_ facts: [Fact]) -> [Group] {
-    Kind.allCases.compactMap { k in
+    let known: [Group] = Kind.allCases.compactMap { k in
       let items = facts.filter { $0.kind == k }
       return items.isEmpty ? nil : Group(kind: k, facts: items)
     }
+    let other = facts.filter { $0.kind == nil }
+    return other.isEmpty ? known : known + [Group(kind: nil, facts: other)]
   }
 
   /// Một hàng của `select('id, kind, fact, last_confirmed, source_excerpt')`.

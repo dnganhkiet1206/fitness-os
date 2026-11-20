@@ -52,7 +52,8 @@ struct CoachMemoryTests {
     #expect(CoachMemory.fact(.object(["fact": .string("không id")]), in: Self.tz) == nil)
   }
 
-  @Test func groupedInTheScreensOrderUnknownKindsHidden() {
+  /// KOA-T32: loại lạ không còn bị ẩn — coach vẫn dùng nó, nên người dùng phải thấy và xoá được.
+  @Test func groupedInTheScreensOrderUnknownKindsUnderOther() {
     let facts = [
       CoachMemory.Fact(id: "a", kind: .preference, fact: "Tập buổi sáng", lastConfirmed: nil),
       CoachMemory.Fact(id: "b", kind: .constraint, fact: "Đau gối trái", lastConfirmed: nil),
@@ -60,8 +61,10 @@ struct CoachMemoryTests {
       CoachMemory.Fact(id: "d", kind: .constraint, fact: "Không ăn hải sản", lastConfirmed: nil),
     ]
     let g = CoachMemory.groups(facts)
-    #expect(g.map(\.kind) == [.constraint, .preference])
+    #expect(g.map(\.kind) == [.constraint, .preference, nil])
     #expect(g.first?.facts.map(\.id) == ["b", "d"])
+    #expect(g.last?.facts.map(\.id) == ["c"])
+    #expect(g.flatMap(\.facts).count == facts.count, "thấy được == coach dùng")
   }
 
   @Test func forgetThenReread() async {

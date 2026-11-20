@@ -32,6 +32,7 @@ miễn **giữ nguyên ý định** của app và chỉ làm app tốt hơn — 
 
 | Màn / phần | Native làm gì | RN làm gì | Loại | RN/Android | PR | Agent |
 |---|---|---|---|---|---|---|
+| Bộ nhớ coach — loại lạ (KOA-T32, 20/11) | Mục có `kind` app chưa biết hiện trong nhóm "Khác" ở cuối, xoá được từng mục — thấy được == coach dùng (server gửi MỌI loại cho coach) | `coach-memory.tsx` chỉ lọc 4 nhóm đã biết: mục loại lạ coach vẫn dùng nhưng người dùng không thấy, chỉ "xoá hết" mới xoá | sửa lỗi RN | không cần (RN đã dừng 06/11) | #977 | Claude |
 | Mốc ghi đều của Koa (10/11, Kiệt duyệt mock `koa-logging-milestones.html`) | Hành trình có mốc theo tổng số ngày ghi bữa / nước / giấc ngủ (3 … 365), Koa nhắc ở Hôm nay; không Gains, không xu | Hành trình và mốc không có ở RN | cải tiến | chờ quyết | nhánh `claude/koa-tier-seed` | Claude |
 | Nhịp ghi 30 ngày của Koa (12/11, Kiệt duyệt lớp A của mock `koa-logging-rhythm.html`) | Hành trình có thẻ số ngày ghi bữa / nước / giấc ngủ trong 30 ngày, tách theo loại, so với 30 ngày trước; không chuỗi, không Gains | RN không có | cải tiến | chờ quyết | nhánh `claude/koa-log-rhythm` | Claude |
 | Tháng của bạn với Koa (13/11, Kiệt duyệt mock `koa-month-recap.html`) | Hành trình có dải các tháng và trang nhìn lại từng tháng (tập + ghi), Koa nhắc tháng cũ đầu tháng mới, nút chia sẻ ảnh tháng | RN không có | cải tiến | chờ quyết | nhánh `claude/koa-month-recap` | Claude |
