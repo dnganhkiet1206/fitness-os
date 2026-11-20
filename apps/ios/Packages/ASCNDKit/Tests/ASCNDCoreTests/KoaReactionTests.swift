@@ -307,3 +307,18 @@ extension KoaPerformanceFixTests {
     #expect(Set(KoaEmotion.Emotion.allCases.map(VectorMascot.Mood.init)) == Set(VectorMascot.Mood.allCases))
   }
 }
+
+/// KOA-T59: tiêu đề cố định của mọi cảnh đều có khoá dịch (không còn chữ tiếng Việt cứng tới người dùng en / es).
+@Suite struct KoaCueTitleKeyTests {
+  @Test func everyScriptedTitleHasAKey() {
+    let samples = Set(["+2,5 kg", "+12 Gains"]) // số mẫu của bản mock, thay bằng chữ thật khi chạy thật
+    for s in KoaReaction.Scene.allCases {
+      for c in KoaPerformance.cues(s) {
+        guard let t = c.title, !samples.contains(t) else { continue }
+        #expect(c.titleKey != nil, "\(s): \(t)")
+      }
+    }
+    #expect(KoaPerformance.Title(script: "XONG SET!") == .setDone)
+    #expect(KoaPerformance.Title(script: "Full Body A") == nil, "chữ thật của buổi không bị đổi")
+  }
+}

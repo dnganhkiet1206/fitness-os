@@ -14,6 +14,18 @@ enum KoaShowStage {
   /// Koa đứng giữa ở 54 % chiều cao.
   static let koaY = 0.54
 
+  /// Tiêu đề hiện ra: tiêu đề cố định của kịch bản theo khoá dịch (KOA-T59), chữ thật của buổi giữ nguyên.
+  static func title(_ cue: KoaPerformance.Cue) -> String? {
+    guard let raw = cue.title else { return nil }
+    switch cue.titleKey {
+    case .setDone?: return String(localized: "koa.rest.setDone")
+    case .newRecord?: return String(localized: "koa.reaction.record")
+    case .yourTurn?: return String(localized: "koa.rest.go")
+    case .workoutDone?: return String(localized: "koa.reaction.done")
+    case nil: return raw
+    }
+  }
+
   /// Nền tĩnh: quầng sáng sân khấu ở 46 % + vũng sáng trên sàn ở 79 %, KHÔNG theo máy / theo Koa.
   struct Backdrop: View {
     let size: CGSize
@@ -28,6 +40,7 @@ enum KoaShowStage {
           .frame(width: size.width * 0.8, height: size.width * 0.18)
           .position(x: size.width / 2, y: size.height * 0.79)
       }
+      .accessibilityHidden(true)
     }
   }
 
@@ -123,6 +136,7 @@ enum KoaShowStage {
       }
       .ignoresSafeArea()
       .allowsHitTesting(false)
+      .accessibilityHidden(true)
     }
   }
 }
