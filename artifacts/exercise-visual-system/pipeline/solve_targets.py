@@ -15,6 +15,9 @@ A target is {"metric": name, "value": v, "tolerance": t, "weight": w}
 "tolerance": t} for one-sided bounds. With --apply the best parameters stay
 in exercise.json; otherwise the file is restored. The report goes to
 <exercise>/solve_report.json either way.
+
+Blender is taken from $EVS_BLENDER when set, else the macOS install path,
+so the solver also runs on Linux/CI without editing this file.
 """
 
 from __future__ import annotations
@@ -23,12 +26,15 @@ import argparse
 import copy
 import datetime
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-BLENDER = "/Applications/Blender.app/Contents/MacOS/Blender"
+BLENDER = os.environ.get(
+    "EVS_BLENDER", "/Applications/Blender.app/Contents/MacOS/Blender"
+)
 
 
 def run(cmd: list[str]) -> str:

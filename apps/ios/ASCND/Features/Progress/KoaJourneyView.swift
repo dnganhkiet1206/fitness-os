@@ -217,6 +217,8 @@ struct KoaJourneyView: View {
 /// Nội dung màn hành trình, không cần `AppServices`: snapshot test dựng thẳng với một lịch sử
 /// cố định (#795).
 struct KoaJourneyContent: View {
+  /// Khung icon co theo cỡ chữ cùng icon (KOA-T45: icon to theo Dynamic Type, khung 22 pt cố định thì đè chữ).
+  @ScaledMetric(relativeTo: .subheadline) private var iconWidth: CGFloat = 22
   let history: AppServices.GainsHistory?
   let today: LocalDate
   @Environment(\.locale) private var locale
@@ -267,9 +269,9 @@ struct KoaJourneyContent: View {
   private func row(_ m: KoaJourney.Moment, lang: AppPreferences.Lang) -> some View {
     HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
       Image(systemName: KoaMomentsStore.symbol(m.kind))
-        .font(.system(size: 15, weight: .semibold))
+        .font(.system(.subheadline, weight: .semibold))
         .foregroundStyle(m.major ? DS.Color.readinessYellow.swiftUI : DS.Color.mutedForeground.swiftUI)
-        .frame(width: 22)
+        .frame(width: iconWidth)
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: 2) {
         Text(verbatim: KoaMomentsStore.line(m, lang: lang))

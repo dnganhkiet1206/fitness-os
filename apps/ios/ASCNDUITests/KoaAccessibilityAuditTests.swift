@@ -38,6 +38,18 @@ final class KoaAccessibilityAuditTests: XCTestCase {
     try audit(app, "journey")
   }
 
+  /// KOA-T42: cảnh Koa toàn màn hình (bản xem trước cảnh xong buổi, dừng ở mốc có chữ + số).
+  @MainActor func testReaction() throws {
+    continueAfterFailure = false
+    let app = XCUIApplication()
+    app.launchArguments += ["-uiTestFakeBackend", "YES", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    app.launchEnvironment["ASCND_DEBUG_KOA_REACTION"] = "done"
+    app.launchEnvironment["ASCND_DEBUG_KOA_REACTION_T"] = "5000"
+    app.launch()
+    guard element(app, "koa.reaction.skip").waitForExistence(timeout: 60) else { throw NotOpened(screen: "reaction") }
+    try audit(app, "reaction")
+  }
+
   // MARK: - Mở app, điều hướng (cùng định danh với các flow Maestro)
 
   @MainActor private func launch() throws -> XCUIApplication {

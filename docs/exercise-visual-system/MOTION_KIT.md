@@ -83,6 +83,29 @@ Bài toán production rút ra từ phân tích ngược các app fitness (Apple 
 | **Giải theo mục tiêu** | `pipeline/solve_targets.py`, `pipeline/measure_animation.py` | xong; bench press: khuỷu 104° / dang vai 60° sau 24 lần thử |
 | **CI tự động cho kit** | `.github/workflows/motion-kit.yml`, `pipeline/check_provenance.py`, `pipeline/check_qa_gate.py`, `pipeline/check_usdz_uv.py` | xong 14/11; chạy trên mọi PR chạm kit/docs/bản USDZ trong app; bench không qua cổng validate (xem quy trình bước 5) |
 
+## Thư viện dụng cụ (`config/equipment.json`, P2)
+
+Đơn vị mét. Mỗi món ghi nguồn trong trường `source`; kích thước nào bản spec công bố không có thì **bỏ trường và ghi chú**, không bịa số. Một ước lượng duy nhất được ghi rõ là ước lượng kèm căn cứ (dây treo, xem dưới).
+
+| Món (key) | Sản phẩm tham chiếu | Nguồn tra cứu (đọc 15/11/2026) |
+|---|---|---|
+| `barbell_olympic_20kg`, `plate_20kg`, `collar`, `flat_bench_with_rack` | Luật thi đấu IPF 2026 | IPF Technical Rulebook 2026 (PDF, đọc 11/11) |
+| `dumbbell_hex_12kg` | Tạ đơn lục giác cao su 12 kg thông dụng | Giá trị điển hình, không theo một bản vẽ hãng nào |
+| `kettlebell_competition_16kg` | Rogue Competition Kettlebell (cùng kích thước mọi mức 8–48 kg) | Rogue Fitness, spec sheet |
+| `bench_adjustable_ab5000` | REP AB-5000 Zero Gap | Bảng spec của REP (qua Fitness Superstore, Garage Gym Reviews, nghiên cứu REP manuals 19/09/2026) |
+| `cable_functional_trainer_ft5000` | REP FT-5000 2.0 Functional Trainer | Bảng spec của REP (qua Garage Gym Reviews, Breaking Muscle) |
+| `lat_pulldown_hspd` | Hammer Strength Select Lat Pulldown HS-PD | Life Fitness, trang sản phẩm |
+| `leg_press_45_hsllp` | Hammer Strength Linear Leg Press HS-LLP | Life Fitness, bảng spec |
+| `suspension_trainer_trx_pro4` | TRX PRO4 System | TRX, hướng dẫn lắp đặt |
+| `pull_up_bar_monster_lite` | Rogue Monster Lite Pull-up Bar | Rogue Fitness, product guide |
+| `plyo_box_3in1` | Rogue Games Box | Rogue Fitness, spec sheet |
+
+Trường đã bỏ vì spec không công bố (ghi trong `source` từng món): độ dày đệm ghế dốc; khoảng cách hai cột cáp và đầu dưới của ray trượt; chiều cao ghế, khoảng chỉnh đệm đùi và chiều dài thanh kéo của máy kéo xô; kích thước bàn đạp và hành trình xe trượt của máy ép đùi; cỡ tay cầm và bản rộng dây của dây treo; chiều cao gắn của xà đơn (thông số đặt để, chỉnh được theo lỗ ghim).
+
+Ước lượng duy nhất: `strap_length_max` của dây treo (1,75 m) — suy từ hướng dẫn của TRX (kéo dài hết cỡ, đáy quai chân cách sàn ~3 in khi điểm treo ở 6 ft). Ghi rõ là ước lượng trong `source`.
+
+Trạng thái: **chỉ dữ liệu**. `evs/equipment.py` hiện chỉ dựng được barbell / plate / bench_rack / dumbbell; 8 món mới chưa có builder và chưa bài nào tham chiếu tới — thêm dữ liệu không đổi hành vi của bài đã có. Follow-up riêng (không trong PR lát dữ liệu này): builder cho từng loại mới, `variants` trong `exercise.json`, và `alternatives.json` theo P2.
+
 ## Đã học từ dữ liệu (bench press)
 
 - Người trong clip Pexels 20672105 (tay cầm rộng), 7 lần đẩy: hạ trung vị 0,58 s, lên 0,83 s; khuỷu ở đáy góc trong khoảng 97° (2D 97,6°, 3D 96,7°), tức gập khoảng 83°. Khớp Mausehund 2022 cho tay cầm rộng (87,4 ± 8,1°).

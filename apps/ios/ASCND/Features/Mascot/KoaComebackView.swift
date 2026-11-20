@@ -23,6 +23,7 @@ struct KoaComebackView: View {
   let onStart: () -> Void
   @Environment(AppServices.self) private var services: AppServices?
   @Environment(\.dismiss) private var dismiss
+  @ScaledMetric(relativeTo: .title2) private var titleSize: CGFloat = 24
 
   var body: some View {
     let lang = services?.preferences.lang ?? .vi
@@ -31,9 +32,10 @@ struct KoaComebackView: View {
         .frame(height: 180)
         .accessibilityHidden(true)
       Text("koa.comeback.title")
-        .font(.system(size: 24, weight: .heavy))
+        .font(.system(size: titleSize, weight: .heavy))
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .multilineTextAlignment(.center)
+        .accessibilityAddTraits(.isHeader)
       Text(verbatim: message(lang))
         .font(DS.TextStyle.body)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
@@ -46,9 +48,17 @@ struct KoaComebackView: View {
       DSButton(
         planName.map { String(localized: "koa.comeback.start \($0)") } ?? String(localized: "today.start"),
         style: .primary, action: onStart)
-      Button(String(localized: "koa.comeback.later")) { dismiss() }
-        .font(DS.TextStyle.footnote.weight(.semibold))
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        .accessibilityIdentifier("koa.comeback.start")
+      // KOA-T45: vùng chạm 44 pt (trước chỉ cao bằng dòng chữ footnote).
+      Button { dismiss() } label: {
+        Text("koa.comeback.later")
+          .frame(maxWidth: .infinity, minHeight: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .font(DS.TextStyle.footnote.weight(.semibold))
+      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      .accessibilityIdentifier("koa.comeback.later")
     }
     .padding(DS.Spacing.lg)
     .frame(maxWidth: .infinity)

@@ -116,7 +116,7 @@ struct TodayAskKoaCard: View {
             .padding(DS.Spacing.md)
           } else {
             Image(systemName: "chevron.right")
-              .font(.system(size: 16, weight: .semibold))
+              .font(.system(.callout, weight: .semibold))
               .foregroundStyle(.white)
               .frame(width: 44, height: 44)
               // Vòng tối trong, không kính (Kiệt 22/10).
