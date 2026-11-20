@@ -207,7 +207,7 @@ CASES += [
 C = 'challenges'
 CM = 'community_challenges'
 # KOA-T54: `claim_community_challenge` được định nghĩa lại ở đây — ca phá thân hàm phải phá bản ĐANG CÓ HIỆU LỰC.
-CCM = '20261120130100_community_challenge_ceiling'
+CEIL = '20261120130100_community_challenge_ceiling'
 CASES += [
   dict(suite=C, id='C1', mig=CM, how='thêm policy INSERT mở cho community_challenges',
        old='CREATE POLICY "Signed-in users can read challenges"',
@@ -224,7 +224,7 @@ CASES += [
   dict(suite=C, id='C6b', mig=CM, how='bỏ lọc khoảng ngày của thử thách',
        old="    AND ((s.date_time AT TIME ZONE 'UTC') + make_interval(mins => greatest(-720, least(840, coalesce(p_offset_min, 0)))))::date\n        BETWEEN c.starts_on AND c.ends_on;",
        new='    ;', expect='C6 tiến độ'),
-  dict(suite=C, id='C8', mig=CCM, how='nhận thưởng bỏ chốt "đã đạt"',
+  dict(suite=C, id='C8', mig=CEIL, how='nhận thưởng bỏ chốt "đã đạt"',
        old='  IF public.community_challenge_progress(p_challenge, v_uid, p_offset_min) < c.target THEN', new='  IF false THEN', expect='C8 nhận thưởng khi chưa đạt'),
   dict(suite=C, id='C9', mig=CM, how='hàm đo tiến độ gọi được từ client',
        old='REVOKE EXECUTE ON FUNCTION public.community_challenge_progress(uuid, uuid, integer) FROM PUBLIC, anon, authenticated;',
@@ -232,11 +232,11 @@ CASES += [
   dict(suite=C, id='C10', mig=CM, how='ai cũng đọc được danh sách thành viên',
        old='ON public.community_challenge_members FOR SELECT TO authenticated USING (auth.uid() = user_id);',
        new='ON public.community_challenge_members FOR SELECT TO authenticated USING (true);', expect='C10 đọc được'),
-  dict(suite=C, id='C13', mig=CCM, how='bỏ chốt "đã nhận"', old='  IF v_claimed IS NOT NULL THEN', new='  IF false THEN', expect='C13 nhận thưởng HAI'),
-  dict(suite=C, id='T54a', mig=CCM, how='tính lại xu khám phá vào trần ngày',
+  dict(suite=C, id='C13', mig=CEIL, how='bỏ chốt "đã nhận"', old='  IF v_claimed IS NOT NULL THEN', new='  IF false THEN', expect='C13 nhận thưởng HAI'),
+  dict(suite=C, id='T54a', mig=CEIL, how='tính lại xu khám phá vào trần ngày',
        old="WHERE user_id = v_uid AND amount > 0 AND COALESCE(ref_key, '') NOT LIKE 'x:%'",
        new="WHERE user_id = v_uid AND amount > 0", expect='T54a xu khám phá'),
-  dict(suite=C, id='T54b', mig=CCM, how='bỏ chặn trần ngày', old='    IF v_today + c.reward_coins > MAX_PER_DAY THEN',
+  dict(suite=C, id='T54b', mig=CEIL, how='bỏ chặn trần ngày', old='    IF v_today + c.reward_coins > MAX_PER_DAY THEN',
        new='    IF false THEN', expect='T54b 700 xu nhiệm vụ'),
   dict(suite=C, id='C14', mig=CM, how='rời được cả khi đã nhận',
        old='  USING (auth.uid() = user_id AND claimed_at IS NULL);', new='  USING (auth.uid() = user_id);', expect='C14 rời được'),
