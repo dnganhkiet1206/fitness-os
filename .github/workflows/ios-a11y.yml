@@ -5,9 +5,9 @@
 # Tách khỏi `ios-e2e.yml`: job E2E đã chạm trần thời gian với các flow Maestro, thêm UI test vào
 # đó làm flow bị huỷ giữa chừng.
 #
-# Đợt 2a: THU THẬP — mỗi vấn đề một dòng `A11Y|màn|loại|mô tả|phần tử`, tóm tắt thành bảng ở
-# trang lượt chạy; job chỉ đỏ khi không build được hoặc không mở được màn. Không phải required
-# check. Chạy: hằng đêm, bấm tay (workflow_dispatch), PR có nhãn `e2e` hoặc `a11y`.
+# Mỗi vấn đề một dòng `A11Y|màn|loại|mô tả|phần tử`, tóm tắt thành bảng ở trang lượt chạy.
+# KOA-T47 (20/11): job ĐỎ khi một màn vượt mốc của nó theo loại (`ASCNDUITests/KoaA11yBaseline.swift`),
+# hoặc không build được / không mở được màn. Không phải required check. Chạy: hằng đêm, bấm tay (workflow_dispatch), PR có nhãn `e2e` hoặc `a11y`.
 #
 # Lưu ý của GitHub: `schedule` và `workflow_dispatch` chỉ đọc workflow ở nhánh MẶC ĐỊNH (main).
 name: iOS A11y audit
@@ -106,7 +106,7 @@ jobs:
           python3 - a11y.log >> "$GITHUB_STEP_SUMMARY" <<'PY' || true
           import collections, sys
           rows = [l.strip().split("|")[1:] for l in open(sys.argv[1], errors="replace") if l.startswith("A11Y|")]
-          print("## Kiểm accessibility (đợt 2a: thu thập)\n")
+          print("## Kiểm accessibility (so với mốc `KoaA11yBaseline.swift`)\n")
           if not rows:
               print("Không có dòng `A11Y|` nào: test không chạy tới bước kiểm (xem log)."); sys.exit()
           count = collections.Counter((r[0], r[1]) for r in rows if len(r) > 1 and r[1] != "-")

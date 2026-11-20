@@ -95,6 +95,8 @@ struct KoaReactionView: View {
             Button(action: skip) {
               Text("koa.reaction.skip").font(.system(size: skipSize)).foregroundStyle(.white.opacity(0.6))
                 .frame(minWidth: 44, minHeight: 44)
+                // Nút `.plain` chỉ nhận chạm ở nét chữ: phải có khung chạm cho cả vùng 44 pt (KOA-T47, bộ kiểm báo 66×15).
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("koa.reaction.skip")

@@ -138,6 +138,9 @@ public struct WorkoutView: View {
 
   public var body: some View {
     workoutStack
+      // Màn nghỉ Koa phủ kín buổi tập: ẩn phần bên dưới với VoiceOver, không thì vẫn chạm được nút bị che
+      // (KOA-T47: bộ kiểm báo nút −15 / tạm dừng / Bỏ qua / Sửa của thẻ nghỉ bên dưới, 8–28 pt).
+      .accessibilityHidden(showsRestScreen)
       .overlay { restScreen }
       .onChange(of: restTimer == nil) { _, none in if none { restMinimized = false } }
   }
@@ -171,8 +174,13 @@ public struct WorkoutView: View {
   private var koaOn: Bool { services?.preferences.mascotCompanion ?? true }
 
   /// Màn nghỉ có Koa (07/11, Kiệt: thay đồng hồ nghỉ cũ). Chỉ ở màn từng set; dạng bảng giữ dải nghỉ gọn.
+  private var showsRestScreen: Bool {
+    koaOn && restTimer != nil && !restMinimized && !isPreview && !showsTable
+      && (controller.phase == .active || controller.phase == .idle)
+  }
+
   @ViewBuilder private var restScreen: some View {
-    if koaOn, let timer = restTimer, !restMinimized, !isPreview, !showsTable, controller.phase == .active || controller.phase == .idle {
+    if showsRestScreen, let timer = restTimer {
       let next = WorkoutFocus.next(controller.rows, controller.progress, pinned: pinned)
       let last = WorkoutFocus.lastDone(controller.rows, controller.progress, before: next)
       KoaRestScreen(
