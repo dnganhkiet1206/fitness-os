@@ -244,8 +244,10 @@ final class KoaAccessibilityAuditTests: XCTestCase {
 
   /// Định danh / nhãn của phần tử bị báo.
   @MainActor private static func who(_ issue: XCUIAccessibilityAuditIssue) -> String {
-    let el = issue.element
-    return [el?.identifier, el?.label].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " / ")
+    // Màn đổi liên tục (đồng hồ nghỉ đếm giây): phần tử bị báo có thể đã biến mất — đọc nhãn của nó lúc ấy
+    // làm XCTest đỏ "No matches found" (CI #983). Hỏi `exists` trước.
+    guard let el = issue.element, el.exists else { return "" }
+    return [el.identifier, el.label].filter { !$0.isEmpty }.joined(separator: " / ")
   }
 
   private static let types: [(XCUIAccessibilityAuditType, String)] = [

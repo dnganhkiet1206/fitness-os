@@ -8,8 +8,9 @@ import Foundation
 /// - Nâng số chỉ khi chủ ý, kèm lý do trong PR (ví dụ thêm một dòng chữ phụ cùng kiểu đang nợ).
 /// - Dòng "không kiểm xong" (bộ kiểm hết giờ) không tính: không có số để so.
 enum KoaA11yBaseline {
-  /// Đo 20/11 (KOA-T47): simulator iPhone 17 Pro, cộng số lớn nhất của lượt CI 18/11 (run 44273080244) cho bốn
-  /// màn cũ — vài số đổi theo ngày (chấm của tháng, thứ trong tuần) nên lấy số lớn nhất đã thấy.
+  /// Đo 20/11 (KOA-T47): số lớn nhất giữa simulator iPhone 17 Pro trên máy, lượt CI 18/11 (run 44273080244) và
+  /// lượt CI của #983 (run 44798542637) — vài số đổi theo ngày (chấm của tháng, thứ trong tuần) và theo máy
+  /// (CI: Phòng thay đồ 10 mục tương phản, máy 9; thẻ phòng có 1 mục elementDetection chỉ ở CI).
   static let allowed: [String: [String: Int]] = [
     "today": ["contrast": 13, "dynamicType": 5],
     "pause-sheet": ["contrast": 2, "dynamicType": 3, "elementDetection": 1, "textClipped": 4],
@@ -19,9 +20,9 @@ enum KoaA11yBaseline {
     "reaction": ["textClipped": 2],
     "room": ["dynamicType": 1],
     // 6/8 mục Dynamic Type là thanh nút dev của phòng ("dust 0…3", "hỏng …"), chỉ có ở bản Debug.
-    "room-panel": ["contrast": 16, "dynamicType": 8],
+    "room-panel": ["contrast": 16, "dynamicType": 8, "elementDetection": 1],
     // hitRegion: ô số dư "Coins: 250" (không phải nút, bộ kiểm vẫn báo).
-    "shop": ["contrast": 9, "dynamicType": 13, "hitRegion": 1, "textClipped": 4],
+    "shop": ["contrast": 10, "dynamicType": 13, "hitRegion": 1, "textClipped": 4],
     // Gồm cả phần tử của buổi tập nằm dưới màn nghỉ Koa (bộ kiểm vẫn thấy chúng).
     "rest": ["contrast": 25, "dynamicType": 14, "textClipped": 4],
     "coach": ["dynamicType": 4, "textClipped": 1],
