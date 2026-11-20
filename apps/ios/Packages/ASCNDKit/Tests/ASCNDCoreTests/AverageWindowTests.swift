@@ -86,7 +86,7 @@ struct AverageWindowTests {
       [WaterRow(id: "\(d)-a", date: d, amountMl: Int(l.water / 2)), WaterRow(id: "\(d)-b", date: d, amountMl: Int(l.water / 2))]
     }
     #expect(Water.windowAverage(water, today: today) == .init(value: Self.water, days: 6))
-    #expect(Water.weekStart(today) <= AverageWindow.first(before: today), "đọc đủ khung")
+    #expect(Water.rollingWindowStart(today) <= AverageWindow.first(before: today), "đọc đủ khung")
 
     // Vận động.
     #expect(Steps.stats(Steps.history(Self.rows), today: today).avg == JS.round(Self.steps))

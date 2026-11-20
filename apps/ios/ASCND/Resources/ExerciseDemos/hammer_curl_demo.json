@@ -45,6 +45,18 @@
       "role_key": "eg.demo3d.legend.stabilizer"
     }
   ],
+  "roles": {
+    "primary": [
+      "forearm_muscles"
+    ],
+    "secondary": [
+      "biceps_brachii"
+    ],
+    "stabilizing": [
+      "deltoid_anterior",
+      "trapezius_upper"
+    ]
+  },
   "focus_prefix": "hammer_curl_focus",
   "motion": "hammer_curl_motion",
   "full_prefix": "hammer_curl_full",
@@ -59,5 +71,63 @@
     ],
     "remaining": []
   },
-  "note": null
+  "note": null,
+  "tips": [],
+  "tempo": {
+    "duration_ms": 9800,
+    "notation": "2.2-0.4-1.6-0.4",
+    "reps": 2,
+    "phases": [
+      {
+        "rep": 1,
+        "kind": "concentric",
+        "start_ms": 600,
+        "end_ms": 2200,
+        "breath": "exhale"
+      },
+      {
+        "rep": 1,
+        "kind": "top_hold",
+        "start_ms": 2200,
+        "end_ms": 2600,
+        "breath": "hold"
+      },
+      {
+        "rep": 1,
+        "kind": "eccentric",
+        "start_ms": 2600,
+        "end_ms": 4800,
+        "breath": "inhale"
+      },
+      {
+        "rep": 1,
+        "kind": "bottom_hold",
+        "start_ms": 4800,
+        "end_ms": 5200,
+        "breath": "hold"
+      },
+      {
+        "rep": 2,
+        "kind": "concentric",
+        "start_ms": 5200,
+        "end_ms": 6800,
+        "breath": "exhale"
+      },
+      {
+        "rep": 2,
+        "kind": "top_hold",
+        "start_ms": 6800,
+        "end_ms": 7200,
+        "breath": "hold"
+      },
+      {
+        "rep": 2,
+        "kind": "eccentric",
+        "start_ms": 7200,
+        "end_ms": 9400,
+        "breath": "inhale"
+      }
+    ]
+  },
+  "mistakes": []
 }

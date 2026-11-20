@@ -21,6 +21,8 @@ actor StoreKitClient: PurchaseStoreClient {
   /// Giao dịch đã kiểm nhưng chưa finish, theo transaction ID — `finish`
   /// cần đúng đối tượng `Transaction` StoreKit đã đưa.
   private var pending: [String: Transaction] = [:]
+  /// Giao dịch đang được xác minh — luồng nghe nền và lượt đối soát không gửi trùng một giao dịch.
+  private var inFlight: Set<String> = []
 
   init() {}
 
@@ -75,14 +77,31 @@ actor StoreKitClient: PurchaseStoreClient {
       // tin được không bao giờ được dọn khỏi hàng đợi như thể đã xử lý.
       // Nó sẽ được gửi lại, và vẫn bị bỏ qua cho tới khi kiểm được.
       guard case .verified(let transaction) = result else { continue }
-      let id = String(transaction.id)
-      pending[id] = transaction
-      let attempt = PurchaseAttempt(productID: transaction.productID, state: .verified(transactionID: id))
-      if await verify(attempt) {
-        await transaction.finish()
-        pending.removeValue(forKey: id)
-      }
-      // Xác minh hỏng: để nguyên trong hàng đợi — StoreKit gửi lại sau.
+      await handle(transaction, verify: verify)
+      // Xác minh hỏng: để nguyên trong hàng đợi — `reconcileUnfinished` thử lại.
+    }
+  }
+
+  /// Đối soát (Devin #920): `Transaction.updates` KHÔNG phát lại khi mạng về hay khi người mua đăng nhập, nên
+  /// giao dịch xác minh hỏng (mất mạng, chưa có phiên) nằm chờ mãi. Lượt này duyệt mọi giao dịch chưa finish
+  /// và gửi xác minh lại — gọi khi mở app, đổi phiên, có mạng lại, về tiền cảnh. Chỉ finish khi server xác
+  /// minh xong; giao dịch đang xác minh ở luồng khác thì bỏ qua (không gửi trùng).
+  func reconcileUnfinished(verify: @escaping @Sendable (PurchaseAttempt) async -> Bool) async {
+    for await result in Transaction.unfinished {
+      guard case .verified(let transaction) = result else { continue }
+      await handle(transaction, verify: verify)
+    }
+  }
+
+  private func handle(_ transaction: Transaction, verify: @escaping @Sendable (PurchaseAttempt) async -> Bool) async {
+    let id = String(transaction.id)
+    guard inFlight.insert(id).inserted else { return }
+    defer { inFlight.remove(id) }
+    pending[id] = transaction
+    let attempt = PurchaseAttempt(productID: transaction.productID, state: .verified(transactionID: id))
+    if await verify(attempt) {
+      await transaction.finish()
+      pending.removeValue(forKey: id)
     }
   }
 }

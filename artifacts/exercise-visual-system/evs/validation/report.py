@@ -169,12 +169,14 @@ def approval_records(exercise: dict) -> list[dict]:
                measured=exercise["motion_source_id"],
                detail=f"{exercise.get('motion_source_type', '')}: {exercise['motion_source_license']} Label: {exercise.get('motion_source_verification', UNVERIFIED_LABEL)}"),
         record("biomechanical_correctness", "approval", "Technique shown is biomechanically correct", PASS if approved else UNVERIFIED,
-               detail="Cannot be established by automated checks. Needs review of the motion by a qualified professional."),
+               detail="Cannot be established by automated checks. It is established only by comparing the motion against measured "
+                      "reference movement of a real person (reference comparison). It is not an expert review."),
         record("muscle_mapping_review", "approval", "Highlighted muscles and their regions are anatomically right", PASS if approved else REQUIRES_MANUAL_REVIEW,
                detail="Roles follow the cited EMG review (reference_notes.json); the regions on the body were placed by the pipeline author."),
-        record("expert_approval", "approval", "Approved by a qualified reviewer", PASS if approved else REQUIRES_MANUAL_REVIEW,
+        record("reference_comparison_approval", "approval", "Approved by reference comparison, not by expert review", PASS if approved else REQUIRES_MANUAL_REVIEW,
                measured={"reviewer": exercise.get("reviewer"), "approval_date": exercise.get("approval_date")},
-               detail="PENDING" if not approved else ""),
+               detail="Approval records that the motion was compared against measured reference movement of a real person. "
+                      "It is not an expert review." + (" PENDING until a reviewer and approval date are recorded." if not approved else "")),
     ]
 
 
@@ -192,7 +194,7 @@ def summarize(checks: list[dict], exercise: dict) -> dict:
     elif untested:
         recommended = "DRAFT"
     else:
-        recommended = "EXPERT_REVIEW_PENDING"
+        recommended = "REFERENCE_REVIEW_PENDING"
     approved = (exercise["status"] == PUBLISHABLE_STATUS and bool(exercise.get("reviewer")) and bool(exercise.get("approval_date"))
                 and not failed)
     return {
@@ -202,7 +204,7 @@ def summarize(checks: list[dict], exercise: dict) -> dict:
         "needs_human": manual,
         "technical_qa": FAIL if failed else (NOT_TESTED if untested else PASS),
         "recommended_exercise_status": recommended,
-        "expert_approval": "APPROVED" if approved else "PENDING",
+        "reference_comparison_approval": "APPROVED" if approved else "PENDING",
         "publication_status": "PUBLISHABLE" if approved else "BLOCKED",
         "publication_blocked_because": [] if approved else [
             reason for reason, applies in (

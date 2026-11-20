@@ -64,7 +64,7 @@
     "Goblet Squat": {
       "family": "squat",
       "equipment": "dumbbell",
-      "folder": "goblet-squat",
+      "folder": null,
       "program_sets": {
         "gym": 2,
         "home_dumbbell": 12,

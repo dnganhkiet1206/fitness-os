@@ -273,9 +273,3 @@ export async function callAI(
  */
 export const promptLang = (raw: unknown): "vi" | "en" => (raw === "en" || raw === "es" ? "en" : "vi");
 
-export const forSpanish = (prompt: string, raw: unknown): string =>
-  raw !== "es" ? prompt : prompt
-    .replaceAll("in English", "in Spanish (español)")
-    .replaceAll("English", "Spanish")
-    .replaceAll("I only help with training, nutrition, sleep and recovery.",
-      "Solo te ayudo con entrenamiento, nutrición, sueño y recuperación.");

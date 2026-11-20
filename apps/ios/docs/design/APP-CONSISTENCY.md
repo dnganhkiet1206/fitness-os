@@ -160,7 +160,7 @@ tính năng đồng bộ trong toàn app" → "làm đi".
     (`QuickLogVisibility`); iOS 26.1+ `tabViewBottomAccessory(isEnabled:)`, 26.0 giữ thanh, máy cũ ẩn nút "+". Màn
     tập và màn ghi bữa vốn là toàn màn hình / sheet nên đã che thanh.
   - Nút AI trong Ghi nhanh: ký hiệu tròn ở đầu phải dải (iOS 26) mở thẳng Koa Coach; bảng Ghi nhanh có hàng "Hỏi
-    Koa Coach" (mọi máy). Chỉ hiện khi `aiDeployed == true`.
+    Koa Coach" (mọi máy). Chỉ hiện khi `ai-coach` đã deploy (`isAIDeployed(.coach)`).
   - Server AI (Gemini, khoá miễn phí): `ASCND_AI_MODEL=gemini-flash-lite-latest`, `ASCND_AI_VISION_MODEL=
     gemini-flash-latest`, `ASCND_AI_REASONING_EFFORT=low` (3.x từ chối `none`); `_shared/ai.ts` thêm lượt `user` khi
     function chỉ gửi system (Gemini 400 "contents is not specified").

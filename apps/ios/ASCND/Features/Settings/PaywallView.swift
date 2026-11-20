@@ -115,10 +115,8 @@ struct PaywallView: View {
       }
     }
     .padding(16)
-    .background(DS.Color.card.swiftUI, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-    .overlay(
-      RoundedRectangle(cornerRadius: 16, style: .continuous)
-        .strokeBorder(DS.Color.border.swiftUI, lineWidth: 1))
+    // Mặt thẻ chung của app (kính / material / nền đặc khi Giảm trong suốt) — Devin #920.
+    .dsCard(radius: 16)
     .accessibilityIdentifier("paywall.buy.\(controller.tier(for: product)?.rawValue ?? "unknown")")
   }
 

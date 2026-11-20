@@ -289,10 +289,19 @@ public final class SupplementBook {
     let day = today()
     // Bản đang hiện là của hôm khác (app mở qua nửa đêm) → server của hôm nay chưa uống.
     let server = day == date ? item.taken : false
+    let id = item.id.lowercased()
+    return writer.set(key: Supplements.takenKey(id, day), value: taken, server: server, send: takenSender(id: id, day: day))
+  }
+
+  /// `send` của một ý "đã uống": `true` = có một dòng trong ngày (chèn chỉ
+  /// khi chưa có — gửi lại bao nhiêu lần cũng là một dòng); `false` = không
+  /// dòng nào (xoá theo khoảng ngày). Mục đã bị xoá ở máy khác → `.gone`.
+  /// Dùng chung cho `setTaken` và `reattach`, để ý khôi phục từ đĩa gửi đúng
+  /// như ý vừa chạm.
+  private func takenSender(id: String, day: LocalDate) -> StateWriter.Send {
     let range = Supplements.dayRange(day, in: timeZone)
     let source = self.source, userId = self.userId, clock = self.clock, tz = self.timeZone
-    let id = item.id.lowercased()
-    return writer.set(key: Supplements.takenKey(id, day), value: taken, server: server) { value in
+    return { value in
       if !value {
         try await source.deleteIntakes(userId: userId, supplementId: id, start: range.start, end: range.end)
         return .ok
@@ -302,6 +311,24 @@ public final class SupplementBook {
       }
       let row = Supplements.intakeRow(userId: userId, id: id, date: day, now: clock.nowMillis(), in: tz)
       return try await source.insertIntake(row) ? .ok : .gone
+    }
+  }
+
+  /// Nhận lại các ý "đã uống" đã khôi phục từ đĩa (AUD-29): gắn `send` cho ý
+  /// của hôm nay, dọn ý của ngày đã qua (khoá mang ngày, ngày ấy qua rồi thì
+  /// không còn ai nhận). Màn gọi sau `refresh()`, khi danh sách đã đọc.
+  public func reattach(writer: StateWriter) {
+    guard !closed else { return }
+    let day = today()
+    for key in writer.pendingKeys where key.hasPrefix("supplement:taken:") {
+      let tail = key.split(separator: ":").last.map(String.init) ?? ""
+      if let keyDay = LocalDate(tail), keyDay < day { writer.remove(key: key) }
+    }
+    for item in items {
+      // Như `setTaken`: bản đang hiện là của hôm khác thì server của hôm nay chưa uống.
+      let server = day == date ? item.taken : false
+      let id = item.id.lowercased()
+      writer.adopt(key: Supplements.takenKey(id, day), server: server, send: takenSender(id: id, day: day))
     }
   }
 

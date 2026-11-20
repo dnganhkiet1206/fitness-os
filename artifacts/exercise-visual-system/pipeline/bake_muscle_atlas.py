@@ -46,6 +46,9 @@ def main() -> None:
         facts = muscles.bake_atlas(body, rig, muscle_map, atlas_dir)
     if facts is not None:
         facts["muscle_map_id"] = muscle_map["muscle_map_id"]
+        # The bake already applies neck_fan (muscle_eval): record it so trim_neck_fan.py does
+        # not cut these masks a second time (review #938).
+        facts["neck_fan_applied"] = {n: g["neck_fan"] for n, g in muscle_map["groups"].items() if "neck_fan" in g}
         config.save_json(atlas_dir / "atlas_facts.json", facts)
         print(f"[evs] atlas baked in {time.time() - t0:.1f}s: {facts['samples']} samples, UV coverage {facts['uv_coverage']}")
         for name, g in facts["groups"].items():

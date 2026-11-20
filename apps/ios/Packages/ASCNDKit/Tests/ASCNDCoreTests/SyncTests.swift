@@ -280,4 +280,62 @@ struct OutboxTests {
       }
     }
   }
+
+  /// AUD-62: bản ghi đã bỏ cuộc gửi lại được mà không cần nhập lại — về đầu
+  /// làn của chủ nó, ngân sách thử lại mới, giữ nguyên id (idempotency key).
+  @Test func retryDeadRequeuesWithFreshBudgetAndSameId() {
+    var box = Outbox()
+    box.enqueue(entry("a"))
+    box.enqueue(entry("b"))
+    _ = box.next(now: at(0), online: true, signedInUser: "u1")
+    box.failed(id: "a", .offline, now: at(0))
+    _ = box.next(now: at(1000), online: true, signedInUser: "u1")
+    box.failed(id: "a", .server(code: "23514"), now: at(1000))
+    #expect(box.dead.map(\.entry.id) == ["a"])
+    #expect(box.pending.map(\.id) == ["b"])
+
+    let didRetry = box.retryDead(id: "a")
+    #expect(didRetry)
+    #expect(box.dead.isEmpty)
+    #expect(box.pending.map(\.id) == ["a", "b"], "về đầu làn của u1: tạo trước b")
+    let retried = box.pending[0]
+    #expect(retried.id == "a")
+    #expect(retried.history == FailureHistory())
+    #expect(retried.notBefore == nil)
+    #expect(!retried.needsNetwork)
+    #expect(box.next(now: at(1000), online: true, signedInUser: "u1") == .send(retried))
+    let retriedMissing = box.retryDead(id: "nope")
+    #expect(!retriedMissing)
+  }
+
+  /// Gửi lại xếp vào đầu làn của CHỦ nó: trước hàng cùng chủ, sau hàng của
+  /// người khác — `next` vẫn chỉ gửi của người đang đăng nhập.
+  @Test func retryDeadGoesToHeadOfItsOwnersLane() {
+    var box = Outbox()
+    box.enqueue(entry("a"))
+    box.enqueue(entry("x", user: "u9"))
+    box.enqueue(entry("y", user: "u9"))
+    _ = box.next(now: at(0), online: true, signedInUser: "u9")
+    box.failed(id: "x", .server(code: "23514"), now: at(0))
+    #expect(box.pending.map(\.id) == ["a", "y"])
+    let didRetry = box.retryDead(id: "x")
+    #expect(didRetry)
+    #expect(box.pending.map(\.id) == ["a", "x", "y"], "trước y (cùng chủ), sau a (khác chủ)")
+    #expect(box.next(now: at(0), online: true, signedInUser: "u9") == .send(entry("x", user: "u9")))
+  }
+
+  /// R2-SYNC-03: `dead` không phình không giới hạn — quá trần thì bản ghi cũ
+  /// nhất rời đi khi có bản ghi mới bỏ cuộc; hàng chờ gửi không đụng tới.
+  @Test func deadListIsCappedAtMaxDeadEntries() {
+    var box = Outbox()
+    for i in 0...Outbox.maxDeadEntries { box.enqueue(entry("e\(i)")) }
+    for i in 0...Outbox.maxDeadEntries {
+      _ = box.next(now: at(0), online: true, signedInUser: "u1")
+      box.failed(id: "e\(i)", .server(code: "23514"), now: at(0))
+    }
+    #expect(box.dead.count == Outbox.maxDeadEntries)
+    #expect(box.dead.first?.entry.id == "e1", "cũ nhất rời đi")
+    #expect(box.dead.last?.entry.id == "e\(Outbox.maxDeadEntries)")
+    #expect(box.pending.isEmpty)
+  }
 }

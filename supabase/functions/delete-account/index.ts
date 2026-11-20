@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+import { revokeAppleGrantIfLinked } from "../_shared/apple-signin.ts";
 import { corsHeaders, json, requireUser } from "../_shared/guard.ts";
 
 /**
@@ -50,6 +51,17 @@ import { corsHeaders, json, requireUser } from "../_shared/guard.ts";
  * deleted** on anything else. A 200 after a partial failure turns that sentence
  * into a lie, on the one screen where a lie is least recoverable.
  *
+ * ── revoking the Apple grant is best-effort and never blocks this ──
+ *
+ * App Store Review Guideline 5.1.1(v) requires revoking the Sign in with
+ * Apple tokens when the account goes. That runs first, while the account
+ * still exists — a retry after a lost response reaches the "already gone"
+ * path below and would never get another chance at it — and it is
+ * deliberately fenced off from the deletion itself: unconfigured secrets,
+ * a missing token, or an Apple failure are logged and the deletion
+ * continues. See `_shared/apple-signin.ts` for the secrets it needs and
+ * where the token comes from.
+ *
  * ── and a non-2xx can be a lie in the other direction ──
  *
  * There is a window between the last photo being removed and the auth row
@@ -83,6 +95,44 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+
+    /*
+      Revoke the Sign in with Apple grant, if this account has one — before
+      anything is destroyed, and fenced off so it can never fail the
+      deletion. The body is read best-effort for exactly two fields, the
+      token material revocation needs (`apple_refresh_token`,
+      `apple_authorization_code`); a body that is absent or not JSON simply
+      means no token was supplied. The identity still comes from the
+      Authorization header, never from the body — the body fields name a
+      token to revoke, not a user — and the delete-account gate allows no
+      other field to be read off it. Whether the account is Apple-linked,
+      and every failure of the lookup or the revocation, is decided inside
+      `revokeAppleGrantIfLinked`, which never throws and never changes the
+      response; the `try` below is the second fence, not the first. That is
+      what keeps this quiet for the ordinary (email/Google) deletion: only
+      an `apple` identity reaches the revocation call, and only there do
+      the missing-secret / missing-token warnings fire.
+    */
+    let body: Record<string, unknown> = {};
+    try {
+      const parsed: unknown = await req.json();
+      if (parsed && typeof parsed === "object") body = parsed as Record<string, unknown>;
+    } catch {
+      /* No body / not JSON: no Apple token supplied. */
+    }
+    try {
+      await revokeAppleGrantIfLinked(admin, userId, {
+        refreshToken: typeof body.apple_refresh_token === "string"
+          ? body.apple_refresh_token
+          : undefined,
+        authorizationCode: typeof body.apple_authorization_code === "string"
+          ? body.apple_authorization_code
+          : undefined,
+      });
+    } catch (e) {
+      /* Revocation must never fail a deletion. Logged, then forgotten. */
+      console.error("apple-signin-revoke: skipped after an error", e);
+    }
 
     /*
       Their folder, emptied first.

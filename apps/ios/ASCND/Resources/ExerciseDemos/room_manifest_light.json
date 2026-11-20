@@ -3,37 +3,37 @@
   "parts": [
     {
       "part": "floor",
-      "file": "gym_room_light_floor",
+      "file": "gym_room_floor",
       "logo": false
     },
     {
       "part": "ceiling",
-      "file": "gym_room_light_ceiling",
+      "file": "gym_room_ceiling",
       "logo": false
     },
     {
       "part": "walls",
-      "file": "gym_room_light_walls",
+      "file": "gym_room_walls",
       "logo": false
     },
     {
       "part": "slats",
-      "file": "gym_room_light_slats",
+      "file": "gym_room_slats",
       "logo": false
     },
     {
       "part": "racks",
-      "file": "gym_room_light_racks",
+      "file": "gym_room_racks",
       "logo": false
     },
     {
       "part": "leds",
-      "file": "gym_room_light_leds",
+      "file": "gym_room_leds",
       "logo": false
     },
     {
       "part": "logo",
-      "file": "gym_room_light_logo",
+      "file": "gym_room_logo",
       "logo": true
     }
   ],
@@ -84,6 +84,28 @@
       -0.234
     ]
   },
+  "lights": [
+    {
+      "name": "key",
+      "color": "#FFFFFF",
+      "intensity": 1200,
+      "from": [
+        2.0,
+        4.0,
+        2.0
+      ]
+    },
+    {
+      "name": "fill",
+      "color": "#FFFFFF",
+      "intensity": 400,
+      "from": [
+        -3.0,
+        1.0,
+        -2.0
+      ]
+    }
+  ],
   "facing": {
     "into_room": [
       0.707,
@@ -104,5 +126,908 @@
       0.0,
       0.049
     ]
-  }
+  },
+  "rack_items": [
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -1.626,
+        0.55,
+        -5.997
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.11,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -1.839,
+        0.55,
+        -5.785
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.1,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -2.051,
+        0.55,
+        -5.573
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.09,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -2.263,
+        0.55,
+        -5.361
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.08,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -2.475,
+        0.55,
+        -5.149
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.07,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -1.57,
+        0.95,
+        -5.941
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.09,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -1.782,
+        0.95,
+        -5.729
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.08,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -1.994,
+        0.95,
+        -5.516
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.07,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -2.206,
+        0.95,
+        -5.304
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.06,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -2.418,
+        0.95,
+        -5.092
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.05,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.021,
+        0.55,
+        -2.603
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.11,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.233,
+        0.55,
+        -2.391
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.1,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.445,
+        0.55,
+        -2.179
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.09,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.657,
+        0.55,
+        -1.967
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.08,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.869,
+        0.55,
+        -1.755
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.07,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -4.964,
+        0.95,
+        -2.547
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.09,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.176,
+        0.95,
+        -2.335
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.08,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.388,
+        0.95,
+        -2.122
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.07,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.6,
+        0.95,
+        -1.91
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.06,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.813,
+        0.95,
+        -1.698
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        0.707
+      ],
+      "radius_m": 0.05,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        6.364,
+        0.55,
+        -1.613
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.11,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        6.152,
+        0.55,
+        -1.825
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.1,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        5.94,
+        0.55,
+        -2.037
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.09,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        5.727,
+        0.55,
+        -2.25
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.08,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        5.515,
+        0.55,
+        -2.462
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.07,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        6.307,
+        0.95,
+        -1.557
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.09,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        6.095,
+        0.95,
+        -1.769
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.08,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        5.883,
+        0.95,
+        -1.981
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.07,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        5.671,
+        0.95,
+        -2.193
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.06,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        5.459,
+        0.95,
+        -2.405
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.05,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        2.687,
+        0.55,
+        -5.29
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.11,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        2.475,
+        0.55,
+        -5.502
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.1,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        2.263,
+        0.55,
+        -5.714
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.09,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        2.051,
+        0.55,
+        -5.927
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.08,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        1.838,
+        0.55,
+        -6.139
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.07,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        2.63,
+        0.95,
+        -5.234
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.09,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        2.418,
+        0.95,
+        -5.446
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.08,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        2.206,
+        0.95,
+        -5.658
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.07,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        1.994,
+        0.95,
+        -5.87
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.06,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        1.782,
+        0.95,
+        -6.082
+      ],
+      "axis": [
+        -0.707,
+        0.0,
+        0.707
+      ],
+      "radius_m": 0.05,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -1.485,
+        0.55,
+        6.236
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.11,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -1.697,
+        0.55,
+        6.024
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.1,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -1.909,
+        0.55,
+        5.811
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.09,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -2.122,
+        0.55,
+        5.599
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.08,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -2.334,
+        0.55,
+        5.387
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.07,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -1.429,
+        0.95,
+        6.179
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.09,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -1.641,
+        0.95,
+        5.967
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.08,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -1.853,
+        0.95,
+        5.755
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.07,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -2.065,
+        0.95,
+        5.543
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.06,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -2.277,
+        0.95,
+        5.331
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.05,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.162,
+        0.55,
+        2.559
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.11,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.374,
+        0.55,
+        2.347
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.1,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.586,
+        0.55,
+        2.134
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.09,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.798,
+        0.55,
+        1.922
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.08,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -6.011,
+        0.55,
+        1.71
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.07,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.106,
+        0.95,
+        2.502
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.09,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.318,
+        0.95,
+        2.29
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.08,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.53,
+        0.95,
+        2.078
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.07,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.742,
+        0.95,
+        1.866
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.06,
+      "length_m": 0.33
+    },
+    {
+      "key": "dumbbell_12kg",
+      "position": [
+        -5.954,
+        0.95,
+        1.654
+      ],
+      "axis": [
+        0.707,
+        -0.0,
+        -0.707
+      ],
+      "radius_m": 0.05,
+      "length_m": 0.33
+    }
+  ],
+  "rack_item_brightness": 1.0
 }

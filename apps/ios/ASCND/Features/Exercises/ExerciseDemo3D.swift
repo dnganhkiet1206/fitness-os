@@ -44,6 +44,15 @@
       /// Tiền tố texture da đủ ba vai trò (`<prefix>_albedo/_emission/_normal.png`
       /// + `_apparel_albedo/_emission`) cho bài dạng khối.
       var fullTexturePrefix: String?
+      /// Mã cơ theo vai trò (`primary` / `secondary` / `stabilizing`) cho shader tô cơ lúc chạy
+      /// (`MuscleShader`, 17/11). Rỗng = bài dùng texture nướng sẵn.
+      var roles: [String: [String]] = [:]
+      /// Mẹo kỹ thuật (nút bóng đèn), từ `app_demo.tips` của `exercise.json` (B1, 17/11).
+      var tips: [ExerciseTip] = []
+      /// Nhịp từng rep (C1, 17/11), nil = bài chưa có `tempo.json`.
+      var tempo: ExerciseTempo?
+      /// Clip lỗi sai thường gặp (C2, 17/11).
+      var mistakes: [ExerciseMistake] = []
       /// File 3D phải có trong bundle để mở bài: file chuyển động (dạng khối)
       /// hoặc USDZ đầy đủ (bài cũ).
       var bundledFile: String { motionFile ?? usdzFile }
@@ -74,6 +83,13 @@
       struct Legend: Decodable { let hex: String; let name_key: String; let role_key: String }
       struct Camera: Decodable { let position: [Float]?; let target: [Float]? }
       struct ReviewFile: Decodable { let date: String; let checked: [String]; let remaining: [String] }
+      struct TipFile: Decodable { let id: String; let anchor: [Float]; let joint: String?; let offset: [Float]? }
+      struct TempoFile: Decodable {
+        struct Phase: Decodable { let rep: Int; let kind: String; let start_ms: Double; let end_ms: Double; let breath: String? }
+        let duration_ms: Double
+        let reps: Int
+        let phases: [Phase]
+      }
       let id: String
       let title: String
       let family_label: String
@@ -87,8 +103,13 @@
       let focus_prefix: String?
       let motion: String?
       let full_prefix: String?
+      let roles: [String: [String]]?
       let review: ReviewFile?
       let note: String?
+      let tips: [TipFile]?
+      let tempo: TempoFile?
+      struct MistakeFile: Decodable { let id: String; let motion: String; let joints: [String] }
+      let mistakes: [MistakeFile]?
     }
 
     private struct Index: Decodable { let demos: [String] }
@@ -119,6 +140,19 @@
       d.focusTexturePrefix = f.focus_prefix
       d.motionFile = f.motion
       d.fullTexturePrefix = f.full_prefix
+      d.roles = f.roles ?? [:]
+      d.tips = (f.tips ?? []).compactMap { t in
+        guard let anchor = vector(t.anchor) else { return nil }
+        return ExerciseTip(id: t.id, anchor: anchor, joint: t.joint, offset: vector(t.offset))
+      }
+      d.tempo = f.tempo.map { t in
+        ExerciseTempo(
+          durationMs: t.duration_ms, reps: t.reps,
+          phases: t.phases.map {
+            .init(rep: $0.rep, kind: $0.kind, startMs: $0.start_ms, endMs: $0.end_ms, breath: $0.breath)
+          })
+      }
+      d.mistakes = (f.mistakes ?? []).map { ExerciseMistake(id: $0.id, motionFile: $0.motion, joints: $0.joints) }
       return d
     }
 

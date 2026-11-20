@@ -81,3 +81,11 @@ Không có thay đổi gì nên cũng không cần bằng chứng. [Suy luận] 
 | Onboarding | — | Mẫu "Nếu [tình huống] thì tôi tập" + "Nếu [trở ngại] thì [cách xử lý]"; nhắc lại kế hoạch vào thứ Hai; kỳ vọng hiệu quả d ≈ 0,3 |
 
 Các mốc 21/56 ngày, −10%/−20%, +5%/+2,5% là **giá trị suy luận** chọn trong khoảng mà bằng chứng cho phép. Chưa có thử nghiệm nào kiểm tra trực tiếp đúng các con số này.
+
+---
+
+## Tạm nghỉ (KOA-T23, Kiệt chốt 19/11/2026)
+
+- Đang Tạm nghỉ: thẻ đầu tuần KHÔNG khuyên gì, chỉ nói lời nhẹ nhàng ("khi quay lại Koa sẽ cho bắt đầu nhẹ"), một nút "Đã hiểu", một lần mỗi tuần. Trước đây thẻ biến mất.
+- Ngày Tạm nghỉ của tuần trước bị trừ khỏi đích (`KoaWeek.state(paused:)`), nên tuần nghỉ có chủ đích không thành "lỡ một nửa số buổi". Quay lại sau nghỉ ≥ 7 ngày vẫn là tuần nhẹ theo số ngày nghỉ (mục 2). [Suy luận] Nghỉ có chủ đích là một phần của kế hoạch, không phải dấu hiệu quá tải hay mất nhịp.
+- Nhận "Tuần lên tạ": mục tiêu tăng tải của từng bài (`OverloadPlan`, mục 1) được áp vào các buổi ĐẦY ĐỦ của tuần ấy (`ProgressWeek`): tạ / rep = lớn hơn giữa mẫu và mục tiêu, không bao giờ hạ; buổi nhẹ / ngắn không bị nâng. "Giữ nhịp" chỉ là ghi nhận ("Đã hiểu").

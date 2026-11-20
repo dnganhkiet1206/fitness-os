@@ -20,8 +20,13 @@ struct DailyLogRebuildTests {
     var failTable: String?
     var stored: JSONValue?
     var updates = 0, inserts = 0
+    /// Mọi select đã chạy — ghi dưới khoá vì `readSources` đọc song song.
+    private let queriesLock = NSLock()
+    private var recorded: [RowQuery] = []
+    var queries: [RowQuery] { queriesLock.withLock { recorded } }
 
     func select(_ q: RowQuery) async throws(RowStoreError) -> [JSONValue] {
+      queriesLock.withLock { recorded.append(q) }
       if q.table == failTable { throw RowStoreError(code: nil, message: "boom") }
       if q.table == "daily_logs" {
         if q.columns == "id, updated_at" { return row.map { [$0] } ?? [] }
@@ -178,4 +183,189 @@ struct DailyLogRebuildTests {
     let failures = await DailyLog.rebuildAfterWrite(e, store: s, clock: FixedWallClock(iso8601: "2026-10-05T10:00:00Z"), in: Self.utc)
     #expect(failures.count == 2)
   }
+
+  // MARK: - Gom lượt (AUD-50)
+
+  /// 20 entry chạm 2 ngày phân biệt → đúng 2 lượt dựng: mỗi ngày 1 select
+  /// token + 12 select nguồn + 1 insert. Entry không về buổi tập / bữa / ngủ
+  /// (kế hoạch) không dựng thêm ngày nào.
+  @Test func rebuildAfterWritesCoalescesDistinctDays() async {
+    let s = Scripted()
+    var entries: [OutboxEntry] = []
+    for i in 0..<10 {
+      entries.append(entry(
+        WorkoutSessionRecord.outboxKind,
+        ["id": .string("past-\(i)"), "date_time": .string("2026-10-03T18:00:00.000Z")]))
+    }
+    for i in 0..<10 {
+      entries.append(entry(
+        WorkoutSessionRecord.outboxKind,
+        ["id": .string("today-\(i)"), "date_time": .string("2026-10-05T08:00:00.000Z")]))
+    }
+    entries.append(entry(PlanEdit.templateKind, ["id": .string("t1")]))
+    let failures = await DailyLog.rebuildAfterWrites(
+      entries, store: s, clock: FixedWallClock(iso8601: "2026-10-05T10:00:00Z"), in: Self.utc)
+    #expect(failures.isEmpty)
+    #expect(s.inserts == 2)
+    #expect(s.queries.count == 26)
+    #expect(s.queries.filter { $0.columns != "id, updated_at" }.count == 24)
+  }
+
+  /// 12 nguồn cùng bay: mọi select chồng lên nhau trong lúc chờ.
+  @Test func readSourcesReadsAllTwelveConcurrently() async {
+    let store = ConcurrentStore()
+    let reads = DailyLog.queries(userId: "u1", date: Self.today, in: Self.utc)
+    let sources = try? await DailyLog.readSources(reads, store)
+    #expect(sources != nil)
+    #expect(sources?.profile == nil)
+    #expect(await store.maxInFlight == 12)
+  }
+
+  /// Hai nguồn cùng hỏng thì lỗi ném ra là lỗi của nguồn ĐỨNG TRƯỚC theo thứ
+  /// tự cố định — đúng lỗi bản tuần tự cũ ném.
+  @Test func readSourcesThrowsTheFirstFailureInFixedOrder() async {
+    let store = KeyedFailingStore()
+    let reads = DailyLog.queries(userId: "u1", date: Self.today, in: Self.utc)
+    store.failures = [
+      reads.meals: RowStoreError(code: nil, message: "meals boom"),
+      reads.water: RowStoreError(code: nil, message: "water boom"),
+    ]
+    var thrown: RowStoreError?
+    do {
+      _ = try await DailyLog.readSources(reads, store)
+    } catch {
+      thrown = error
+    }
+    #expect(thrown?.message == "meals boom")
+  }
+
+  /// Hồ sơ hỏng vẫn là "không có hồ sơ", không phải lỗi dựng lại.
+  @Test func readSourcesTreatsProfileFailureAsMissingProfile() async {
+    let store = KeyedFailingStore()
+    let reads = DailyLog.queries(userId: "u1", date: Self.today, in: Self.utc)
+    store.failures = [reads.profile: RowStoreError(code: nil, message: "profile boom")]
+    let sources = try? await DailyLog.readSources(reads, store)
+    #expect(sources != nil)
+    #expect(sources?.profile == nil)
+  }
+
+  /// Đọc song song cho cùng kết quả như đọc tuần tự: mỗi nguồn trả một hàng
+  /// đánh dấu riêng, nên lắp nhầm thứ tự là lộ ngay. Kèm theo: mỗi truy vấn
+  /// trong `Reads.sources` được gửi đúng MỘT lần — không thiếu, không thừa.
+  @Test func readSourcesMatchesSequentialReads() async throws {
+    let reads = DailyLog.queries(userId: "u1", date: Self.today, in: Self.utc)
+    #expect(Set(reads.sources).count == 12)
+    var rows: [RowQuery: [JSONValue]] = [:]
+    for (i, q) in reads.sources.enumerated() {
+      rows[q] = [.object(["source": .number(Double(i))])]
+    }
+    let store = MarkedStore(rows: rows)
+    let concurrent = try await DailyLog.readSources(reads, store)
+    let issued = await store.queries
+    #expect(issued.count == 12)
+    #expect(Set(issued) == Set(reads.sources))
+    // Mỗi hàng đánh dấu về đúng trường của nó.
+    func marker(_ i: Int) -> [JSONValue] { [.object(["source": .number(Double(i))])] }
+    let fields: (DailyLog.Sources) -> [[JSONValue]] = {
+      [$0.meals, $0.workouts, $0.sleeps, $0.supplements, $0.intakes, $0.bio, $0.bioHistory,
+       $0.load7d, $0.load28d, $0.sleeps7d, $0.water]
+    }
+    let expectedFields = [
+      marker(0), marker(1), marker(2), marker(3), marker(4), marker(5),
+      marker(7), marker(8), marker(9), marker(10), marker(11),
+    ]
+    #expect(fields(concurrent) == expectedFields)
+    #expect(concurrent.profile == marker(6).first)
+    // Tham chiếu tuần tự: gửi từng nguồn theo đúng thứ tự `Reads.sources`,
+    // lắp theo cùng thứ tự — kết quả phải giống hệt bản song song.
+    var values: [[JSONValue]] = []
+    for q in reads.sources {
+      values.append(try await store.select(q))
+    }
+    let sequential = DailyLog.Sources(
+      meals: values[0], workouts: values[1], sleeps: values[2], supplements: values[3], intakes: values[4],
+      bio: values[5], profile: values[6].first, bioHistory: values[7], load7d: values[8], load28d: values[9],
+      sleeps7d: values[10], water: values[11])
+    #expect(fields(concurrent) == fields(sequential))
+    #expect(concurrent.profile == sequential.profile)
+  }
+
+  /// Hai nguồn cùng hỏng: lỗi ném ra vẫn là lỗi của nguồn đứng trước — và
+  /// cả 12 nguồn đều đã bay (chờ hết rồi mới xét lỗi, AUD-50), mỗi nguồn
+  /// đúng một lần. Bản tuần tự cũ dừng ở nguồn hỏng đầu tiên; bản song
+  /// song không thu hồi được chuyến đã bay, nên khi lỗi mà số truy vấn
+  /// nhiều hơn trước là đúng ý đồ, không phải hồi quy.
+  @Test func readSourcesOnFailureThrowsFirstErrorAndIssuesEverySource() async {
+    let reads = DailyLog.queries(userId: "u1", date: Self.today, in: Self.utc)
+    let store = MarkedStore(rows: [:], failures: [
+      reads.sleeps: RowStoreError(code: nil, message: "sleeps boom"),
+      reads.water: RowStoreError(code: nil, message: "water boom"),
+    ])
+    var thrown: RowStoreError?
+    do {
+      _ = try await DailyLog.readSources(reads, store)
+    } catch {
+      thrown = error
+    }
+    #expect(thrown?.message == "sleeps boom")
+    let issued = await store.queries
+    #expect(issued.count == 12)
+    #expect(Set(issued) == Set(reads.sources))
+  }
+}
+
+/// Kho đếm số select đang bay cùng lúc: mỗi select giữ một nhịp rồi mới trả,
+/// nên đọc song song thì cả 12 chuyến chồng lên nhau.
+private actor ConcurrentStore: RowStore {
+  var maxInFlight = 0
+  private var inFlight = 0
+
+  func select(_ q: RowQuery) async throws(RowStoreError) -> [JSONValue] {
+    inFlight += 1
+    maxInFlight = max(maxInFlight, inFlight)
+    defer { inFlight -= 1 }
+    try? await Task.sleep(nanoseconds: 10_000_000)
+    if q.mode == .single { throw RowStoreError(code: "PGRST116", message: "no rows") }
+    return []
+  }
+
+  func insert(_ table: String, _ row: [String: JSONValue]) async throws(RowStoreError) {}
+  func update(_ table: String, _ row: [String: JSONValue], where filters: [RowQuery.Filter]) async throws(RowStoreError) -> Int { 0 }
+}
+
+/// Kho hỏng theo đúng truy vấn, để kiểm thứ tự lỗi.
+private final class KeyedFailingStore: RowStore, @unchecked Sendable {
+  var failures: [RowQuery: RowStoreError] = [:]
+
+  func select(_ q: RowQuery) async throws(RowStoreError) -> [JSONValue] {
+    if let e = failures[q] { throw e }
+    if q.mode == .single { throw RowStoreError(code: "PGRST116", message: "no rows") }
+    return []
+  }
+
+  func insert(_ table: String, _ row: [String: JSONValue]) async throws(RowStoreError) {}
+  func update(_ table: String, _ row: [String: JSONValue], where filters: [RowQuery.Filter]) async throws(RowStoreError) -> Int { 0 }
+}
+
+/// Kho trả mỗi truy vấn hàng đã định sẵn (kèm lỗi theo truy vấn, nếu có),
+/// ghi lại mọi truy vấn đã nhận — để kiểm đọc song song lắp đúng nguồn và
+/// gửi mỗi nguồn đúng một lần. Actor nên đọc song song an toàn.
+private actor MarkedStore: RowStore {
+  private let rows: [RowQuery: [JSONValue]]
+  private let failures: [RowQuery: RowStoreError]
+  private(set) var queries: [RowQuery] = []
+
+  init(rows: [RowQuery: [JSONValue]], failures: [RowQuery: RowStoreError] = [:]) {
+    self.rows = rows
+    self.failures = failures
+  }
+
+  func select(_ q: RowQuery) async throws(RowStoreError) -> [JSONValue] {
+    queries.append(q)
+    if let e = failures[q] { throw e }
+    return rows[q] ?? []
+  }
+
+  func insert(_ table: String, _ row: [String: JSONValue]) async throws(RowStoreError) {}
+  func update(_ table: String, _ row: [String: JSONValue], where filters: [RowQuery.Filter]) async throws(RowStoreError) -> Int { 0 }
 }

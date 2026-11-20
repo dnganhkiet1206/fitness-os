@@ -65,6 +65,23 @@
       "role_key": "eg.demo3d.legend.stabilizer"
     }
   ],
+  "roles": {
+    "primary": [
+      "deltoid_anterior",
+      "deltoid_lateral"
+    ],
+    "secondary": [
+      "triceps_brachii",
+      "trapezius_middle",
+      "trapezius_lower",
+      "serratus_anterior"
+    ],
+    "stabilizing": [
+      "trapezius_upper",
+      "rotator_cuff_posterior",
+      "biceps_brachii"
+    ]
+  },
   "focus_prefix": "dumbbell_shoulder_press_focus",
   "motion": "dumbbell_shoulder_press_motion",
   "full_prefix": "dumbbell_shoulder_press_full",
@@ -82,5 +99,128 @@
     ],
     "remaining": []
   },
-  "note": "Kiệt duyệt động tác 15/11. Bấm nút Mẹo (bóng đèn) trong trình xem để xem 5 mẹo kỹ thuật"
+  "note": "Kiệt duyệt động tác 15/11. Bấm nút Mẹo (bóng đèn) trong trình xem để xem 5 mẹo kỹ thuật",
+  "tips": [
+    {
+      "id": "press_bench",
+      "anchor": [
+        0.12,
+        1.2,
+        -0.38
+      ]
+    },
+    {
+      "id": "press_shoulders",
+      "anchor": [
+        0.14,
+        1.07,
+        -0.12
+      ],
+      "joint": "Root/pelvis/spine_01/spine_02/spine_03/clavicle_l/scapula_l",
+      "offset": [
+        0.0165,
+        0.0423,
+        0.0008
+      ]
+    },
+    {
+      "id": "press_elbows",
+      "anchor": [
+        -0.21,
+        0.98,
+        -0.04
+      ],
+      "joint": "Root/pelvis/spine_01/spine_02/spine_03/clavicle_r/upperarm_swing_r",
+      "offset": [
+        0.0016,
+        0.0031,
+        0.069
+      ]
+    },
+    {
+      "id": "press_depth",
+      "anchor": [
+        0.0,
+        1.12,
+        -0.05
+      ],
+      "joint": "Root/pelvis/spine_01/spine_02/spine_03/neck_01",
+      "offset": [
+        0.0,
+        0.03,
+        0.1048
+      ]
+    },
+    {
+      "id": "press_core",
+      "anchor": [
+        0.0,
+        0.7,
+        0.1
+      ],
+      "joint": "Root/pelvis/spine_01/spine_02",
+      "offset": [
+        0.0,
+        0.0121,
+        0.1524
+      ]
+    }
+  ],
+  "tempo": {
+    "duration_ms": 8800,
+    "notation": "2-0.4-1.4-0.3",
+    "reps": 2,
+    "phases": [
+      {
+        "rep": 1,
+        "kind": "concentric",
+        "start_ms": 600,
+        "end_ms": 2000,
+        "breath": "exhale"
+      },
+      {
+        "rep": 1,
+        "kind": "top_hold",
+        "start_ms": 2000,
+        "end_ms": 2300,
+        "breath": "hold"
+      },
+      {
+        "rep": 1,
+        "kind": "eccentric",
+        "start_ms": 2300,
+        "end_ms": 4300,
+        "breath": "inhale"
+      },
+      {
+        "rep": 1,
+        "kind": "bottom_hold",
+        "start_ms": 4300,
+        "end_ms": 4700,
+        "breath": "hold"
+      },
+      {
+        "rep": 2,
+        "kind": "concentric",
+        "start_ms": 4700,
+        "end_ms": 6100,
+        "breath": "exhale"
+      },
+      {
+        "rep": 2,
+        "kind": "top_hold",
+        "start_ms": 6100,
+        "end_ms": 6400,
+        "breath": "hold"
+      },
+      {
+        "rep": 2,
+        "kind": "eccentric",
+        "start_ms": 6400,
+        "end_ms": 8400,
+        "breath": "inhale"
+      }
+    ]
+  },
+  "mistakes": []
 }

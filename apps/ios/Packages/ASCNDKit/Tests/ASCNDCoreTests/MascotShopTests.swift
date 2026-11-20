@@ -162,7 +162,9 @@ struct MascotShopBookTests {
       return rows
     }
 
-    func buy(itemKey: String) async throws -> Int {
+    /// Món cùng chỗ đã cởi trong lượt mua gần nhất (KOA-T18).
+    var unequipped: [String] = []
+    func buy(itemKey: String, unequip: [String]) async throws -> Int {
       buys += 1
       if holdBuy { await withCheckedContinuation { gate = $0 } }
       if let buyError { throw buyError }
@@ -171,7 +173,9 @@ struct MascotShopBookTests {
       let balance = source.entries.reduce(0) { $0 + $1.amount }
       if balance < it.price { throw MascotFailure.insufficientCoins }
       source.entries.append(LedgerRow(amount: -it.price, refKey: "buy:\(itemKey)"))
+      rows = rows.map { unequip.contains($0.itemKey) ? InventoryRow(itemKey: $0.itemKey, equipped: false) : $0 }
       rows.append(InventoryRow(itemKey: itemKey, equipped: true))
+      unequipped = unequip
       return balance - it.price
     }
 
@@ -191,15 +195,17 @@ struct MascotShopBookTests {
     let source: Source
     var claims: [String] = []
     var error: MascotFailure?
+    /// Server trả 0 = bộ đã nhận ở máy khác (KOA-T01).
+    var duplicate = false
     init(_ s: Source) { source = s }
     func claimReward(refKey: String, reason: String) async throws -> Int {
       if let error { throw error }
       claims.append(refKey)
+      if duplicate { return 0 }
       let amount = MascotShop.collections.first { $0.refKey == refKey }?.rewardCoins ?? 0
       source.entries.append(LedgerRow(amount: amount, refKey: refKey))
       return amount
     }
-    func buyStreakFreeze(requestId: UUID) async throws -> Int { 0 }
   }
 
   static func make(coins: Int, xp: Int = 0) -> (MascotShopBook, Source, Wardrobe, Economy) {
@@ -285,6 +291,42 @@ struct MascotShopBookTests {
     #expect(await book.setWorn("face_vr", on: true) == .busy)  // chưa có món
   }
 
+  /// KOA-T18: mua cởi món cùng chỗ trong CÙNG lượt mua — mỗi chỗ đúng một món đang mặc.
+  @Test func buyingWearsTheNewItemAndTakesOffTheSameSlotAtomically() async {
+    let (book, _, w, _) = Self.make(coins: 1000)
+    w.rows = [InventoryRow(itemKey: "head_band", equipped: true)]
+    await book.load()
+    let cap = MascotShop.item("head_cap")!
+    #expect(await book.buy(cap) == .bought)
+    #expect(w.unequipped.contains("head_band"))
+    #expect(w.rows.filter { $0.itemKey.hasPrefix("head_") && $0.equipped }.map(\.itemKey) == ["head_cap"])
+    #expect(book.equipped.contains("head_cap") && !book.equipped.contains("head_band"))
+  }
+
+  /// KOA-T19: mặc hỏng → đọc lại sự thật từ server, không trả về ảnh chụp cũ.
+  @Test func aFailedWearReloadsServerTruth() async {
+    let (book, _, w, _) = Self.make(coins: 0)
+    w.rows = [InventoryRow(itemKey: "head_band", equipped: false), InventoryRow(itemKey: "head_cap", equipped: false)]
+    await book.load()
+    // Máy khác vừa mặc mũ lưỡi trai; lượt mặc băng đô ở máy này hỏng.
+    w.rows = [InventoryRow(itemKey: "head_band", equipped: false), InventoryRow(itemKey: "head_cap", equipped: true)]
+    w.wearError = .offline
+    #expect(await book.setWorn("head_band", on: true) == .failed(.offline))
+    #expect(book.equipped.contains("head_cap"), "đọc lại server: thấy món máy khác vừa mặc")
+    #expect(!book.equipped.contains("head_band"))
+  }
+
+  /// Devin #967: mặc hỏng VÀ đọc lại cũng hỏng (mất mạng) → không giữ thay đổi chưa lưu.
+  @Test func aFailedWearWhileOfflineRestoresTheChoice() async {
+    let (book, s, w, _) = Self.make(coins: 0)
+    w.rows = [InventoryRow(itemKey: "head_band", equipped: false)]
+    await book.load()
+    w.wearError = .offline
+    s.fail = true
+    #expect(await book.setWorn("head_band", on: true) == .failed(.offline))
+    #expect(!book.equipped.contains("head_band"), "chưa lưu thì không hiện như đã mặc")
+  }
+
   @Test func aCompletedSetPaysOnce() async {
     let (book, _, w, e) = Self.make(coins: 0)
     w.rows = [InventoryRow(itemKey: "head_santa", equipped: false)]
@@ -298,6 +340,17 @@ struct MascotShopBookTests {
     #expect(book.balance == 120)
     #expect(book.isClaimed(xmas))
     #expect(book.setsReady == 0)
+    #expect(await book.claim(xmas) == .notReady)
+    #expect(e.claims == ["set:xmas"])
+  }
+
+  /// KOA-T01: bộ đã nhận ở máy khác mà sổ máy này chưa thấy → server trả 0 → không mừng.
+  @Test func aSetPaidElsewhereIsNotCelebrated() async {
+    let (book, _, w, e) = Self.make(coins: 0)
+    w.rows = [InventoryRow(itemKey: "head_santa", equipped: false), InventoryRow(itemKey: "top_xmas", equipped: false)]
+    await book.load()
+    let xmas = MascotShop.collections.first { $0.id == "xmas" }!
+    e.duplicate = true
     #expect(await book.claim(xmas) == .notReady)
     #expect(e.claims == ["set:xmas"])
   }

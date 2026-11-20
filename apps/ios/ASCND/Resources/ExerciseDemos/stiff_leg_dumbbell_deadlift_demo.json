@@ -60,6 +60,21 @@
       "role_key": "eg.demo3d.legend.stabilizer"
     }
   ],
+  "roles": {
+    "primary": [
+      "hamstrings"
+    ],
+    "secondary": [
+      "gluteus_maximus",
+      "adductors"
+    ],
+    "stabilizing": [
+      "erector_spinae",
+      "trapezius_upper",
+      "rhomboids",
+      "forearm_muscles"
+    ]
+  },
   "focus_prefix": "stiff_leg_dumbbell_deadlift_focus",
   "motion": "stiff_leg_dumbbell_deadlift_motion",
   "full_prefix": "stiff_leg_dumbbell_deadlift_full",
@@ -74,5 +89,63 @@
     ],
     "remaining": []
   },
-  "note": null
+  "note": null,
+  "tips": [],
+  "tempo": {
+    "duration_ms": 9700,
+    "notation": "2.2-0.3-1.6-0.5",
+    "reps": 2,
+    "phases": [
+      {
+        "rep": 1,
+        "kind": "eccentric",
+        "start_ms": 600,
+        "end_ms": 2800,
+        "breath": "inhale"
+      },
+      {
+        "rep": 1,
+        "kind": "bottom_hold",
+        "start_ms": 2800,
+        "end_ms": 3100,
+        "breath": "hold"
+      },
+      {
+        "rep": 1,
+        "kind": "concentric",
+        "start_ms": 3100,
+        "end_ms": 4700,
+        "breath": "exhale"
+      },
+      {
+        "rep": 1,
+        "kind": "top_hold",
+        "start_ms": 4700,
+        "end_ms": 5200,
+        "breath": "hold"
+      },
+      {
+        "rep": 2,
+        "kind": "eccentric",
+        "start_ms": 5200,
+        "end_ms": 7400,
+        "breath": "inhale"
+      },
+      {
+        "rep": 2,
+        "kind": "bottom_hold",
+        "start_ms": 7400,
+        "end_ms": 7700,
+        "breath": "hold"
+      },
+      {
+        "rep": 2,
+        "kind": "concentric",
+        "start_ms": 7700,
+        "end_ms": 9300,
+        "breath": "exhale"
+      }
+    ]
+  },
+  "mistakes": []
 }

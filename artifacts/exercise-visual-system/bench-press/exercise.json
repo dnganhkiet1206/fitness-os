@@ -197,6 +197,8 @@
       "lockout"
     ],
     "qa": {},
+    "reference_checks": [],
+    "reference_note": "Reference clip Pexels 20672105 is wide-grip; the animation is medium grip (0.78 m between hand centres, Mausehund et al. 2022 medium-grip targets), so clip angles are not comparable to the animation. Tempo also differs deliberately (slow instructional tempo vs clip tempo). The press_horizontal family gate (Mausehund bounds) is the regression check for bench angles; declare reference_checks only from a medium-grip clip.",
     "targets": [
       {
         "metric": "elbow_flexion_max_deg",
@@ -418,6 +420,64 @@
         0.0291
       ]
     },
-    "legacy_comment": "Bench press is still the 14/11 full USDZ in the app (A/B bottom choice pending): these overrides describe that file, not the current pipeline report."
+    "legacy_comment": "Bench press is still the 14/11 full USDZ in the app (A/B bottom choice pending): these overrides describe that file, not the current pipeline report.",
+    "tips": [
+      {
+        "id": "shoulders",
+        "anchor": [
+          0.24,
+          0.62,
+          -0.1
+        ],
+        "joint": "Root/pelvis/spine_01/spine_02/spine_03/clavicle_l/upperarm_l",
+        "offset": [
+          0.0459,
+          0.0435,
+          0.0299
+        ]
+      },
+      {
+        "id": "core",
+        "anchor": [
+          0.0,
+          0.66,
+          0.27
+        ],
+        "joint": "Root/pelvis/spine_01/spine_02",
+        "offset": [
+          0.0,
+          0.1391,
+          0.0573
+        ]
+      },
+      {
+        "id": "chest",
+        "anchor": [
+          0.0,
+          0.69,
+          0.03
+        ],
+        "joint": "Root/pelvis/spine_01/spine_02/spine_03",
+        "offset": [
+          0.0,
+          0.1715,
+          -0.1194
+        ]
+      },
+      {
+        "id": "feet",
+        "anchor": [
+          0.3,
+          0.04,
+          0.8
+        ],
+        "joint": "Root/pelvis/thigh_l/calf_l/foot_l",
+        "offset": [
+          0.03,
+          -0.0338,
+          0.0547
+        ]
+      }
+    ]
   }
 }

@@ -13,6 +13,10 @@ import Sentry
 /// - Không PII: không email / tên; người dùng gắn bằng mã tài khoản (UUID). Không gửi
 ///   số liệu sức khoẻ (cân, giấc ngủ, nhịp tim, kcal) — sự kiện chỉ nói "đã làm gì".
 ///   Không ghi lại phiên (session replay), không tự chụp màn.
+/// - Lọc trước khi gửi (AUD-74): `beforeSend` của Sentry và `capture` đều qua
+///   `TelemetryScrubber` — khoá lạ thì bỏ, giá trị lạ thì thành "redacted".
+///   Danh sách cho phép dựng từ các chỗ gọi ở tip; thêm khoá mới thì thêm vào
+///   bộ lọc trước, kèm test.
 @MainActor
 enum Telemetry {
   /// Danh sách sự kiện CỐ ĐỊNH — thêm sự kiện là thêm một case, không gửi chuỗi tự do.
@@ -75,6 +79,37 @@ enum Telemetry {
         o.environment = build
         o.sendDefaultPii = false
         o.tracesSampleRate = 0.2
+        // Chốt chặn cuối trước khi sự kiện rời máy (AUD-74): tag/extra chỉ
+        // giữ khoá đo lường đã biết, người dùng chỉ giữ mã tài khoản (UUID),
+        // tin nhắn và breadcrumb thì che email + bỏ query/fragment của URL.
+        // Ngoại lệ / stack trace / ngữ cảnh thiết bị / request do SDK quản lý,
+        // không mang dữ liệu app — giữ nguyên để sửa crash. Không có
+        // `beforeBreadcrumb` riêng: breadcrumb chỉ rời máy trong sự kiện, nên
+        // một chốt chặn ở đây là đủ.
+        o.beforeSend = { event in
+          event.tags = TelemetryScrubber.scrubbedTags(event.tags)
+          event.extra = TelemetryScrubber.scrubbedExtra(event.extra)
+          if let user = event.user {
+            event.user = user.userId.flatMap { TelemetryScrubber.isAccountId($0) ? User(userId: $0) : nil }
+          }
+          if let message = event.message {
+            let scrubbed = TelemetryScrubber.scrubbedText(message.formatted)
+            if scrubbed != message.formatted {
+              // `formatted` chỉ đọc — dựng lại tin nhắn với cả mẫu và tham số đã lọc.
+              let replacement = SentryMessage(formatted: scrubbed)
+              replacement.message = message.message.map(TelemetryScrubber.scrubbedText)
+              replacement.params = message.params?.map(TelemetryScrubber.scrubbedText)
+              event.message = replacement
+            }
+          }
+          if let crumbs = event.breadcrumbs {
+            for crumb in crumbs {
+              if let text = crumb.message { crumb.message = TelemetryScrubber.scrubbedText(text) }
+              if let data = crumb.data { crumb.data = TelemetryScrubber.scrubbedBreadcrumbData(data) }
+            }
+          }
+          return event
+        }
       }
       #if DEBUG
         // Kiểm tra cấu hình: chạy bản Debug với ASCND_TELEMETRY_TEST=1 → một tin lên Sentry.
@@ -131,22 +166,46 @@ enum Telemetry {
         scope.setLevel(.error)
         scope.setTag(value: stage, key: "sync.stage")
       }
+    case .undecodable(let count):
+      // Hàng trên đĩa bản app này không đọc được (R2-SYNC-02): chỉ số lượng,
+      // không id hàng, không payload. Mức cảnh báo — hàng không mất, chỉ chờ
+      // bản đọc được nó.
+      SentrySDK.capture(message: "sync.undecodable") { scope in
+        scope.setLevel(.warning)
+        scope.setExtra(value: count, key: "undecodable_rows")
+      }
     }
   }
 
-  /// Dựng lại `daily_logs` sau một lần gửi hỏng (số ngày hỏng, loại bản ghi).
-  static func reportRebuild(kind: String, failedDays: Int) {
+  /// Dựng lại `daily_logs` sau một lượt gửi hỏng (AUD-50): số ngày hỏng trên
+  /// số entry lượt ấy đã gửi. Một lượt có nhiều loại entry nên không gắn một
+  /// loại nào — tag `sync.kind` là `drain`.
+  static func reportRebuild(failedDays: Int, entries: Int) {
     guard SentrySDK.isEnabled else { return }
     SentrySDK.capture(message: "sync.rebuild_failed") { scope in
       scope.setLevel(.warning)
-      scope.setTag(value: kind, key: "sync.kind")
+      scope.setTag(value: "drain", key: "sync.kind")
       scope.setExtra(value: failedDays, key: "failed_days")
+      scope.setExtra(value: entries, key: "entries")
+    }
+  }
+
+  /// Đẩy tạm nghỉ Koa lên server hỏng (R2-SYNC-05): trước đây `catch {}` nuốt
+  /// lặng — đội không bao giờ biết máy người dùng không đẩy được. Cờ chờ /
+  /// ảnh đã gửi giữ nguyên nên lần đồng bộ sau gửi bù; sự kiện này chỉ để đội
+  /// thấy. `stage`: `pause` (đợt đang có) hay `pause_log` (sổ các đợt).
+  static func reportKoaPausePush(stage: String) {
+    guard SentrySDK.isEnabled else { return }
+    SentrySDK.capture(message: "sync.koa_pause_push_failed") { scope in
+      scope.setLevel(.warning)
+      scope.setTag(value: stage, key: "sync.stage")
     }
   }
 
   static func capture(_ event: Event, _ props: [String: String] = [:]) {
     guard analytics else { return }
-    PostHogSDK.shared.capture(event.rawValue, properties: props)
+    // Mọi chỗ gọi đều qua đây: khoá lạ / giá trị lạ bị lọc trước khi gửi (AUD-74).
+    PostHogSDK.shared.capture(event.rawValue, properties: TelemetryScrubber.scrubbedProperties(props))
   }
 
   /// Gửi một lần cho mỗi `key` của tài khoản, cả qua nhiều lần mở app (`TelemetryLedger` trong

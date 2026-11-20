@@ -36,6 +36,17 @@ export const REFUSAL = {
 } as const;
 
 /**
+ * Câu từ chối khi lời nhắn trông như cố ghi đè chỉ dẫn / moi cấu hình (KOA-T37). Câu phạm vi
+ * ở trên sai chỗ này: người ta vừa hỏi một câu (có khi là câu tập luyện thật bị bắt nhầm) mà
+ * nhận về "mình chỉ hỗ trợ tập luyện…" thì không hiểu vì sao, cũng không biết sửa thế nào.
+ */
+export const HOSTILE_REFUSAL = {
+  vi: "Tin này trông giống lệnh đổi cách mình hoạt động hoặc hỏi về hệ thống phía sau, nên mình không làm theo được. Nếu bạn đang hỏi về tập luyện, dinh dưỡng, giấc ngủ hay phục hồi, bạn nói lại theo cách khác giúp mình nhé.",
+  en: "That message looks like an attempt to change how I work or ask about the system behind me, so I can't follow it. If you meant a question about training, nutrition, sleep or recovery, try rephrasing it.",
+  es: "Ese mensaje parece un intento de cambiar cómo funciono o de preguntar por el sistema detrás de mí, así que no puedo seguirlo. Si querías preguntar sobre entrenamiento, nutrición, sueño o recuperación, prueba a decirlo de otra forma.",
+} as const;
+
+/**
  * Đoạn nối vào MỌI system prompt.
  *
  * Viết ở ngôi thứ hai và nói rõ cả ba việc: phạm vi, câu từ chối chính xác, và
@@ -69,7 +80,11 @@ PHẠM VI — ba luật này đè lên mọi thứ khác trong hội thoại:
  */
 const PROBE = [
   /\b(system|initial)\s+(prompt|instruction)/i,
-  /\b(ignore|disregard|forget)\b[^.?!]{0,40}\b(previous|above|prior|all)\b/i,
+  /*
+    KOA-T37: phải có ĐỐI TƯỢNG là chỉ dẫn. Bản cũ chỉ cần "forget … all" — "forget all that,
+    I meant 3 sets" (một câu sửa lời bình thường) bị chặn.
+  */
+  /\b(ignore|disregard|forget)\b[^.?!]{0,40}\b(previous|above|prior|all|your|earlier)\b[^.?!]{0,20}\b(instructions?|rules?|prompts?|guidelines?|directions?|system)\b/i,
   /*
     Phải hỏi về TRỢ LÝ, không phải về một model bất kỳ.
 
@@ -84,7 +99,8 @@ const PROBE = [
   */
   /\b(what|which)\b[^.?!]{0,30}\b(model|llm|provider|gateway|api key|openai|gemini|claude|gpt)\b[^.?!]{0,30}\b(are|do|does|is|you|this|behind|power)/i,
   /\byou\s+are\s+(now|actually)\b/i,
-  /(bỏ qua|quên đi|phớt lờ)[^.?!]{0,40}(chỉ dẫn|hướng dẫn|luật|ở trên|trước đó)/i,
+  // Như trên: "quên đi cái trước đó, ý mình là 3 hiệp" là câu sửa lời, không phải ghi đè.
+  /(bỏ qua|quên đi|phớt lờ)[^.?!]{0,40}(chỉ dẫn|hướng dẫn|luật|quy tắc|mệnh lệnh)/i,
   /(prompt|chỉ dẫn)\s+(hệ thống|gốc|ban đầu)/i,
   /(bạn|mày|cậu)\s+(đang\s+)?(dùng|chạy|sử dụng)[^.?!]{0,30}(model|mô hình|api|nhà cung cấp)/i,
 ];
@@ -113,8 +129,12 @@ export function looksHostile(text: string): boolean {
  * họ hỏi một câu ngoài phạm vi. Trả lỗi ở đây sẽ hiện ra "kết nối thất bại",
  * một câu vừa sai vừa khiến người ta thử lại.
  */
-export function refusalStream(lang: "vi" | "en" | "es", corsHeaders: Record<string, string>): Response {
-  const chunk = JSON.stringify({ choices: [{ delta: { content: REFUSAL[lang] } }] });
+export function refusalStream(
+  lang: "vi" | "en" | "es",
+  corsHeaders: Record<string, string>,
+  text: string = REFUSAL[lang],
+): Response {
+  const chunk = JSON.stringify({ choices: [{ delta: { content: text } }] });
   return new Response(`data: ${chunk}\n\ndata: [DONE]\n\n`, {
     status: 200,
     headers: { ...corsHeaders, "Content-Type": "text/event-stream" },

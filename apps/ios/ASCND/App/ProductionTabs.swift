@@ -279,7 +279,12 @@ struct SettingsSheet: View {
           if result == .deleted {
             // Tài khoản không còn: bản ghi chờ gửi của nó không bao giờ gửi được nữa
             // (đăng xuất thường thì ĐỖ chúng lại — AUD-06), nên bỏ hẳn khỏi máy.
-            if let gone { await services.sync.purge(userId: gone) }
+            // Ngày tập đang dở của nó cũng bỏ hẳn như thế (R3-DATA-01); đăng xuất
+            // thường thì giữ ngày lại cho lần đăng nhập sau.
+            if let gone {
+              await services.sync.purge(userId: gone)
+              await services.purgeWorkoutDays(userId: gone)
+            }
             await Self.signOut(services)
           }
           return result

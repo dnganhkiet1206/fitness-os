@@ -21,8 +21,9 @@ struct ASCNDApp: App {
       driver: ActivityKitRestDriver(),
       restored: store.load(),
       persist: { timer, target in store.save(timer, target) })
-    // RT-6: hết giờ tự nhiên → một rung "thành công", đúng một lần.
-    controller.onRestFinished = { UINotificationFeedbackGenerator().notificationOccurred(.success) }
+    // RT-6: hết giờ tự nhiên → một rung "thành công", đúng một lần — trừ khi màn nghỉ của Koa
+    // vừa rung đúng nhịp "LƯỢT MÌNH!" (KOA-T15: không rung đôi).
+    controller.onRestFinished = { KoaHapticPlayer.restFinished() }
     _rest = State(initialValue: controller)
     // Đo lường (15/10): chỉ khởi động khi có khoá — xem Telemetry.swift.
     // Chế độ UI test (Debug): không gửi gì lên Sentry / PostHog.
@@ -129,7 +130,11 @@ struct ASCNDApp: App {
           // Lúc mở app phiên còn `.loading` (chưa khôi phục): `nil` ở đây KHÔNG phải
           // đăng xuất — xoá widget lúc này làm mỗi lần mở app widget trống và Koa phải
           // vẽ lại trên luồng chính (Sentry APPLE-IOS-B, 26/10). Đăng xuất thật: bên dưới.
-          if user != nil { services.widgets.setUser(user) }
+          if user != nil {
+            services.widgets.setUser(user)
+            // Giao dịch mua trước khi chính chủ đăng nhập (Devin #920): xác minh khi có phiên.
+            services.reconcilePurchases()
+          }
           Telemetry.setUser(user)
         }
         .onChange(of: services.session.phase == .signedOut, initial: true) { _, signedOut in
@@ -154,6 +159,7 @@ struct ASCNDApp: App {
       if phase == .active {
         rest.settle()
         services.didBecomeActive()
+        services.reconcilePurchases()
         // `app_opened` (ngày 1 / ngày 7… cho tỉ lệ quay lại) — tắt khi chưa có khoá.
         Telemetry.appOpened()
       } else if phase == .background {

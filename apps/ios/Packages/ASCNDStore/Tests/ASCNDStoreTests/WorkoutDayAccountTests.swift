@@ -59,20 +59,21 @@ struct WorkoutDayAccountTests {
 
   /// Đăng xuất: lượt ghi muộn bị từ chối TRƯỚC khi có gì bền — không dựng lại
   /// ngày, không chèn hàng outbox (giao dịch chốt vẫn là tất-cả-hoặc-không).
+  /// Ngày đã ghi của A đỗ lại trên đĩa (R3-DATA-01) nhưng chốt đóng nên
+  /// không đọc được, và lượt ghi muộn không sửa được nó.
   @Test func lateWriteAfterSignOutIsRefusedAtomically() async throws {
     let db = try ASCNDDatabase()
     let store = GRDBWorkoutStore(db)
     db.accounts.signIn("a")
     try await store.saveDay(key, progress(), userId: "a")
     db.accounts.signOut()
-    _ = try await store.clearAll()
     await #expect(throws: AccountScopeClosed.self) { try await store.saveDay(key, progress(["0-0", "0-1"]), userId: "a") }
     await #expect(throws: AccountScopeClosed.self) {
       _ = try await store.commitFinish(key, logged("late"), entry("late", user: "a"))
     }
     await #expect(throws: AccountScopeClosed.self) { try await store.commitDelete(sessionId: "x", entry("x@del", user: "a")) }
     #expect(try await store.loadDay(key) == nil)
-    #expect(try owners(db).isEmpty)
+    #expect(try owners(db) == ["a"], "ngày đỗ lại, không bị lượt ghi muộn đụng")
     #expect(try outboxCount(db) == 0)
   }
 

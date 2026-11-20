@@ -22,12 +22,6 @@ public struct SupabaseCoachStream: CoachStream {
     self.session = session
   }
 
-  public func stream(messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int)
-    -> AsyncThrowingStream<String, any Error>
-  {
-    stream(messages: messages, lang: lang, date: date, tzOffset: tzOffset, checks: [], waterUnit: .ml)
-  }
-
   public func stream(
     messages: [Coach.Message], lang: String, date: LocalDate, tzOffset: Int, checks: [CoachLogPrompt.Conflict],
     waterUnit: Water.Unit
@@ -44,17 +38,38 @@ public struct SupabaseCoachStream: CoachStream {
           guard let auth = try? await client.auth.session else { throw EdgeFunction.Failure.unauthorised }
           let request = try Self.request(url: url, anonKey: anonKey, token: auth.accessToken, body: body)
           let (bytes, response) = try await session.bytes(for: request)
-          if let failure = Self.failure(status: (response as? HTTPURLResponse)?.statusCode ?? 0) { throw failure }
-          for try await line in bytes.lines {
-            switch Coach.parse(line: line) {
-            case .delta(let text): continuation.yield(text)
-            case .cutOff(let text): continuation.yield(text + Coach.cutOffMark)
-            case .done:
-              continuation.finish()
-              return
-            case .skip: continue
+          let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+          if !(200..<300).contains(status) {
+            // KOA-T07: đọc thân lỗi (tối đa 4 KB) để tách "hết lượt" / "quá tải" với lỗi khác.
+            throw Self.failure(status: status, body: await Self.readBody(bytes)) ?? .unknown
+          }
+          // KOA-T09: byte đầu được chờ `firstByteTimeout` (request); sau byte đầu, im quá
+          // `idleAfterFirstByte` là hết giờ — đồng hồ canh riêng cắt luồng.
+          let watch = StreamWatch()
+          let reader = Task {
+            try await Self.relay(bytes.lines, yield: { continuation.yield($0) }, touch: { watch.touch() })
+          }
+          let dog = Task {
+            while !Task.isCancelled {
+              try? await Task.sleep(for: .seconds(Self.watchInterval))
+              if watch.stalled(now: Date(), limit: Self.idleAfterFirstByte) {
+                watch.markTimedOut()
+                reader.cancel()
+                return
+              }
             }
           }
+          defer { dog.cancel() }
+          let sawDone: Bool
+          do {
+            sawDone = try await withTaskCancellationHandler { try await reader.value } onCancel: { reader.cancel() }
+          } catch {
+            if watch.timedOut { throw EdgeFunction.Failure.timedOut }
+            throw error
+          }
+          if watch.timedOut { throw EdgeFunction.Failure.timedOut }
+          // KOA-T06: hết luồng mà không có `[DONE]` = câu trả lời bị cắt, không phải xong.
+          guard sawDone else { throw EdgeFunction.Failure.incomplete }
           continuation.finish()
         } catch {
           continuation.finish(throwing: Self.failure(error))
@@ -64,10 +79,55 @@ public struct SupabaseCoachStream: CoachStream {
     }
   }
 
+  /// Đọc các dòng SSE: chữ → `yield`, mỗi dòng → `touch` (đồng hồ idle). Trả về đã thấy
+  /// `[DONE]` chưa — `false` nghĩa là luồng đứt giữa chừng (KOA-T06).
+  static func relay<Lines: AsyncSequence>(
+    _ lines: Lines, yield: (String) -> Void, touch: () -> Void
+  ) async throws -> Bool where Lines.Element == String {
+    for try await line in lines {
+      touch()
+      switch Coach.parse(line: line) {
+      case .delta(let text): yield(text)
+      case .cutOff(let text): yield(text + Coach.cutOffMark)
+      case .done: return true
+      case .skip: continue
+      }
+    }
+    return false
+  }
+
+  /// Thân lỗi, tối đa `limit` byte (KOA-T07). Đọc hỏng giữa chừng thì trả phần đã có —
+  /// rỗng thì phân loại như trước (chỉ theo mã HTTP).
+  static func readBody<Bytes: AsyncSequence>(_ bytes: Bytes, limit: Int = errorBodyLimit) async -> String
+  where Bytes.Element == UInt8 {
+    var data = Data()
+    do {
+      for try await byte in bytes {
+        data.append(byte)
+        if data.count >= limit { break }
+      }
+    } catch {}
+    return String(decoding: data, as: UTF8.self)
+  }
+
+  /// Ngân sách BYTE ĐẦU (KOA-T09): `timeoutInterval` của `URLRequest` là hết giờ idle —
+  /// không byte nào trong từng ấy giây thì hỏng. Trước byte đầu, server có thể đang chờ
+  /// failover: mỗi nhà cung cấp tối đa 3 lần thử × hết giờ header 20 giây, ba nhà cung cấp
+  /// ≈ 180 giây ở trường hợp xấu nhất (`_shared/ai.ts`). 90 giây cũ cắt oan đường đó và
+  /// báo "mất mạng". Màn chat hiện "Koa đang suy nghĩ" khi chờ lâu.
+  static let firstByteTimeout: TimeInterval = 180
+  /// Sau byte đầu, chữ chảy liên tục; im quá 60 giây là treo thật → `.timedOut`.
+  static let idleAfterFirstByte: TimeInterval = 60
+  static let watchInterval: TimeInterval = 5
+  static let errorBodyLimit = 4096
+  /// Tên cũ (AUD-67) — nay là ngân sách byte đầu.
+  static var idleTimeout: TimeInterval { firstByteTimeout }
+
   /// POST của `expoFetch`: token của phiên + `apikey`, thân JSON.
   static func request(url: URL, anonKey: String, token: String, body: JSONValue) throws -> URLRequest {
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
+    request.timeoutInterval = Self.firstByteTimeout
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
     request.setValue(anonKey, forHTTPHeaderField: "apikey")
@@ -75,16 +135,33 @@ public struct SupabaseCoachStream: CoachStream {
     return request
   }
 
-  /// Mã HTTP không 2xx → loại lỗi của bảng chung.
-  static func failure(status: Int) -> EdgeFunction.Failure? {
-    (200..<300).contains(status) ? nil : EdgeFunction.classify(status: status, message: "")
+  /// Mã HTTP không 2xx → loại lỗi của bảng chung, đọc kèm thân lỗi (KOA-T07).
+  static func failure(status: Int, body: String = "") -> EdgeFunction.Failure? {
+    (200..<300).contains(status) ? nil : EdgeFunction.classify(status: status, message: body)
   }
 
-  /// Lỗi giữa chừng: đã phân loại thì giữ; mất mạng → `offline`.
+  /// Lỗi giữa chừng: đã phân loại thì giữ; hết giờ → `timedOut` (KOA-T09, trước đây
+  /// hiện là "mất mạng"); mất mạng → `offline`.
   static func failure(_ error: any Error) -> EdgeFunction.Failure {
     if let failure = error as? EdgeFunction.Failure { return failure }
+    if (error as? URLError)?.code == .timedOut { return .timedOut }
     return NetworkFailure.isOffline(error) ? .offline : EdgeFunction.classify(status: nil, message: String(describing: error))
   }
+}
+
+/// Đồng hồ idle của một luồng: chưa có byte đầu thì không tính (đó là việc của
+/// `timeoutInterval`); có rồi thì im quá giới hạn là treo.
+final class StreamWatch: @unchecked Sendable {
+  private let lock = NSLock()
+  private var last: Date?
+  private var didTimeOut = false
+
+  func touch(at now: Date = Date()) { lock.withLock { last = now } }
+  func stalled(now: Date, limit: TimeInterval) -> Bool {
+    lock.withLock { last.map { now.timeIntervalSince($0) > limit } ?? false }
+  }
+  func markTimedOut() { lock.withLock { didTimeOut = true } }
+  var timedOut: Bool { lock.withLock { didTimeOut } }
 }
 
 /// Kho cuộc trò chuyện của coach (`ai_conversations`, `ai_messages`).

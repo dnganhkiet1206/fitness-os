@@ -10,7 +10,7 @@ import Supabase
 public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, CommunityPostRemote, CommunityUserRemote,
   CommunityPostActionsRemote, CommunitySavedRemote, CommunitySearchRemote, CommunityInboxRemote,
   CommunityPrivacyRemote, CommunityShareRemote, CommunityShareProgressRemote, CommunityShareRecipeRemote,
-  CommunityChallengesRemote, CommunityTryRemote
+  CommunityChallengesRemote, CommunityTryRemote, CommunityMyReportsRemote
 {
   private let client: SupabaseClient
 
@@ -605,11 +605,19 @@ public struct SupabaseCommunity: CommunityFeedRemote, CommunityProfileRemote, Co
 
   public func notifications(me: String, limit: Int) async throws -> [JSONValue] {
     try await client.from("community_notifications")
-      .select("id, actor_id, kind, post_id, challenge_id, milestone, created_at, read_at")
+      .select("id, actor_id, kind, post_id, challenge_id, milestone, payload, created_at, read_at")
       .eq("user_id", value: me)
       .order("created_at", ascending: false)
       .limit(limit)
       .execute().value
+  }
+
+  /// "Báo cáo của tôi" (#915, lát 2): RPC `community_my_reports()` — chỉ
+  /// trả báo cáo của chính mình, kèm trích nội dung đích (đọc trực tiếp bảng
+  /// `community_reports` thì lấy được báo cáo nhưng KHÔNG lấy được trích đoạn:
+  /// bài vừa báo cáo tự ẩn khỏi chính người báo).
+  public func myReports() async throws -> [JSONValue] {
+    rpcRows(try await client.rpc("community_my_reports").execute().value)
   }
 
   public func challenges(ids: [String]) async throws -> [JSONValue] {

@@ -7,6 +7,8 @@ import SwiftUI
 struct KoaWeekCard: View {
   let state: KoaWeek.State
   let claim: KoaWeekBook.Claim
+  /// Nhận hỏng → nút Thử lại (KOA-T17: trước đây chỉ có chữ, phải vào lại màn mới thử).
+  var onRetry: (() -> Void)? = nil
 
   var body: some View {
     DSCard {
@@ -45,9 +47,23 @@ struct KoaWeekCard: View {
             .font(DS.TextStyle.footnote.weight(.semibold))
             .foregroundStyle(DS.Color.readinessGreen.swiftUI)
         case .failed:
-          Text("kw.retry")
-            .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.destructive.swiftUI)
+          HStack(spacing: DS.Spacing.sm) {
+            Text("kw.retry")
+              .font(DS.TextStyle.footnote)
+              .foregroundStyle(DS.Color.destructive.swiftUI)
+            if let onRetry {
+              Spacer(minLength: 0)
+              Button(action: onRetry) {
+                Label("common.retry", systemImage: "arrow.clockwise")
+                  .font(DS.TextStyle.footnote.weight(.semibold))
+                  .padding(.horizontal, 12)
+                  .frame(minHeight: 44)
+                  .background(DS.Color.foreground.swiftUI.opacity(0.08), in: Capsule())
+              }
+              .buttonStyle(.plain)
+              .accessibilityIdentifier("koaWeek.retry")
+            }
+          }
         case .notYet:
           EmptyView()
         }
@@ -84,87 +100,6 @@ struct KoaWeekLegend: View {
     HStack(spacing: 5) {
       mark()
       Text(key).fixedSize()
-    }
-  }
-}
-
-/// Một khối "Tuần của Koa" trên Hôm nay: dải ngày + một dòng thưởng. Đoạn giải
-/// thích nằm trong cùng khối, mở khi chạm — không thêm một thẻ thứ hai cùng tên.
-struct TodayKoaWeekModule: View {
-  let days: [TodayWeekStrip.Day]
-  let today: LocalDate
-  let target: Int?
-  let state: KoaWeek.State?
-  let claim: KoaWeekBook.Claim
-  @State private var explains = false
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      TodayWeekStrip(days: days, today: today, target: target)
-      if state != nil {
-        // Dòng thưởng chính là nút mở lời giải thích — nằm cùng chỗ với dải,
-        // không thêm một thẻ và không chui xuống dưới thanh tab.
-        Button {
-          if reduceMotion { explains.toggle() } else {
-            withAnimation(.easeInOut(duration: DSMotion.transitionDuration)) { explains.toggle() }
-          }
-        } label: {
-          HStack(alignment: .center, spacing: DS.Spacing.sm) {
-            Text(String(localized: "kw.reward \(KoaGains.fullWeek) \(KoaWeek.rewardCoins)"))
-              .font(DS.TextStyle.footnote.weight(.semibold))
-              .foregroundStyle(DS.Color.foreground.swiftUI)
-              .fixedSize(horizontal: false, vertical: true)
-              .frame(maxWidth: .infinity, alignment: .leading)
-            Image(systemName: explains ? "chevron.up" : "chevron.down")
-              .font(.caption.weight(.semibold))
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              .accessibilityHidden(true)
-          }
-          .frame(minHeight: 44)
-          .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("today.koaWeek.about")
-        .accessibilityLabel(Text("kw.more"))
-        .accessibilityHint(Text("kw.open.hint"))
-        claimLine
-        if explains {
-          Text("kw.why")
-            .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.foreground.swiftUI.opacity(0.85))
-            .fixedSize(horizontal: false, vertical: true)
-            .accessibilityIdentifier("today.koaWeek.details")
-          KoaWeekLegend()
-          Text("kw.rules")
-            .font(DS.TextStyle.footnote)
-            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-            .fixedSize(horizontal: false, vertical: true)
-        }
-      }
-    }
-    .padding(DS.Spacing.md)
-    .todayCard()
-    .accessibilityElement(children: .contain)
-    .accessibilityIdentifier("today.koaWeek")
-  }
-
-  @ViewBuilder private var claimLine: some View {
-    switch claim {
-    case .claimed:
-      Label(String(localized: "kw.claimed"), systemImage: "checkmark.circle.fill")
-        .font(DS.TextStyle.footnote.weight(.semibold))
-        .foregroundStyle(DS.Color.readinessGreen.swiftUI)
-    case .justClaimed(let coins):
-      Label(String(localized: "kw.just \(coins)"), systemImage: "sparkles")
-        .font(DS.TextStyle.footnote.weight(.semibold))
-        .foregroundStyle(DS.Color.readinessGreen.swiftUI)
-    case .failed:
-      Text("kw.retry")
-        .font(DS.TextStyle.footnote)
-        .foregroundStyle(DS.Color.destructive.swiftUI)
-    case .notYet:
-      EmptyView()
     }
   }
 }

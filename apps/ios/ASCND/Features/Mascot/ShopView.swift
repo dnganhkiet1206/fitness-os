@@ -751,6 +751,10 @@ struct ShopView: View {
       }
     }
     noteBought(got)
+    // KOA-T19: gom kết quả của mọi chỗ mặc thành MỘT thông báo (trước đây cái sau đè cái
+    // trước, chỗ đang bận thì im lặng bỏ qua); chỗ chưa mặc được giữ lại để thử lại.
+    var unfinished: Set<String> = []
+    var firstProblem: String?
     for change in changes {
       let result: MascotShopBook.WearOutcome
       if let key = change.key {
@@ -763,13 +767,24 @@ struct ShopView: View {
         continue
       }
       switch result {
-      case .done, .busy: break
-      case .gone: notice = Notice(text: String(localized: "shop.error.gone"), good: false)
-      case .failed(let f): notice = Notice(text: Self.message(f), good: false)
+      case .done: break
+      case .busy:
+        unfinished.insert(change.group)
+      case .gone:
+        unfinished.insert(change.group)
+        firstProblem = firstProblem ?? String(localized: "shop.error.gone")
+      case .failed(let f):
+        unfinished.insert(change.group)
+        firstProblem = firstProblem ?? Self.message(f)
       }
     }
-    withAnimation(reduceMotion ? nil : .default) { trying = [:] }
-    if notice == nil, got > 0 { notice = Notice(text: String(localized: "shop.bought"), good: true) }
+    withAnimation(reduceMotion ? nil : .default) { trying = trying.filter { unfinished.contains($0.key) } }
+    if !unfinished.isEmpty {
+      let reason = firstProblem ?? String(localized: "shop.wear.busy")
+      notice = Notice(text: String(localized: "shop.wear.partial \(unfinished.count) \(reason)"), good: false)
+    } else if notice == nil, got > 0 {
+      notice = Notice(text: String(localized: "shop.bought"), good: true)
+    }
   }
 
   private func noteBought(_ got: Int) {

@@ -38,10 +38,21 @@ Bài toán production rút ra từ phân tích ngược các app fitness (Apple 
                 - cổng dáng toàn thân (14/11): cổ tay thẳng, khuỷu ≤ 145°, khuỷu không kẹp
                   sau vai, đầu không gục, dụng cụ không xuyên da
                 - cổng giải phẫu (evs/movement_gate.py): ngưỡng của họ động tác
+                - số đo vàng (evs/reference_check.py): góc đỉnh/đáy so với reference_measurements.json
+                  ± dung sai theo khai báo ở movement.reference_checks; bài chưa có tham chiếu báo
+                  NOT_TESTED, không tính pass cũng không tính fail
                 - tờ soi xoay vòng: 6 góc quanh người + 2 góc cao × đứng / giữa / đáy
-                  (factory.py sheet) + tờ tầm mắt người đứng nhìn 1,6 m (factory.py eye).
+                  (factory.py sheet), mỗi ảnh có chú thích góc khớp đo được
+                  (pipeline/sheet_data.py) + viền đỏ ở khung bị cổng flag, viền vàng ở
+                  khung gần khung bị flag; flagged_frames.json liệt kê khung bị flag để
+                  soi kỹ; + tờ tầm mắt người đứng nhìn 1,6 m (factory.py eye).
                   BẮT BUỘC soi tay, lưng, đầu, chân, dụng cụ ở mọi góc,
                   đối chiếu nguồn kỹ thuật, trước khi báo xong (MOTION_KIT_LESSONS.md luật 1)
+                - CI tự động (.github/workflows/motion-kit.yml) chạy trên mọi PR chạm kit:
+                  unit test + kiểm provenance/blocklist nguồn cấm + kiểm UV suy biến trên
+                  USDZ đã xuất + validate_motion cho bài template + cổng chặn hồi quy
+                  (check_qa_gate.py). Bench không qua cổng validate của CI (validator
+                  riêng + 3 FAIL đã biết); USDZ của bench vẫn qua kiểm UV.
    Ghi kết quả: exercise.json → agent_review (đã kiểm gì, còn lỗi gì) và
                   ExerciseDemo3D.catalog trong app (dấu tích xanh ở tab Lab 3D).
 6. Xuất         pipeline/export_usdz.py (sợi cơ vẽ, bản chỉ cơ chính) + tempo.json + poster → app
@@ -57,17 +68,20 @@ Bài toán production rút ra từ phân tích ngược các app fitness (Apple 
 | **Cơ tạc khối tách lớp theo phần giải phẫu** (14/11): 70 phần (2 đầu ngực, 8 múi bụng, 4 răng cưa, 3 đầu đùi trước, 2 nhóm đùi sau, 2 đầu bắp chân, 2 đầu tam đầu…); rãnh sâu giữa các cơ, nông giữa các đầu, mờ dần ở chỗ cơ thành gân | `config/muscle_parts.json`, `evs/muscle_sculpt.py`, `pipeline/sculpt_muscles.py` | bản đầu, chờ Kiệt duyệt |
 | Rig 63 xương: thêm bả vai, cơ ngực, xương xoắn cánh tay/cẳng tay/đùi; trọng số da lấy từ rig default của MPFB, làm mượt | `evs/character.py` → `augment_rig` | xong; ép vai 25° không còn bóp nát ngực |
 | Bản đồ 21 nhóm cơ, hướng sợi tính trên mặt 3D, sợi vẽ LIC | `evs/fiber_lic.py`, `pipeline/bake_fiber_directions.py` | xong |
-| Cổng giải phẫu theo họ động tác (13 họ) | `evs/movement_gate.py`, `config/movement_patterns.json` | xong; `press_horizontal` có trích nguồn, các họ khác để "tạm" |
+| Cổng giải phẫu theo họ động tác (13 họ) | `evs/movement_gate.py`, `config/movement_patterns.json` | xong; 4 họ cited (`press_horizontal`, `squat`, `lunge`, `push_up` — chỉ metric có nguồn đã đọc; metric còn lại vẫn "tạm" theo danh sách từng metric), 9 họ còn lại "tạm" + `research_notes` ghi đã tra gì, thiếu gì (14/11) |
+| Số đo vàng (golden measurements) | `evs/reference_check.py`, `movement.reference_checks` | xong; bench có file tham chiếu nhưng chưa khai báo check nào (clip tay cầm rộng ≠ animation tay cầm vừa, ghi lý do ở `reference_note`); squat/curl chưa có tham chiếu (NOT_TESTED) |
+| Tờ soi xoay vòng bán tự động | `pipeline/factory.py sheet`, `pipeline/sheet_data.py` | xong; chú thích góc đo được + đánh dấu khung bị flag + `flagged_frames.json`; Blender qua `$EVS_BLENDER` (mặc định đường dẫn Mac) |
 | Công cụ đo video (MediaPipe, Apache 2.0) | `pipeline/measure_video.py` | xong; bench press: 7 lần đẩy từ clip Pexels |
 | Bộ giải họ đẩy ngang (bench press) | `bench-press/animate_bench_press.py` | chạy; cần tách thành bộ giải chung |
 | Trình xem 3D (zoom, mẹo, ẩn cơ phụ) | `apps/ios/.../ExerciseDemo3DView.swift` | xong; đọc USDZ, góc máy, chú thích theo từng bài |
 | **Bộ tạo chung theo template** | `motionlab/` (timing min-jerk, primitives, families: `curl`, `squat`), `pipeline/generate_exercise.py` | xong cho 2 họ; dumbbell-curl QA 12/12, back-squat 10/11 |
-| **Bộ kiểm chung 4 tầng (A–D), lỗi chỉ đúng khung/khớp** | `evs/motion_qa.py`, `pipeline/validate_motion.py` | xong |
+| **Bộ kiểm chung 4 tầng (A–D), lỗi chỉ đúng khung/khớp** | `evs/motion_qa.py`, `pipeline/validate_motion.py` | xong; giãn da đo trên mesh gốc (tắt `Subdivision` khi lấy mẫu) + thêm khung chậu thấp nhất, ghi số từng khung; bench thêm khung lockout (14/11) |
 | **Sổ sản xuất (P1, 14/11)**: 43 bài trong chương trình tập của app, xếp theo số set mỗi tuần; độ phủ tính theo set; tốc độ (phút máy, phút người); `new` dựng khung spec cho bài kế tiếp | `config/catalogue.json`, `pipeline/catalogue.py` (`refresh`, `coverage`, `new`) | xong; 6/43 bài đã dựng |
 | **Họ `raise_lateral`, `hinge` (14/11)**: lateral raise (mặt phẳng xương bả vai, khuỷu hơi gập, lòng bàn tay xoay theo tay); hip hinge (trọng tâm toàn thân giữ yên theo khối lượng đoạn Winter 2009, tay treo thẳng trước da chân) | `motionlab/families/raise_lateral.py`, `hinge.py` | xong; lateral raise 17/17, hammer curl 18/18, deadlift chân thẳng tạ đơn 16/17 (giãn da hông) |
 | **Họ `row`, `press_vertical` + nhịp vai–cánh tay (14/11, lô 2)**: row cúi người (tư thế hinge, cẳng tay thẳng đứng, khuỷu dẫn); đẩy vai ngồi ghế tựa (template đặt ghế theo lưng, chân ngồi); xương đòn và bả vai xoay theo độ nâng tay (Inman 1944) | `motionlab/families/row.py`, `press_vertical.py`, `primitives.scapulohumeral`, `generate_exercise.pose_girdle`, ghế `utility_bench_upright` | row 15/16, shoulder press 17/18 (cả hai còn giãn da háng) |
 | **Nhịp từng rep cho app (P5, 14/11)**: `tempo.json` (`ascnd.tempo/1`): các pha ms, mốc đổi chiều / xong rep, thở ra–hít vào, lời nhắc theo pha; cổng `tempo_sync` bảo đảm hoạt cảnh lệch ≤ 1 khung so với tệp | `motionlab/tempo.py`, `evs/motion_qa.tempo_sync`, chép cạnh USDZ khi xuất | xong; app chưa đọc (cần mock rung / đếm rep cho Kiệt) |
 | **Giải theo mục tiêu** | `pipeline/solve_targets.py`, `pipeline/measure_animation.py` | xong; bench press: khuỷu 104° / dang vai 60° sau 24 lần thử |
+| **CI tự động cho kit** | `.github/workflows/motion-kit.yml`, `pipeline/check_provenance.py`, `pipeline/check_qa_gate.py`, `pipeline/check_usdz_uv.py` | xong 14/11; chạy trên mọi PR chạm kit/docs/bản USDZ trong app; bench không qua cổng validate (xem quy trình bước 5) |
 
 ## Đã học từ dữ liệu (bench press)
 

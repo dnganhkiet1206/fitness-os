@@ -62,6 +62,12 @@ def wall_slats(prefix, center, along, normal, length, gap_half, mat, yaw, coll):
         cube(f"{prefix}Slat{i}", (0.05, 0.06, 3.0), p, mat, yaw, coll)
 
 
+# Rack dumbbells as sockets instead of meshes (Kiệt 17/11, "--rack-items"): the app mounts the
+# shared equipment model (equipment_<key>.usdz) there, so changing the dumbbell model changes the
+# room and every exercise at once. Each item: Z-up world centre, handle axis, head radius.
+RACK_ITEMS: list[dict] | None = None
+
+
 def rack(prefix, base, side, view, yaw, steel, chrome, coll):
     cube(f"{prefix}Shelf1", (0.5, 1.6, 0.05), base + Vector((0, 0, 0.45)), steel, yaw, coll)
     cube(f"{prefix}Shelf2", (0.5, 1.6, 0.05), base + Vector((0, 0, 0.85)) + view * 0.08, steel, yaw, coll)
@@ -70,6 +76,10 @@ def rack(prefix, base, side, view, yaw, steel, chrome, coll):
     for row, z, size in ((0, 0.55, 0.11), (1, 0.95, 0.09)):
         for j in range(5):
             c = base + side * (-0.6 + j * 0.3) + view * (0.08 * row) + Vector((0, 0, z))
+            if RACK_ITEMS is not None:
+                RACK_ITEMS.append({"center": c.copy(), "axis": view.copy(), "radius": size - 0.01 * j,
+                                   "length": 0.33})
+                continue
             for end in (-0.13, 0.13):
                 bpy.ops.mesh.primitive_cylinder_add(vertices=6, radius=size - 0.01 * j, depth=0.07, location=c + view * end,
                                                     rotation=(math.pi / 2, 0, yaw - math.pi / 2))
@@ -288,12 +298,31 @@ def export_parts(look_name: str, objs, out_dir: str, center: Vector, view: Vecto
         "string_b": rk(logo - side * 5.4 - view * 0.15 + Vector((0, 0, 3.05 - logo.z))),
     }
     manifest = {"look": look_name, "parts": parts, "anchors": anchors,
+                # Lights on the character (the room itself is baked + unlit), B2 17/11: the app
+                # reads them here instead of hard-coding them. ``from`` is an offset from the
+                # camera target the light points at; intensity in lux, like RealityKit.
+                "lights": DEFAULT_LIGHTS,
+                # Equipment on the racks (--rack-items): shared model, world pose, size (Kiệt 17/11).
+                "rack_items": [
+                    {"key": "dumbbell_12kg", "position": rk(i["center"]), "axis": rk(i["axis"]),
+                     "radius_m": round(i["radius"], 4), "length_m": i["length"]}
+                    for i in (RACK_ITEMS or [])
+                ],
+                # The racks are baked, the rack items are lit by the character lights: the dark
+                # look dims them to sit in the room (Kiệt 17/11, measured on the simulator).
+                "rack_item_brightness": 0.5 if look_name == "dark" else 1.0,
                 "facing": {"into_room": rk(-view), "along_wall": rk(side)},
                 "room": {"half_width_m": HALF, "height_m": HEIGHT, "center": rk(center)}}
     path = os.path.join(out_dir, f"room_manifest_{look_name}.json")
     with open(path, "w") as fh:
         json.dump(manifest, fh, indent=2)
     print(f"[evs] room manifest {path}")
+
+
+DEFAULT_LIGHTS = [
+    {"name": "key", "color": "#FFFFFF", "intensity": 1200, "from": [2.0, 4.0, 2.0]},
+    {"name": "fill", "color": "#FFFFFF", "intensity": 400, "from": [-3.0, 1.0, -2.0]},
+]
 
 
 def main() -> None:
@@ -309,6 +338,9 @@ def main() -> None:
     parser.add_argument("--parts", action="store_true",
                         help="also write every part (floor, walls, ceiling, slats, racks, leds, logo) as its own USDZ "
                              "plus room_manifest_<look>.json with the parts and the decor anchors (Kiệt 16/11)")
+    parser.add_argument("--rack-items", action="store_true",
+                        help="racks without dumbbells; their poses go to room_manifest rack_items and the app "
+                             "mounts the shared equipment model there (Kiệt 17/11)")
     parser.add_argument("--empty", action="store_true",
                         help="bake the room without the exercise (16/11: the room is shared by every exercise; "
                              "the bench and the lifter baked their shadows into the floor of all of them)")
@@ -359,6 +391,8 @@ def main() -> None:
         view.normalize()
         center = Vector((target.x, target.y, 0))
         coll = bl_util.get_collection(ROOM)
+        global RACK_ITEMS
+        RACK_ITEMS = [] if args.rack_items else None
         groups = build_room(look, args, center, view, coll)
 
         sizes = {"floor": 2048, "walls": 2048, "slats": 1024, "racks": 1024, "ceiling": 512, "leds": 256}

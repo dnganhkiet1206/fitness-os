@@ -333,7 +333,99 @@ struct CommunityInboxView: View {
     }
   }
 
-  private func row(_ x: CommunityInbox.Item) -> some View {
+  @ViewBuilder private func row(_ x: CommunityInbox.Item) -> some View {
+    if x.kind == .moderation, let notice = x.moderation {
+      moderationRow(x, notice)
+    } else {
+      standardRow(x)
+    }
+  }
+
+  /// Dòng kiểm duyệt: không có người gây ra nên vẽ riêng — khiên + kết quả +
+  /// lý do (nếu có). Chỉ mở bài khi người nhận chắc chắn đọc được nó: tác
+  /// giả + nội dung đã hiện lại (`restored` / `appeal_approved`). Người báo
+  /// cáo không mở được bài mình đã báo (bài tự ẩn khỏi họ — chạm vào chỉ ra
+  /// màn không tìm thấy bài), và bài ẩn/gỡ/kháng nghị bị bác cũng không mở
+  /// được; kết quả + lý do inline đã đủ (Devin #924).
+  @ViewBuilder private func moderationRow(_ x: CommunityInbox.Item, _ notice: CommunityInbox.ModerationNotice) -> some View {
+    let when = PostHeaderView.agoText(x.at)
+    let isNew = book.isNew(x)
+    let title = Self.moderationTitle(notice)
+    let label = Text(
+      verbatim: title + (notice.reason.isEmpty ? "" : ", \(notice.reason)") + ", \(when)"
+        + (isNew ? ", \(String(localized: "community.inbox.unread"))" : ""))
+    let content = HStack(spacing: DS.Spacing.sm) {
+      Image(systemName: "shield.fill")
+        .font(.system(size: 15, weight: .semibold))
+        .foregroundStyle(DS.Color.primary.swiftUI)
+        .frame(width: Self.iconSize, height: Self.iconSize)
+        .background(DS.Color.primary.swiftUI.opacity(0.14), in: Circle())
+        .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(verbatim: title)
+          .font(Self.textFont)
+          .foregroundStyle(DS.Color.foreground.swiftUI)
+          .lineLimit(2)
+          .multilineTextAlignment(.leading)
+        if !notice.reason.isEmpty {
+          Text(verbatim: notice.reason)
+            .font(Self.timeFont)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .lineLimit(2)
+        }
+        Text(verbatim: when)
+          .font(Self.timeFont)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      if isNew {
+        Circle().fill(DS.Color.primary.swiftUI).frame(width: 8, height: 8)
+      }
+    }
+    .padding(.vertical, 10)
+    .frame(minHeight: 52)
+    .contentShape(Rectangle())
+    if Self.canOpenPost(notice) {
+      Button {
+        switch CommunityInbox.target(x) {
+        case .user(let id): openUser?(id)
+        case .post(let id): openPost = CommunityPostRoute(id: id)
+        case .challenge(let id): openChallenge = ChallengeRoute(id: id)
+        case nil: break
+        }
+      } label: { content }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(.isButton)
+    } else {
+      content
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+    }
+  }
+
+  /// Chỉ tác giả + nội dung đã hiện lại mới mở được bài (xem `moderationRow`).
+  static func canOpenPost(_ n: CommunityInbox.ModerationNotice) -> Bool {
+    n.outcome == "restored" || n.outcome == "appeal_approved"
+  }
+
+  /// Câu kết quả theo `outcome` của payload — kết quả lạ thì câu chung
+  /// (không hiện chuỗi thô).
+  static func moderationTitle(_ n: CommunityInbox.ModerationNotice) -> String {
+    switch n.outcome {
+    case "hidden": String(localized: "community.inbox.moderation.hidden")
+    case "removed": String(localized: "community.inbox.moderation.removed")
+    case "restored": String(localized: "community.inbox.moderation.restored")
+    case "appeal_approved": String(localized: "community.inbox.moderation.appealApproved")
+    case "appeal_rejected": String(localized: "community.inbox.moderation.appealRejected")
+    case "report_actioned": String(localized: "community.inbox.moderation.reportActioned")
+    case "report_dismissed": String(localized: "community.inbox.moderation.reportDismissed")
+    default: String(localized: "community.inbox.moderation.other")
+    }
+  }
+
+  private func standardRow(_ x: CommunityInbox.Item) -> some View {
     let parts = Self.parts(x)
     let when = PostHeaderView.agoText(x.at)
     let isNew = book.isNew(x)
@@ -422,6 +514,8 @@ struct CommunityInboxView: View {
         n == 1
           ? String(localized: "community.inbox.likemany.one \(m) \(n)")
           : String(localized: "community.inbox.likemany.other \(m) \(n)")
+      // Dòng kiểm duyệt không đi qua `parts()` (vẽ riêng ở `moderationRow`).
+      case .moderation: ""
       }
     let name = x.challenge?.title ?? x.actors.first?.displayName ?? ""
     let halves = s.components(separatedBy: m)
@@ -438,6 +532,7 @@ struct CommunityInboxView: View {
     case .save: "bookmark.fill"
     case .tryWorkout: "dumbbell.fill"
     case .challengeMilestone: "trophy.fill"
+    case .moderation: "shield.fill"
     }
   }
 }
