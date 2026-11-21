@@ -886,6 +886,12 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 20/11/2026: KOA-T54 phần SQL — hai migration (ví chỉ trả khoá cần hỏi; trần cộng đồng không tính xu khám phá), chờ duyệt deploy; xem mục 4.
 - 20/11/2026: KOA-T40 phần còn lại — con số trong câu của Koa (giờ ngủ, % calo) dựng một chỗ (`KoaLineNumbers`) cho Hôm nay và phòng; Hôm nay không còn nói "ngủ 0 giờ 0 phút" khi chưa có giấc ngủ. Khoá câu hai nơi vẫn riêng (`koa.say.*` / `koa.talk.*`) có chủ đích.
 - 20/11/2026: KOA-T41 — test `EconomyContractTests` đọc thẳng migration (`reward_prices`, `shop_prices`, lần ghi sau thắng) và so với hằng Swift (nhiệm vụ, chuỗi, thử thách, khám phá, tăng tải, bộ sưu tập, giá từng món); phép thử ngược đổi một giá thì đỏ. App vẫn dùng hằng Swift để hiện số (không đọc bảng giá lúc chạy) — test giữ hai bên khớp.
+- 20/11/2026: KOA-T49 (một phần, có số đo) — bộ đệm vẽ:
+  - Phòng thay đồ: kế hoạch vẽ căn phòng (`KoaPaint.plan`, 139 lệnh) dựng lại ở MỖI lượt `body` (đổi góc máy, mặc / cởi món) — đo ~5,8 ms release / ~7,7 ms debug một lần trên luồng chính. Nay nhớ theo (skin, năng lượng, sáng / tối) như `StudioPlans`.
+  - `KoaJourney.moments` quét lại cả lịch sử cho mỗi ngày của sổ (O(N×M)); mốc xong tháng quét lại cho mỗi tháng. Nay tra Set / gom một lượt: lịch sử 3 năm (470 buổi) debug 14,5 → 4,1 ms một lần (release 0,63 ms, không đổi đáng kể).
+  - Hôm nay tính mốc hành trình ba lần mỗi lượt vẽ → một lần.
+  - **Đo rồi không sửa:** `Calendar` hai lần mỗi khung ở phòng Koa = ~2,4 µs / khung (0,14 ms mỗi giây ở 60 fps) — không đáng; `KoaGains.compute` / `ledger` ~0,2 ms release.
+  - **Chưa làm:** vẽ ảnh widget ngoài luồng chính (cần làm thử riêng); Instruments chưa chạy (số trên đo bằng `ContinuousClock` trong test).
 - 20/11/2026: KOA-T60 (khẳng định trong `KOA_ECOSYSTEM.md`) — đối chiếu với code:
   - Quy tắc mốc lớn / nhỏ khớp (3 / 1 ngày); tài liệu thiếu "xong tháng" (mốc lớn) — đã thêm.
   - 10 sự kiện analytics trong bảng chỉ số đều có chỗ phát.
