@@ -208,6 +208,8 @@ public struct WorkoutView: View {
         onStarted: { restBegan[last?.key ?? "rest"] = $0 },
         clock: restClocks.box(last?.key ?? "rest")
       )
+      // trần cỡ chữ phải đặt Ở NGOÀI: `@ScaledMetric` của màn nghỉ đọc môi trường của chỗ dựng (Devin #990)
+      .dynamicTypeSize(...KoaRestScreen.maxType)
       .id(last?.key ?? "rest")
       .transition(.opacity)
     }

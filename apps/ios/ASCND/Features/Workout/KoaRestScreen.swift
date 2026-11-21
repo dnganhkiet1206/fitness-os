@@ -26,6 +26,7 @@ import SwiftUI
             onSetPaused: { p in self.timer = p ? self.timer?.paused(at: EpochMillis(Date.now)) : self.timer?.resumed(at: EpochMillis(Date.now)) },
             onSettle: { if self.timer?.phase(at: EpochMillis(Date.now)) == .over { restart() } },
             onMinimize: {}, onEditJustDone: nil, frozen: Self.frozen, startedAt: began)
+          .dynamicTypeSize(...KoaRestScreen.maxType)
           .id(began)
         }
       }
@@ -105,7 +106,10 @@ struct KoaRestScreen: View {
   @ScaledMetric(relativeTo: .body) private var buttonSize = 16
   @ScaledMetric(relativeTo: .caption2) private var nextLineSize = 11
   @ScaledMetric(relativeTo: .subheadline) private var editSize = 15
-  private static let maxType = DynamicTypeSize.accessibility2
+  /// Trần cỡ chữ của màn nghỉ. `@ScaledMetric` ở trên đọc cỡ chữ từ môi trường NGOÀI màn này, nên chỗ dựng màn
+  /// phải đặt `.dynamicTypeSize(...KoaRestScreen.maxType)` (WorkoutView, KoaRestPreview) — trần trong `body` chỉ
+  /// chặn phần chữ hệ thống bên trong (Devin #990).
+  static let maxType = DynamicTypeSize.accessibility2
   /// Ra nền thì đồng hồ cảnh dừng (KOA-T11).
   @Environment(\.scenePhase) private var scenePhase
 
