@@ -71,7 +71,7 @@ private struct ShopRoomCanvas: View {
   let scale: Double
 
   var body: some View {
-    let plan = KoaPaint.plan(KoaRender.Element("Svg", kids: ShopScene.tree(skin: skin, energy: energy, light: light)))
+    let plan = ShopPlans.room(skin: skin, energy: energy, light: light)
     Canvas { ctx, _ in
       var c = ctx
       c.concatenate(CGAffineTransform(scaleX: scale, y: scale))
@@ -91,5 +91,30 @@ private struct SceneFrame: ViewModifier {
     } else {
       content.aspectRatio(ShopScene.width / ShopScene.height, contentMode: .fit)
     }
+  }
+}
+
+/// Kế hoạch vẽ của căn phòng thử đồ, nhớ theo (skin, năng lượng, sáng / tối) — như `StudioPlans` của phòng Koa
+/// (KOA-T49). Trước đây dựng lại ở MỖI lượt `body` (đổi góc máy khi thử đồ, mặc / cởi món): đo 20/11 ~5,8 ms
+/// (release) / ~7,7 ms (debug) một lần trên luồng chính, 139 lệnh vẽ.
+@MainActor
+enum ShopPlans {
+  private struct Key: Hashable {
+    let skin: String
+    let energy: Double
+    let light: Bool
+  }
+  private static var cache: [Key: [KoaPaint.Op]] = [:]
+  private static var order: [Key] = []
+
+  static func room(skin: String, energy: Double, light: Bool) -> [KoaPaint.Op] {
+    let k = Key(skin: skin, energy: energy, light: light)
+    if let p = cache[k] { return p }
+    let p = KoaPaint.plan(KoaRender.Element("Svg", kids: ShopScene.tree(skin: skin, energy: energy, light: light)))
+    cache[k] = p
+    order.append(k)
+    // vài phòng (sáng / tối, đổi skin khi mua) là đủ; chặn để không phình
+    if order.count > 8 { cache[order.removeFirst()] = nil }
+    return p
   }
 }

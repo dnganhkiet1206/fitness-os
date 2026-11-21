@@ -60,14 +60,16 @@ public enum KoaJourney {
     _ days: [KoaGains.Day], week: KoaGains.Week, logged: Set<LocalDate> = [], today: LocalDate
   ) -> [Moment] {
     let ledger = KoaGains.ledger(days, week: week, today: today)
+    // KOA-T49: tra ngày có buổi bằng Set — trước đây quét lại cả lịch sử cho MỖI ngày của sổ (O(N×M)), hàm này
+    // chạy mỗi lượt vẽ Hôm nay và phòng.
+    let activeDays = Set(days.lazy.filter { $0.kind != .walk }.map(\.date))
     var out: [Moment] = []
     var count = 0
     var rank = 0
     var last: LocalDate?
     var weeks = 0
     for (day, b) in ledger {
-      let active = days.contains { $0.date == day && $0.kind != .walk }
-      if active {
+      if activeDays.contains(day) {
         count += 1
         if count == 1 { out.append(Moment(id: "first", kind: .firstSession, date: day, value: 1)) }
         if sessionMarks.contains(count) {
