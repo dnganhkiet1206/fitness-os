@@ -390,7 +390,10 @@ public final class MascotShopBook {
 
   public let userId: String
   public private(set) var phase: Phase = .loading
-  public private(set) var wallet: MascotWallet?
+  public private(set) var wallet: MascotWallet? {
+    // KOA-T55: tập khoá server đọc được đi vào cổng chung của tài khoản.
+    didSet { if let wallet { gate?.absorbServer(wallet.claimed) } }
+  }
   public private(set) var inventory: [InventoryRow] = []
   /// Món đang mua — vòng quay chỉ trên thẻ ấy.
   public private(set) var buying: String?
@@ -403,11 +406,18 @@ public final class MascotShopBook {
   @ObservationIgnored private let economy: any MascotEconomy
   @ObservationIgnored private var closed = false
 
-  public init(userId: String, source: any MascotSource, wardrobe: any MascotWardrobe, economy: any MascotEconomy) {
+  /// Cổng nhận thưởng chung của tài khoản (KOA-T55); `nil` = chỉ dựa vào sổ xu của cửa hàng.
+  @ObservationIgnored private let gate: ClaimGate?
+
+  public init(
+    userId: String, source: any MascotSource, wardrobe: any MascotWardrobe, economy: any MascotEconomy,
+    gate: ClaimGate? = nil
+  ) {
     self.userId = userId
     self.source = source
     self.wardrobe = wardrobe
     self.economy = economy
+    self.gate = gate
   }
 
   public func close() { closed = true }
@@ -418,7 +428,9 @@ public final class MascotShopBook {
   public var gains: KoaGains.State = .zero
   public var owned: Set<String> { Set(inventory.map(\.itemKey)) }
   public var equipped: Set<String> { Set(inventory.filter(\.equipped).map(\.itemKey)) }
-  public func isClaimed(_ c: MascotShop.Collection) -> Bool { wallet?.claimed.contains(c.refKey) ?? false }
+  public func isClaimed(_ c: MascotShop.Collection) -> Bool {
+    (wallet?.claimed.contains(c.refKey) ?? false) || gate?.isClaimed(c.refKey) == true
+  }
 
   /// Bộ sưu tập đủ món mà chưa nhận — số trên huy hiệu.
   public var setsReady: Int {
@@ -526,6 +538,7 @@ public final class MascotShopBook {
     defer { claiming = false }
     do {
       let coins = try await economy.claimReward(refKey: c.refKey, reason: c.refKey)
+      gate?.markClaimed(c.refKey)
       guard !closed else { return .busy }
       await load()
       // Bộ đã nhận ở máy khác: sau `load()` bộ hiện "đã nhận", không mừng (KOA-T01).

@@ -185,7 +185,10 @@ public final class MascotRoomController {
   public let userId: String
   public private(set) var today: LocalDate
   public private(set) var phase: Phase = .loading
-  public private(set) var wallet: MascotWallet?
+  public private(set) var wallet: MascotWallet? {
+    // KOA-T55: tập khoá server đọc được đi vào cổng chung — các chỗ nhận khác (tuần, thử thách…) cùng biết.
+    didSet { if let wallet { gate?.absorbServer(wallet.claimed) } }
+  }
   public private(set) var streak = Streak.Value(count: 0, loggedToday: false)
   /// Băng chuỗi đang giữ / đã dùng.
   public private(set) var freezesHeld = 0
@@ -220,15 +223,19 @@ public final class MascotRoomController {
   public init(
     userId: String, today: LocalDate, source: any MascotSource, economy: any MascotEconomy,
     stepsGoal: @escaping @Sendable () -> Int = { DailySignals.defaultStepsGoal },
-    questObserver: QuestObserver? = nil
+    questObserver: QuestObserver? = nil, gate: ClaimGate? = nil
   ) {
     self.questObserver = questObserver
+    self.gate = gate
     self.stepsGoalSource = stepsGoal
     self.userId = userId
     self.today = today
     self.source = source
     self.economy = economy
   }
+
+  /// Cổng nhận thưởng chung của tài khoản (KOA-T55). `nil` = chỉ dựa vào sổ xu của phòng (test cũ).
+  @ObservationIgnored private let gate: ClaimGate?
 
   /// Phiên kết thúc: mọi kết quả về sau bị bỏ.
   public func close() { closed = true }
@@ -315,7 +322,9 @@ public final class MascotRoomController {
     gains.rank + 1 < MascotRules.ranks.count ? MascotRules.ranks[gains.rank + 1] : nil
   }
 
-  public func isClaimed(_ refKey: String) -> Bool { wallet?.claimed.contains(refKey) ?? false }
+  public func isClaimed(_ refKey: String) -> Bool {
+    (wallet?.claimed.contains(refKey) ?? false) || gate?.isClaimed(refKey) == true
+  }
 
   /// Hôm nay không có buổi trong lịch (ngày nghỉ / chưa lên lịch) — Hôm nay đặt.
   public var restDay = false
@@ -373,8 +382,11 @@ public final class MascotRoomController {
     if !silent { actionFailure = nil }
     defer { claiming = false }
     let before = xp
+    // KOA-T55: khoá đã nhận ở chỗ khác (Hôm nay, bộ quan sát) hay đang có lượt khác gửi → không gửi, không mừng.
+    if let gate, gate.isClaimed(refKey) || gate.isInFlight(refKey) { return nil }
     do {
       let amount = try await economy.claimReward(refKey: refKey, reason: reason)
+      gate?.markClaimed(refKey)
       guard !closed else { return nil }
       await reloadLedger()
       // Đã nhận ở lượt / máy khác: sổ xu đã đúng, không mừng lần hai (KOA-T01).
@@ -395,6 +407,7 @@ public final class MascotRoomController {
     welcomeTried = true
     do {
       let amount = try await economy.claimReward(refKey: "welcome", reason: "welcome bonus")
+      gate?.markClaimed("welcome")
       guard !closed else { return }
       // Túi chào mừng đã nhận ở máy khác: không hiện lại "+300" (KOA-T01).
       if !MascotRules.isDuplicateClaim(amount) { welcomeGranted = amount }
