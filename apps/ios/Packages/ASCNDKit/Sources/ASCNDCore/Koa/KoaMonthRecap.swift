@@ -147,9 +147,14 @@ public enum KoaMonthRecap {
   /// `value` là số buổi của tháng ấy.
   static func doneMoments(days: [KoaGains.Day], logged: Set<LocalDate>, today: LocalDate) -> [KoaJourney.Moment] {
     let current = Key(today)
+    // KOA-T49: gom theo tháng MỘT lượt (trước: mỗi tháng quét lại cả lịch sử và cả tập ngày có ghi).
+    var sessionDays: [Key: Set<LocalDate>] = [:]
+    for d in days where d.kind != .walk { sessionDays[Key(d.date), default: []].insert(d.date) }
+    var logCount: [Key: Int] = [:]
+    for d in logged { logCount[Key(d), default: 0] += 1 }
     return months(days: days, logged: logged, today: today).filter { $0 < current }.compactMap { k in
-      let sessions = Set(days.filter { $0.kind != .walk && k.contains($0.date) }.map(\.date)).count
-      let logs = logged.filter { k.contains($0) }.count
+      let sessions = sessionDays[k]?.count ?? 0
+      let logs = logCount[k] ?? 0
       guard sessions + logs > 0 else { return nil }
       return KoaJourney.Moment(id: "month:\(k.id)", kind: .monthDone, date: k.next.first, value: sessions)
     }

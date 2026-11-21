@@ -17,4 +17,19 @@ import Testing
       #expect(TodayDayBlock.compactEmotion(e) == e, "\(e)")
     }
   }
+
+  /// KOA-T48: chỉ đổi nét mặt (vui → mừng khi xu về, lịch "bơm" → tự hào) thì GIỮ hình — mặt có tween;
+  /// đổi dáng / đồ thì đổi hình (mờ chéo), vì dáng chưa có tween.
+  @Test func faceOnlyChangesKeepTheFigure() {
+    #expect(TodayDayBlock.look(.idle) == TodayDayBlock.look(.celebrate))
+    #expect(TodayDayBlock.look(.happy) == TodayDayBlock.look(.proud))
+    #expect(TodayDayBlock.look(.idle) == TodayDayBlock.look(.worry))
+  }
+
+  @Test func poseOrOutfitChangesSwapTheFigure() {
+    #expect(TodayDayBlock.look(.idle) != TodayDayBlock.look(.warmup))
+    #expect(TodayDayBlock.look(.idle) != TodayDayBlock.look(.tired))
+    #expect(TodayDayBlock.look(.idle) != TodayDayBlock.look(.rested))
+    #expect(TodayDayBlock.look(.warmup) == TodayDayBlock.look(.curl))
+  }
 }

@@ -89,18 +89,21 @@ struct TodayDayBlock: View {
   static let celebrateFor: Duration = .milliseconds(2600)
 
   var body: some View {
+    // KOA-T49: mốc hành trình tính MỘT lần mỗi lượt vẽ (trước: ba lần — ở `.task(id:)`, trong task, và trong
+    // `content` mỗi phút), mỗi lần dựng lại cả hành trình từ lịch sử Gains.
+    let moment = shownMoment
     TimelineView(.periodic(from: .now, by: 60)) { context in
       content(
         hour: Calendar.current.component(.hour, from: context.date),
-        minute: Calendar.current.component(.minute, from: context.date))
+        minute: Calendar.current.component(.minute, from: context.date), moment: moment)
     }
     // Koa nói mốc ở Hôm nay (câu mốc đi trước mọi câu khác): một sự kiện mỗi mốc (#793).
     // KOA-T60: nói ở Hôm nay cũng là "đã nhắc" (KOA_ECOSYSTEM.md §bộ điều phối) — trước đây chỉ phòng
     // đánh dấu, nên mốc lặp lại ở Hôm nay mỗi lần mở app tới khi hết hạn (mốc lớn 3 ngày). Đánh dấu chỉ
     // có hiệu lực từ lần mở sau, nên trong lần mở này phòng Koa vẫn nói cùng mốc. Dạng gọn không hiện câu
     // mốc trong app (chỉ ra widget) nên không tính là đã nhắc (Devin #989).
-    .task(id: shownMoment?.id) {
-      guard let m = shownMoment else { return }
+    .task(id: moment?.id) {
+      guard let m = moment else { return }
       KoaMomentsStore.shownOnToday(m.id, userId: room.userId, compact: compact)
       Telemetry.once(
         .koaMomentShown, key: KoaAnalytics.momentKey(m, place: .today), userId: room.userId,
@@ -120,7 +123,7 @@ struct TodayDayBlock: View {
 
   private var lang: AppPreferences.Lang { AppPreferences.Lang(rawValue: String(locale.identifier.prefix(2))) ?? .vi }
 
-  @ViewBuilder private func content(hour: Int, minute: Int) -> some View {
+  @ViewBuilder private func content(hour: Int, minute: Int, moment: KoaJourney.Moment?) -> some View {
     let pending = services?.todayPending(userId: room.userId, today: room.today)
     let signals = TodayDay.merging(room.signals, localWaterMl: localWaterMl, pending: pending)
     let tubes = TodayDay.tubes(signals, stepsGoal: room.stepsGoal)
@@ -133,8 +136,8 @@ struct TodayDayBlock: View {
     let daySaid = KoaToday.line(dayMood, signals: signals, profile: profile, streak: room.streak.count)
     // Koa sống theo lịch tập (đợt 2): pump / đợi / mất pump / tụt hạng đè lên Koa của ngày.
     let sched = schedulePhase(hour: hour, minute: minute)
-    // mốc mới của hành trình (lên hạng, tuần đủ buổi, kỷ lục…) đi trước mọi câu khác, mỗi mốc một lần
-    let moment = KoaMomentsStore.next(services, userId: room.userId, today: room.today)
+    // mốc mới của hành trình (lên hạng, tuần đủ buổi, kỷ lục…) đi trước mọi câu khác, mỗi mốc một lần (`moment`,
+    // tính một lần ở `body`)
     // Mặt đi cùng câu (KOA-T14): câu mốc hành trình → mặt tự hào; câu theo lịch tập → mặt theo lịch.
     let mood = moment != nil ? KoaMood.Read(emotion: .proud, reason: dayMood.reason)
       : sched.map { KoaMood.Read(emotion: Self.emotion($0), reason: dayMood.reason) } ?? dayMood
@@ -311,14 +314,28 @@ struct TodayDayBlock: View {
 
   // MARK: - Koa
 
+  /// Phần hình KHÔNG có tween khi đổi cảm xúc: dáng và đồ kèm cảm xúc (KOA-T48).
+  struct Look: Hashable {
+    let pose: KoaFlags.Pose
+    let outfit: KoaFlags.Worn
+  }
+
+  static func look(_ emotion: KoaEmotion.Emotion) -> Look {
+    let s = KoaEmotion.state(emotion)
+    return Look(pose: s.pose, outfit: s.outfit)
+  }
+
   private func koa(_ emotion: KoaEmotion.Emotion) -> some View {
     Button(action: onOpenRoom) {
       MascotFigureView(emotion: emotion, equipped: equipped, size: compact ? 50 : 76, animated: !reduceMotion)
         .frame(width: compact ? 56 : 84, height: compact ? 64 : 96)
-        // Đổi nét mặt: hình cũ mờ sang hình mới (Reduce Motion: đổi ngay).
-        .id(emotion)
+        // KOA-T48: đổi DÁNG / đồ (ngồi, cầm tạ, mũ) thì hình cũ mờ sang hình mới — dáng chưa có tween.
+        // Chỉ đổi nét mặt thì giữ nguyên hình: mặt chuyển dần bằng tween của chính hình (`KoaFaceTween`),
+        // đồng hồ thở / ánh nhìn không bị đặt lại, không vẽ hai hình chồng nhau 0,35 s.
+        // Reduce Motion: đổi ngay.
+        .id(Self.look(emotion))
         .transition(.opacity)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: emotion)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: Self.look(emotion))
         .background(alignment: .bottom) {
           Ellipse().fill(.black.opacity(0.08)).frame(width: 56, height: 8).blur(radius: 3)
         }
