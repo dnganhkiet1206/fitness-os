@@ -17,6 +17,9 @@ enum KoaMomentsStore {
     return s
   }
 
+  /// Chỉ cho test: như mở app lần mới (bỏ bản "đã thấy" giữ cho lần mở này).
+  static func forgetLaunch() { launchSeen = [:] }
+
   static func markSeen(_ id: String, userId: String) {
     var all = Set(UserDefaults.standard.stringArray(forKey: key(userId)) ?? [])
     guard all.insert(id).inserted else { return }

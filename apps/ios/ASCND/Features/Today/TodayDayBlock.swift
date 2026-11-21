@@ -95,8 +95,12 @@ struct TodayDayBlock: View {
         minute: Calendar.current.component(.minute, from: context.date))
     }
     // Koa nói mốc ở Hôm nay (câu mốc đi trước mọi câu khác): một sự kiện mỗi mốc (#793).
+    // KOA-T60: nói ở Hôm nay cũng là "đã nhắc" (KOA_ECOSYSTEM.md §bộ điều phối) — trước đây chỉ phòng
+    // đánh dấu, nên mốc lặp lại ở Hôm nay mỗi lần mở app tới khi hết hạn (mốc lớn 3 ngày). Đánh dấu chỉ
+    // có hiệu lực từ lần mở sau, nên trong lần mở này phòng Koa vẫn nói cùng mốc.
     .task(id: shownMoment?.id) {
       guard let m = shownMoment else { return }
+      KoaMomentsStore.markSeen(m.id, userId: room.userId)
       Telemetry.once(
         .koaMomentShown, key: KoaAnalytics.momentKey(m, place: .today), userId: room.userId,
         KoaAnalytics.momentProps(m, place: .today))
