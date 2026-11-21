@@ -47,7 +47,7 @@
       /// Mã cơ theo vai trò (`primary` / `secondary` / `stabilizing`) cho shader tô cơ lúc chạy
       /// (`MuscleShader`, 17/11). Rỗng = bài dùng texture nướng sẵn.
       var roles: [String: [String]] = [:]
-      /// Mẹo kỹ thuật (nút bóng đèn), từ `app_demo.tips` của `exercise.json` (B1, 17/11).
+      /// Mẹo kỹ thuật (nút bóng đèn), khối `<bài>_tips.json` (B1 17/11; tách khối 20/11).
       var tips: [ExerciseTip] = []
       /// Nhịp từng rep (C1, 17/11), nil = bài chưa có `tempo.json`.
       var tempo: ExerciseTempo?
@@ -76,20 +76,14 @@
       let roleKey: String
     }
 
-    /// Dữ liệu từng bài nằm trong `<bài>_demo.json` + `demo3d_index.json`
+    /// Dữ liệu từng bài nằm trong `<bài>_demo.json` (lõi) + các khối `<bài>_tips/_tempo/_mistakes.json`
+    /// + `demo3d_index.json`
     /// (Kiệt 16/11, `artifacts/exercise-visual-system/pipeline/export_app_demos.py`
     /// sinh từ `exercise.json`): thêm hay sửa bài không đụng code app.
     private struct DemoFile: Decodable {
       struct Legend: Decodable { let hex: String; let name_key: String; let role_key: String }
       struct Camera: Decodable { let position: [Float]?; let target: [Float]? }
       struct ReviewFile: Decodable { let date: String; let checked: [String]; let remaining: [String] }
-      struct TipFile: Decodable { let id: String; let anchor: [Float]; let joint: String?; let offset: [Float]? }
-      struct TempoFile: Decodable {
-        struct Phase: Decodable { let rep: Int; let kind: String; let start_ms: Double; let end_ms: Double; let breath: String? }
-        let duration_ms: Double
-        let reps: Int
-        let phases: [Phase]
-      }
       let id: String
       let title: String
       let family_label: String
@@ -106,10 +100,8 @@
       let roles: [String: [String]]?
       let review: ReviewFile?
       let note: String?
-      let tips: [TipFile]?
-      let tempo: TempoFile?
-      struct MistakeFile: Decodable { let id: String; let motion: String; let joints: [String] }
-      let mistakes: [MistakeFile]?
+      /// Khối nội dung độc lập (20/11): `tips` / `tempo` / `mistakes` → tên tệp `<bài>_<khối>.json`.
+      let modules: [String: String]?
     }
 
     private struct Index: Decodable { let demos: [String] }
@@ -119,17 +111,25 @@
       return SIMD3(v[0], v[1], v[2])
     }
 
+    private static func data(_ name: String) -> Data? {
+      guard let url = Bundle.main.url(forResource: name, withExtension: "json") else { return nil }
+      return try? Data(contentsOf: url)
+    }
+
     /// Nạp một lần từ bundle; thiếu tệp nào thì bỏ bài đó (không crash).
     private static let loaded: [DemoFile] = {
       func read<T: Decodable>(_ name: String, _ type: T.Type) -> T? {
-        guard let url = Bundle.main.url(forResource: name, withExtension: "json"),
-          let data = try? Data(contentsOf: url)
-        else { return nil }
-        return try? JSONDecoder().decode(type, from: data)
+        data(name).flatMap { try? JSONDecoder().decode(type, from: $0) }
       }
       guard let index = read("demo3d_index", Index.self) else { return [] }
       return index.demos.compactMap { read("\($0)_demo", DemoFile.self) }
     }()
+
+    /// Một khối nội dung của bài; thiếu tệp, hỏng hay `schema` mới hơn app thì `nil` (tính năng ẩn).
+    private static func module<T: Decodable & ExerciseDemoVersioned>(_ f: DemoFile, _ kind: String, _ type: T.Type) -> T? {
+      guard let name = f.modules?[kind], let d = data(name) else { return nil }
+      return ExerciseDemoContent.decode(type, from: d)
+    }
 
     private static func makeDemo(_ f: DemoFile) -> Demo {
       var d = Demo(
@@ -141,18 +141,14 @@
       d.motionFile = f.motion
       d.fullTexturePrefix = f.full_prefix
       d.roles = f.roles ?? [:]
-      d.tips = (f.tips ?? []).compactMap { t in
+      d.tips = (module(f, "tips", ExerciseDemoContent.TipsFile.self)?.tips ?? []).compactMap { t in
         guard let anchor = vector(t.anchor) else { return nil }
-        return ExerciseTip(id: t.id, anchor: anchor, joint: t.joint, offset: vector(t.offset))
+        return ExerciseTip(id: t.id, anchor: anchor, joint: t.joint, offset: vector(t.offset), text: t.text)
       }
-      d.tempo = f.tempo.map { t in
-        ExerciseTempo(
-          durationMs: t.duration_ms, reps: t.reps,
-          phases: t.phases.map {
-            .init(rep: $0.rep, kind: $0.kind, startMs: $0.start_ms, endMs: $0.end_ms, breath: $0.breath)
-          })
+      d.tempo = module(f, "tempo", ExerciseDemoContent.TempoFile.self)?.tempo
+      d.mistakes = (module(f, "mistakes", ExerciseDemoContent.MistakesFile.self)?.mistakes ?? []).map {
+        ExerciseMistake(id: $0.id, motionFile: $0.motion, joints: $0.joints, text: $0.text)
       }
-      d.mistakes = (f.mistakes ?? []).map { ExerciseMistake(id: $0.id, motionFile: $0.motion, joints: $0.joints) }
       return d
     }
 

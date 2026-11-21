@@ -1,0 +1,230 @@
+{
+  "schema": 1,
+  "exercise": "dumbbell_shoulder_press",
+  "tips": [
+    {
+      "id": "press_bench",
+      "anchor": [
+        0.12,
+        1.2,
+        -0.38
+      ],
+      "text": {
+        "en": {
+          "title": "Bench at 70°, back on the pad",
+          "body": "Set the back pad to about 70°; keep your back and head on it.",
+          "how": [
+            "Set the back pad one notch below upright (about 70–80°).",
+            "Hips back against the pad, feet flat on the floor."
+          ],
+          "why": "A slight recline keeps the shoulder in a safer position and spares the lower back.",
+          "avoid": "Setting the bench at 90° and arching off the pad as you press."
+        },
+        "es": {
+          "title": "Banco a 70°, espalda apoyada",
+          "body": "Respaldo a unos 70°; espalda y cabeza apoyadas.",
+          "how": [
+            "Pon el respaldo una muesca por debajo de vertical (70–80°).",
+            "Cadera pegada al respaldo, pies firmes en el suelo."
+          ],
+          "why": "Una ligera inclinación protege el hombro y la zona lumbar.",
+          "avoid": "Banco a 90° y arquear la espalda al empujar."
+        },
+        "vi": {
+          "title": "Ghế 70°, lưng tựa đệm",
+          "body": "Dựng lưng ghế khoảng 70°, lưng và đầu tựa đệm suốt bài.",
+          "how": [
+            "Hạ lưng ghế một nấc dưới thẳng đứng (khoảng 70–80°).",
+            "Mông sát lưng ghế, bàn chân đặt chắc trên sàn."
+          ],
+          "why": "Ghế hơi ngả giúp khớp vai ở tư thế an toàn hơn và lưng dưới không phải ưỡn.",
+          "avoid": "Dựng ghế thẳng 90° rồi ưỡn lưng rời khỏi đệm khi đẩy."
+        }
+      }
+    },
+    {
+      "id": "press_shoulders",
+      "anchor": [
+        0.14,
+        1.07,
+        -0.12
+      ],
+      "joint": "Root/pelvis/spine_01/spine_02/spine_03/clavicle_l/scapula_l",
+      "offset": [
+        0.0165,
+        0.0423,
+        0.0008
+      ],
+      "text": {
+        "en": {
+          "title": "Shoulders down",
+          "body": "Draw the shoulder blades down; don't shrug toward your ears.",
+          "how": [
+            "Before the first rep, draw the shoulders down and open the chest.",
+            "Keep a long neck for the whole set, even at the top."
+          ],
+          "why": "Low shoulders let the delts do the work and keep the neck relaxed.",
+          "avoid": "Shrugging up to the ears as the weights go overhead."
+        },
+        "es": {
+          "title": "Hombros abajo",
+          "body": "Baja las escápulas; no encojas los hombros.",
+          "how": [
+            "Antes de empezar, baja los hombros y abre el pecho.",
+            "Cuello largo toda la serie, también arriba."
+          ],
+          "why": "Hombros bajos: trabajan los deltoides y el cuello se relaja.",
+          "avoid": "Encoger los hombros hacia las orejas al subir."
+        },
+        "vi": {
+          "title": "Hạ vai, xa tai",
+          "body": "Kéo bả vai xuống, vai không nhún lên tai khi đẩy.",
+          "how": [
+            "Trước khi đẩy, hạ vai xuống và mở ngực.",
+            "Giữ cổ dài suốt bài, kể cả ở đỉnh."
+          ],
+          "why": "Vai giữ thấp để cơ vai làm việc chính, cổ không bị căng.",
+          "avoid": "Nhún vai lên tai khi tạ lên cao."
+        }
+      }
+    },
+    {
+      "id": "press_elbows",
+      "anchor": [
+        -0.21,
+        0.98,
+        -0.04
+      ],
+      "joint": "Root/pelvis/spine_01/spine_02/spine_03/clavicle_r/upperarm_swing_r",
+      "offset": [
+        0.0016,
+        0.0031,
+        0.069
+      ],
+      "text": {
+        "en": {
+          "title": "Elbows under wrists",
+          "body": "Forearms vertical, elbows slightly in front, not flared out.",
+          "how": [
+            "Elbows about 30–45° in front of the body, palms turned slightly in.",
+            "Press straight up over the shoulders; the dumbbells come close but don't touch at the top."
+          ],
+          "why": "Force goes straight through the forearm, so elbow and shoulder stay stable.",
+          "avoid": "Pressing in a V or flaring the elbows straight out to the sides."
+        },
+        "es": {
+          "title": "Codos bajo las muñecas",
+          "body": "Antebrazos verticales, codos algo adelante, no abiertos.",
+          "how": [
+            "Codos 30–45° por delante del cuerpo, palmas algo giradas hacia dentro.",
+            "Empuja recto sobre los hombros; arriba las mancuernas se acercan sin tocarse."
+          ],
+          "why": "La fuerza pasa recta por el antebrazo; codo y hombro más estables.",
+          "avoid": "Empujar en V o abrir los codos hacia los lados."
+        },
+        "vi": {
+          "title": "Khuỷu dưới cổ tay",
+          "body": "Cẳng tay thẳng đứng, khuỷu hơi khép ra trước, không bè ngang.",
+          "how": [
+            "Khuỷu ra trước thân khoảng 30–45°, lòng bàn tay hơi xoay vào trong.",
+            "Đẩy thẳng lên trên vai; ở đỉnh hai tạ gần nhau nhưng không chạm."
+          ],
+          "why": "Lực đi thẳng qua cẳng tay nên khuỷu và vai vững hơn.",
+          "avoid": "Đẩy theo hình chữ V hoặc bè khuỷu thẳng ra hai bên."
+        }
+      }
+    },
+    {
+      "id": "press_depth",
+      "anchor": [
+        0.0,
+        1.12,
+        -0.05
+      ],
+      "joint": "Root/pelvis/spine_01/spine_02/spine_03/neck_01",
+      "offset": [
+        0.0,
+        0.03,
+        0.1048
+      ],
+      "text": {
+        "en": {
+          "title": "Lower to chin level",
+          "body": "Lower the dumbbells to chin level, close to the shoulders, then press.",
+          "how": [
+            "Lower slowly, about 2 seconds, under control.",
+            "Stop when the upper arms are below shoulder level, then press up."
+          ],
+          "why": "A full range works the shoulders through their whole range.",
+          "avoid": "Half reps that stop at ear height."
+        },
+        "es": {
+          "title": "Baja hasta la barbilla",
+          "body": "Baja las mancuernas a la altura de la barbilla, cerca de los hombros.",
+          "how": [
+            "Baja despacio, unos 2 segundos, con control.",
+            "Para cuando los brazos estén por debajo de los hombros y empuja."
+          ],
+          "why": "El recorrido completo trabaja todo el hombro.",
+          "avoid": "Medias repeticiones a la altura de las orejas."
+        },
+        "vi": {
+          "title": "Hạ sâu tới ngang cằm",
+          "body": "Hạ tạ tới ngang cằm, gần chạm vai, rồi mới đẩy lên.",
+          "how": [
+            "Hạ chậm khoảng 2 giây, có kiểm soát.",
+            "Dừng khi cánh tay trên xuống dưới ngang vai, rồi đẩy lên."
+          ],
+          "why": "Biên độ đầy đủ giúp cơ vai làm việc trọn vẹn.",
+          "avoid": "Chỉ nhấp nửa chừng ở tầm tai."
+        }
+      }
+    },
+    {
+      "id": "press_core",
+      "anchor": [
+        0.0,
+        0.7,
+        0.1
+      ],
+      "joint": "Root/pelvis/spine_01/spine_02",
+      "offset": [
+        0.0,
+        0.0121,
+        0.1524
+      ],
+      "text": {
+        "en": {
+          "title": "Brace, hips on the seat",
+          "body": "Brace the abs and keep the hips and lower back on the bench.",
+          "how": [
+            "Take a breath and brace before each press; breathe out as you press.",
+            "Feet flat and wider than the hips, knees about 90°."
+          ],
+          "why": "A braced trunk keeps the body still, so the shoulders do the work.",
+          "avoid": "Arching the lower back or pushing with the legs to lift the weight."
+        },
+        "es": {
+          "title": "Abdomen firme, cadera en el asiento",
+          "body": "Activa el abdomen; cadera y zona lumbar en el banco.",
+          "how": [
+            "Respira y activa el abdomen antes de empujar; suelta el aire al subir.",
+            "Pies planos y más abiertos que la cadera, rodillas a unos 90°."
+          ],
+          "why": "El tronco firme mantiene el cuerpo quieto y trabajan los hombros.",
+          "avoid": "Arquear la zona lumbar o empujar con las piernas."
+        },
+        "vi": {
+          "title": "Siết bụng, hông sát ghế",
+          "body": "Siết bụng nhẹ, hông và lưng dưới không rời ghế.",
+          "how": [
+            "Hít vào và siết bụng trước mỗi lần đẩy, thở ra khi đẩy lên.",
+            "Bàn chân đặt phẳng, rộng hơn hông, gối khoảng 90°."
+          ],
+          "why": "Thân giữ chắc thì người không lắc, cơ vai làm việc chính.",
+          "avoid": "Ưỡn lưng dưới hoặc dùng chân đẩy người để nâng tạ."
+        }
+      }
+    }
+  ]
+}

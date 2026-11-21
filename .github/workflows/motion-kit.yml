@@ -82,6 +82,16 @@ jobs:
         working-directory: artifacts/exercise-visual-system
         run: python3 pipeline/check_provenance.py
 
+      # 20/11: nội dung chế độ hướng dẫn 3D là các khối độc lập (lõi / mẹo / nhịp / lỗi sai,
+      # MODULAR_3D_PLAN.md). Mỗi tệp theo JSON Schema (schemas/demo3d_*.schema.json, kiểm bằng
+      # jsonschema — MIT, ghim bản đã chạy xanh trên máy 20/11), và tệp trong app phải đúng là
+      # thứ bộ xuất sinh ra. `--require-schema`: thiếu jsonschema thì đỏ, không lặng lẽ bỏ qua.
+      - name: Nội dung 3D theo JSON Schema + khớp app
+        working-directory: artifacts/exercise-visual-system
+        run: |
+          pip install jsonschema==4.26.0
+          python3 pipeline/export_app_demos.py --check --require-schema
+
   validate:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
