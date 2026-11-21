@@ -194,10 +194,15 @@ struct KoaRestScreen: View {
       .accessibilityIdentifier("workout.rest.minimize")
       Spacer()
       if let onEditJustDone, justDone != nil {
-        Button(String(localized: "ws.edit"), action: onEditJustDone)
-          .font(.system(size: 15, weight: .semibold))
-          .foregroundStyle(Self.rose)
-          .frame(minHeight: 44)
+        // Khung 44 nằm TRONG nhãn + `contentShape`: khung đặt ngoài nút thì chỉ nét chữ nhận chạm (KOA-T47, 28×18).
+        Button(action: onEditJustDone) {
+          Text(String(localized: "ws.edit"))
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(Self.rose)
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
       }
     }
   }
@@ -290,6 +295,7 @@ struct KoaRestScreen: View {
       HStack(spacing: DS.Spacing.sm) {
         chip(Image(systemName: paused ? "play.fill" : "pause.fill"),
              String(localized: paused ? "workout.rest.resume" : "workout.rest.pause")) { onSetPaused(!paused) }
+          .accessibilityIdentifier("workout.rest.pause")
         Button(action: onSkip) {
           VStack(spacing: 1) {
             Text(String(localized: next == nil ? "ws.rest.skip" : "koa.rest.startNext"))
