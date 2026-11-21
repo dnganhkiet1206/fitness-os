@@ -191,17 +191,17 @@ def validator(required: bool = False):
     is not installed — the CI gate ``apps/ios/tools/demo3d-content.mjs`` still checks the
     meaning (files exist, three languages, ids unique, phases in order)."""
     try:
-        import jsonschema  # type: ignore
+        from jsonschema import Draft202012Validator  # type: ignore  # 4.0+; bản 3.x không có Draft 2020-12
     except ImportError:
         if required:
-            raise SystemExit("[evs] --require-schema: cần jsonschema (pip install jsonschema)")
-        print("[evs] jsonschema chưa cài: bỏ qua kiểm schema (pip install jsonschema)", file=sys.stderr)
+            raise SystemExit("[evs] --require-schema: cần jsonschema ≥ 4.0 có Draft 2020-12 (pip install 'jsonschema>=4')")
+        print("[evs] không có jsonschema ≥ 4.0: bỏ qua kiểm schema (pip install 'jsonschema>=4')", file=sys.stderr)
         return None
     out = {}
     for path in SCHEMAS.glob("demo3d_*.schema.json"):
         schema = json.loads(path.read_text())
-        jsonschema.Draft202012Validator.check_schema(schema)
-        out[path.name.removesuffix(".schema.json")] = jsonschema.Draft202012Validator(schema)
+        Draft202012Validator.check_schema(schema)
+        out[path.name.removesuffix(".schema.json")] = Draft202012Validator(schema)
     return out
 
 
@@ -247,8 +247,9 @@ def main() -> None:
     if errors:
         raise SystemExit("[evs] sai schema:\n  " + "\n  ".join(errors))
 
-    # Module files this script owns but no longer produces (a module removed from an exercise).
-    owned = re.compile(r"^[a-z0-9_]+_(tips|tempo|mistakes)\.json$")
+    # Files this script owns but no longer produces (an exercise or a module removed) — the core
+    # `_demo.json` too, or the content gate reports it as an orphan (Devin #987).
+    owned = re.compile(r"^[a-z0-9_]+_(demo|tips|tempo|mistakes)\.json$")
     stale = [p for p in out.glob("*.json") if owned.match(p.name) and p.stem not in texts]
     changed = [n for n, t in texts.items() if not (out / f"{n}.json").exists() or (out / f"{n}.json").read_text() != t]
     if args.check:
