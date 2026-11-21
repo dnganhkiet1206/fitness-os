@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.168.0/testing/asserts.ts";
-import { allergyRule, buildProfileContext, streakDays, waterByDay } from "./context.ts";
+import { allergyRule, buildProfileContext, mondayIndex, streakDays, todayPlan, waterByDay } from "./context.ts";
 
 Deno.test("profile block carries the five safety fields (KOA-T02)", () => {
   const block = buildProfileContext({
@@ -88,4 +88,57 @@ Deno.test("waterByDay cộng theo ngày, chỉ 7 ngày, hôm nay riêng", () => 
   assertEquals(w.today_ml, 750);
   assertEquals(w.last_7_days, [{ date: "2026-11-18", ml: 1000 }, { date: "2026-11-20", ml: 750 }]);
   assertEquals(waterByDay([], "2026-11-20").today_ml, null, "chưa ghi là null, không phải 0");
+});
+
+const ROUTINE = [
+  { day_of_week: 0, template_id: "t-push", is_rest: false },
+  { day_of_week: 2, template_id: "t-pull", is_rest: false, is_deload: true },
+  { day_of_week: 5, template_id: null, is_rest: true },
+];
+const TEMPLATES = [
+  { id: "t-push", name: "Push", exercises: [{ exerciseName: "Bench Press", sets: 3, reps: 8, weight: 60 }] },
+  { id: "t-pull", name: "Pull", exercises: [{ exerciseName: "Row", sets: 3, reps: 10, weight: 40 }, { bogus: 1 }] },
+];
+
+Deno.test("monday index matches the app (Monday = 0)", () => {
+  assertEquals(mondayIndex("2026-11-16"), 0); // thứ Hai
+  assertEquals(mondayIndex("2026-11-22"), 6); // Chủ nhật
+});
+
+Deno.test("today plan follows the weekly routine (KOA-T33)", () => {
+  const p = todayPlan("2026-11-16", ROUTINE, null, TEMPLATES, false);
+  assertEquals(p, { status: "todo", name: "Push", is_deload: false, exercises: [{ name: "Bench Press", sets: 3, reps: 8, weight_kg: 60 }] });
+  assertEquals(todayPlan("2026-11-16", ROUTINE, null, TEMPLATES, true).status, "done");
+  const wed = todayPlan("2026-11-18", ROUTINE, null, TEMPLATES, false);
+  assertEquals(wed.is_deload, true);
+  assertEquals(wed.exercises.length, 1, "bài hỏng trong JSON bị bỏ, không làm hỏng cả buổi");
+  assertEquals(todayPlan("2026-11-21", ROUTINE, null, TEMPLATES, false).status, "rest");
+  assertEquals(todayPlan("2026-11-17", ROUTINE, null, TEMPLATES, false).status, "unplanned");
+});
+
+Deno.test("a day override wins over the routine; rest wins over a template", () => {
+  const moved = todayPlan("2026-11-17", ROUTINE, { date: "2026-11-17", template_id: "t-pull", is_rest: false }, TEMPLATES, false);
+  assertEquals([moved.status, moved.name], ["todo", "Pull"]);
+  const off = todayPlan("2026-11-16", ROUTINE, { date: "2026-11-16", template_id: null, is_rest: true }, TEMPLATES, false);
+  assertEquals([off.status, off.name], ["rest", null]);
+  const cleared = todayPlan("2026-11-16", ROUTINE, { date: "2026-11-16", template_id: null, is_rest: false }, TEMPLATES, false);
+  assertEquals(cleared.status, "unplanned", "đổi lịch xoá buổi của ngày: chưa lên lịch");
+  const deleted = todayPlan("2026-11-16", [{ day_of_week: 0, template_id: "gone", is_rest: false }], null, TEMPLATES, false);
+  assertEquals(deleted.status, "unplanned", "template đã xoá");
+});
+
+Deno.test("plan weights come from the builder's `weight` key (KOA-T33, Devin #992)", () => {
+  const t = [{ id: "t", name: "Legs", exercises: [{ exerciseName: "Squat", sets: 5, reps: 5, weight: 100 }, { exerciseName: "Plank", sets: 3, reps: 1 }] }];
+  const p = todayPlan("2026-11-16", [{ day_of_week: 0, template_id: "t", is_rest: false }], null, t, false);
+  assertEquals(p.exercises.map((e) => e.weight_kg), [100, 0], "có tạ giữ số kg; không tạ = 0");
+});
+
+Deno.test("a Koa pause turns today into a rest day, first and last day included", () => {
+  const pause = { starts_on: "2026-11-16", ends_on: "2026-11-18" };
+  for (const day of ["2026-11-16", "2026-11-18"]) {
+    const p = todayPlan(day, ROUTINE, null, TEMPLATES, false, pause);
+    assertEquals([p.status, p.name, p.exercises.length, p.returns_on], ["paused", null, 0, "2026-11-19"], day);
+  }
+  assertEquals(todayPlan("2026-11-19", ROUTINE, null, TEMPLATES, false, pause).status, "unplanned", "ngày tập lại theo lịch");
+  assertEquals(todayPlan("2026-11-16", ROUTINE, null, TEMPLATES, false, null).status, "todo");
 });

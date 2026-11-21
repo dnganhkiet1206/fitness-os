@@ -129,3 +129,68 @@ export function waterByDay(
   const last_7_days = [...sums.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, ml]) => ({ date, ml }));
   return { today_ml: sums.get(today) ?? null, last_7_days };
 }
+
+/** Thứ Hai = 0 … Chủ nhật = 6 — đúng `WorkoutPlanning.routineIndex` của app (`routine_days.day_of_week`). */
+export function mondayIndex(day: string): number {
+  return (new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7;
+}
+
+type RoutineRow = { day_of_week: number; template_id: string | null; is_rest: boolean | null; is_deload?: boolean | null };
+type OverrideRow = { date: string; template_id: string | null; is_rest: boolean | null };
+type TemplateRow = { id: string; name: string; exercises: unknown };
+export type PauseRow = { starts_on: string; ends_on: string };
+
+function addDays(iso: string, n: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+export type TodayPlanCtx = {
+  /** todo = có buổi chưa tập · done = đã tập hôm nay · rest = ngày nghỉ · unplanned = chưa lên lịch ·
+   *  paused = đang trong đợt Tạm nghỉ (như `DailyPlan.input`: hôm nay là ngày nghỉ, không gợi buổi tập). */
+  status: "todo" | "done" | "rest" | "unplanned" | "paused";
+  /** Ngày tập lại (ngày sau ngày cuối của đợt nghỉ) khi `paused`. */
+  returns_on?: string;
+  name: string | null;
+  is_deload: boolean;
+  exercises: { name: string; sets: number; reps: number; weight_kg: number }[];
+};
+
+/**
+ * Buổi tập dự kiến hôm nay (KOA-T33, phần sau): CÙNG luật với `WorkoutPlanning.plan` của app — đổi lịch
+ * của riêng ngày (`plan_day_overrides`) thắng lịch mẫu (`routine_days`); `is_rest` thắng `template_id`;
+ * template đã xoá = chưa lên lịch. Trước đây coach không biết hôm nay có buổi gì nên không trả lời được
+ * "hôm nay tập gì?" theo đúng kế hoạch người dùng thấy ở Hôm nay.
+ */
+export function todayPlan(
+  today: string,
+  routine: RoutineRow[],
+  override: OverrideRow | null,
+  templates: TemplateRow[],
+  trainedToday: boolean,
+  pause: PauseRow | null = null,
+): TodayPlanCtx {
+  // Tạm nghỉ thắng lịch (`KoaPause.contains`: gồm cả ngày đầu và ngày cuối; ngày ISO so được bằng chuỗi).
+  if (pause && pause.starts_on <= today && today <= pause.ends_on) {
+    return { status: "paused", name: null, is_deload: false, exercises: [], returns_on: addDays(pause.ends_on, 1) };
+  }
+  const day = routine.find((r) => r.day_of_week === mondayIndex(today));
+  const isRest = override ? override.is_rest === true : day?.is_rest === true;
+  const templateId = override ? override.template_id : day?.template_id ?? null;
+  const template = isRest || !templateId ? undefined : templates.find((t) => t.id === templateId);
+  const exercises = template && Array.isArray(template.exercises)
+    ? (template.exercises as Record<string, unknown>[])
+      .filter((e) => typeof e.exerciseName === "string")
+      .map((e) => ({
+        name: String(e.exerciseName),
+        sets: Number(e.sets) || 0,
+        reps: Number(e.reps) || 0,
+        // builder ghi mức tạ dưới khoá `weight` (`TemplateExercise.json`), không phải `weightKg`
+        weight_kg: Number(e.weight) || 0,
+      }))
+    : [];
+  const status: TodayPlanCtx["status"] = !template ? (isRest ? "rest" : "unplanned") : trainedToday ? "done" : "todo";
+  return { status, name: template?.name ?? null, is_deload: day?.is_deload === true, exercises };
+}
+
