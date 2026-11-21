@@ -886,6 +886,10 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 20/11/2026: KOA-T54 phần SQL — hai migration (ví chỉ trả khoá cần hỏi; trần cộng đồng không tính xu khám phá), chờ duyệt deploy; xem mục 4.
 - 20/11/2026: KOA-T40 phần còn lại — con số trong câu của Koa (giờ ngủ, % calo) dựng một chỗ (`KoaLineNumbers`) cho Hôm nay và phòng; Hôm nay không còn nói "ngủ 0 giờ 0 phút" khi chưa có giấc ngủ. Khoá câu hai nơi vẫn riêng (`koa.say.*` / `koa.talk.*`) có chủ đích.
 - 20/11/2026: KOA-T41 — test `EconomyContractTests` đọc thẳng migration (`reward_prices`, `shop_prices`, lần ghi sau thắng) và so với hằng Swift (nhiệm vụ, chuỗi, thử thách, khám phá, tăng tải, bộ sưu tập, giá từng món); phép thử ngược đổi một giá thì đỏ. App vẫn dùng hằng Swift để hiện số (không đọc bảng giá lúc chạy) — test giữ hai bên khớp.
+- 20/11/2026: Cỡ chữ trợ năng (AX3): tab Tập luyện tràn ngang cả trang, mép trái tiêu đề / dải ngày / thẻ hôm nay bị cắt — hai nguyên nhân:
+  - Vòng số ngày của dải tuần dùng chung (`WeekDayStrip`, cả Dinh dưỡng / Nhật ký) giãn không trần (~74 pt × 7 > màn hình) — nay trần 44 pt, số tự thu nhỏ.
+  - Hàng chú giải bốn dấu ép một dòng — nay `ViewThatFits`: một hàng khi vừa, lưới 2×2 khi chữ to.
+  - Cỡ thường không đổi. Đã xem AX3 trên simulator: Tập luyện và Dinh dưỡng vừa màn hình.
 - 20/11/2026: KOA-T60 (phần còn lại, một phần) — `KoaSeamsTests`:
   - Blob cảnh Koa đọc được, còn đủ bộ phận chính, mọi hoạt ảnh trỏ tới khung có thật với kiểu dịu bộ vẽ biết.
   - Tủ đồ giữ đủ khung của RN và chỉ thêm `koaPantTongue`.
