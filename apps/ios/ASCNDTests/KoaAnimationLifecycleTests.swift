@@ -13,7 +13,9 @@ import Testing
     d.lineOf = { _ in "Koa says hi" }
     d.tapped(.belly)
     d.tapped(.nose)
-    try await Task.sleep(for: .milliseconds(400))
+    // Máy CI chậm: chờ tới khi câu đầu ra (tối đa 3 s), rồi thêm một nhịp để câu thứ hai — nếu có — kịp ra.
+    try await Self.waitUntil { d.tapTalks >= 1 }
+    try await Task.sleep(for: .milliseconds(300))
     #expect(d.tapTalks == 1)
     #expect(d.speech != nil)
   }
@@ -23,10 +25,16 @@ import Testing
     let d = KoaDirectorDriver()
     d.lineOf = { _ in "Koa says hi" }
     d.tapped(.belly)
-    try await Task.sleep(for: .milliseconds(300))
+    try await Self.waitUntil { d.tapTalks >= 1 }
     d.tapped(.nose)
-    try await Task.sleep(for: .milliseconds(300))
+    try await Self.waitUntil { d.tapTalks >= 2 }
     #expect(d.tapTalks == 2)
+  }
+
+  /// Chờ điều kiện đúng, tối đa `timeout` (CI chậm, KOA-T48 #986).
+  private static func waitUntil(timeout: Duration = .seconds(3), _ done: () -> Bool) async throws {
+    let end = ContinuousClock.now + timeout
+    while !done(), ContinuousClock.now < end { try await Task.sleep(for: .milliseconds(20)) }
   }
 
   @Test func waitIdleReturnsWhenTheSceneEnds() async {

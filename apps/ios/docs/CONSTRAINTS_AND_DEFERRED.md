@@ -895,6 +895,17 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
   - Mã băm chuẩn bị cho tải theo nhu cầu (P9, **vẫn hoãn**).
   - **Còn dính render:** poster `<bài>_poster.jpg` (đổi phòng / nhân vật thì poster lệch) — việc tiếp theo.
   - **NOT RUN:** xem bằng tiếng Anh / Tây Ban Nha trên simulator (đã xem tiếng Việt; chọn ngôn ngữ có test).
+- 20/11/2026: KOA-T60 (phần còn lại, một phần) — `KoaSeamsTests`:
+  - Blob cảnh Koa đọc được, còn đủ bộ phận chính, mọi hoạt ảnh trỏ tới khung có thật với kiểu dịu bộ vẽ biết.
+  - Tủ đồ giữ đủ khung của RN và chỉ thêm `koaPantTongue`.
+  - Tệp blob trỏ đúng bộ sinh.
+  - 4 test đường `paused:` của Tuần của Koa.
+  - **Lần đầu chạy bắt được:**
+    - giọt mồ hôi của tủ đồ ghi kiểu dịu `"in"`, bộ vẽ không biết nên lặng lẽ dùng `io` — nguồn `build.py` sửa thành `io`, sinh lại, hình không đổi (khác đúng 1 ký tự);
+    - chú thích "tủ đồ không thêm khung nào" sai — đã sửa;
+    - đầu tệp blob trỏ đường dẫn cũ của bộ sinh — đã sửa.
+  - `StreakMissed` đã có test ở T53 (#977).
+  - **Chưa làm:** đối chiếu các khẳng định về `KoaMomentFeed` / analytics trong `KOA_ECOSYSTEM.md`.
 - 20/11/2026: KOA-T47 — bộ kiểm accessibility Koa (`ASCNDUITests/KoaAccessibilityAuditTests.swift`) nay ĐỎ khi một màn vượt mốc theo loại (`KoaA11yBaseline.swift`; loại không ghi = 0), thay cho "chỉ ghi log" của đợt 2a. Tương phản / Dynamic Type / chữ bị cắt dao động giữa các lượt CI cùng bản build (Phòng thay đồ 1 rồi 19 mục Dynamic Type; chữ "Quests 0/5" của phòng theo ánh sáng ngày / đêm) nên ba loại này ~~được dư max(2, 50%)~~ chỉ ghi, không chặn (dư vẫn đỏ ngẫu nhiên: Hành trình 7 → 14 mục Dynamic Type); vùng chạm, nhãn, trait, phát hiện phần tử so đúng mốc. Thêm 5 màn: phòng Koa, thẻ nhiệm vụ của phòng, Phòng thay đồ, màn nghỉ giữa set, Koa Coach (10 màn). Sửa luôn lỗi bộ kiểm tìm ra: nút "Tap to skip" của cảnh Koa chỉ nhận chạm ở nét chữ (66×15 → khung 44); nút "Edit" của màn nghỉ Koa (28×18 → 44); phần buổi tập nằm dưới màn nghỉ Koa ẩn với VoiceOver (thẻ nghỉ cũ bên dưới có nút −15 / tạm dừng / Bỏ qua 8–27 pt chạm được qua VoiceOver). Còn nợ ghi trong mốc: tương phản và Dynamic Type ở mọi màn (số lớn nhất: màn nghỉ 25 / 14, Phòng thay đồ 9 / 13), chữ Coach cỡ cố định, tiêu đề / danh sách buổi tập bên dưới màn nghỉ vẫn còn trong cây trợ năng (thử `.isModal` không đổi kết quả bộ kiểm, đã bỏ). Job `a11y` vẫn chỉ chạy khi PR có nhãn `e2e`/`a11y` (lịch đêm đọc workflow ở `main`) — không phải required check. **NOT RUN:** VoiceOver thật trên màn nghỉ.
 - 20/11/2026: deploy production 2 migration KOA-T54 SQL (`wallet_claimed_keys`, `community_challenge_ceiling`) theo duyệt của Kiệt; xem mục 4.
 - 20/11/2026: KOA-T48 (một phần) — vòng đời hiệu ứng Koa:

@@ -145,6 +145,6 @@ public enum KoaScene {
 
   /// `NODES` (đã phủ tủ đồ vẽ lại, trừ khi `rn`).
   public static var nodes: [Node] { payload.nodes }
-  /// `KEYFRAMES` — tủ đồ không thêm khung nào.
+  /// `KEYFRAMES` — tủ đồ thêm đúng một khung (`koaPantTongue`, lưỡi thè khi thở dốc; KOA-T60 kiểm bằng test).
   public static var keyframes: [String: Track] { payload.keyframes }
 }
