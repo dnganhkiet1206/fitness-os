@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ascnd.app/schemas/demo3d/demo3d_demo.schema.json",
+  "title": "Lõi một bài 3D (tên, tệp, máy quay, cơ)",
+  "type": "object",
+  "required": [
+    "schema",
+    "id",
+    "title",
+    "family_label",
+    "aliases",
+    "usdz",
+    "poster",
+    "duration_s",
+    "camera",
+    "legend",
+    "roles",
+    "modules"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "family_label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "usdz": {
+      "type": "string",
+      "minLength": 1
+    },
+    "loop": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "poster": {
+      "type": "string",
+      "minLength": 1
+    },
+    "duration_s": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "camera": {
+      "type": "object",
+      "properties": {
+        "position": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "legend": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "hex",
+          "name_key",
+          "role_key"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "hex": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "name_key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role_key": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "roles": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "primary": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          }
+        },
+        "secondary": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          }
+        },
+        "stabilizing": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          }
+        }
+      }
+    },
+    "focus_prefix": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "motion": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "full_prefix": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "review": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "date",
+        "checked",
+        "remaining"
+      ],
+      "properties": {
+        "date": {
+          "type": "string",
+          "minLength": 1
+        },
+        "checked": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "remaining": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "modules": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Khối nội dung tách riêng của bài; thiếu khối nào thì tính năng ấy ẩn.",
+      "properties": {
+        "tips": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "tempo": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "mistakes": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        }
+      }
+    }
+  }
+}

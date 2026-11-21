@@ -890,6 +890,15 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
   - Vòng số ngày của dải tuần dùng chung (`WeekDayStrip`, cả Dinh dưỡng / Nhật ký) giãn không trần (~74 pt × 7 > màn hình) — nay trần 44 pt, số tự thu nhỏ.
   - Hàng chú giải bốn dấu ép một dòng — nay `ViewThatFits`: một hàng khi vừa, lưới 2×2 khi chữ to.
   - Cỡ thường không đổi. Đã xem AX3 trên simulator: Tập luyện và Dinh dưỡng vừa màn hình.
+- 20/11/2026: Nội dung chế độ hướng dẫn 3D thành khối độc lập (Kiệt):
+  - Mỗi bài: `<bài>_demo.json` (lõi) + `<bài>_tips.json` / `_tempo.json` / `_mistakes.json` + `demo3d_index.json` (mã băm từng tệp).
+  - Chữ mẹo / lỗi sai (57 khoá) chuyển từ `Localizable.xcstrings` sang `content/*.json` của từng bài trong Motion Lab, đi cùng khối en/es/vi.
+  - Hợp đồng JSON Schema (`artifacts/exercise-visual-system/schemas/`), kiểm bằng `jsonschema` ở job Motion Kit.
+  - Cổng `demo3d-content.mjs` + `export_app_demos.py --check` trong cổng chung.
+  - App bỏ qua khối có `schema` mới hơn (chuẩn bị gửi nội dung mới cho app cũ).
+  - Mã băm chuẩn bị cho tải theo nhu cầu (P9, **vẫn hoãn**).
+  - **Còn dính render:** poster `<bài>_poster.jpg` (đổi phòng / nhân vật thì poster lệch) — việc tiếp theo.
+  - **NOT RUN:** xem bằng tiếng Anh / Tây Ban Nha trên simulator (đã xem tiếng Việt; chọn ngôn ngữ có test).
 - 20/11/2026: KOA-T60 (phần còn lại, một phần) — `KoaSeamsTests`:
   - Blob cảnh Koa đọc được, còn đủ bộ phận chính, mọi hoạt ảnh trỏ tới khung có thật với kiểu dịu bộ vẽ biết.
   - Tủ đồ giữ đủ khung của RN và chỉ thêm `koaPantTongue`.
