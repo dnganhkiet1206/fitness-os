@@ -9,7 +9,7 @@ import { recoveryMeasured } from "../_shared/readiness.ts";
 import { exerciseProgress } from "../_shared/progress.ts";
 import { asleepMinutes } from "../_shared/sleep.ts";
 import { readWaterUnit, showWater, type WaterUnit, waterRule } from "../_shared/water.ts";
-import { allergyRule, buildProfileContext, streakDays, waterByDay } from "./context.ts";
+import { allergyRule, buildProfileContext, readinessComponents, streakDays, todayPlan, waterByDay } from "./context.ts";
 
 /** Output ceiling. Unbounded generation is an unbounded bill.
     21/10: 1024 cut answers mid-sentence — the default model (gemini-3-flash)
@@ -242,7 +242,10 @@ serve(async (req) => {
       d.setUTCDate(d.getUTCDate() - 31);
       return d.toISOString().split("T")[0];
     })();
-    const [profileRes, dailyLogsRes, sleepRes, workoutsRes, bioRes, weightRes, memoryRes, liftsRes, streakRes, waterRes] = await Promise.all([
+    const [
+      profileRes, dailyLogsRes, sleepRes, workoutsRes, bioRes, weightRes, memoryRes, liftsRes, streakRes, waterRes,
+      routineRes, overrideRes, templatesRes,
+    ] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
       supabase.from("daily_logs").select("*").eq("user_id", userId).gte("date", weekAgo).order("date", { ascending: false }).limit(7),
       supabase.from("sleep_logs").select("*").eq("user_id", userId).gte("waketime", `${weekAgo}T00:00:00Z`).order("waketime", { ascending: false }).limit(7),
@@ -262,6 +265,10 @@ serve(async (req) => {
       supabase.from("workout_sessions").select("date_time, sets").eq("user_id", userId).gte("date_time", eightWeeksAgo).order("date_time", { ascending: false }).limit(60),
       supabase.from("daily_logs").select("date, kcal, workout_count, sleep_duration_min, supplement_taken").eq("user_id", userId).gte("date", monthAgo).order("date", { ascending: false }).limit(32),
       supabase.from("water_logs").select("date, amount_ml").eq("user_id", userId).gte("date", weekAgo).limit(400),
+      /* KOA-T33 (phần sau): buổi dự kiến hôm nay — lịch mẫu, đổi lịch của riêng hôm nay, các template. */
+      supabase.from("routine_days").select("day_of_week, template_id, is_rest, is_deload").eq("user_id", userId).limit(14),
+      supabase.from("plan_day_overrides").select("date, template_id, is_rest").eq("user_id", userId).eq("date", today).maybeSingle(),
+      supabase.from("workout_templates").select("id, name, exercises").eq("user_id", userId).limit(100),
     ]);
 
     const profile = profileRes.data;
@@ -286,6 +293,18 @@ serve(async (req) => {
         null when fewer than 2 weigh-ins.
     */
     const streak_days = streakDays(streakRes.data ?? dailyLogs, today);
+    /* Đọc lịch hỏng thì null (không biết), không phải "chưa lên lịch". */
+    const today_plan = routineRes.error || templatesRes.error || overrideRes.error
+      ? null
+      : todayPlan(
+        today,
+        routineRes.data ?? [],
+        overrideRes.data ?? null,
+        templatesRes.data ?? [],
+        workouts.some((w) => localDay(w.date_time) === today),
+      );
+    const todayLog = (dailyLogs as Record<string, unknown>[]).find((d) => d.date === today);
+    const readiness_components_today = todayLog ? readinessComponents(todayLog.readiness_explain as string | null) : null;
     const water = waterByDay((waterRes.data ?? []) as { date: string; amount_ml: number | null }[], today);
     const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
     const avg = (vals: (number | null)[]) => {
@@ -340,6 +359,9 @@ serve(async (req) => {
       /* KOA-T33: nước hôm nay + từng ngày (ml); mục tiêu nước ở `profile.water_target_ml`. */
       water_today_ml: water.today_ml,
       water_last_7_days_ml: water.last_7_days,
+      /* KOA-T33: buổi dự kiến hôm nay (cùng luật với Hôm nay của app) và các chiều của điểm readiness hôm nay. */
+      today_plan,
+      readiness_components_today,
       weight_trend_kg_14d: weight_trend_kg,
       /* Khối profile (dị ứng / món không thích / chế độ ăn / nước / chất xơ
          ở trong đó — KOA-T02). Tách ra `context.ts` để test được. */
@@ -423,6 +445,8 @@ READING THE DATA:
 - exercise_progress (last 8 weeks) is each exercise's TOP SET in its latest session ("last") versus the session before ("previous"): kg × reps, change_kg, change_reps; bodyweight exercises compare reps. For progress / progressive overload / "how much did I lift" questions, answer PER EXERCISE from this — e.g. "Bench press: 60 kg × 8 → 62.5 kg × 8 (+2.5 kg)" — and say which went up, held, or dropped. volume_load is secondary context only; a session whose volume_load is 0 was bodyweight or time-based, never "no weight logged". previous = null means the first time logged. Write weights in profile.weight_unit: when it is "lb", convert (kg × 2.2046, round to 0.5 lb).
 - Write numbers the way the app does: 2,508 kcal, 121.7 kg.
 - recovery_measured says whether that day's readiness rested on a recovery reading (HRV, resting heart rate or sleep). When it is false, readiness and readiness_status are null for that day: training load alone is not a readiness score and the app shows "not enough data" — never state a readiness number or state for it.
+- today_plan is today's planned session exactly as the app's Today screen shows it: status "todo" (planned, not done yet), "done" (already trained today), "rest" (planned rest day) or "unplanned" (nothing scheduled); name and exercises (sets × reps × kg) when there is a session. For "what do I train today" answer from it; never invent a session. today_plan null means the plan could not be read.
+- readiness_components_today breaks today's readiness into its dimensions, each 0-100 (higher is better): hrv, rhr (resting heart rate), sleep, load (training load). Use it to explain WHY today's readiness is high or low (name the lowest dimensions in plain words); a missing dimension was not measured. Only explain recovery from hrv, rhr or sleep, never from load.
 
 IMPORTANT PRINCIPLES:
 - NEVER predict, diagnose or detect any health condition or illness
@@ -453,6 +477,8 @@ CÁCH ĐỌC DỮ LIỆU:
 - exercise_progress (8 tuần gần nhất) là SET NẶNG NHẤT của từng bài ở buổi gần nhất ("last") so với buổi trước đó ("previous"): kg × reps, change_kg, change_reps; bài không tạ thì so reps. Câu hỏi về tiến bộ / progressive overload / "nâng được bao nhiêu" thì trả lời THEO TỪNG BÀI từ đây — ví dụ "Bench press: 60 kg × 8 → 62,5 kg × 8 (+2,5 kg)" — và nói bài nào tăng, giữ hay giảm. volume_load chỉ là thông tin phụ; buổi có volume_load bằng 0 là bài không tạ hoặc tính theo thời gian, không bao giờ là "chưa ghi tạ". previous = null nghĩa là lần đầu ghi bài đó. Viết mức tạ theo profile.weight_unit: nếu là "lb" thì đổi (kg × 2,2046, làm tròn 0,5 lb).
 - Viết số theo kiểu app: dấu chấm ngăn hàng nghìn (2.508 kcal), dấu phẩy thập phân (121,7 kg).
 - recovery_measured cho biết điểm hôm đó có dựa trên một phép đo phục hồi (HRV, nhịp tim nghỉ hoặc giấc ngủ) hay không. Khi nó là false, điểm được dựng từ mỗi tải tập: con số vẫn thật, nhưng app chưa đo được gì về việc người dùng phục hồi ra sao.
+- today_plan là buổi tập dự kiến hôm nay, đúng như màn Hôm nay của app: status "todo" (có buổi, chưa tập), "done" (hôm nay đã tập), "rest" (ngày nghỉ theo lịch) hoặc "unplanned" (chưa lên lịch); có buổi thì kèm name và exercises (set × rep × kg). Câu hỏi "hôm nay tập gì" thì trả lời từ đây; không bao giờ bịa ra buổi tập. today_plan null nghĩa là không đọc được lịch.
+- readiness_components_today tách điểm readiness hôm nay thành từng chiều, mỗi chiều 0-100 (cao là tốt): hrv, rhr (nhịp tim nghỉ), sleep (giấc ngủ), load (tải tập). Dùng để giải thích VÌ SAO điểm hôm nay cao hay thấp (nêu các chiều thấp nhất bằng lời thường); chiều nào không có là chưa đo. Chỉ nói về phục hồi dựa trên hrv, rhr hoặc sleep, không bao giờ dựa trên load.
 
 NGUYÊN TẮC QUAN TRỌNG:
 - KHÔNG BAO GIỜ dự đoán, chẩn đoán hay phát hiện bất kỳ tình trạng sức khoẻ, bệnh lý nào
