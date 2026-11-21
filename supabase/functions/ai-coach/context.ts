@@ -178,20 +178,3 @@ export function todayPlan(
   return { status, name: template?.name ?? null, is_deload: day?.is_deload === true, exercises };
 }
 
-/**
- * Các chiều của điểm readiness hôm nay (`daily_logs.readiness_explain`, dạng `hrv:62|rhr:70|sleep:80|load:45`, mỗi
- * chiều 0–100): coach giải thích được VÌ SAO điểm cao / thấp (KOA-T33). Chiều không đọc được thì bỏ; không có chiều
- * nào thì null — giống `ReadinessCard.factors` của app.
- */
-export function readinessComponents(explain: string | null | undefined): Record<string, number> | null {
-  if (!explain) return null;
-  const out: Record<string, number> = {};
-  for (const part of explain.split("|")) {
-    const [key, raw] = part.split(":");
-    const score = Number(raw);
-    if (["hrv", "rhr", "sleep", "load"].includes(key) && raw !== undefined && raw.trim() !== "" && Number.isFinite(score)) {
-      out[key] = Math.round(score);
-    }
-  }
-  return Object.keys(out).length ? out : null;
-}

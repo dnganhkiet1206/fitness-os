@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.168.0/testing/asserts.ts";
-import { allergyRule, buildProfileContext, mondayIndex, readinessComponents, streakDays, todayPlan, waterByDay } from "./context.ts";
+import { allergyRule, buildProfileContext, mondayIndex, streakDays, todayPlan, waterByDay } from "./context.ts";
 
 Deno.test("profile block carries the five safety fields (KOA-T02)", () => {
   const block = buildProfileContext({
@@ -127,10 +127,3 @@ Deno.test("a day override wins over the routine; rest wins over a template", () 
   assertEquals(deleted.status, "unplanned", "template đã xoá");
 });
 
-Deno.test("readiness components parse the stored explain (KOA-T33)", () => {
-  assertEquals(readinessComponents("hrv:62|rhr:70.4|sleep:80|load:45"), { hrv: 62, rhr: 70, sleep: 80, load: 45 });
-  assertEquals(readinessComponents("load:45"), { load: 45 });
-  assertEquals(readinessComponents("legacy prose text"), null);
-  assertEquals(readinessComponents("hrv:|sleep:x"), null);
-  assertEquals(readinessComponents(null), null);
-});

@@ -9,7 +9,7 @@ import { recoveryMeasured } from "../_shared/readiness.ts";
 import { exerciseProgress } from "../_shared/progress.ts";
 import { asleepMinutes } from "../_shared/sleep.ts";
 import { readWaterUnit, showWater, type WaterUnit, waterRule } from "../_shared/water.ts";
-import { allergyRule, buildProfileContext, readinessComponents, streakDays, todayPlan, waterByDay } from "./context.ts";
+import { allergyRule, buildProfileContext, streakDays, todayPlan, waterByDay } from "./context.ts";
 
 /** Output ceiling. Unbounded generation is an unbounded bill.
     21/10: 1024 cut answers mid-sentence — the default model (gemini-3-flash)
@@ -303,8 +303,6 @@ serve(async (req) => {
         templatesRes.data ?? [],
         workouts.some((w) => localDay(w.date_time) === today),
       );
-    const todayLog = (dailyLogs as Record<string, unknown>[]).find((d) => d.date === today);
-    const readiness_components_today = todayLog ? readinessComponents(todayLog.readiness_explain as string | null) : null;
     const water = waterByDay((waterRes.data ?? []) as { date: string; amount_ml: number | null }[], today);
     const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
     const avg = (vals: (number | null)[]) => {
@@ -359,9 +357,9 @@ serve(async (req) => {
       /* KOA-T33: nước hôm nay + từng ngày (ml); mục tiêu nước ở `profile.water_target_ml`. */
       water_today_ml: water.today_ml,
       water_last_7_days_ml: water.last_7_days,
-      /* KOA-T33: buổi dự kiến hôm nay (cùng luật với Hôm nay của app) và các chiều của điểm readiness hôm nay. */
+      /* KOA-T33: buổi dự kiến hôm nay (cùng luật với Hôm nay của app). Các chiều của readiness KHÔNG gửi
+         (`tools/readiness-confidence.mjs`): số đo gốc — HRV, nhịp tim nghỉ, giấc ngủ, tải tập — đã có trong payload. */
       today_plan,
-      readiness_components_today,
       weight_trend_kg_14d: weight_trend_kg,
       /* Khối profile (dị ứng / món không thích / chế độ ăn / nước / chất xơ
          ở trong đó — KOA-T02). Tách ra `context.ts` để test được. */
@@ -446,7 +444,6 @@ READING THE DATA:
 - Write numbers the way the app does: 2,508 kcal, 121.7 kg.
 - recovery_measured says whether that day's readiness rested on a recovery reading (HRV, resting heart rate or sleep). When it is false, readiness and readiness_status are null for that day: training load alone is not a readiness score and the app shows "not enough data" — never state a readiness number or state for it.
 - today_plan is today's planned session exactly as the app's Today screen shows it: status "todo" (planned, not done yet), "done" (already trained today), "rest" (planned rest day) or "unplanned" (nothing scheduled); name and exercises (sets × reps × kg) when there is a session. For "what do I train today" answer from it; never invent a session. today_plan null means the plan could not be read.
-- readiness_components_today breaks today's readiness into its dimensions, each 0-100 (higher is better): hrv, rhr (resting heart rate), sleep, load (training load). Use it to explain WHY today's readiness is high or low (name the lowest dimensions in plain words); a missing dimension was not measured. Only explain recovery from hrv, rhr or sleep, never from load.
 
 IMPORTANT PRINCIPLES:
 - NEVER predict, diagnose or detect any health condition or illness
@@ -478,7 +475,6 @@ CÁCH ĐỌC DỮ LIỆU:
 - Viết số theo kiểu app: dấu chấm ngăn hàng nghìn (2.508 kcal), dấu phẩy thập phân (121,7 kg).
 - recovery_measured cho biết điểm hôm đó có dựa trên một phép đo phục hồi (HRV, nhịp tim nghỉ hoặc giấc ngủ) hay không. Khi nó là false, điểm được dựng từ mỗi tải tập: con số vẫn thật, nhưng app chưa đo được gì về việc người dùng phục hồi ra sao.
 - today_plan là buổi tập dự kiến hôm nay, đúng như màn Hôm nay của app: status "todo" (có buổi, chưa tập), "done" (hôm nay đã tập), "rest" (ngày nghỉ theo lịch) hoặc "unplanned" (chưa lên lịch); có buổi thì kèm name và exercises (set × rep × kg). Câu hỏi "hôm nay tập gì" thì trả lời từ đây; không bao giờ bịa ra buổi tập. today_plan null nghĩa là không đọc được lịch.
-- readiness_components_today tách điểm readiness hôm nay thành từng chiều, mỗi chiều 0-100 (cao là tốt): hrv, rhr (nhịp tim nghỉ), sleep (giấc ngủ), load (tải tập). Dùng để giải thích VÌ SAO điểm hôm nay cao hay thấp (nêu các chiều thấp nhất bằng lời thường); chiều nào không có là chưa đo. Chỉ nói về phục hồi dựa trên hrv, rhr hoặc sleep, không bao giờ dựa trên load.
 
 NGUYÊN TẮC QUAN TRỌNG:
 - KHÔNG BAO GIỜ dự đoán, chẩn đoán hay phát hiện bất kỳ tình trạng sức khoẻ, bệnh lý nào
