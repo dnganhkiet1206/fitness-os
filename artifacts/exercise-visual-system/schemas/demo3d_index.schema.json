@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ascnd.app/schemas/demo3d/demo3d_index.schema.json",
+  "title": "Mục lục nội dung 3D trong app",
+  "type": "object",
+  "required": [
+    "schema",
+    "demos",
+    "files"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": 2
+    },
+    "demos": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9_]+$"
+      },
+      "uniqueItems": true,
+      "description": "Thứ tự hiện trong Lab"
+    },
+    "files": {
+      "type": "object",
+      "description": "Tên tệp (không đuôi .json) -> sha256 16 ký tự đầu của nội dung; để sau này tải bù theo nhu cầu (P9) chỉ lấy tệp đổi.",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{16}$"
+      }
+    }
+  }
+}

@@ -892,6 +892,15 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
   - Màn buổi tập: hàng nghỉ · RPE · khởi động xếp dọc ở cỡ trợ năng (trước: nút "Khởi động" bị bóp còn một chữ cái mỗi dòng ở AX3).
   - **Chưa làm:** quyết định giữ nền tối cố định của màn nghỉ (cần Kiệt).
   - **Thấy khi soát, chưa sửa:** ở AX3 cả trang tab Tập luyện tràn ngang (mép trái tiêu đề, dải ngày, danh sách bài bị cắt).
+- 20/11/2026: Nội dung chế độ hướng dẫn 3D thành khối độc lập (Kiệt):
+  - Mỗi bài: `<bài>_demo.json` (lõi) + `<bài>_tips.json` / `_tempo.json` / `_mistakes.json` + `demo3d_index.json` (mã băm từng tệp).
+  - Chữ mẹo / lỗi sai (57 khoá) chuyển từ `Localizable.xcstrings` sang `content/*.json` của từng bài trong Motion Lab, đi cùng khối en/es/vi.
+  - Hợp đồng JSON Schema (`artifacts/exercise-visual-system/schemas/`), kiểm bằng `jsonschema` ở job Motion Kit.
+  - Cổng `demo3d-content.mjs` + `export_app_demos.py --check` trong cổng chung.
+  - App bỏ qua khối có `schema` mới hơn (chuẩn bị gửi nội dung mới cho app cũ).
+  - Mã băm chuẩn bị cho tải theo nhu cầu (P9, **vẫn hoãn**).
+  - **Còn dính render:** poster `<bài>_poster.jpg` (đổi phòng / nhân vật thì poster lệch) — việc tiếp theo.
+  - **NOT RUN:** xem bằng tiếng Anh / Tây Ban Nha trên simulator (đã xem tiếng Việt; chọn ngôn ngữ có test).
 - 20/11/2026: KOA-T60 (phần còn lại, một phần) — `KoaSeamsTests`:
   - Blob cảnh Koa đọc được, còn đủ bộ phận chính, mọi hoạt ảnh trỏ tới khung có thật với kiểu dịu bộ vẽ biết.
   - Tủ đồ giữ đủ khung của RN và chỉ thêm `koaPantTongue`.

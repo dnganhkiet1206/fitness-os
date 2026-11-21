@@ -65,6 +65,9 @@ Dạng khối (từ 16–17/11, chi tiết ở `MODULAR_3D_PLAN.md`):
 
 - Xuất chuyển động: `export_usdz.py --split` → `<id>_motion.usdz` + `<id>_equipment.json`. Chép vào `apps/ios/ASCND/Resources/ExerciseDemos/` cùng `_poster.jpg`.
 - Dữ liệu bài (tên, góc máy, vai trò cơ, ghi chú Lab): sửa `exercise.json` rồi chạy `python3 pipeline/export_app_demos.py`. Không sửa Swift.
+  - Từ 20/11 mỗi bài ra **nhiều tệp độc lập**: `<id>_demo.json` (lõi) + khối `<id>_tips.json` / `<id>_tempo.json` / `<id>_mistakes.json` (chỉ khi bài có) + `demo3d_index.json` (thứ tự + mã băm từng tệp). Sửa một mẹo chỉ đổi `<id>_tips.json`.
+  - Hình dạng từng tệp: `schemas/demo3d_*.schema.json` (JSON Schema). Bộ xuất tự kiểm khi có `jsonschema` (`pip install jsonschema` trong môi trường riêng).
+  - Kiểm trước khi đẩy: `python3 pipeline/export_app_demos.py --check` và `node apps/ios/tools/demo3d-content.mjs` (cả hai nằm trong cổng CI).
 - Bản đồ cơ đổi thì chạy `python3 pipeline/export_muscle_shader_maps.py`.
 - **Cuối cùng, sau mọi lần xuất vào app:** `Blender -b --factory-startup --python pipeline/slim_app_usdz.py`. Lệnh này bỏ texture thừa, cho phòng dùng chung hình học, bỏ pháp tuyến của phòng, lọc khung chuyển động (lệch tối đa 0,25°). Chạy lại nhiều lần không sao: file đã rút gọn thì bỏ qua.
 - Lab: ghi chú "chờ Kiệt xem lại" trong `exercise.json` (`app_demo`).
@@ -86,25 +89,24 @@ Dạng khối (từ 16–17/11, chi tiết ở `MODULAR_3D_PLAN.md`):
 - Kiệt góp ý thì quay lại bước 1 hoặc bước 4. Ghi góp ý vào `agent_review.owner_feedback`, thêm dòng vào `MOTION_KIT_LESSONS.md`.
 - Kiệt duyệt thì:
   - `exercise.json`: đặt `agent_review.status = "owner_approved_motion"` và `owner_approval = {motion, by, date}`;
-  - `ExerciseDemo3D.swift`: tạo `Review(...)` (dấu xanh), trong `checked` có "Kiệt duyệt động tác <ngày>", `remaining` ghi lỗi còn lại.
+  - `exercise.json` → `app_demo.review` (dấu xanh trong Lab): `checked` có "Kiệt duyệt động tác <ngày>", `remaining` ghi lỗi còn lại; chạy `export_app_demos.py`.
 
 ## 9. Mẹo trong trình xem (chỉ làm sau khi Kiệt duyệt động tác)
 
 - **Số mẹo:** 4–5, rút từ bước 1–2. Mỗi mẹo là một điều người tập phải làm đúng (ghế, vai, khuỷu, độ sâu, thân…).
-- **Chuỗi chữ:** trong `Localizable.xcstrings`.
-  - Khoá: `eg.demo3d.tip.<bài>_<ý>` và các hậu tố `.body`, `.how1`, `.how2`, `.why`, `.avoid`.
-  - Đủ **en, es, vi**. Id có tiền tố theo bài để không trùng với bài khác.
-- **Điểm neo:** chạy
-  `Blender -b <thư mục>/<id>_master.blend -P pipeline/dump_anchor_points.py -- 0`, lấy toạ độ Y-up `(x, z, -y)`,
-  rồi đẩy ra ngoài bề mặt da.
-  - Chỉ đặt ở vùng **không chuyển động** khi tập.
+- **Mã mẹo** (`id`): chữ thường + `_`, có tiền tố theo bài (`press_bench`…), không trùng chữ khung của app (`how`, `why`, `unverified`).
+- **Điểm neo:** trong `exercise.json` → `app_demo.tips` (`id`, `anchor`). Chạy `pipeline/tip_anchors.py` để thêm `joint` + `offset` (điểm đi theo khớp khi động tác chạy).
+  - Lấy toạ độ: `Blender -b <thư mục>/<id>_master.blend -P pipeline/dump_anchor_points.py -- 0`, đổi sang Y-up `(x, z, -y)`, đẩy ra ngoài da.
   - Không đặt ở **phần dưới màn**, vì bảng cơ che mất.
-- Thêm danh sách vào `ExerciseTips` và vào `tips(for:)` theo `PersonalRecords.exerciseKey`.
+- **Chữ** (từ 20/11, không còn trong `Localizable.xcstrings`): `<thư mục bài>/content/tips.json`, mỗi mẹo đủ **en, es, vi**:
+  `{"<id>": {"vi": {"title", "body", "how": [bước 1, bước 2], "why", "avoid"}, "en": {…}, "es": {…}}}`. Số bước như nhau ở mọi ngôn ngữ.
+- **Clip lỗi sai:** thư mục bài riêng có `mistake_demo` (`of`, `id`, `fault_joints`) + `content/mistake.json` (`title`, `body`, `fix` × en/es/vi).
+- Chạy `python3 pipeline/export_app_demos.py`. Cổng `apps/ios/tools/demo3d-content.mjs` đỏ khi thiếu ngôn ngữ, chữ rỗng, mã trùng, thiếu tệp chuyển động.
 - Kiểm trên simulator:
   - bấm nút bóng đèn: trên người hiện các chấm có số, mỗi mẹo một chấm (Kiệt 17/11, không còn nhãn chữ và dây nối);
   - mỗi chấm phải nằm đúng vùng trên người;
   - không có chấm nào chồng nhau;
-  - chạm một chấm và đọc đủ Cách làm / Vì sao / Tránh trong thẻ ở đáy màn.
+  - chạm một chấm và đọc đủ Cách làm / Vì sao / Tránh trong thẻ ở đáy màn, ở cả tiếng Việt và tiếng Anh.
 
 ## 10. PR và báo cáo
 
