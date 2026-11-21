@@ -886,6 +886,12 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 20/11/2026: KOA-T54 phần SQL — hai migration (ví chỉ trả khoá cần hỏi; trần cộng đồng không tính xu khám phá), chờ duyệt deploy; xem mục 4.
 - 20/11/2026: KOA-T40 phần còn lại — con số trong câu của Koa (giờ ngủ, % calo) dựng một chỗ (`KoaLineNumbers`) cho Hôm nay và phòng; Hôm nay không còn nói "ngủ 0 giờ 0 phút" khi chưa có giấc ngủ. Khoá câu hai nơi vẫn riêng (`koa.say.*` / `koa.talk.*`) có chủ đích.
 - 20/11/2026: KOA-T41 — test `EconomyContractTests` đọc thẳng migration (`reward_prices`, `shop_prices`, lần ghi sau thắng) và so với hằng Swift (nhiệm vụ, chuỗi, thử thách, khám phá, tăng tải, bộ sưu tập, giá từng món); phép thử ngược đổi một giá thì đỏ. App vẫn dùng hằng Swift để hiện số (không đọc bảng giá lúc chạy) — test giữ hai bên khớp.
+- 20/11/2026: KOA-T43 (phần Dynamic Type) — màn nghỉ Koa:
+  - Mọi chữ theo `@ScaledMetric`, cỡ thường giữ đúng cỡ cũ; khung tiêu đề / thẻ số giãn thay vì cao cố định.
+  - Cả lớp chữ có trần `accessibility2`; đồng hồ trần 48, chữ nút trần 22–24, dòng "set tiếp" một dòng thu nhỏ — to hơn thì chữ / nút đè lên Koa giữa sân khấu (soát AX3 trên simulator).
+  - Màn buổi tập: hàng nghỉ · RPE · khởi động xếp dọc ở cỡ trợ năng (trước: nút "Khởi động" bị bóp còn một chữ cái mỗi dòng ở AX3).
+  - **Chưa làm:** quyết định giữ nền tối cố định của màn nghỉ (cần Kiệt).
+  - **Thấy khi soát, chưa sửa:** ở AX3 cả trang tab Tập luyện tràn ngang (mép trái tiêu đề, dải ngày, danh sách bài bị cắt).
 - 20/11/2026: Cỡ chữ trợ năng (AX3): tab Tập luyện tràn ngang cả trang, mép trái tiêu đề / dải ngày / thẻ hôm nay bị cắt — hai nguyên nhân:
   - Vòng số ngày của dải tuần dùng chung (`WeekDayStrip`, cả Dinh dưỡng / Nhật ký) giãn không trần (~74 pt × 7 > màn hình) — nay trần 44 pt, số tự thu nhỏ.
   - Hàng chú giải bốn dấu ép một dòng — nay `ViewThatFits`: một hàng khi vừa, lưới 2×2 khi chữ to.

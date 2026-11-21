@@ -91,6 +91,21 @@ struct KoaRestScreen: View {
   @State private var start = Date.now
   @State private var heard = Heard()
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  // KOA-T43: chữ theo Dynamic Type, cỡ mặc định giữ đúng cỡ cũ (hình ở cỡ thường không đổi). Cả lớp chữ
+  // có trần `accessibility2` (`maxType`): to hơn nữa thì chữ đè lên Koa giữa sân khấu.
+  @ScaledMetric(relativeTo: .largeTitle) private var titleSize = 40
+  @ScaledMetric(relativeTo: .body) private var subSize = 17
+  @ScaledMetric(relativeTo: .subheadline) private var justDoneSize = 15
+  @ScaledMetric(relativeTo: .footnote) private var recordSize = 14
+  @ScaledMetric(relativeTo: .title3) private var cardValueSize = 21
+  @ScaledMetric(relativeTo: .caption) private var cardLabelSize = 12
+  /// Đồng hồ: số lớn đã đọc được ở mọi cỡ (ngoại lệ "số lớn" của DS) — chỉ giãn theo `.title`, có
+  /// `minimumScaleFactor` để vừa giữa hai nút.
+  @ScaledMetric(relativeTo: .title) private var clockSize = 40
+  @ScaledMetric(relativeTo: .body) private var buttonSize = 16
+  @ScaledMetric(relativeTo: .caption2) private var nextLineSize = 11
+  @ScaledMetric(relativeTo: .subheadline) private var editSize = 15
+  private static let maxType = DynamicTypeSize.accessibility2
   /// Ra nền thì đồng hồ cảnh dừng (KOA-T11).
   @Environment(\.scenePhase) private var scenePhase
 
@@ -164,6 +179,7 @@ struct KoaRestScreen: View {
             Spacer(minLength: 0)
             panel(left: left, now: now, b: b)
           }
+          .dynamicTypeSize(...Self.maxType)
           .padding(.horizontal, DS.Spacing.lg)
           .padding(.bottom, DS.Spacing.sm)
         }
@@ -197,7 +213,7 @@ struct KoaRestScreen: View {
         // Khung 44 nằm TRONG nhãn + `contentShape`: khung đặt ngoài nút thì chỉ nét chữ nhận chạm (KOA-T47, 28×18).
         Button(action: onEditJustDone) {
           Text(String(localized: "ws.edit"))
-            .font(.system(size: 15, weight: .semibold))
+            .font(.system(size: editSize, weight: .semibold))
             .foregroundStyle(Self.rose)
             .frame(minWidth: 44, minHeight: 44)
             .contentShape(Rectangle())
@@ -214,28 +230,32 @@ struct KoaRestScreen: View {
     return VStack(spacing: 6) {
       if let big, let t = big.title {
         Text(verbatim: KoaShowStage.title(big) ?? t)
-          .font(.system(size: 40, weight: .heavy, design: .rounded))
+          .font(.system(size: titleSize, weight: .heavy, design: .rounded))
           .foregroundStyle(.white)
+          .lineLimit(1).minimumScaleFactor(0.6)
           .shadow(color: .black.opacity(0.45), radius: 10, y: 4)
           .scaleEffect(reduceMotion ? 1 : 1 + 0.3 * max(0, 1 - since / 220))
           .opacity(min(1, since / 120) * min(1, (big.to - big.from - since) / 160))
         if big.titleKey == .setDone, let sub = subtitle ?? justDone {
-          Text(verbatim: sub).font(.system(size: 17, weight: .medium)).foregroundStyle(.white.opacity(0.8))
+          Text(verbatim: sub).font(.system(size: subSize, weight: .medium)).foregroundStyle(.white.opacity(0.8))
+            .multilineTextAlignment(.center)
         }
       } else if let justDone {
         Text(verbatim: justDone)
-          .font(.system(size: 15, weight: .semibold).monospacedDigit())
+          .font(.system(size: justDoneSize, weight: .semibold).monospacedDigit())
           .foregroundStyle(.white.opacity(0.7))
+          .multilineTextAlignment(.center)
       }
       if let record, big == nil {
         Text(verbatim: record)
-          .font(.system(size: 14, weight: .heavy))
+          .font(.system(size: recordSize, weight: .heavy))
           .foregroundStyle(.black.opacity(0.85))
           .padding(.horizontal, 12).padding(.vertical, 6)
           .background(Capsule().fill(Self.gold))
       }
     }
-    .frame(height: 84)
+    // Cỡ thường đúng 84 như cũ; chữ to thì khung giãn thay vì cắt (KOA-T43).
+    .frame(minHeight: 84)
   }
 
   /// Thẻ số của set: hiện từ giữa mở đầu (đếm lên như cảnh xong buổi), rồi ở lại suốt quãng nghỉ để đọc.
@@ -247,17 +267,18 @@ struct KoaRestScreen: View {
         ForEach(Array(cards.enumerated()), id: \.offset) { k, c in
           VStack(spacing: 2) {
             Text(verbatim: c.value)
-              .font(.system(size: 21, weight: .bold, design: .rounded)).monospacedDigit()
+              .font(.system(size: cardValueSize, weight: .bold, design: .rounded)).monospacedDigit()
               .foregroundStyle(c.accent ? Self.orange : .white)
               .lineLimit(1).minimumScaleFactor(0.7)
-            Text(verbatim: c.label).font(.system(size: 12)).foregroundStyle(.white.opacity(0.55)).lineLimit(1)
+            Text(verbatim: c.label).font(.system(size: cardLabelSize)).foregroundStyle(.white.opacity(0.55))
+              .multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.75)
           }
           .frame(maxWidth: .infinity).padding(.vertical, 12)
           .background(RoundedRectangle(cornerRadius: 16).fill(.white.opacity(0.08)))
           .opacity(max(0, min(1, (since - Double(k) * 150) / 150)))
         }
       }
-      .frame(height: 64)
+      .frame(minHeight: 64)
     } else {
       Color.clear.frame(height: 64)
     }
@@ -274,7 +295,8 @@ struct KoaRestScreen: View {
         chip(Text(verbatim: "−15s"), String(format: String(localized: "workout.rest.adjust"), "-15")) { onAdjust(-15) }
         VStack(spacing: 4) {
           Text(verbatim: RestTimer.label(seconds: left))
-            .font(.system(size: 40, weight: .semibold, design: .rounded)).monospacedDigit()
+            // Trần 48: to hơn thì đồng hồ lấn xuống chân Koa (soát AX3 20/11).
+            .font(.system(size: min(clockSize, 48), weight: .semibold, design: .rounded)).monospacedDigit()
             .contentTransition(.numericText(countsDown: true))
             .foregroundStyle(warning ? Self.gold : .white)
             .lineLimit(1).minimumScaleFactor(0.7)
@@ -299,11 +321,14 @@ struct KoaRestScreen: View {
         Button(action: onSkip) {
           VStack(spacing: 1) {
             Text(String(localized: next == nil ? "ws.rest.skip" : "koa.rest.startNext"))
-              .font(.system(size: 16, weight: .bold))
+              .font(.system(size: min(buttonSize, 24), weight: .bold))
+              .lineLimit(1).minimumScaleFactor(0.7)
             // set tiếp theo nằm trong nút (dòng riêng đè lên chân Koa ở sân khấu kiểu xong buổi)
             if let next {
-              Text(verbatim: next).font(.system(size: 11, weight: .medium).monospacedDigit()).opacity(0.75)
-                .lineLimit(1).minimumScaleFactor(0.8)
+              // Một dòng, thu nhỏ khi chữ to: xuống dòng thì nút cao lên đẩy đồng hồ đè chân Koa (soát AX3
+              // 20/11); VoiceOver vẫn đọc đủ.
+              Text(verbatim: next).font(.system(size: min(nextLineSize, 15), weight: .medium).monospacedDigit()).opacity(0.75)
+                .lineLimit(1).minimumScaleFactor(0.6)
             }
           }
             .foregroundStyle(.white)
@@ -322,8 +347,10 @@ struct KoaRestScreen: View {
   private func chip<Label: View>(_ label: Label, _ a11y: String, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       label
-        .font(.system(size: 16, weight: .semibold).monospacedDigit())
+        // Trần 22: chữ "−15s" to hơn thì nút chiếm chỗ của đồng hồ.
+        .font(.system(size: min(buttonSize, 22), weight: .semibold).monospacedDigit())
         .foregroundStyle(.white)
+        .lineLimit(1)
         .frame(minWidth: 76, minHeight: 44)
         .background(.white.opacity(0.09), in: Capsule())
     }
