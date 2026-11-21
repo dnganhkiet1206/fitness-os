@@ -107,7 +107,10 @@ Lợi thêm: 8 bài hiện chiếm 47 MB. Sang dạng khối thì còn 1 nhân v
   | Nhịp | `tempo.json` | Không |
   | Thêm ngôn ngữ thứ tư | chữ trong `content/*.json` + `LANGS` của bộ xuất / cổng | Không |
 
-- Còn dính với render: **poster** `<bài>_poster.jpg` (ảnh tĩnh dựng sẵn có phòng + nhân vật) — đổi phòng / nhân vật thì poster cũ lệch. Hướng tách: app chụp poster từ trình xem lúc chạy rồi lưu đệm (việc tiếp theo, cần kiểm khả thi).
+- Còn dính với render: **poster** `<bài>_poster.jpg` (ảnh tĩnh dựng sẵn có phòng + nhân vật) — đổi phòng / nhân vật thì poster cũ lệch.
+  - Tìm hiểu 20/11: `RealityRenderer` (iOS 18+, đúng mức tối thiểu của app) vẽ cảnh RealityKit ra texture ngoài màn hình (`CameraOutput.Descriptor.singleProjection(colorTexture:)` → `updateAndRender`, đọc texture về ảnh). Trình xem dùng `RealityView`, không có API chụp trực tiếp; `ARView.snapshot` chỉ chụp view đang hiện. Làm được, nhưng phải tách phần dựng cảnh của trình xem (phòng theo manifest, nhân vật + quần, ổ cắm dụng cụ, vật liệu tô cơ GPU, đèn) ra để dựng lại ngoài màn hình; chưa có mẫu iOS chính thức (chỉ bài diễn đàn) → làm thử riêng trước khi chọn.
+  - Đường hiện có đủ dùng: `factory.py` đã có bước `poster` (một ảnh 960×540 / bài, tự động). Đổi phòng / nhân vật = chạy lại bước poster của các bài — một lệnh, không render lại chuyển động.
+  - Kết luận: chưa làm poster lúc chạy; xem lại khi số bài lên hàng chục (khi đó chạy lại poster tốn thời gian thật) hoặc khi có tải nội dung theo nhu cầu (P9). Nguồn: [RealityRenderer](https://developer.apple.com/documentation/realitykit/realityrenderer), [diễn đàn: render-to-texture](https://developer.apple.com/forums/thread/770404), [diễn đàn: chụp RealityView](https://developer.apple.com/forums/thread/759584), [diễn đàn: không có API ghi RealityKit trên iOS](https://developer.apple.com/forums/thread/831633).
 
 ## Lộ trình đề xuất
 
