@@ -192,7 +192,7 @@ struct ShopView: View {
       let k = g.size.width / StudioScene.width
       let top = Self.roomTop(spot: spot, visible: g.size.height / k)
       ZStack(alignment: .topLeading) {
-        MascotStage(level: 1, build: book.gains.rank, energy: 0.8, celebrateSignal: 0, equipped: eq)
+        MascotStage(level: 1, build: book.gains.rank, energy: 0.8, equipped: eq)
           .frame(width: g.size.width, height: StudioScene.sceneBottom * k)
         // khung vàng chỉ ở kệ / đèn / bục — cây, bảng số, cửa sổ đã có khung riêng (Kiệt 29/10)
         if !Self.unframed.contains(spot), let r = RoomThumb.outlines[spot] {

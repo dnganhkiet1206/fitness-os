@@ -38,7 +38,6 @@ struct MascotRoomView: View {
   @Environment(WorkoutFlow.self) private var flow: WorkoutFlow?
   @State private var shop: MascotShopBook?
   @State private var notice: String?
-  @State private var celebrate = 0
   @AppStorage(KoaSound.offKey) private var soundOff = false
   @Environment(\.scenePhase) private var roomPhase
   /// Giờ hiện tại, đổi mỗi phút: tới giờ ngủ khi đang mở phòng thì Koa đi ngủ ngay.
@@ -425,7 +424,7 @@ struct MascotRoomView: View {
       MascotStage(
         level: room.level, build: room.gains.rank,
         energy: Double(room.energyCount) / Double(MascotRules.energySignals.count),
-        celebrateSignal: celebrate, emotion: devEmotion ?? benchEmotion ?? mood,
+        emotion: devEmotion ?? benchEmotion ?? mood,
         equipped: shop?.inventory.filter(\.equipped).map(\.itemKey) ?? [],
         // Dáng theo tình huống thật (25/10); thanh DEBUG ép cảm xúc thì tắt dáng.
         gesture: devEmotion == nil ? roomGesture : nil,
@@ -1179,7 +1178,6 @@ struct MascotStage: View {
   var build = 0
   /// 0…1 — số tín hiệu đã xong / năm.
   let energy: Double
-  let celebrateSignal: Int
   var emotion: KoaEmotion.Emotion = .idle
   /// Khoá đang mặc, theo thứ tự hàng của `mascot_inventory`.
   var equipped: [String] = []
@@ -1251,11 +1249,6 @@ struct MascotStage: View {
   @Environment(\.locale) private var locale
   /// Ngôn ngữ của chữ vẽ trên tranh trong phòng.
   private var lang: String { String(locale.identifier.prefix(2)) }
-
-  private struct Nod {
-    var angle = 0.0
-    var scale = 1.0
-  }
 
   private var studio: StudioScene.Options {
     var o = StudioScene.Options()
@@ -1756,19 +1749,8 @@ struct MascotStage: View {
       idleClock: walks ? director.frame?.idleClock : nil)
       .scaleEffect(levelScale * scale, anchor: .bottom)
       .scaleEffect(x: walks ? director.squash.x : 1, y: walks ? director.squash.y : 1, anchor: .bottom)
-      // reduceMotion: giá trị không đổi thì không gật
-      .keyframeAnimator(initialValue: Nod(), trigger: reduceMotion ? 0 : celebrateSignal) { view, v in
-        view.rotationEffect(.degrees(v.angle), anchor: .bottom).scaleEffect(v.scale, anchor: .bottom)
-      } keyframes: { _ in
-        KeyframeTrack(\.angle) {
-          CubicKeyframe(6, duration: 0.2)
-          SpringKeyframe(0, spring: .init(mass: 1, stiffness: 160, damping: 14))
-        }
-        KeyframeTrack(\.scale) {
-          LinearKeyframe(1.03, duration: 0.18)
-          SpringKeyframe(1, spring: .init(mass: 1, stiffness: 180, damping: 14))
-        }
-      }
+      // KOA-T48: bỏ cú gật `celebrateSignal` — bộ đếm của phòng không tăng từ 29/10 (bỏ thưởng chuỗi,
+      // 2a883637) nên gật không bao giờ chạy; phòng mừng qua đạo diễn (`KoaDirector`).
       .offset(x: left, y: top)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }

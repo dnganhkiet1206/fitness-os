@@ -311,14 +311,28 @@ struct TodayDayBlock: View {
 
   // MARK: - Koa
 
+  /// Phần hình KHÔNG có tween khi đổi cảm xúc: dáng và đồ kèm cảm xúc (KOA-T48).
+  struct Look: Hashable {
+    let pose: KoaFlags.Pose
+    let outfit: KoaFlags.Worn
+  }
+
+  static func look(_ emotion: KoaEmotion.Emotion) -> Look {
+    let s = KoaEmotion.state(emotion)
+    return Look(pose: s.pose, outfit: s.outfit)
+  }
+
   private func koa(_ emotion: KoaEmotion.Emotion) -> some View {
     Button(action: onOpenRoom) {
       MascotFigureView(emotion: emotion, equipped: equipped, size: compact ? 50 : 76, animated: !reduceMotion)
         .frame(width: compact ? 56 : 84, height: compact ? 64 : 96)
-        // Đổi nét mặt: hình cũ mờ sang hình mới (Reduce Motion: đổi ngay).
-        .id(emotion)
+        // KOA-T48: đổi DÁNG / đồ (ngồi, cầm tạ, mũ) thì hình cũ mờ sang hình mới — dáng chưa có tween.
+        // Chỉ đổi nét mặt thì giữ nguyên hình: mặt chuyển dần bằng tween của chính hình (`KoaFaceTween`),
+        // đồng hồ thở / ánh nhìn không bị đặt lại, không vẽ hai hình chồng nhau 0,35 s.
+        // Reduce Motion: đổi ngay.
+        .id(Self.look(emotion))
         .transition(.opacity)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: emotion)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: Self.look(emotion))
         .background(alignment: .bottom) {
           Ellipse().fill(.black.opacity(0.08)).frame(width: 56, height: 8).blur(radius: 3)
         }
