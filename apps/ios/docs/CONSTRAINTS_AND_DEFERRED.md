@@ -886,6 +886,10 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 20/11/2026: KOA-T54 phần SQL — hai migration (ví chỉ trả khoá cần hỏi; trần cộng đồng không tính xu khám phá), chờ duyệt deploy; xem mục 4.
 - 20/11/2026: KOA-T40 phần còn lại — con số trong câu của Koa (giờ ngủ, % calo) dựng một chỗ (`KoaLineNumbers`) cho Hôm nay và phòng; Hôm nay không còn nói "ngủ 0 giờ 0 phút" khi chưa có giấc ngủ. Khoá câu hai nơi vẫn riêng (`koa.say.*` / `koa.talk.*`) có chủ đích.
 - 20/11/2026: KOA-T41 — test `EconomyContractTests` đọc thẳng migration (`reward_prices`, `shop_prices`, lần ghi sau thắng) và so với hằng Swift (nhiệm vụ, chuỗi, thử thách, khám phá, tăng tải, bộ sưu tập, giá từng món); phép thử ngược đổi một giá thì đỏ. App vẫn dùng hằng Swift để hiện số (không đọc bảng giá lúc chạy) — test giữ hai bên khớp.
+- 20/11/2026: KOA-T60 (khẳng định trong `KOA_ECOSYSTEM.md`) — đối chiếu với code:
+  - Quy tắc mốc lớn / nhỏ khớp (3 / 1 ngày); tài liệu thiếu "xong tháng" (mốc lớn) — đã thêm.
+  - 10 sự kiện analytics trong bảng chỉ số đều có chỗ phát.
+  - **Lệch đã sửa:** "đã nhắc ở đâu thì không nhắc lại ở chỗ khác" — chỉ phòng Koa đánh dấu "đã nhắc", nên mốc ở Hôm nay lặp lại mỗi lần mở app tới khi hết hạn. Nay Hôm nay cũng đánh dấu (chỉ thẻ đầy đủ; dạng gọn chỉ đưa câu ra widget nên không tính — Devin #989); "đã nhắc" có hiệu lực từ lần mở sau nên trong một lần mở Hôm nay và phòng vẫn nói cùng mốc (test `KoaMomentsStoreTests`).
 - 20/11/2026: Nội dung chế độ hướng dẫn 3D thành khối độc lập (Kiệt):
   - Mỗi bài: `<bài>_demo.json` (lõi) + `<bài>_tips.json` / `_tempo.json` / `_mistakes.json` + `demo3d_index.json` (mã băm từng tệp).
   - Chữ mẹo / lỗi sai (57 khoá) chuyển từ `Localizable.xcstrings` sang `content/*.json` của từng bài trong Motion Lab, đi cùng khối en/es/vi.
