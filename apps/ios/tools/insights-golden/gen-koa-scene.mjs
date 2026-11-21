@@ -15,7 +15,7 @@ const json = JSON.stringify({ nodes: NODES, keyframes: KEYFRAMES });
 if (json.includes('"##')) throw new Error('chuỗi thô của Swift sẽ gãy');
 process.stdout.write(`// SINH TỰ ĐỘNG — đừng sửa tay.
 // Nguồn: native/src/components/ascnd/koa/koa-scene.ts @ fac9ac2.
-// Sinh lại: tools/insights-golden/gen-koa-scene.mjs (sau build.sh).
+// Sinh lại: apps/ios/tools/insights-golden/gen-koa-scene.mjs (sau build.sh).
 
 extension KoaScene {
   static let json = ##"${json}"##
