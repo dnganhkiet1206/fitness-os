@@ -6,7 +6,7 @@
 # đó làm flow bị huỷ giữa chừng.
 #
 # Mỗi vấn đề một dòng `A11Y|màn|loại|mô tả|phần tử`, tóm tắt thành bảng ở trang lượt chạy.
-# KOA-T47 (20/11): job ĐỎ khi một màn vượt mốc của nó theo loại (`ASCNDUITests/KoaA11yBaseline.swift`),
+# KOA-T47 (20/11): job ĐỎ khi một màn vượt mốc ở loại ổn định (vùng chạm, nhãn, trait, phát hiện phần tử) (`ASCNDUITests/KoaA11yBaseline.swift`),
 # hoặc không build được / không mở được màn. Không phải required check. Chạy: hằng đêm, bấm tay (workflow_dispatch), PR có nhãn `e2e` hoặc `a11y`.
 #
 # Lưu ý của GitHub: `schedule` và `workflow_dispatch` chỉ đọc workflow ở nhánh MẶC ĐỊNH (main).
