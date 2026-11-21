@@ -1515,7 +1515,7 @@ final class AppServices {
     guard let rows, let backend else { return nil }
     return WeeklyChallengesBook(
       userId: userId, today: today, store: rows, economy: SupabaseMascotEconomy(backend: backend),
-      english: { ChallengeText.english($0) })
+      english: { ChallengeText.english($0) }, gate: claimGate(userId: userId))
   }
 
   /// "Tuần của Koa" (GĐ2): một sổ mỗi phiên — Hôm nay và phòng Koa nhận thưởng qua
@@ -1538,7 +1538,7 @@ final class AppServices {
     return MascotRoomController(
       userId: userId, today: today, source: SupabaseMascotSource(backend: backend),
       economy: SupabaseMascotEconomy(backend: backend), stepsGoal: { goals.goal },
-      questObserver: questObserver(userId: userId))
+      questObserver: questObserver(userId: userId), gate: claimGate(userId: userId))
   }
 
   /// MỘT bộ quan sát nhiệm vụ cho mỗi tài khoản (`<QuestAutoClaim />` gắn ở gốc
@@ -1636,7 +1636,8 @@ final class AppServices {
     guard let backend else { return nil }
     return MascotShopBook(
       userId: userId, source: SupabaseMascotSource(backend: backend),
-      wardrobe: SupabaseMascotWardrobe(backend: backend), economy: SupabaseMascotEconomy(backend: backend))
+      wardrobe: SupabaseMascotWardrobe(backend: backend), economy: SupabaseMascotEconomy(backend: backend),
+      gate: claimGate(userId: userId))
   }
 
   /// Feed Cộng đồng (#527, lát 1): đọc `community_*` qua RLS, ảnh minh hoạ ở
