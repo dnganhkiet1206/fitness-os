@@ -77,6 +77,14 @@ struct RestLabView: View {
         .padding()
       }
       .navigationTitle(Text("lab.title"))
+      // Kiểm Live Activity theo kịch bản (KOA-T27): `SIMCTL_CHILD_ASCND_DEBUG_REST_SECONDS=12` tự bắt đầu
+      // một quãng nghỉ ngắn khi mở màn — bấm tay trên simulator trễ, dễ lệch.
+      .task {
+        if let s = ProcessInfo.processInfo.environment["ASCND_DEBUG_REST_SECONDS"].flatMap(Int.init)
+        {
+          rest.handle(.start(seconds: s), target: RestTarget(exerciseName: "Bench Press", setNumber: 2, totalSets: 3))
+        }
+      }
       // Đóng quãng nghỉ đã hết (RT-5) — nhịp 1 giây chỉ khi màn đang mở.
       .task {
         while !Task.isCancelled {
