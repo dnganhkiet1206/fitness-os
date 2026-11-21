@@ -118,17 +118,31 @@ struct WorkoutsHomeView: View {
   }
 
   /// Chú giải bộ dấu của dải tuần (chủ dự án, 14/10: vòng nét đứt chưa có chú thích).
+  /// Một hàng khi vừa; chữ to (cỡ trợ năng) thì lưới 2×2 — ép một hàng thì hàng rộng hơn màn hình và
+  /// kéo cả trang tràn ngang, mép trái bị cắt (soát AX3 20/11).
   private var weekLegend: some View {
-    HStack(spacing: 12) {
-      legend(.done, "wp.status.done")
-      legend(.planned, "wp.legend.planned")
-      legend(.missed, "wp.status.missed")
-      legend(.rest, "wp.status.rest")
+    ViewThatFits(in: .horizontal) {
+      HStack(spacing: 12) {
+        legend(.done, "wp.status.done")
+        legend(.planned, "wp.legend.planned")
+        legend(.missed, "wp.status.missed")
+        legend(.rest, "wp.status.rest")
+      }
+      .lineLimit(1)
+      .minimumScaleFactor(0.8)
+      Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 4) {
+        GridRow {
+          legend(.done, "wp.status.done")
+          legend(.planned, "wp.legend.planned")
+        }
+        GridRow {
+          legend(.missed, "wp.status.missed")
+          legend(.rest, "wp.status.rest")
+        }
+      }
     }
     .font(DS.TextStyle.caption)
     .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-    .lineLimit(1)
-    .minimumScaleFactor(0.8)
     .frame(maxWidth: .infinity)
     .padding(.bottom, DS.Spacing.xs)
     .accessibilityHidden(true)

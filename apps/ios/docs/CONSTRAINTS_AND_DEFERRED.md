@@ -892,6 +892,10 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
   - Màn buổi tập: hàng nghỉ · RPE · khởi động xếp dọc ở cỡ trợ năng (trước: nút "Khởi động" bị bóp còn một chữ cái mỗi dòng ở AX3).
   - **Chưa làm:** quyết định giữ nền tối cố định của màn nghỉ (cần Kiệt).
   - **Thấy khi soát, chưa sửa:** ở AX3 cả trang tab Tập luyện tràn ngang (mép trái tiêu đề, dải ngày, danh sách bài bị cắt).
+- 20/11/2026: Cỡ chữ trợ năng (AX3): tab Tập luyện tràn ngang cả trang, mép trái tiêu đề / dải ngày / thẻ hôm nay bị cắt — hai nguyên nhân:
+  - Vòng số ngày của dải tuần dùng chung (`WeekDayStrip`, cả Dinh dưỡng / Nhật ký) giãn không trần (~74 pt × 7 > màn hình) — nay trần 44 pt, số tự thu nhỏ.
+  - Hàng chú giải bốn dấu ép một dòng — nay `ViewThatFits`: một hàng khi vừa, lưới 2×2 khi chữ to.
+  - Cỡ thường không đổi. Đã xem AX3 trên simulator: Tập luyện và Dinh dưỡng vừa màn hình.
 - 20/11/2026: KOA-T60 (khẳng định trong `KOA_ECOSYSTEM.md`) — đối chiếu với code:
   - Quy tắc mốc lớn / nhỏ khớp (3 / 1 ngày); tài liệu thiếu "xong tháng" (mốc lớn) — đã thêm.
   - 10 sự kiện analytics trong bảng chỉ số đều có chỗ phát.
