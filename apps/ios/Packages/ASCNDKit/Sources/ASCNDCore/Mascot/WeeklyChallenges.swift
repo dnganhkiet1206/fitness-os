@@ -280,6 +280,8 @@ public final class WeeklyChallengesBook {
   @ObservationIgnored private var closed = false
   /// Đã mừng (tuần, thử thách) — bền qua lần mở app (KOA-T24, như khoá "đã thấy" của KoaWeek).
   @ObservationIgnored private let defaults: UserDefaults
+  /// Cổng nhận thưởng chung của tài khoản (KOA-T55): khoá thử thách đã nhận ở chỗ khác thì không gửi.
+  @ObservationIgnored private let gate: ClaimGate?
   private func celebratedKey(_ key: String) -> String {
     "ascnd_challenge_celebrated.\(userId).\(weekStart.description).\(key)"
   }
@@ -287,9 +289,10 @@ public final class WeeklyChallengesBook {
   public init(
     userId: String, today: LocalDate, store: any RowStore, economy: any MascotEconomy,
     english: @escaping @Sendable (String) -> (title: String, desc: String, reward: String),
-    timeZone: TimeZone = .current, defaults: UserDefaults = .standard
+    timeZone: TimeZone = .current, defaults: UserDefaults = .standard, gate: ClaimGate? = nil
   ) {
     self.defaults = defaults
+    self.gate = gate
     self.userId = userId
     self.weekStart = WeeklyChallenges.weekStart(today)
     self.store = store
@@ -424,10 +427,15 @@ public final class WeeklyChallengesBook {
       var claimFailed = false
       if step.justCompleted {
         let tier = ch.rewardTier ?? "bronze"
+        let ref = MascotRules.challengeRefKey(tier: tier, weekStart: weekStart.description, key: ch.key)
         do {
-          paidElsewhere = MascotRules.isDuplicateClaim(try await economy.claimReward(
-            refKey: MascotRules.challengeRefKey(tier: tier, weekStart: weekStart.description, key: ch.key),
-            reason: "challenge \(ch.key)"))
+          if gate?.isClaimed(ref) == true {
+            // Đã nhận ở chỗ khác (KOA-T55): ghi tiến độ, không gửi, không mừng.
+            paidElsewhere = true
+          } else {
+            paidElsewhere = MascotRules.isDuplicateClaim(try await economy.claimReward(refKey: ref, reason: "challenge \(ch.key)"))
+            gate?.markClaimed(ref)
+          }
           paid = !paidElsewhere
         } catch let f as MascotFailure {
           // Trùng khoá không còn là lỗi (server trả 0, KOA-T01) — mọi lỗi ở đây là lỗi thật.
