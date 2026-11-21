@@ -57,7 +57,7 @@ Huy chương và mốc hành trình trùng nhau một phần (buổi đầu, s�
 `KoaMomentFeed` là nguồn duy nhất quyết định Koa nhắc mốc nào. Quy tắc:
 - Mốc lớn (buổi đầu, tuần đủ buổi đầu tiên, lên hạng, số buổi, 7 / 30 / 100 / 200 / 365 ngày ghi, xong tháng) được nhắc trong 3 ngày (`KoaMomentFeed.majorFreshDays`, `KoaJourney.Moment.major`).
 - Mốc nhỏ (kỷ lục, quay lại, tuần đủ buổi, lên bậc trong hạng, 3 / 60 ngày ghi) được nhắc trong 1 ngày (`minorFreshDays`).
-- Đã nhắc ở đâu thì không nhắc lại ở chỗ khác. Hôm nay và phòng Koa đều đánh dấu "đã nhắc" (`KoaMomentsStore.markSeen`); trước 20/11 chỉ phòng đánh dấu nên mốc lặp ở Hôm nay mỗi lần mở app (KOA-T60). "Đã nhắc" lưu trên máy theo tài khoản (lên server: việc 5 ở §6).
+- Đã nhắc ở đâu thì không nhắc lại ở chỗ khác. Hôm nay (thẻ đầy đủ — dạng gọn không hiện câu mốc nên không tính) và phòng Koa đều đánh dấu "đã nhắc" (`KoaMomentsStore.markSeen`); trước 20/11 chỉ phòng đánh dấu nên mốc lặp ở Hôm nay mỗi lần mở app (KOA-T60). "Đã nhắc" lưu trên máy theo tài khoản (lên server: việc 5 ở §6).
 - Trong một lần mở app, Hôm nay và phòng Koa nói cùng một mốc. Màn khác không tự quyết.
 
 ### Tiến trình của Koa (không phải thú ảo)

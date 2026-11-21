@@ -889,7 +889,7 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 20/11/2026: KOA-T60 (khẳng định trong `KOA_ECOSYSTEM.md`) — đối chiếu với code:
   - Quy tắc mốc lớn / nhỏ khớp (3 / 1 ngày); tài liệu thiếu "xong tháng" (mốc lớn) — đã thêm.
   - 10 sự kiện analytics trong bảng chỉ số đều có chỗ phát.
-  - **Lệch đã sửa:** "đã nhắc ở đâu thì không nhắc lại ở chỗ khác" — chỉ phòng Koa đánh dấu "đã nhắc", nên mốc ở Hôm nay lặp lại mỗi lần mở app tới khi hết hạn. Nay Hôm nay cũng đánh dấu; "đã nhắc" có hiệu lực từ lần mở sau nên trong một lần mở Hôm nay và phòng vẫn nói cùng mốc (test `KoaMomentsStoreTests`).
+  - **Lệch đã sửa:** "đã nhắc ở đâu thì không nhắc lại ở chỗ khác" — chỉ phòng Koa đánh dấu "đã nhắc", nên mốc ở Hôm nay lặp lại mỗi lần mở app tới khi hết hạn. Nay Hôm nay cũng đánh dấu (chỉ thẻ đầy đủ; dạng gọn chỉ đưa câu ra widget nên không tính — Devin #989); "đã nhắc" có hiệu lực từ lần mở sau nên trong một lần mở Hôm nay và phòng vẫn nói cùng mốc (test `KoaMomentsStoreTests`).
 - 20/11/2026: KOA-T60 (phần còn lại, một phần) — `KoaSeamsTests`:
   - Blob cảnh Koa đọc được, còn đủ bộ phận chính, mọi hoạt ảnh trỏ tới khung có thật với kiểu dịu bộ vẽ biết.
   - Tủ đồ giữ đủ khung của RN và chỉ thêm `koaPantTongue`.

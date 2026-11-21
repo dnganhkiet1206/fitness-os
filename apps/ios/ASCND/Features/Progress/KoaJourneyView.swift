@@ -17,6 +17,13 @@ enum KoaMomentsStore {
     return s
   }
 
+  /// Hôm nay vừa đọc tới mốc `id`: chỉ tính "đã nhắc" khi câu mốc thật sự hiện trong app (thẻ đầy đủ). Dạng
+  /// gọn chỉ đưa câu ra widget — người dùng có thể không cài widget (Devin #989).
+  static func shownOnToday(_ id: String, userId: String, compact: Bool) {
+    guard !compact else { return }
+    markSeen(id, userId: userId)
+  }
+
   /// Chỉ cho test: như mở app lần mới (bỏ bản "đã thấy" giữ cho lần mở này).
   static func forgetLaunch() { launchSeen = [:] }
 
