@@ -138,10 +138,20 @@ export function mondayIndex(day: string): number {
 type RoutineRow = { day_of_week: number; template_id: string | null; is_rest: boolean | null; is_deload?: boolean | null };
 type OverrideRow = { date: string; template_id: string | null; is_rest: boolean | null };
 type TemplateRow = { id: string; name: string; exercises: unknown };
+export type PauseRow = { starts_on: string; ends_on: string };
+
+function addDays(iso: string, n: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
 
 export type TodayPlanCtx = {
-  /** todo = có buổi chưa tập · done = đã tập hôm nay · rest = ngày nghỉ · unplanned = chưa lên lịch. */
-  status: "todo" | "done" | "rest" | "unplanned";
+  /** todo = có buổi chưa tập · done = đã tập hôm nay · rest = ngày nghỉ · unplanned = chưa lên lịch ·
+   *  paused = đang trong đợt Tạm nghỉ (như `DailyPlan.input`: hôm nay là ngày nghỉ, không gợi buổi tập). */
+  status: "todo" | "done" | "rest" | "unplanned" | "paused";
+  /** Ngày tập lại (ngày sau ngày cuối của đợt nghỉ) khi `paused`. */
+  returns_on?: string;
   name: string | null;
   is_deload: boolean;
   exercises: { name: string; sets: number; reps: number; weight_kg: number }[];
@@ -159,7 +169,12 @@ export function todayPlan(
   override: OverrideRow | null,
   templates: TemplateRow[],
   trainedToday: boolean,
+  pause: PauseRow | null = null,
 ): TodayPlanCtx {
+  // Tạm nghỉ thắng lịch (`KoaPause.contains`: gồm cả ngày đầu và ngày cuối; ngày ISO so được bằng chuỗi).
+  if (pause && pause.starts_on <= today && today <= pause.ends_on) {
+    return { status: "paused", name: null, is_deload: false, exercises: [], returns_on: addDays(pause.ends_on, 1) };
+  }
   const day = routine.find((r) => r.day_of_week === mondayIndex(today));
   const isRest = override ? override.is_rest === true : day?.is_rest === true;
   const templateId = override ? override.template_id : day?.template_id ?? null;
@@ -171,7 +186,8 @@ export function todayPlan(
         name: String(e.exerciseName),
         sets: Number(e.sets) || 0,
         reps: Number(e.reps) || 0,
-        weight_kg: Number(e.weightKg) || 0,
+        // builder ghi mức tạ dưới khoá `weight` (`TemplateExercise.json`), không phải `weightKg`
+        weight_kg: Number(e.weight) || 0,
       }))
     : [];
   const status: TodayPlanCtx["status"] = !template ? (isRest ? "rest" : "unplanned") : trainedToday ? "done" : "todo";

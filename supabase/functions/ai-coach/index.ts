@@ -244,7 +244,7 @@ serve(async (req) => {
     })();
     const [
       profileRes, dailyLogsRes, sleepRes, workoutsRes, bioRes, weightRes, memoryRes, liftsRes, streakRes, waterRes,
-      routineRes, overrideRes, templatesRes,
+      routineRes, overrideRes, templatesRes, pauseRes,
     ] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
       supabase.from("daily_logs").select("*").eq("user_id", userId).gte("date", weekAgo).order("date", { ascending: false }).limit(7),
@@ -269,6 +269,8 @@ serve(async (req) => {
       supabase.from("routine_days").select("day_of_week, template_id, is_rest, is_deload").eq("user_id", userId).limit(14),
       supabase.from("plan_day_overrides").select("date, template_id, is_rest").eq("user_id", userId).eq("date", today).maybeSingle(),
       supabase.from("workout_templates").select("id, name, exercises").eq("user_id", userId).limit(100),
+      /* Đợt Tạm nghỉ đang có (mỗi người một dòng): hôm nay trong đợt thì là ngày nghỉ, như màn Hôm nay. */
+      supabase.from("koa_pauses").select("starts_on, ends_on").eq("user_id", userId).maybeSingle(),
     ]);
 
     const profile = profileRes.data;
@@ -302,6 +304,8 @@ serve(async (req) => {
         overrideRes.data ?? null,
         templatesRes.data ?? [],
         workouts.some((w) => localDay(w.date_time) === today),
+        /* đọc đợt nghỉ hỏng: coi như không nghỉ (lịch vẫn đúng với ngày thường) */
+        pauseRes.error ? null : pauseRes.data ?? null,
       );
     const water = waterByDay((waterRes.data ?? []) as { date: string; amount_ml: number | null }[], today);
     const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -443,7 +447,7 @@ READING THE DATA:
 - exercise_progress (last 8 weeks) is each exercise's TOP SET in its latest session ("last") versus the session before ("previous"): kg × reps, change_kg, change_reps; bodyweight exercises compare reps. For progress / progressive overload / "how much did I lift" questions, answer PER EXERCISE from this — e.g. "Bench press: 60 kg × 8 → 62.5 kg × 8 (+2.5 kg)" — and say which went up, held, or dropped. volume_load is secondary context only; a session whose volume_load is 0 was bodyweight or time-based, never "no weight logged". previous = null means the first time logged. Write weights in profile.weight_unit: when it is "lb", convert (kg × 2.2046, round to 0.5 lb).
 - Write numbers the way the app does: 2,508 kcal, 121.7 kg.
 - recovery_measured says whether that day's readiness rested on a recovery reading (HRV, resting heart rate or sleep). When it is false, readiness and readiness_status are null for that day: training load alone is not a readiness score and the app shows "not enough data" — never state a readiness number or state for it.
-- today_plan is today's planned session exactly as the app's Today screen shows it: status "todo" (planned, not done yet), "done" (already trained today), "rest" (planned rest day) or "unplanned" (nothing scheduled); name and exercises (sets × reps × kg) when there is a session. For "what do I train today" answer from it; never invent a session. today_plan null means the plan could not be read.
+- today_plan is today's planned session exactly as the app's Today screen shows it: status "todo" (planned, not done yet), "done" (already trained today), "rest" (planned rest day), "unplanned" (nothing scheduled) or "paused" (the user paused training until returns_on — treat today as rest and never push a workout); name and exercises (sets × reps × kg) when there is a session. For "what do I train today" answer from it; never invent a session. today_plan null means the plan could not be read.
 
 IMPORTANT PRINCIPLES:
 - NEVER predict, diagnose or detect any health condition or illness
@@ -474,7 +478,7 @@ CÁCH ĐỌC DỮ LIỆU:
 - exercise_progress (8 tuần gần nhất) là SET NẶNG NHẤT của từng bài ở buổi gần nhất ("last") so với buổi trước đó ("previous"): kg × reps, change_kg, change_reps; bài không tạ thì so reps. Câu hỏi về tiến bộ / progressive overload / "nâng được bao nhiêu" thì trả lời THEO TỪNG BÀI từ đây — ví dụ "Bench press: 60 kg × 8 → 62,5 kg × 8 (+2,5 kg)" — và nói bài nào tăng, giữ hay giảm. volume_load chỉ là thông tin phụ; buổi có volume_load bằng 0 là bài không tạ hoặc tính theo thời gian, không bao giờ là "chưa ghi tạ". previous = null nghĩa là lần đầu ghi bài đó. Viết mức tạ theo profile.weight_unit: nếu là "lb" thì đổi (kg × 2,2046, làm tròn 0,5 lb).
 - Viết số theo kiểu app: dấu chấm ngăn hàng nghìn (2.508 kcal), dấu phẩy thập phân (121,7 kg).
 - recovery_measured cho biết điểm hôm đó có dựa trên một phép đo phục hồi (HRV, nhịp tim nghỉ hoặc giấc ngủ) hay không. Khi nó là false, điểm được dựng từ mỗi tải tập: con số vẫn thật, nhưng app chưa đo được gì về việc người dùng phục hồi ra sao.
-- today_plan là buổi tập dự kiến hôm nay, đúng như màn Hôm nay của app: status "todo" (có buổi, chưa tập), "done" (hôm nay đã tập), "rest" (ngày nghỉ theo lịch) hoặc "unplanned" (chưa lên lịch); có buổi thì kèm name và exercises (set × rep × kg). Câu hỏi "hôm nay tập gì" thì trả lời từ đây; không bao giờ bịa ra buổi tập. today_plan null nghĩa là không đọc được lịch.
+- today_plan là buổi tập dự kiến hôm nay, đúng như màn Hôm nay của app: status "todo" (có buổi, chưa tập), "done" (hôm nay đã tập), "rest" (ngày nghỉ theo lịch), "unplanned" (chưa lên lịch) hoặc "paused" (người dùng đang Tạm nghỉ tới returns_on — coi hôm nay là ngày nghỉ, không giục tập); có buổi thì kèm name và exercises (set × rep × kg). Câu hỏi "hôm nay tập gì" thì trả lời từ đây; không bao giờ bịa ra buổi tập. today_plan null nghĩa là không đọc được lịch.
 
 NGUYÊN TẮC QUAN TRỌNG:
 - KHÔNG BAO GIỜ dự đoán, chẩn đoán hay phát hiện bất kỳ tình trạng sức khoẻ, bệnh lý nào

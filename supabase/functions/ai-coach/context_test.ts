@@ -96,8 +96,8 @@ const ROUTINE = [
   { day_of_week: 5, template_id: null, is_rest: true },
 ];
 const TEMPLATES = [
-  { id: "t-push", name: "Push", exercises: [{ exerciseName: "Bench Press", sets: 3, reps: 8, weightKg: 60 }] },
-  { id: "t-pull", name: "Pull", exercises: [{ exerciseName: "Row", sets: 3, reps: 10, weightKg: 40 }, { bogus: 1 }] },
+  { id: "t-push", name: "Push", exercises: [{ exerciseName: "Bench Press", sets: 3, reps: 8, weight: 60 }] },
+  { id: "t-pull", name: "Pull", exercises: [{ exerciseName: "Row", sets: 3, reps: 10, weight: 40 }, { bogus: 1 }] },
 ];
 
 Deno.test("monday index matches the app (Monday = 0)", () => {
@@ -127,3 +127,18 @@ Deno.test("a day override wins over the routine; rest wins over a template", () 
   assertEquals(deleted.status, "unplanned", "template đã xoá");
 });
 
+Deno.test("plan weights come from the builder's `weight` key (KOA-T33, Devin #992)", () => {
+  const t = [{ id: "t", name: "Legs", exercises: [{ exerciseName: "Squat", sets: 5, reps: 5, weight: 100 }, { exerciseName: "Plank", sets: 3, reps: 1 }] }];
+  const p = todayPlan("2026-11-16", [{ day_of_week: 0, template_id: "t", is_rest: false }], null, t, false);
+  assertEquals(p.exercises.map((e) => e.weight_kg), [100, 0], "có tạ giữ số kg; không tạ = 0");
+});
+
+Deno.test("a Koa pause turns today into a rest day, first and last day included", () => {
+  const pause = { starts_on: "2026-11-16", ends_on: "2026-11-18" };
+  for (const day of ["2026-11-16", "2026-11-18"]) {
+    const p = todayPlan(day, ROUTINE, null, TEMPLATES, false, pause);
+    assertEquals([p.status, p.name, p.exercises.length, p.returns_on], ["paused", null, 0, "2026-11-19"], day);
+  }
+  assertEquals(todayPlan("2026-11-19", ROUTINE, null, TEMPLATES, false, pause).status, "unplanned", "ngày tập lại theo lịch");
+  assertEquals(todayPlan("2026-11-16", ROUTINE, null, TEMPLATES, false, null).status, "todo");
+});
