@@ -1,4 +1,5 @@
 #if DEBUG
+  import ASCNDCore
   import ASCNDDesignSystem
   import SwiftUI
   import RealityKit
@@ -6,25 +7,25 @@
 
   /// Mẹo kỹ thuật trong trình xem 3D (Kiệt 13/11): nút "Mẹo" ở góc phải bật các chấm có số trên
   /// đúng vùng cơ thể; chạm một chấm để đọc mẹo (từ 17/11, trước đó là ô chữ + đường chỉ).
-  /// Từ 17/11 (B1) mẹo là dữ liệu: `app_demo.tips` trong `exercise.json` →
-  /// `<bài>_demo.json` (`pipeline/export_app_demos.py`); chữ vẫn trong
-  /// Localizable.xcstrings (`eg.demo3d.tip.<id>*`). Điểm neo bám theo một khớp
+  /// Từ 17/11 (B1) mẹo là dữ liệu; từ 20/11 là một khối riêng `<bài>_tips.json`
+  /// (`pipeline/export_app_demos.py`) mang luôn chữ en / es / vi (nguồn:
+  /// `<bài>/content/tips.json` của Motion Lab) — sửa chữ không đụng app. Điểm neo bám theo một khớp
   /// (`joint` + `offset`, `pipeline/tip_anchors.py`) nên đường chỉ đi theo người
   /// khi động tác chạy; không có khớp = điểm cố định (dụng cụ đứng yên).
   /// Chuyển động vẫn UNVERIFIED nên mẹo cũng chỉ ở bản Debug.
   struct ExerciseTip: Identifiable {
     let id: String
-    var titleKey: String { "eg.demo3d.tip.\(id)" }
-    var bodyKey: String { "eg.demo3d.tip.\(id).body" }
-    /// Chi tiết khi chạm nhãn: các bước, lý do, lỗi cần tránh (khoá i18n).
-    var howKeys: [String] { ["eg.demo3d.tip.\(id).how1", "eg.demo3d.tip.\(id).how2"] }
-    var whyKey: String { "eg.demo3d.tip.\(id).why" }
-    var avoidKey: String { "eg.demo3d.tip.\(id).avoid" }
     /// Điểm trên bề mặt cơ thể ở khung đầu, mét, hệ Y-up.
     let anchor: SIMD3<Float>
     /// Khớp mà điểm neo đi theo (tên đầy đủ trong khung xương USD) + độ lệch tới da.
     var joint: String?
     var offset: SIMD3<Float>?
+    /// Chữ theo ngôn ngữ (en / es / vi): tiêu đề, một dòng, các bước, lý do, lỗi cần tránh.
+    var text: [String: ExerciseDemoContent.TipText] = [:]
+
+    func text(_ locale: Locale) -> ExerciseDemoContent.TipText? {
+      ExerciseDemoContent.pick(text, lang: String(locale.identifier.prefix(2)))
+    }
   }
 
   /// Vị trí khớp của nhân vật đang chạy (mỗi khung), để điểm neo mẹo đi theo cơ thể.
@@ -95,6 +96,7 @@
   /// Chấm đi theo khớp khi động tác chạy. Hai chấm quá gần nhau được đẩy nhẹ ra để không chồng.
   struct ExerciseTipsOverlay: View {
     @Environment(\.accessibilityReduceMotion) var reduceMotion
+    @Environment(\.locale) private var locale
     let tips: [ExerciseTip]
     let camera: PinholeCamera
     /// Vị trí 3D hiện tại của điểm neo (đi theo khớp khi động tác chạy).
@@ -187,8 +189,8 @@
           .contentShape(Circle())
       }
       .buttonStyle(.plain)
-      .accessibilityLabel(Text(LocalizedStringKey(p.tip.titleKey)))
-      .accessibilityHint(Text(LocalizedStringKey(p.tip.bodyKey)))
+      .accessibilityLabel(Text(verbatim: p.tip.text(locale)?.title ?? ""))
+      .accessibilityHint(Text(verbatim: p.tip.text(locale)?.body ?? ""))
       .accessibilityAddTraits(on ? .isSelected : [])
     }
   }
@@ -210,6 +212,8 @@
     var onClose: () -> Void
 
     private let accent = Color(red: 0.91, green: 0.33, blue: 0.17)
+    @Environment(\.locale) private var locale
+    private var text: ExerciseDemoContent.TipText? { tip.text(locale) }
 
     var body: some View {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
@@ -219,7 +223,7 @@
             .foregroundStyle(.white)
             .frame(width: 22, height: 22)
             .background(Circle().fill(accent))
-          Text(LocalizedStringKey(tip.titleKey))
+          Text(verbatim: text?.title ?? "")
             .font(DS.TextStyle.headline)
             .foregroundStyle(DS.Color.foreground.swiftUI)
           Spacer()
@@ -234,12 +238,12 @@
           .accessibilityLabel(Text("eg.close"))
         }
         section("eg.demo3d.tip.how", symbol: "checkmark", tint: DS.Color.readinessGreen.swiftUI) {
-          ForEach(Array(tip.howKeys.enumerated()), id: \.offset) { n, key in
+          ForEach(Array((text?.how ?? []).enumerated()), id: \.offset) { n, step in
             HStack(alignment: .firstTextBaseline, spacing: 6) {
               Text(verbatim: "\(n + 1).")
                 .font(DS.TextStyle.footnote.weight(.semibold))
                 .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-              Text(LocalizedStringKey(key))
+              Text(verbatim: step)
                 .font(DS.TextStyle.footnote)
                 .foregroundStyle(DS.Color.foreground.swiftUI)
                 .fixedSize(horizontal: false, vertical: true)
@@ -247,13 +251,13 @@
           }
         }
         section("eg.demo3d.tip.why", symbol: "lightbulb", tint: DS.Color.metricOrange.swiftUI) {
-          Text(LocalizedStringKey(tip.whyKey))
+          Text(verbatim: text?.why ?? "")
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.foreground.swiftUI)
             .fixedSize(horizontal: false, vertical: true)
         }
         section("eg.avoid", symbol: "xmark", tint: DS.Color.destructive.swiftUI) {
-          Text(LocalizedStringKey(tip.avoidKey))
+          Text(verbatim: text?.avoid ?? "")
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.foreground.swiftUI)
             .fixedSize(horizontal: false, vertical: true)

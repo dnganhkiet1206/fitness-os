@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ascnd.app/schemas/demo3d/demo3d_mistakes.schema.json",
+  "title": "Clip lỗi sai thường gặp của một bài",
+  "type": "object",
+  "required": [
+    "schema",
+    "exercise",
+    "mistakes"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "exercise": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "mistakes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "motion",
+          "joints",
+          "text"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "motion": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "joints": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "text": {
+            "type": "object",
+            "required": [
+              "en",
+              "es",
+              "vi"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "en": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "body",
+                  "fix"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "body": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "fix": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "es": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "body",
+                  "fix"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "body": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "fix": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "vi": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "body",
+                  "fix"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "body": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "fix": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

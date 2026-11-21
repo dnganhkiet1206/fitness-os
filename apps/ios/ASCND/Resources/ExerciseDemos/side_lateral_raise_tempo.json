@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "exercise": "side_lateral_raise",
+  "duration_ms": 9000,
+  "notation": "2-0.4-1.4-0.4",
+  "reps": 2,
+  "phases": [
+    {
+      "rep": 1,
+      "kind": "concentric",
+      "start_ms": 600,
+      "end_ms": 2000,
+      "breath": "exhale"
+    },
+    {
+      "rep": 1,
+      "kind": "top_hold",
+      "start_ms": 2000,
+      "end_ms": 2400,
+      "breath": "hold"
+    },
+    {
+      "rep": 1,
+      "kind": "eccentric",
+      "start_ms": 2400,
+      "end_ms": 4400,
+      "breath": "inhale"
+    },
+    {
+      "rep": 1,
+      "kind": "bottom_hold",
+      "start_ms": 4400,
+      "end_ms": 4800,
+      "breath": "hold"
+    },
+    {
+      "rep": 2,
+      "kind": "concentric",
+      "start_ms": 4800,
+      "end_ms": 6200,
+      "breath": "exhale"
+    },
+    {
+      "rep": 2,
+      "kind": "top_hold",
+      "start_ms": 6200,
+      "end_ms": 6600,
+      "breath": "hold"
+    },
+    {
+      "rep": 2,
+      "kind": "eccentric",
+      "start_ms": 6600,
+      "end_ms": 8600,
+      "breath": "inhale"
+    }
+  ]
+}

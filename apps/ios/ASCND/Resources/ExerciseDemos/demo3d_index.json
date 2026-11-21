@@ -1,4 +1,5 @@
 {
+  "schema": 2,
   "demos": [
     "bench_press",
     "back_squat",
@@ -8,5 +9,25 @@
     "stiff_leg_dumbbell_deadlift",
     "bent_over_two_dumbbell_row",
     "dumbbell_shoulder_press"
-  ]
+  ],
+  "files": {
+    "back_squat_demo": "8e0c4baf31cae9cf",
+    "back_squat_tempo": "7c04d6125b12b98f",
+    "bench_press_demo": "2016d8d9ec153179",
+    "bench_press_tips": "69c769cf443055a0",
+    "bent_over_two_dumbbell_row_demo": "59af927036a4976a",
+    "bent_over_two_dumbbell_row_tempo": "ff557905dcce5165",
+    "dumbbell_curl_demo": "b80df458505c3038",
+    "dumbbell_curl_mistakes": "62460e79629048bc",
+    "dumbbell_curl_tempo": "fd90be9bf8954468",
+    "dumbbell_shoulder_press_demo": "41ffde3879ab9664",
+    "dumbbell_shoulder_press_tempo": "30576be4ea917578",
+    "dumbbell_shoulder_press_tips": "04995a11cc3b1566",
+    "hammer_curl_demo": "e11dd00ac10ac8d3",
+    "hammer_curl_tempo": "08d2e5839becb313",
+    "side_lateral_raise_demo": "8abf8bc78707f4ce",
+    "side_lateral_raise_tempo": "ed08a76899c16572",
+    "stiff_leg_dumbbell_deadlift_demo": "d22e4d8be56ccd2d",
+    "stiff_leg_dumbbell_deadlift_tempo": "353a00506d692c50"
+  }
 }
