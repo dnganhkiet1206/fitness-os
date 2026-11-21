@@ -892,6 +892,10 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
   - Hôm nay tính mốc hành trình ba lần mỗi lượt vẽ → một lần.
   - **Đo rồi không sửa:** `Calendar` hai lần mỗi khung ở phòng Koa = ~2,4 µs / khung (0,14 ms mỗi giây ở 60 fps) — không đáng; `KoaGains.compute` / `ledger` ~0,2 ms release.
   - **Chưa làm:** vẽ ảnh widget ngoài luồng chính (cần làm thử riêng); Instruments chưa chạy (số trên đo bằng `ContinuousClock` trong test).
+- 20/11/2026: Cỡ chữ trợ năng (AX3): tab Tập luyện tràn ngang cả trang, mép trái tiêu đề / dải ngày / thẻ hôm nay bị cắt — hai nguyên nhân:
+  - Vòng số ngày của dải tuần dùng chung (`WeekDayStrip`, cả Dinh dưỡng / Nhật ký) giãn không trần (~74 pt × 7 > màn hình) — nay trần 44 pt, số tự thu nhỏ.
+  - Hàng chú giải bốn dấu ép một dòng — nay `ViewThatFits`: một hàng khi vừa, lưới 2×2 khi chữ to.
+  - Cỡ thường không đổi. Đã xem AX3 trên simulator: Tập luyện và Dinh dưỡng vừa màn hình.
 - 20/11/2026: KOA-T60 (khẳng định trong `KOA_ECOSYSTEM.md`) — đối chiếu với code:
   - Quy tắc mốc lớn / nhỏ khớp (3 / 1 ngày); tài liệu thiếu "xong tháng" (mốc lớn) — đã thêm.
   - 10 sự kiện analytics trong bảng chỉ số đều có chỗ phát.

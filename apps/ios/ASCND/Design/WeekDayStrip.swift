@@ -68,7 +68,10 @@ struct WeekDayCell: View {
   let isSelected: Bool
   let isFuture: Bool
   let accent: Color
-  @ScaledMetric(relativeTo: .body) private var circle: CGFloat = 32
+  @ScaledMetric(relativeTo: .body) private var scaledCircle: CGFloat = 32
+  /// Vòng số ngày giãn theo cỡ chữ tới 44 pt: bảy vòng to hơn nữa (AX3 ~74 pt) rộng hơn màn hình và kéo cả
+  /// trang tràn ngang, mép trái bị cắt (soát AX3 20/11). Số bên trong tự thu nhỏ (`minimumScaleFactor`).
+  private var circle: CGFloat { min(scaledCircle, 44) }
   @Environment(\.dynamicTypeSize) private var typeSize
 
   var body: some View {
@@ -82,7 +85,8 @@ struct WeekDayCell: View {
         .font(DS.TextStyle.number(15, .body).weight(.semibold))
         .monospacedDigit()
         .lineLimit(1)
-        .minimumScaleFactor(0.6)
+        .minimumScaleFactor(0.4)
+        .padding(.horizontal, 2)
         .foregroundStyle(numberColor)
         .frame(width: circle, height: circle)
         .background {
