@@ -97,10 +97,15 @@ struct MascotRoomView: View {
         if shop == nil { shop = sharedShop ?? services.makeMascotShop(userId: room.userId) }
         shop?.gains = room.gains
         await room.load()
+        // KOA-T48: rời phòng giữa chừng thì dừng các lượt đọc sau (Hôm nay vẫn nhận tuần qua cùng cổng).
+        guard !Task.isCancelled else { return }
         await services.koaWeek(userId: room.userId)?.claimIfComplete(koaWeekState)
         // tủ đồ cho đồ Koa đang mặc trên sân khấu (`equippedOutfits` của RN)
+        guard !Task.isCancelled else { return }
         if let shop, case .loading = shop.phase { await shop.load() }
+        guard !Task.isCancelled else { return }
         await loadDust()
+        guard !Task.isCancelled else { return }
         await loadBreakage()
       }
       #if DEBUG
