@@ -757,6 +757,7 @@ struct MascotRoomView: View {
           RoomLinkRow(symbol: "tshirt.fill", tint: DS.Color.metricPurple.swiftUI, label: String(localized: "shop.title"))
         }
         .buttonStyle(TodayPressStyle())
+        .accessibilityIdentifier("room.link.shop")
       }
       if shop != nil, awards != nil { Divider().padding(.leading, 64) }
       if let awards {
