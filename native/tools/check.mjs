@@ -999,6 +999,16 @@ const STEPS = [
   ['xcstrings đúng hợp đồng XcstringsTests', 'node', ['../apps/ios/tools/native-xcstrings-contract.mjs']],
   ['xcstrings — fixture từng dạng phải đỏ', 'node', ['../apps/ios/tools/native-xcstrings-contract.mjs', '--self-test']],
   /*
+    20/11 (Kiệt: tách nội dung chế độ hướng dẫn 3D thành tệp độc lập): mỗi bài là lõi
+    `<bài>_demo.json` + các khối mẹo / nhịp / lỗi sai, chữ en/es/vi đi cùng khối (không còn
+    trong Localizable.xcstrings). Bước một: mục lục, mã băm, đủ ngôn ngữ, nhịp hợp lệ, tệp 3D có
+    thật. Bước hai: từng dạng lỗi phải đỏ. Bước ba: tệp trong app đúng là thứ Motion Lab xuất ra
+    (`export_app_demos.py --check`, không cần Blender) — sửa tay tệp app mà không sửa nguồn thì đỏ.
+  */
+  ['nội dung 3D: khối độc lập đúng hợp đồng', 'node', ['../apps/ios/tools/demo3d-content.mjs']],
+  ['nội dung 3D — fixture từng lỗi phải đỏ', 'node', ['../apps/ios/tools/demo3d-content.mjs', '--self-test']],
+  ['nội dung 3D app khớp Motion Lab', 'python3', ['../artifacts/exercise-visual-system/pipeline/export_app_demos.py', '--check']],
+  /*
     #527 (A): key path truyền cho hàm `rethrows` ở cấp ngoài cùng của
     `#expect` / `#require` làm HỎNG CẢ target test (1af90ebb, b2c58c57) —
     không test nào chạy. Luật hẹp, vùng mù ghi trong đầu tệp.

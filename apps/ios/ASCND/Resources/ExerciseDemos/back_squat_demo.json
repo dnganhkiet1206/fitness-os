@@ -1,4 +1,5 @@
 {
+  "schema": 1,
   "id": "back_squat",
   "title": "Barbell Back Squat",
   "family_label": "squat",
@@ -87,62 +88,7 @@
   "full_prefix": "back_squat_full",
   "review": null,
   "note": "Kiệt 16/11: vai/ngực/cơ thang phồng, tư thế chưa đúng. Làm lại theo 2 video (PureGym, Dave Watkeys) + Catalyst Athletics, Squat University: tay nắm ngoài vai 1 nắm tay, kép bả vai, khuỷu chĩa xuống, đòn trên cơ thang; nhân vật thêm xương phụ chia góc xoay cánh tay. QA 18/18. Chờ Kiệt xem lại",
-  "tips": [],
-  "tempo": {
-    "duration_ms": 9300,
-    "notation": "2-0.3-1.6-0.5",
-    "reps": 2,
-    "phases": [
-      {
-        "rep": 1,
-        "kind": "eccentric",
-        "start_ms": 600,
-        "end_ms": 2600,
-        "breath": "inhale"
-      },
-      {
-        "rep": 1,
-        "kind": "bottom_hold",
-        "start_ms": 2600,
-        "end_ms": 2900,
-        "breath": "hold"
-      },
-      {
-        "rep": 1,
-        "kind": "concentric",
-        "start_ms": 2900,
-        "end_ms": 4500,
-        "breath": "exhale"
-      },
-      {
-        "rep": 1,
-        "kind": "top_hold",
-        "start_ms": 4500,
-        "end_ms": 5000,
-        "breath": "hold"
-      },
-      {
-        "rep": 2,
-        "kind": "eccentric",
-        "start_ms": 5000,
-        "end_ms": 7000,
-        "breath": "inhale"
-      },
-      {
-        "rep": 2,
-        "kind": "bottom_hold",
-        "start_ms": 7000,
-        "end_ms": 7300,
-        "breath": "hold"
-      },
-      {
-        "rep": 2,
-        "kind": "concentric",
-        "start_ms": 7300,
-        "end_ms": 8900,
-        "breath": "exhale"
-      }
-    ]
-  },
-  "mistakes": []
+  "modules": {
+    "tempo": "back_squat_tempo"
+  }
 }

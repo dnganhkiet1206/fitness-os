@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ascnd.app/schemas/demo3d/demo3d_tips.schema.json",
+  "title": "Mẹo kỹ thuật của một bài",
+  "type": "object",
+  "required": [
+    "schema",
+    "exercise",
+    "tips"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "exercise": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "tips": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "anchor",
+          "text"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "anchor": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "joint": {
+            "type": "string"
+          },
+          "offset": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "text": {
+            "type": "object",
+            "required": [
+              "en",
+              "es",
+              "vi"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "en": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "body",
+                  "how",
+                  "why",
+                  "avoid"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "body": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "how": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
+                  },
+                  "why": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "avoid": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "es": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "body",
+                  "how",
+                  "why",
+                  "avoid"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "body": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "how": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
+                  },
+                  "why": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "avoid": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "vi": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "body",
+                  "how",
+                  "why",
+                  "avoid"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "body": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "how": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
+                  },
+                  "why": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "avoid": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

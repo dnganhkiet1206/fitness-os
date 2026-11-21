@@ -1,4 +1,5 @@
 #if DEBUG
+  import ASCNDCore
   import ASCNDDesignSystem
   import RealityKit
   import SwiftUI
@@ -13,9 +14,12 @@
     let motionFile: String
     /// Khớp làm sai (tên ngắn trong khung xương), để vẽ vòng đỏ.
     let joints: [String]
-    var titleKey: String { "eg.demo3d.mistake.\(id)" }
-    var bodyKey: String { "eg.demo3d.mistake.\(id).body" }
-    var fixKey: String { "eg.demo3d.mistake.\(id).fix" }
+    /// Chữ theo ngôn ngữ (khối `<bài>_mistakes.json`, nguồn `content/mistake.json` của Motion Lab, 20/11).
+    var text: [String: ExerciseDemoContent.MistakeText] = [:]
+
+    func text(_ locale: Locale) -> ExerciseDemoContent.MistakeText? {
+      ExerciseDemoContent.pick(text, lang: String(locale.identifier.prefix(2)))
+    }
   }
 
   /// Các khối đang chạy của trình xem, để đổi giữa chuyển động đúng và sai mà không nạp lại cảnh.
@@ -62,9 +66,11 @@
     let mistake: ExerciseMistake
     var onCorrect: () -> Void
     private let red = Color(red: 0.86, green: 0.18, blue: 0.16)
+    @Environment(\.locale) private var locale
 
     var body: some View {
-      VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+      let text = mistake.text(locale)
+      return VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         HStack(spacing: 8) {
           Label("eg.demo3d.mistake.badge", systemImage: "exclamationmark.triangle.fill")
             .font(DS.TextStyle.caption.weight(.bold))
@@ -75,10 +81,10 @@
             .background(Capsule().fill(red))
           Spacer()
         }
-        Text(LocalizedStringKey(mistake.titleKey))
+        Text(verbatim: text?.title ?? "")
           .font(DS.TextStyle.headline)
           .foregroundStyle(DS.Color.foreground.swiftUI)
-        Text(LocalizedStringKey(mistake.bodyKey))
+        Text(verbatim: text?.body ?? "")
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.foreground.swiftUI)
           .fixedSize(horizontal: false, vertical: true)
@@ -88,7 +94,7 @@
             .textCase(.uppercase)
             .foregroundStyle(DS.Color.readinessGreen.swiftUI)
             .accessibilityAddTraits(.isHeader)
-          Text(LocalizedStringKey(mistake.fixKey))
+          Text(verbatim: text?.fix ?? "")
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.foreground.swiftUI)
             .fixedSize(horizontal: false, vertical: true)

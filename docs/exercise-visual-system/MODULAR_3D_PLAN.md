@@ -82,6 +82,33 @@ Lợi thêm: 8 bài hiện chiếm 47 MB. Sang dạng khối thì còn 1 nhân v
 
 **16/11 — Quần áo tách khỏi thân (Kiệt, việc 3):** `--apparel-out` xuất `apparel_shorts.usdz` (khung xương + quần); `character_003.usdz` chỉ còn thân. App nạp quần như khối riêng, chạy cùng chuyển động, đổi texture "chỉ cơ chính" trên quần. Đổi đồ / in logo lên quần / đồ theo mùa = một file, không đụng thân hay bài.
 
+**20/11 — Nội dung thành khối độc lập (Kiệt: "tách các file trong chế độ hướng dẫn 3d thành các file độc lập… để sau này có thêm nhiều thứ để người dùng cày"):**
+
+- Trước: một `<bài>_demo.json` gộp tên, máy quay, cơ, mẹo, nhịp, lỗi sai; chữ mẹo / lỗi sai nằm trong `Localizable.xcstrings` của app (57 khoá). Sửa một câu mẹo = sửa catalog của app + xuất lại cả tệp bài; thêm nội dung mới = build lại app.
+- Nay mỗi bài là các tệp độc lập trong `Resources/ExerciseDemos`:
+
+  | Tệp | Nội dung | Nguồn trong Motion Lab |
+  |---|---|---|
+  | `<bài>_demo.json` | lõi: tên, tên gọi khác, tệp 3D, poster, máy quay, cơ, ghi chú Lab, `modules` | `exercise.json` (`app_demo`) + `usdz_report.json` |
+  | `<bài>_tips.json` | mẹo: điểm neo + chữ en/es/vi | `app_demo.tips` + `content/tips.json` |
+  | `<bài>_tempo.json` | nhịp từng rep | `tempo.json` |
+  | `<bài>_mistakes.json` | clip lỗi sai + chữ en/es/vi | thư mục lỗi sai: `mistake_demo` + `content/mistake.json` |
+  | `demo3d_index.json` | thứ tự bài + mã băm (sha256, 16 ký tự) từng tệp | sinh tự động |
+
+- Thiếu khối nào thì tính năng ấy ẩn (bài không mẹo thì không có nút bóng đèn). Tệp có `schema` mới hơn app thì app bỏ qua khối (không crash) — để sau này gửi nội dung mới cho app cũ.
+- Mã băm trong mục lục là bước chuẩn bị cho tải nội dung theo nhu cầu (P9, **hoãn**): khi có, app chỉ tải tệp đổi mã băm.
+- Hợp đồng: `artifacts/exercise-visual-system/schemas/demo3d_*.schema.json` (JSON Schema 2020-12, chuẩn mở); bộ xuất kiểm bằng `jsonschema` (MIT) khi cài. Cổng CI `apps/ios/tools/demo3d-content.mjs` (không cần gói ngoài) kiểm phần schema không bắt được: mã băm, đủ ngôn ngữ, số bước giữa các ngôn ngữ, nhịp tăng dần trong clip, tệp 3D có thật, chữ không còn song song trong xcstrings; `--self-test` 14 dạng lỗi phải đỏ. Thêm `export_app_demos.py --check`: tệp trong app phải đúng là thứ Motion Lab xuất ra.
+- Đổi gì → sửa gì (bổ sung bảng ở đầu tệp):
+
+  | Muốn đổi | Sửa | Render / xuất lại? |
+  |---|---|---|
+  | Câu mẹo, thêm mẹo | `content/tips.json` (+ điểm neo trong `exercise.json`) | Không; chạy `export_app_demos.py` |
+  | Câu lỗi sai | `content/mistake.json` | Không |
+  | Nhịp | `tempo.json` | Không |
+  | Thêm ngôn ngữ thứ tư | chữ trong `content/*.json` + `LANGS` của bộ xuất / cổng | Không |
+
+- Còn dính với render: **poster** `<bài>_poster.jpg` (ảnh tĩnh dựng sẵn có phòng + nhân vật) — đổi phòng / nhân vật thì poster cũ lệch. Hướng tách: app chụp poster từ trình xem lúc chạy rồi lưu đệm (việc tiếp theo, cần kiểm khả thi).
+
 ## Lộ trình đề xuất
 
 1. ~~**Nguyên mẫu (≈ nửa ngày):**~~ **xong 16/11 (xem trên).** `export_usdz.py --split` xuất `character.usdz` + `dumbbell_curl_motion.usdz` + `equipment/dumbbell.usdz`. App ghép lại và so khung hình với bản cũ trên simulator.
