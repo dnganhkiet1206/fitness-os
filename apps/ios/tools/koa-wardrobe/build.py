@@ -1029,7 +1029,7 @@ face_over("eyesSpiral", [E(82, 96, 18, 23.5, fill="#FFFFFF"), E(158, 96, 18, 23.
 face_over("showSweat", [G([
     P("M190 72 C 197 84 201 91 201 97 a11 11 0 0 1 -22 0 C 179 91 183 84 190 72 Z", fill=SWEAT, stroke=SWEAT_LINE, stroke_width=2.5),
     E(186, 94, 2.6, 4.2, fill="#FFFFFF", opacity=0.85)],
-    anim={"k": "koaSweat", "dur": 1500, "delay": 0, "ease": "in"}, o=[190, 92])])
+    anim={"k": "koaSweat", "dur": 1500, "delay": 0, "ease": "io"}, o=[190, 92])])
 # Khung hoạt ảnh riêng của app (bản RN đã bỏ, Kiệt 06/11): giọt mồ hôi trượt xuống rồi mờ; lưỡi nhún theo nhịp thở.
 d['keyframes']['koaSweat'] = {"tf": [{"o": 0, "ops": [["t", 0, -4], ["s", 0.7, 0.7]], "to": [["t", 0, 0], ["s", 1, 1]]},
                                      {"o": 0.25, "ops": [["t", 0, 0], ["s", 1, 1]], "to": [["t", 0, 16], ["s", 1, 1]]},

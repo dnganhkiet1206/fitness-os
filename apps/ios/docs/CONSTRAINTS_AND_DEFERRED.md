@@ -886,6 +886,17 @@ Mỗi dòng có lý do, và điều kiện để được làm lại. **Không l
 - 20/11/2026: KOA-T54 phần SQL — hai migration (ví chỉ trả khoá cần hỏi; trần cộng đồng không tính xu khám phá), chờ duyệt deploy; xem mục 4.
 - 20/11/2026: KOA-T40 phần còn lại — con số trong câu của Koa (giờ ngủ, % calo) dựng một chỗ (`KoaLineNumbers`) cho Hôm nay và phòng; Hôm nay không còn nói "ngủ 0 giờ 0 phút" khi chưa có giấc ngủ. Khoá câu hai nơi vẫn riêng (`koa.say.*` / `koa.talk.*`) có chủ đích.
 - 20/11/2026: KOA-T41 — test `EconomyContractTests` đọc thẳng migration (`reward_prices`, `shop_prices`, lần ghi sau thắng) và so với hằng Swift (nhiệm vụ, chuỗi, thử thách, khám phá, tăng tải, bộ sưu tập, giá từng món); phép thử ngược đổi một giá thì đỏ. App vẫn dùng hằng Swift để hiện số (không đọc bảng giá lúc chạy) — test giữ hai bên khớp.
+- 20/11/2026: KOA-T60 (phần còn lại, một phần) — `KoaSeamsTests`:
+  - Blob cảnh Koa đọc được, còn đủ bộ phận chính, mọi hoạt ảnh trỏ tới khung có thật với kiểu dịu bộ vẽ biết.
+  - Tủ đồ giữ đủ khung của RN và chỉ thêm `koaPantTongue`.
+  - Tệp blob trỏ đúng bộ sinh.
+  - 4 test đường `paused:` của Tuần của Koa.
+  - **Lần đầu chạy bắt được:**
+    - giọt mồ hôi của tủ đồ ghi kiểu dịu `"in"`, bộ vẽ không biết nên lặng lẽ dùng `io` — nguồn `build.py` sửa thành `io`, sinh lại, hình không đổi (khác đúng 1 ký tự);
+    - chú thích "tủ đồ không thêm khung nào" sai — đã sửa;
+    - đầu tệp blob trỏ đường dẫn cũ của bộ sinh — đã sửa.
+  - `StreakMissed` đã có test ở T53 (#977).
+  - **Chưa làm:** đối chiếu các khẳng định về `KoaMomentFeed` / analytics trong `KOA_ECOSYSTEM.md`.
 - 20/11/2026: KOA-T48 (một phần) — vòng đời hiệu ứng Koa:
   - `KoaReactionGate.waitIdle` tối đa 30 s và dừng khi bị huỷ (trước: cảnh kẹt `playing` giữ hộp xin quyền mãi).
   - Chạm Koa dồn (< 110 ms) chỉ ra MỘT câu (huỷ câu đang chờ).
