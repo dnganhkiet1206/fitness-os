@@ -99,11 +99,14 @@ final class KoaWidgetPublisher {
     last = nil
   }
 
+  /// Mọi ảnh widget đọc đã có trên đĩa: hai ảnh Koa + MỌI hình Koa của màn nghỉ (`RestKoa.allCases`). Trước
+  /// đây chỉ kiểm hai ảnh Koa: ảnh nghỉ mất (hay thêm một hình nghỉ mới) mà khoá ảnh không đổi thì màn khoá
+  /// hiện hình dự phòng (dấu chân) cho tới khi Koa đổi (KOA-T27, soát trên simulator 20/11).
   private var imagesExist: Bool {
     guard let dir = store.containerURL else { return false }
-    return [false, true].allSatisfy {
-      FileManager.default.fileExists(atPath: dir.appendingPathComponent(WidgetDataStore.koaImageName(night: $0, dark: true)).path)
-    }
+    let names = [false, true].map { WidgetDataStore.koaImageName(night: $0, dark: true) }
+      + RestKoa.allCases.map(WidgetDataStore.restImageName)
+    return names.allSatisfy { FileManager.default.fileExists(atPath: dir.appendingPathComponent($0).path) }
   }
 
   /// Vẽ SAU khi màn đầu đã hiện, từng ảnh một, nhường luồng chính giữa hai ảnh — widget
