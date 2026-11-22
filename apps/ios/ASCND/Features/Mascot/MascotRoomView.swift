@@ -94,7 +94,7 @@ struct MascotRoomView: View {
       }
       .task {
         if shop == nil { shop = sharedShop ?? services.makeMascotShop(userId: room.userId) }
-        shop?.gains = room.gains
+        if room.gains != .zero { shop?.gains = room.gains }
         await room.load()
         // KOA-T48: rời phòng giữa chừng thì dừng các lượt đọc sau (Hôm nay vẫn nhận tuần qua cùng cổng).
         guard !Task.isCancelled else { return }
@@ -145,6 +145,8 @@ struct MascotRoomView: View {
       }
       // xu về ví (nhận nhiệm vụ, thưởng tuần): tiếng xu nhỏ
       .onChange(of: room.balance) { old, new in if new > old { KoaSound.play(.coin) } }
+      // KOA-T57: Gains về SAU lúc mở phòng (mở phòng ngay sau đăng nhập) — cửa hàng theo ngay, hết khoá nhầm.
+      .onChange(of: room.gains) { _, g in if g != .zero { shop?.gains = g } }
       .onChange(of: room.welcomeGranted) { _, amount in
         guard let amount else { return }
         say(amount == 1 ? String(localized: "mr.welcome.one") : String(localized: "mr.welcome.other \(amount)"))
