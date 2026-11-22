@@ -184,23 +184,34 @@ struct KoaTapTests {
   }
 }
 
-/// Mắt lờ đờ nhắm bằng mí hạ xuống (Kiệt 04/11), không bằng elip vẽ thêm.
+/// Mắt lờ đờ nhắm bằng mí hạ xuống (Kiệt 04/11), không bằng elip vẽ thêm. Từ 21/11: mép mí trượt xuống đường
+/// mắt nhắm (`KoaLid`), không còn kéo giãn cả nhóm mí — xem `KoaLidCloseTests`.
 struct KoaLidBlinkTests {
-  static func lidScale(_ e: KoaRender.Element) -> Double? {
-    if e.tag == "G", let m = e.matrix, m[0] == 1, m[3] > 1, abs(m[5] - 72.5 * (1 - m[3])) < 1e-9 { return m[3] }
-    return e.kids.lazy.compactMap(lidScale).first
+  static func paths(_ e: KoaRender.Element, into out: inout Set<String>) {
+    if case .string(let d)? = e.props["d"] { out.insert(d) }
+    for k in e.kids { paths(k, into: &out) }
+  }
+  static func drawn(_ o: KoaRender.Options) -> Set<String> {
+    var out: Set<String> = []
+    paths(KoaRender.figure(o), into: &out)
+    return out
   }
 
   @Test func lazyLidsDropToClose() {
     var o = KoaRender.Options()
     o.expression = .sleepy
     o.blink = 1
-    #expect(Self.lidScale(KoaRender.figure(o)) == 1.5, "mí nặng giãn 1,5 lần")
+    let shut = KoaLid.swaps("lidsHeavy", close: 1)
+    let closed = Self.drawn(o)
+    #expect(shut.values.allSatisfy { closed.contains($0) }, "mí nặng hạ tới đường mắt nhắm")
     o.blink = 0
-    #expect(Self.lidScale(KoaRender.figure(o)) == nil)
+    let open = Self.drawn(o)
+    #expect(shut.keys.allSatisfy { open.contains($0) }, "không chớp: mí như vẽ")
     o.expression = .happy
     o.blink = 1
-    #expect(Self.lidScale(KoaRender.figure(o)) == nil, "mắt mở to vẫn nháy kiểu cũ")
+    let happy = Self.drawn(o)
+    #expect(!shut.values.contains { happy.contains($0) }, "mắt mở to vẫn nháy kiểu cũ")
+    #expect(KoaLazyEyesTests.blinks(KoaRender.figure(o)) == 2)
   }
 }
 
@@ -357,3 +368,124 @@ struct KoaLidShapeTests {
   }
 }
 
+/// Mắt có mí nhắm dần khi chớp (Kiệt 21/11 "rà lại kỹ"): mép mí trượt xuống đường mắt nhắm (`KoaLid`) thay cho
+/// kéo giãn cả nhóm — trước đó lộ vệt trắng hai bên mắt, đường mi thành vệt đen dày, mí buồn không nhắm hết,
+/// bọng mắt (mặt mệt) tụt xuống má.
+struct KoaLidCloseTests {
+  static func str(_ v: KoaScene.Value?) -> String? { if case .string(let x)? = v { return x } else { return nil } }
+  static func group(_ cond: String) -> KoaScene.Node? {
+    var out: KoaScene.Node?
+    func walk(_ n: KoaScene.Node) {
+      if n.cond == cond, out == nil { out = n }
+      n.kids?.forEach(walk)
+    }
+    KoaScene.wardrobePayload.nodes.forEach(walk)
+    return out
+  }
+  static func points(_ d: String) -> [(Double, Double)] {
+    let body = d.components(separatedBy: " Z")[0]
+    let nums = body.split { !"0123456789.-".contains($0) }.compactMap { Double($0) }
+    return stride(from: 0, to: nums.count - 1, by: 2).map { (nums[$0], nums[$0 + 1]) }
+  }
+  static func inside(_ pts: [(Double, Double)], _ x: Double, _ y: Double) -> Bool {
+    var c = false
+    var j = pts.count - 1
+    for i in pts.indices {
+      let (xi, yi) = pts[i], (xj, yj) = pts[j]
+      if (yi > y) != (yj > y), x < (xj - xi) * (y - yi) / (yj - yi) + xi { c.toggle() }
+      j = i
+    }
+    return c
+  }
+
+  /// độ khép 0 trùng từng ký tự với mí vẽ sẵn của cảnh tủ đồ (build.py `lid_kids`)
+  @Test func openLidMatchesTheScene() throws {
+    for (cond, kind) in KoaLid.kinds {
+      let g = try #require(Self.group(cond), "\(cond)")
+      let ds = (g.kids ?? []).compactMap { Self.str($0.a?["d"]) }
+      for e in KoaLid.eyes.indices {
+        let p = KoaLid.paths(kind, eye: e, close: 0)
+        #expect(ds.contains(p.fur), "\(cond) mắt \(e): lông mí")
+        #expect(ds.contains(p.lash), "\(cond) mắt \(e): đường mi")
+      }
+    }
+  }
+
+  /// nhắm hẳn: lông mí phủ kín lòng trắng; ở mọi độ khép, phần lòng trắng còn hở chỉ nằm DƯỚI mép mí, và khép
+  /// thêm thì phần phủ chỉ lớn lên (mép mí chỉ đi xuống)
+  @Test func lidCoversTheEyeAsItCloses() {
+    for (cond, kind) in KoaLid.kinds {
+      for e in KoaLid.eyes.indices {
+        let cx = KoaLid.eyes[e].cx
+        var before: [Int: Int] = [:]
+        for step in 0...10 {
+          let b = Double(step) / 10
+          let fur = Self.points(KoaLid.paths(kind, eye: e, close: b).fur)
+          for xi in -34...34 {
+            let dx = Double(xi) / 2
+            let half = (1 - pow(dx / 18, 2)).squareRoot()
+            let top = 96 - 23.5 * half + 0.4, bottom = 96 + 23.5 * half - 0.4
+            var y = top
+            var seenOpen = false
+            var covered = 0
+            while y <= bottom {
+              let isIn = Self.inside(fur, cx + dx, y)
+              if isIn, seenOpen { Issue.record("\(cond) mắt \(e) khép \(b): lông mí nằm dưới chỗ hở tại x \(cx + dx) y \(y)") }
+              if !isIn { seenOpen = true } else { covered += 1 }
+              if step == 10, !isIn { Issue.record("\(cond) mắt \(e) nhắm hẳn còn hở tại x \(cx + dx) y \(y)") }
+              y += 0.5
+            }
+            if let was = before[xi], covered + 1 < was { Issue.record("\(cond) mắt \(e) khép \(b): mí lùi lên tại x \(cx + dx)") }
+            before[xi] = covered
+          }
+        }
+      }
+    }
+  }
+
+  /// đường mi giữ độ dày khi khép (trước: giãn theo mí, nhắm hẳn dày gấp đôi / gấp ba)
+  @Test func lashKeepsItsThickness() {
+    func thickness(_ d: String) -> Double {
+      let pts = Self.points(d)
+      let half = pts.count / 2
+      var best = 0.0
+      for i in 0..<half {
+        let a = pts[i], b = pts[pts.count - 1 - i]
+        best = max(best, hypot(a.0 - b.0, a.1 - b.1))
+      }
+      return best
+    }
+    for (cond, kind) in KoaLid.kinds {
+      let open = thickness(KoaLid.paths(kind, eye: 0, close: 0).lash)
+      let shut = thickness(KoaLid.paths(kind, eye: 0, close: 1).lash)
+      #expect(abs(shut - open) < 0.6, "\(cond): \(open) → \(shut)")
+    }
+  }
+
+  /// trong hình vẽ: chớp thì mí đổi hình, không có phép giãn dọc nào; bọng mắt giữ nguyên
+  @Test func renderSwapsTheLidAndKeepsTheBag() throws {
+    var o = KoaRender.Options()
+    o.expression = .tired
+    o.live = true
+    o.blink = 1
+    let g = try #require(Self.group("lidsHeavy"))
+    let sceneDs = Set((g.kids ?? []).compactMap { Self.str($0.a?["d"]) })
+    let bag = (g.kids ?? []).filter { Self.str($0.a?["stroke"]) != nil && Self.str($0.a?["fill"]) == "none" }.compactMap { Self.str($0.a?["d"]) }
+    #expect(bag.count == 2)
+    let want = KoaLid.swaps("lidsHeavy", close: 1)
+    var drawn: Set<String> = []
+    var stretched = false
+    func scan(_ e: KoaRender.Element) {
+      if case .string(let d)? = e.props["d"] { drawn.insert(d) }
+      if let m = e.matrix, m[0] != 0, abs(m[3] / m[0] - 1) > 0.01, e.kids.contains(where: { k in
+        if case .string(let d)? = k.props["d"] { return sceneDs.contains(d) || want.values.contains(d) } else { return false }
+      }) { stretched = true }
+      e.kids.forEach(scan)
+    }
+    scan(KoaRender.figure(o))
+    for v in want.values { #expect(drawn.contains(v), "vẽ mí ở độ khép 1") }
+    for k in want.keys { #expect(!drawn.contains(k), "không còn mí đứng yên") }
+    for b in bag { #expect(drawn.contains(b), "bọng mắt giữ nguyên chỗ") }
+    #expect(!stretched, "không còn phép giãn dọc nhóm mí")
+  }
+}
