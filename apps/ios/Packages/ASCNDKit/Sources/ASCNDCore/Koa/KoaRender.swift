@@ -381,6 +381,9 @@ public enum KoaRender {
         // chớp mắt do bên ngoài: thay hẳn nhịp gốc, kể cả trong độ trễ
         matrix = KoaMath.mul(baseM, KoaMath.opsMat([KoaScene.Op("s", [1, b])], ox, oy))
         if drivesOp { props["opacity"] = .number(KoaMath.sampleOp(track?.op ?? [], 0, anim.ease)) }
+        // nắp chớp mắt: co HÌNH, không co màu / đèn — đèn của nắp ở không gian da đầu (KoaLight), co cả dải
+        // đèn theo nắp thì lúc nửa nhắm viền nắp lộ ra (Kiệt 21/11: "mí mắt bị dính như 2 lớp chồng")
+        if !KoaScene.rn { props[KoaPaint.geometryOnly] = .number(1) }
         // hai mắt lệch nhau (Koa V2): mi phải là một nhóm riêng với độ khép của nó
         if let r = c.blinkRight, r != b, body.count == 2 {
           let right = KoaMath.mul(baseM, KoaMath.opsMat([KoaScene.Op("s", [1, r])], ox, oy))

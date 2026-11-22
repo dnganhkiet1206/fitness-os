@@ -270,3 +270,33 @@ struct KoaLidLightTests {
   }
 }
 
+/// Nắp chớp mắt co HÌNH, không co màu / đèn (Kiệt 21/11): lúc nửa nhắm, dải đèn của nắp vẫn ở không gian da
+/// đầu — không có hình nào mang phép co dọc của cú chớp trong ma trận vẽ. Bản RN giữ cách cũ.
+struct KoaBlinkGeometryTests {
+  static func squashed(_ ops: [KoaPaint.Op], _ sy: Double) -> Int {
+    ops.reduce(0) { n, op in
+      switch op {
+      case .shape(let s):
+        // chỉ hình tô bằng dải đèn (gradient): màu đặc (đường mi) co theo mép nắp là đúng
+        guard case .gradient = s.style.fill else { return n }
+        return n + (s.matrix[0] != 0 && abs(s.matrix[3] / s.matrix[0] - sy) < 0.001 ? 1 : 0)
+      case .group(_, _, let inner): return n + squashed(inner, sy)
+      default: return n
+      }
+    }
+  }
+
+  static func plan(rn: Bool) -> [KoaPaint.Op] {
+    var o = KoaRender.Options()
+    o.expression = .happy
+    o.live = true
+    o.blink = 0.5
+    return KoaScene.$rn.withValue(rn) { KoaPaint.plan(KoaRender.figure(o)) }
+  }
+
+  @Test func halfBlinkKeepsThePaintUnsquashed() {
+    #expect(Self.squashed(Self.plan(rn: false), 0.5) == 0)
+    #expect(Self.squashed(Self.plan(rn: true), 0.5) > 0, "bản RN vẫn co cả nắp lẫn màu")
+  }
+}
+
