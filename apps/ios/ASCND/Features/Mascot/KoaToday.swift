@@ -37,7 +37,6 @@ enum KoaToday {
     switch read.reason {
     case .night: return String(localized: "koa.say.night")
     case .birthday: return String(localized: "koa.say.birthday")
-    case .worry: return String(localized: "koa.say.worry \(streak)")
     case .allDone: return String(localized: "koa.say.allDone")
     case .rested, .shortSleep:
       guard let slept = KoaLineNumbers.slept(signals) else { return nil }

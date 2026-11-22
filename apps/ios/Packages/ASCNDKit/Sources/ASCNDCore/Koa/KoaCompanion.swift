@@ -174,7 +174,7 @@ public enum KoaCompanion {
     case .night: e = 0.25
     case .shortSleep: e = 0.35
     case .emptyLate: e = 0.45
-    case .worry, .overate: e = 0.5
+    case .overate: e = 0.5
     case .unread, .calm: e = 0.6
     case .fed: e = 0.65
     case .trained: e = 0.75

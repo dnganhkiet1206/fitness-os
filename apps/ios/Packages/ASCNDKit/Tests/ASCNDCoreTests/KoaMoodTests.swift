@@ -29,9 +29,11 @@ struct KoaMoodTests {
     #expect(bday.emotion == .hat)
   }
 
-  /// Koa Ecosystem V2 (02/11): Koa không lo vì chuỗi ngày, kể cả buổi tối còn trống.
+  /// Koa Ecosystem V2 (02/11): Koa không lo vì chuỗi ngày, kể cả buổi tối còn trống (nhánh lo đã gỡ, KOA-T13).
   @Test func koaNeverWorriesAboutAStreak() {
-    #expect(Self.read(Self.day(), hour: 19, streak: 5, logged: false).reason != .worry)
+    for hour in [18, 19, 21, 23] {
+      #expect(Self.read(Self.day(), hour: hour, streak: 5, logged: false).emotion != .worry)
+    }
   }
 
   @Test func allDoneCelebratesAndStepsCountOnlyWithASource() {
