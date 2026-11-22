@@ -344,7 +344,7 @@ struct TodayExtras<Plan: View>: View {
     #endif
     .navigationDestination(isPresented: $showsRoom) {
       if let mascot {
-        MascotRoomView(room: mascot, awards: awards, challenges: challenges, sharedShop: shop)
+        MascotRoomView(room: mascot, awards: awards, sharedShop: shop)
           .todayZoom(roomSource, in: zoom)
       }
     }
@@ -470,12 +470,6 @@ struct TodayExtras<Plan: View>: View {
     .onChange(of: mascot?.streak, initial: true) { _, value in
       guard let value, let mascot, case .ready = mascot.phase else { return }
       services.koaStreak = (userId, value)
-    }
-    // Thưởng chuỗi tự về trong lần đọc ngày.
-    .onChange(of: mascot?.streakAutoClaim) { _, outcome in
-      guard let outcome, let mascot else { return }
-      mascot.streakAutoClaimShown()
-      services.noteKoaReward(userId: userId, amount: outcome.amount, seen: dayLoaded)
     }
     .onChange(of: services.sync.online) { _, online in
       // Có mạng lại: thưởng tuần nhận hỏng lúc mất mạng thì nhận ngay.

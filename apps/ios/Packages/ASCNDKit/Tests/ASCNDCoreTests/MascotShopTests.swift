@@ -44,8 +44,9 @@ struct MascotShopGoldenTests {
     #expect(MascotShop.items.count == items.count)
     #expect(items.count == 39)
     for (it, w) in zip(MascotShop.items, items) { Self.check(it, w) }
-    for (it, w) in zip(MascotShop.consumables, Self.array(g["consumables"])) { Self.check(it, w) }
-    #expect(MascotShop.consumables.count == Self.array(g["consumables"]).count)
+    // RN có một món tiêu hao ("Bảo hiểm chuỗi"); server ngừng bán (AUD-14), app gỡ khỏi danh mục (KOA-T56, Kiệt 21/11).
+    #expect(Self.array(g["consumables"]).count == 1)
+    #expect(MascotShop.consumables.isEmpty)
     for r in MascotShop.Rarity.allCases {
       let w = g["rarity"]?[r.rawValue]
       #expect(Self.int(w?["order"]) == r.order)

@@ -173,15 +173,6 @@ public final class MascotRoomController {
     case ready
   }
 
-  /// Kết quả một lần nhận thưởng — để màn chúc mừng đúng mức.
-  public struct ClaimOutcome: Sendable, Hashable {
-    public let amount: Int
-    /// Cấp mới, nếu lần nhận này lên cấp.
-    public let newLevel: Int?
-    /// Hạng mới, nếu lần nhận này lên hạng.
-    public let newRank: MascotRules.Rank?
-  }
-
   public let userId: String
   public private(set) var today: LocalDate
   public private(set) var phase: Phase = .loading
@@ -196,14 +187,8 @@ public final class MascotRoomController {
   public private(set) var challenges: [WeeklyChallenge]?
   public private(set) var awardCount: Int?
   public private(set) var signals: DailySignals?
-  public private(set) var claiming = false
-  /// Lỗi của hành động gần nhất (nhận thưởng); xoá khi thử lại.
-  public private(set) var actionFailure: MascotFailure?
   /// Lần nhận thưởng chào mừng vừa thành công (số xu) — màn báo một lần.
   public private(set) var welcomeGranted: Int?
-  /// Thưởng chuỗi vừa tự về (Koa đợt 1) — màn ăn mừng một lần rồi gọi
-  /// `streakAutoClaimShown()`.
-  public private(set) var streakAutoClaim: ClaimOutcome?
   /// Sổ xu lần này đọc hỏng, đang hiện số của lần trước (KOA-T17) — màn nói ra + thử lại.
   public private(set) var walletStale = false
   @ObservationIgnored private var loadGeneration = 0
@@ -348,58 +333,12 @@ public final class MascotRoomController {
   public var energyCount: Int { MascotRules.energySignals.filter(questDone).count }
   public var energyHeadline: MascotRules.EnergyHeadline { MascotRules.energyHeadline(energyCount) }
 
-  /// Dòng thưởng chuỗi: từ ngày 2, và CHỈ khi hôm nay đã nằm trong chuỗi.
-  public var showsStreakBonus: Bool { streak.count >= 2 && streak.loggedToday }
-  public var streakRefKey: String { MascotRules.streakRefKey(today) }
-  /// Số xu server trả cho dòng chuỗi (cố định 15) — RN hiện `streakCoins(n)`
-  /// (9…25), lệch với số thật được trả ở chuỗi 2–9 ngày.
-  public var streakBonus: Int { MascotRules.streakPayout }
-
   public var completedChallenges: [WeeklyChallenge] { (challenges ?? []).filter(\.completed) }
 
   // MARK: - Hành động
 
-  /// Nhận thưởng chuỗi (`reward(streakRefKey, …, 'streak:<n>', STREAK_XP)`).
-  public func claimStreakBonus() async -> ClaimOutcome? {
-    guard showsStreakBonus, !isClaimed(streakRefKey), !claiming else { return nil }
-    return await claim(refKey: streakRefKey, reason: "streak:\(streak.count)", xpGain: MascotRules.streakXp)
-  }
-
-  /// Thưởng chuỗi tự về mỗi lần đọc (RN: "the daily five and the streak land by
-  /// themselves"). Im lặng khi lỗi — lần đọc sau thử lại; nút ở phòng vẫn còn.
-  private func autoClaimStreak() async {
-    guard phase == .ready, showsStreakBonus, !isClaimed(streakRefKey), !claiming else { return }
-    let outcome = await claim(
-      refKey: streakRefKey, reason: "streak:\(streak.count)", xpGain: MascotRules.streakXp, silent: true)
-    if let outcome { streakAutoClaim = outcome }
-  }
-
-  /// Màn đã ăn mừng thưởng chuỗi tự về.
-  public func streakAutoClaimShown() { streakAutoClaim = nil }
-
-  private func claim(refKey: String, reason: String, xpGain: Int, silent: Bool = false) async -> ClaimOutcome? {
-    claiming = true
-    if !silent { actionFailure = nil }
-    defer { claiming = false }
-    let before = xp
-    // KOA-T55: khoá đã nhận ở chỗ khác (Hôm nay, bộ quan sát) hay đang có lượt khác gửi → không gửi, không mừng.
-    if let gate, gate.isClaimed(refKey) || gate.isInFlight(refKey) { return nil }
-    do {
-      let amount = try await economy.claimReward(refKey: refKey, reason: reason)
-      gate?.markClaimed(refKey)
-      guard !closed else { return nil }
-      await reloadLedger()
-      // Đã nhận ở lượt / máy khác: sổ xu đã đúng, không mừng lần hai (KOA-T01).
-      if MascotRules.isDuplicateClaim(amount) { return nil }
-      let oldLevel = MascotRules.level(xp: before), newLevel = MascotRules.level(xp: before + xpGain)
-      // Hạng giờ theo Gains, không đổi khi nhận xu / XP.
-      return ClaimOutcome(amount: amount, newLevel: newLevel > oldLevel ? newLevel : nil, newRank: nil)
-    } catch {
-      guard !closed else { return nil }
-      if !silent { actionFailure = Self.failure(error) }
-      return nil
-    }
-  }
+  // Xu thưởng chuỗi đã bỏ (02/11, Koa Ecosystem V2); API nhận thưởng chuỗi và đường nhận tay của phòng gỡ hẳn
+  // ở KOA-T56 (Kiệt 21/11) — xu của phòng chỉ còn túi chào mừng; nhiệm vụ / tuần nhận ở chỗ khác.
 
   /// Túi chào mừng 300 xu (`welcome`, server định giá, idempotent theo khoá).
   private func grantWelcomeIfNeeded() async {
@@ -419,9 +358,6 @@ public final class MascotRoomController {
       if QuestRetry.shouldRetry(failure) { welcomeTried = false }
     }
   }
-
-  /// Màn đã báo lỗi của hành động.
-  public func clearFailure() { actionFailure = nil }
 
   /// Màn đã báo xong thưởng chào mừng.
   public func welcomeShown() { welcomeGranted = nil }
