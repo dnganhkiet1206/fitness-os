@@ -35,11 +35,14 @@ struct KoaEmotionGoldenTests {
       let want = changed[e] ?? c["s"]?["expression"]?.stringValue
       #expect(s.expression.rawValue == want, "\(e)")
       #expect(s.pose.rawValue == c["s"]?["pose"]?.stringValue, "\(e)")
-      #expect(s.outfit == Self.worn(c["s"]?["outfit"]), "\(e)")
+      // KOA-T29 (Kiệt 21/11): `coat` khoác áo hoodie thật (RN: không có áo).
+      let outfit = e == "coat" ? [KoaFlags.Slot.top: "hoodie"] : Self.worn(c["s"]?["outfit"])
+      #expect(s.outfit == outfit, "\(e)")
     }
     // mọi cảm xúc của RN trừ `wave`/`run` (đã bỏ, rơi về `idle` — xem fixture)
-    // + `warmup` của native (đợt 2) + 4 mặt tập gym (05/11: breather, victory, ready, pumped)
-    #expect(KoaEmotion.Emotion.allCases.count == 18)
+    // + 4 mặt tập gym (05/11: breather, victory, ready, pumped). `warmup` của native (đợt 2) y hệt `curl`
+    // → gộp về `curl` (KOA-T29, 22/11).
+    #expect(KoaEmotion.Emotion.allCases.count == 17)
     // Cầm tạ luôn mặt gồng sức như bản thiết kế (20/10, chủ dự án).
     for e in KoaEmotion.Emotion.allCases where KoaEmotion.state(e).pose == .lifting {
       #expect(KoaEmotion.state(e).expression == .strain, "\(e) cầm tạ mà không gồng sức")

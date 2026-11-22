@@ -300,7 +300,7 @@ struct TodayDayBlock: View {
   static func emotion(_ p: KoaSchedule.Phase) -> KoaEmotion.Emotion {
     switch p {
     case .pump: .proud
-    case .waiting: .warmup
+    case .waiting: .curl
     }
   }
 

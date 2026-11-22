@@ -426,4 +426,50 @@ struct KoaWidgetWaterTests {
     let back = try JSONDecoder().decode(KoaWidgetData.self, from: JSONEncoder().encode(data))
     #expect(back.sleep == data.sleep)
   }
+
+  // MARK: - Cảm xúc tới được (KOA-T29, Kiệt 21/11)
+
+  /// Sáng sớm tháng 12 → 2, ngày yên: Koa khoác áo ấm; tháng khác / buổi chiều / không biết tháng: không.
+  @Test func coldMorningPutsOnACoat() {
+    func read(month: Int?, hour: Int) -> KoaMood.Read {
+      KoaMood.read(.init(signals: KoaMoodTests.day(), hour: hour, month: month))
+    }
+    for m in [12, 1, 2] { #expect(read(month: m, hour: 7).emotion == .coat, "tháng \(m)") }
+    #expect(read(month: 6, hour: 7).emotion == .idle)
+    #expect(read(month: 1, hour: 15).emotion != .coat, "chiều thì thôi")
+    #expect(read(month: nil, hour: 7).emotion == .idle)
+    #expect(KoaEmotion.state(.coat).outfit[.top] == "hoodie", "áo ấm thật, không phải mặt vui thường")
+    // ngày đã có việc (tập / ăn) thắng áo ấm
+    #expect(KoaMood.read(.init(signals: KoaMoodTests.day(workout: true), hour: 7, month: 1)).emotion == .proud)
+  }
+
+  /// Koa không giận người dùng: không cảm xúc, không câu thoại nào dẫn tới nét mặt cấm.
+  @Test func noEmotionOrTalkReachesAForbiddenFace() {
+    for e in KoaEmotion.Emotion.allCases {
+      #expect(!KoaEmotion.neverForUser.contains(KoaEmotion.state(e).expression), "\(e)")
+    }
+    for t in KoaTalk.Topic.allCases {
+      let f = KoaTalk.face(t)
+      #expect(!KoaEmotion.neverForUser.contains(f.peak) && !KoaEmotion.neverForUser.contains(f.settle), "\(t)")
+    }
+  }
+
+  /// Mỗi cảm xúc: có chỗ chọn trong app, hoặc nằm trong danh sách "không dùng có chủ đích". Danh sách dưới đây
+  /// là nơi chọn của từng cảm xúc — thêm cảm xúc mới mà không có chỗ dùng thì test đỏ.
+  @Test func everyEmotionIsReachableOrDeliberatelyUnused() {
+    let reachedBy: [KoaEmotion.Emotion: String] = [
+      .idle: "KoaMood.read (ngày yên)", .happy: "KoaMood.read (đã ăn)", .sad: "lỡ buổi (phòng / Hôm nay)",
+      .tired: "KoaMood.read (ngủ ít, cuối ngày trống)", .sleep: "KoaMood.read (giờ ngủ)",
+      .celebrate: "KoaMood.read (xong hết)", .curl: "đợi buổi tập theo lịch (TodayDayBlock.emotion)",
+      .proud: "KoaMood.read (đã tập)", .rested: "KoaMood.read (ngủ đủ)", .oops: "KoaMood.read (ăn quá)",
+      .hat: "KoaMood.read (sinh nhật)", .coat: "KoaMood.read (sáng sớm tháng lạnh)",
+      .breather: "màn nghỉ giữa set", .victory: "kỷ lục / tiến bộ", .ready: "chờ set sau", .pumped: "xong buổi",
+    ]
+    let deliberatelyUnused: Set<KoaEmotion.Emotion> = [.worry]  // KOA-T13: Koa không lo vì chuỗi
+    for e in KoaEmotion.Emotion.allCases {
+      #expect(reachedBy[e] != nil || deliberatelyUnused.contains(e), "\(e): chưa có chỗ dùng")
+    }
+    #expect(Set(reachedBy.keys).isDisjoint(with: deliberatelyUnused))
+  }
 }
+

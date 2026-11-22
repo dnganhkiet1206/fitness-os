@@ -118,12 +118,15 @@ public enum KoaMood {
     /// Mục tiêu kcal (`NutritionToday.calorieTarget`); `nil` = không xét ăn quá.
     public var kcalTarget: Double?
     public var isBirthday: Bool
+    /// Tháng 1…12 của hôm nay; `nil` = không xét mùa (áo ấm, KOA-T29).
+    public var month: Int?
 
     public init(
       signals: DailySignals?, stepsGoal: Int = DailySignals.defaultStepsGoal, hour: Int, streak: Int = 0,
       loggedToday: Bool = false, riskHour: Double = KoaMood.riskHour, kcalTarget: Double? = nil,
-      isBirthday: Bool = false, minute: Int = 0, sleep: SleepWindow = .standard
+      isBirthday: Bool = false, minute: Int = 0, sleep: SleepWindow = .standard, month: Int? = nil
     ) {
+      self.month = month
       self.signals = signals
       self.stepsGoal = stepsGoal
       self.hour = hour
@@ -136,6 +139,9 @@ public enum KoaMood {
       self.isBirthday = isBirthday
     }
   }
+
+  /// Tháng lạnh (miền Bắc): Koa khoác áo ấm buổi sáng (`coat`).
+  public static let coldMonths: Set<Int> = [12, 1, 2]
 
   // "Chuỗi sắp mất" (`streakInDanger` / lý do `worry`) gỡ ở KOA-T13 (Kiệt 21/11): Koa không lo vì chuỗi
   // ngày nữa (02/11, Koa Ecosystem V2) — ngày trống chỉ là ngày trống.
@@ -166,6 +172,10 @@ public enum KoaMood {
     // chưa tập vẫn là vui (`fed`) — ngày nghỉ hay tập muộn không phải lỗi.
     if i.sleep.minutesAwake(hour: i.hour, minute: i.minute) >= emptyAfterMinutes {
       return Read(emotion: .tired, reason: .emptyLate)
+    }
+    // sáng sớm tháng 12 → 2: ngày yên thì Koa khoác áo ấm (KOA-T29, Kiệt 21/11)
+    if let m = i.month, coldMonths.contains(m), i.sleep.isMorning(hour: i.hour, minute: i.minute) {
+      return Read(emotion: .coat, reason: .calm)
     }
     return Read(emotion: .idle, reason: .calm)
   }
