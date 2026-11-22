@@ -13,7 +13,7 @@ một dải ngang, giày hai miếng dẹt, balo nằm dưới đất, đồ c�
 
     python3 tools/koa-wardrobe/build.py      # chạy từ apps/ios
 """
-import json, re, sys
+import json, math, re, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -1370,6 +1370,50 @@ for k in legs_g['kids']:
     else:
         feet[leg_side(k)].append(k)
 legs_g['kids'] = [G(feet['L'], id='FOOT_L', bind='footL'), G(feet['R'], id='FOOT_R', bind='footR')]
+
+# ── NẮP CHỚP MẮT THEO TỪNG MẮT (Kiệt 21/11: "gộp mắt và mí … ít bị lỗi"). Cảnh RN: mỗi nhóm chớp (koaBlink /
+#     koaBlink2) là hai elip nắp 19 × 25 của CẢ hai mắt. Mặt mắt to (`eyesWide`: plead) có lớp mắt `koaPop`
+#     19,5 × 25,5 phồng tới ×1,07 quanh tâm mặt → nắp không phủ hết, nhắm mắt hở viền trắng. Giờ mỗi nhóm chớp
+#     là hai nhóm con, MỖI MẮT MỘT NHÓM (nắp của mắt nào ở với mắt ấy — KoaRender tách hai mắt chớp lệch theo
+#     từng con), mỗi nhóm thêm nắp lớn phủ lòng trắng mắt to lúc phồng nhất, chỉ hiện khi `eyesWide`.
+POP_MAX = max(op[1] for fr in d['keyframes']['koaPop']['tf'] for key in ('ops', 'to') for op in fr.get(key, []) if op[0] == 's')
+pop = next(n for n in walk(faceshift) if (n.get('anim') or {}).get('k') == 'koaPop')
+po = pop['o']
+pop_whites = [k['a'] for k in pop['kids'] if k['t'] == 'ellipse' and k['a'].get('fill') == '#FFFFFF' and k['a']['rx'] >= 14]
+assert len(pop_whites) == 2, pop_whites
+def wide_cover(w, pad=1.0):
+    # phủ lòng trắng ở MỌI mức phồng ×1 … ×POP_MAX (lúc chưa phồng mép trong mắt nằm xa tâm mặt hơn)
+    xs, ys = [], []
+    for i in range(9):
+        k = 1 + (POP_MAX - 1) * i / 8
+        cx = po[0] + (w['cx'] - po[0]) * k; cy = po[1] + (w['cy'] - po[1]) * k
+        xs += [cx - w['rx'] * k, cx + w['rx'] * k]; ys += [cy - w['ry'] * k, cy + w['ry'] * k]
+    cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+    rx, ry = (max(xs) - min(xs)) / 2 + pad, (max(ys) - min(ys)) / 2 + pad
+    for i in range(9):  # kiểm: mọi điểm trên viền lòng trắng, mọi mức phồng, nằm trong nắp
+        k = 1 + (POP_MAX - 1) * i / 8
+        for j in range(72):
+            t = j / 72 * 2 * math.pi
+            x = po[0] + (w['cx'] + w['rx'] * math.cos(t) - po[0]) * k
+            y = po[1] + (w['cy'] + w['ry'] * math.sin(t) - po[1]) * k
+            assert ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1, (k, j)
+    r2 = lambda v: round(v, 2)
+    return r2(cx), r2(cy), r2(rx), r2(ry)
+blink_done = 0
+for n in walk(faceshift):
+    if (n.get('anim') or {}).get('k') not in ('koaBlink', 'koaBlink2') or 'k-lash' in str(n.get('a', {}).get('class', '')):
+        continue
+    covers = n['kids']
+    assert len(covers) == 2 and all(c['t'] == 'ellipse' for c in covers), n
+    eyes = []
+    for c in sorted(covers, key=lambda c: c['a']['cx']):
+        w = min(pop_whites, key=lambda w: abs(w['cx'] - c['a']['cx']))
+        cx, cy, rx, ry = wide_cover(w)
+        big = E(cx, cy, rx, ry, fill=c['a']['fill'])
+        eyes.append(G([c, G([big], **{"if": "eyesWide"})]))
+    n['kids'] = eyes
+    blink_done += 1
+assert blink_done == 2, blink_done
 
 # Mọi món đã vẽ lại phải xuất hiện đúng một lần trở lên trong cây mới.
 flags_in = {n.get('if') for n in walk({'kids': d['nodes']})}
