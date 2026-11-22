@@ -272,7 +272,8 @@ public final class TodayController {
     onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
   ) -> WorkoutSessionController? {
     let progress = ProgressWeek.targets(userId: userId, date: today, in: choices)
-    guard let sessionPlan = plan?.sessionPlan(variant: variantToday, progress: progress) else { return nil }
+    guard let sessionPlan = plan?.sessionPlan(variant: variantToday, progress: progress, loadFactor: loadFactorToday)
+    else { return nil }
     return WorkoutSessionController(
       plan: sessionPlan, userId: userId, store: workouts, clock: clock, timeZone: timeZone,
       loggedElsewhere: serverTrained.contains(today),
@@ -310,16 +311,24 @@ public final class TodayController {
     setVariantToday(on ? .lighter : .full)
   }
 
+  /// Hệ số tạ của buổi nhẹ hôm nay (tuần nhẹ sau kỳ nghỉ dài, KOA-T04); 1 khi không có.
+  public var loadFactorToday: Double {
+    guard variantToday == .lighter, let id = plan?.template?.id else { return 1 }
+    return LighterSession.loadFactor(userId: userId, date: today, templateId: id, in: choices)
+  }
+
   /// Tuần nhẹ (`KoaWeekCoach`, 03/11): bật bản nhẹ cho mọi buổi trong lịch từ hôm nay tới hết
-  /// tuần. Trả số buổi đã bật.
+  /// tuần. Trả số buổi đã bật. `loadFactor` < 1 (KOA-T04, Kiệt 21/11: "giảm tạ thật"): tạ của các
+  /// buổi ấy giảm đúng như thẻ hứa.
   @discardableResult
-  public func setLighterWeek(through last: LocalDate) -> Int {
+  public func setLighterWeek(through last: LocalDate, loadFactor: Double = 1) -> Int {
     guard let library else { return 0 }
     var n = 0
     var d = today
     while d <= last {
       if let id = library.plan(for: d, today: today).template?.id {
         LighterSession.set(true, userId: userId, date: d, templateId: id, in: choices)
+        LighterSession.setLoadFactor(loadFactor, userId: userId, date: d, templateId: id, in: choices)
         n += 1
       }
       d = d.adding(days: 1)

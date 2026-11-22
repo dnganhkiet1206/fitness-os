@@ -752,7 +752,8 @@ struct TodayExtras<Plan: View>: View {
       cue: services.trainingCue(userId: userId), build: services.koaBuild,
       accept: {
         switch coach.kind {
-        case .light: flow.today.setLighterWeek(through: coach.monday.adding(days: 6))
+        // KOA-T04 (Kiệt 21/11): tạ giảm thật theo hệ số trên thẻ.
+        case .light(let f): flow.today.setLighterWeek(through: coach.monday.adding(days: 6), loadFactor: f)
         // KOA-T23 (Kiệt 19/11: "nối thật vào buổi sau"): mục tiêu tăng tải vào các buổi tuần này.
         case .progress: flow.today.setProgressWeek(coach.targets)
         case .steady, .paused: break
