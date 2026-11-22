@@ -167,7 +167,6 @@ public enum KoaTalk {
     case .shortSleep: order.append(.shortSleep)
     case .rested: order.append(.rested)
     case .emptyLate: order.append(.emptyLate)
-    case .worry: order.append(.nudge)
     case .fed: order.append(.fed)
     default: break
     }

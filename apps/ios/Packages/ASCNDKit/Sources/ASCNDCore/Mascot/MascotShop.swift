@@ -215,13 +215,9 @@ public enum MascotShop {
     return out
   }
 
-  /// `CONSUMABLES` — tiêu chứ không mặc; giá băng chuỗi ở `MascotRules.freezePrice`.
-  public static let consumables: [Item] = [
-    Item(
-      key: "streak_freeze", kind: .consumable, slot: nil, koaId: nil, category: nil, special: false, rarity: .rare,
-      price: MascotRules.freezePrice, collection: nil, unlockLevel: nil,
-      name: Text3(vi: "Bảo hiểm chuỗi", en: "Streak Freeze", es: "Protector de racha"))
-  ]
+  /// `CONSUMABLES` của RN: chỉ có "Bảo hiểm chuỗi" — server đã ngừng bán (AUD-14), app không mua / dùng.
+  /// Gỡ khỏi danh mục ở KOA-T56 (Kiệt 21/11): chuỗi không còn thưởng / bảo hiểm.
+  public static let consumables: [Item] = []
 
   public static let collections: [Collection] = [
     Collection(

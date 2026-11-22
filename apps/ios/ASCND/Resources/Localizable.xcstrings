@@ -16198,29 +16198,6 @@
         }
       }
     },
-    "mr.error.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Couldn't finish that"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chưa làm được"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No se pudo completar"
-          }
-        }
-      }
-    },
     "mr.error.coins": {
       "extractionState": "manual",
       "localizations": {
@@ -66339,29 +66316,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "¡Feliz cumpleaños! Hoy Koa lleva el gorro por ti 🎉"
-          }
-        }
-      }
-    },
-    "koa.say.worry %lld": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your %lld-day streak just needs one small thing today."
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chuỗi %lld ngày chỉ cần một việc nhỏ hôm nay thôi."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu racha de %lld días solo necesita algo pequeño hoy."
           }
         }
       }
