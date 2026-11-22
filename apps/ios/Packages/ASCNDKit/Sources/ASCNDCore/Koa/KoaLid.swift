@@ -9,7 +9,7 @@ import Foundation
 /// - mí buồn mép cao → hệ số giãn không đủ, nhắm hẳn vẫn hở nửa dưới mắt; bọng mắt tụt theo xuống má.
 ///
 /// Giờ mép mí TRƯỢT xuống đường mắt nhắm (cong như mắt nhắm thường); phần lông của mí luôn là phần của mắt nằm
-/// trên mép, đường mi giữ nguyên độ dày, bọng mắt đứng yên. Ở độ khép 0, hình trùng đúng từng ký tự với cảnh
+/// trên mép, đường mi giữ nguyên độ dày (không vẩy mi), bọng mắt đứng yên. Ở độ khép 0, hình trùng đúng từng ký tự với cảnh
 /// tủ đồ (test `KoaLidCloseTests`), nên chỉ cần thay chuỗi `d` của hai hình mỗi mắt.
 enum KoaLid {
   struct Kind: Sendable {
@@ -87,11 +87,8 @@ enum KoaLid {
       dn.append((x + nx * hw, y + ny * hw))
     }
     let ring = up + dn.reversed()
-    var lash = "M" + ring.map { "\(num($0.0)) \(num($0.1))" }.joined(separator: " L") + " Z"
-    let fx = xo, fy = yo
-    lash +=
-      " M\(num(fx - side * 3)) \(num(fy - 1.4)) Q\(num(fx + side * 2.5)) \(num(fy - 2.2)) \(num(fx + side * 4.6)) \(num(fy - 4.6))"
-      + " Q\(num(fx + side * 5.6)) \(num(fy - 2.6)) \(num(fx + side * 3.2)) \(num(fy + 0.4)) Q\(num(fx)) \(num(fy + 2.2)) \(num(fx - side * 2)) \(num(fy + 1.8)) Z"
+    // không vẽ vẩy mi ở đuôi mắt (Kiệt 21/11: "bỏ cái nét thừa phía ngoài cùng của mí")
+    let lash = "M" + ring.map { "\(num($0.0)) \(num($0.1))" }.joined(separator: " L") + " Z"
     return (fur, lash)
   }
 

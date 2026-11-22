@@ -1420,9 +1420,7 @@ def lid_kids(p):
             up.append((x - nx * hw, y - ny * hw)); dn.append((x + nx * hw, y + ny * hw))
         ring = up + dn[::-1]
         d = "M" + " L".join(f"{_r(x)} {_r(y)}" for x, y in ring) + " Z"
-        fx, fy = xo, yo
-        d += (f" M{_r(fx - side * 3)} {_r(fy - 1.4)} Q{_r(fx + side * 2.5)} {_r(fy - 2.2)} {_r(fx + side * 4.6)} {_r(fy - 4.6)}"
-              f" Q{_r(fx + side * 5.6)} {_r(fy - 2.6)} {_r(fx + side * 3.2)} {_r(fy + 0.4)} Q{_r(fx)} {_r(fy + 2.2)} {_r(fx - side * 2)} {_r(fy + 1.8)} Z")
+        # (Kiệt 21/11: bỏ vẩy mi ở đuôi mắt — "nét thừa phía ngoài cùng của mí")
         kids.append(P(d, fill="#20242A"))
         if p.get("bag"):
             kids.append(P(f"M{_r(cx - 11)} {_r(LID_CY + LID_RY + 3)} Q{_r(cx)} {_r(LID_CY + LID_RY + 8)} {_r(cx + 11)} {_r(LID_CY + LID_RY + 3)}",
