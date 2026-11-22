@@ -267,11 +267,15 @@ public enum KoaRender {
 
     let arms = c.dress && n.id == "ARMS"
     var kids: [Element] = []
+    // phần tử của TỪNG con: một hình có thể ra nhiều lượt tô (lượt nền + quầng sáng ở giao diện tối)
+    var spans: [Range<Int>] = []
     // đi: bàn chân gần người xem vẽ sau (đè lên chân kia)
     let order = n.id == "LEGS" && c.walk?.leftNear == true ? Array(l.kids.enumerated().reversed()) : Array(l.kids.enumerated())
     for (i, k) in order {
+      let start = kids.count
       kids += node(
         k, c, armPart: arms ? KoaMath.dressArmAt[i] : nil, armHidden: arms && KoaMath.dressArmHide.contains(i))
+      if kids.count > start { spans.append(start..<kids.count) }
     }
     // nụ cười đóng của cái liếc nằm TRONG `#FACE`, theo mọi thứ cái liếc làm
     if let g = c.gaze, c.swapMouth, n.id == "FACE", n.kids != nil { kids.append(smile(g.k)) }
@@ -384,10 +388,15 @@ public enum KoaRender {
         // nắp chớp mắt: co HÌNH, không co màu / đèn — đèn của nắp ở không gian da đầu (KoaLight), co cả dải
         // đèn theo nắp thì lúc nửa nhắm viền nắp lộ ra (Kiệt 21/11: "mí mắt bị dính như 2 lớp chồng")
         if !KoaScene.rn { props[KoaPaint.geometryOnly] = .number(1) }
-        // hai mắt lệch nhau (Koa V2): mi phải là một nhóm riêng với độ khép của nó
-        if let r = c.blinkRight, r != b, body.count == 2 {
+        // hai mắt lệch nhau (Koa V2): mi phải là một nhóm riêng với độ khép của nó. Tách theo CON (mỗi mắt
+        // một elip), không theo số phần tử: ở giao diện tối mỗi nắp có thêm lượt quầng sáng — đếm phần tử
+        // thì ra bốn, không tách, cả hai nắp theo mắt trái (Devin #996)
+        if let r = c.blinkRight, r != b, shape == nil, spans.count == 2 {
           let right = KoaMath.mul(baseM, KoaMath.opsMat([KoaScene.Op("s", [1, r])], ox, oy))
-          el0 = [Element("G", props, matrix: matrix, kids: [body[0]]), Element("G", props, matrix: right, kids: [body[1]])]
+          el0 = [
+            Element("G", props, matrix: matrix, kids: Array(body[spans[0]])),
+            Element("G", props, matrix: right, kids: Array(body[spans[1]])),
+          ]
         }
       } else if c.settle, let lag = KoaMath.settleLag[anim.k], c.t - lag >= anim.delay {
         // nhịp nghỉ có đà (Koa V2): đầu nhún trước, tay rồi tai theo sau — không cùng một nhịp
