@@ -208,6 +208,8 @@ public struct WorkoutView: View {
         onStarted: { restBegan[last?.key ?? "rest"] = $0 },
         clock: restClocks.box(last?.key ?? "rest")
       )
+      // trần cỡ chữ phải đặt Ở NGOÀI: `@ScaledMetric` của màn nghỉ đọc môi trường của chỗ dựng (Devin #990)
+      .dynamicTypeSize(...KoaRestScreen.maxType)
       .id(last?.key ?? "rest")
       .transition(.opacity)
     }
@@ -580,7 +582,7 @@ public struct WorkoutView: View {
         keyboard: .numbersAndPunctuation, placeholder: "0", focus: $focusedField, field: .reps(row.key)
       ) { WorkoutFocus.stepReps($0, by: $1) }
 
-      HStack(spacing: DS.Spacing.sm) {
+      metaRow {
         restMenu(row)
         rpeMenu(row)
         // Kiệt 13/11: thẻ đang tập cũng phải đánh dấu được set khởi động
@@ -976,7 +978,7 @@ public struct WorkoutView: View {
         }
         .buttonStyle(.plain)
       }
-      HStack(spacing: DS.Spacing.sm) {
+      metaRow {
         restMenu(row)
         rpeMenu(row)
         warmupToggle(row, editable: editable)
@@ -1287,6 +1289,15 @@ public struct WorkoutView: View {
       .flatMap { p.weightText[$0.key] }
   }
 
+  /// Hàng nghỉ · RPE · khởi động: ngang ở cỡ chữ thường; xếp dọc ở cỡ trợ năng (KOA-T43 soát AX3 20/11:
+  /// ép ngang thì nút "Khởi động" bị bóp còn một chữ cái mỗi dòng).
+  private func metaRow<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+    let layout = typeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Spacing.xs))
+      : AnyLayout(HStackLayout(spacing: DS.Spacing.sm))
+    return layout { content() }
+  }
+
   /// Bật / tắt set khởi động của set đang mở.
   private func warmupToggle(_ row: PlannedSet, editable: Bool) -> some View {
     let on = controller.isWarmup(row.key)
@@ -1296,6 +1307,7 @@ public struct WorkoutView: View {
     } label: {
       Label(String(localized: "ws.warmup"), systemImage: on ? "flame.fill" : "flame")
         .font(DS.TextStyle.footnote.weight(.semibold))
+        .lineLimit(1)
         .foregroundStyle(on ? Color.white : rose)
         .padding(.horizontal, DS.Spacing.sm + 2)
         .frame(minHeight: 36)
