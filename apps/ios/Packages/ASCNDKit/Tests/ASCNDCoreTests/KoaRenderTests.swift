@@ -300,3 +300,30 @@ struct KoaBlinkGeometryTests {
   }
 }
 
+/// Mí mắt vẽ lại (Kiệt 21/11): mí phủ KÍN mép trên của mắt (trước: nắp bằng khít mắt lộ viền, mí nặng dời
+/// xuống hở hai vệt trắng) và phủ đủ bề ngang mắt; không còn nắp mí cũ của cảnh RN trong cảnh tủ đồ.
+struct KoaLidShapeTests {
+  static func groups(_ n: KoaScene.Node, _ cond: String, into out: inout [KoaScene.Node]) {
+    if n.cond == cond { out.append(n) }
+    for k in n.kids ?? [] { groups(k, cond, into: &out) }
+  }
+
+  @Test func lidsCoverTheTopOfTheEye() throws {
+    for cond in ["lidsHalf", "lidsHeavy", "lidsSad"] {
+      var found: [KoaScene.Node] = []
+      for n in KoaScene.wardrobePayload.nodes { Self.groups(n, cond, into: &found) }
+      let g = try #require(found.first, "\(cond)")
+      let covers = (g.kids ?? []).filter { if case .string(let f)? = $0.a?["fill"] { return f.uppercased() == "#BFC7CF" } else { return false } }
+      #expect(covers.count == 2, "\(cond): hai nắp")
+      for c in covers {
+        guard case .string(let d)? = c.a?["d"] else { Issue.record("\(cond): nắp không có d"); continue }
+        #expect(!d.contains(" A18 23.5 0 0 1 "), "\(cond): còn nắp cũ (nửa elip bằng khít mắt)")
+        let b = KoaPaint.bounds(KoaPaint.parsePath(d))
+        #expect(b.y <= 96 - 23.5 - 1, "\(cond): mí phải phủ quá mép trên của mắt (\(b))")
+        // mí buồn cố ý chừa đầu mắt (mép mí cao hơn mắt ở đó)
+        #expect(b.width >= (cond == "lidsSad" ? 30 : 36), "\(cond): mí phải phủ đủ bề ngang mắt (\(b))")
+      }
+    }
+  }
+}
+
