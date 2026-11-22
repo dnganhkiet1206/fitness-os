@@ -483,13 +483,16 @@ public enum KoaRender {
     // nhịp gốc của bản vẽ (lỗi Kiệt thấy: mắt khép mất nét mi, nét mi hiện lúc mắt mở). Hai
     // nhóm chớp (`koaBlink`, `koaBlink2`) cùng khép một lúc → chỉ vẽ nét mi một lần.
     func lashes(_ m: KoaMath.Mat, _ eye: Int?) -> [Element] { [lash(m, only: eye)] }
+    // Nét mi vẽ cùng nhóm chớp CUỐI (cảnh tủ đồ): nhóm sau vẽ nắp đè lên — nét mi theo nhóm đầu thì bị nắp của nhóm
+    // sau che mất nửa trong (mảnh hơn thiết kế), mắt to có nắp lớn thì che gần hết (Kiệt 21/11). Bản RN giữ cũ.
+    let lashGroup = KoaScene.rn ? "koaBlink" : "koaBlink2"
     if let b = c.blink, c.live, let anim, KoaMath.blinkAnims.contains(anim.k) {
       let m = KoaMath.opsMat([KoaScene.Op("s", [1, b])], ox, oy)
       if let r = c.blinkRight, r != b {
         let mr = KoaMath.opsMat([KoaScene.Op("s", [1, r])], ox, oy)
-        if anim.k == "koaBlink", m[3] > KoaMath.lashMin { moved += lashes(m, 0) }
-        if anim.k == "koaBlink", mr[3] > KoaMath.lashMin { moved += lashes(mr, 1) }
-      } else if anim.k == "koaBlink", m[3] > KoaMath.lashMin {
+        if anim.k == lashGroup, m[3] > KoaMath.lashMin { moved += lashes(m, 0) }
+        if anim.k == lashGroup, mr[3] > KoaMath.lashMin { moved += lashes(mr, 1) }
+      } else if anim.k == lashGroup, m[3] > KoaMath.lashMin {
         moved += lashes(m, nil)
       }
     } else if c.poke != nil, c.live, let anim, KoaMath.blinkAnims.contains(anim.k), c.t >= anim.delay,

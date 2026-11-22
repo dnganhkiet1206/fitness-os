@@ -115,13 +115,26 @@ struct KoaRenderGoldenTests {
 /// Mắt lờ đờ không nháy (Kiệt 04/11): hai lớp nháy là elip phủ cả mắt, mọc lên dưới mí thành
 /// "một hình elip vẽ thêm". Mắt mở to vẫn nháy; bản RN giữ nguyên.
 struct KoaLazyEyesTests {
+  /// tâm các elip nắp (ry 25) trong cả cây con; nil nếu cây con có hình khác
+  static func coverCentres(_ e: KoaRender.Element) -> Set<Double>? {
+    if e.tag == "Ellipse" {
+      guard e.props["ry"] == .number(25), case .number(let x)? = e.props["cx"] else { return nil }
+      return [x]
+    }
+    guard e.tag == "G", !e.kids.isEmpty else { return nil }
+    var out: Set<Double> = []
+    for k in e.kids {
+      guard let c = coverCentres(k) else { return nil }
+      out.formUnion(c)
+    }
+    return out
+  }
+
   static func blinks(_ e: KoaRender.Element) -> Int {
-    // nhóm nháy = `G` chỉ gồm elip mí (ry 25) phủ ĐÚNG hai mắt (hai tâm). Mỗi nắp có thể có thêm lớp
-    // quầng sáng đầu cùng hình (Kiệt 21/11: nắp mắt dùng đèn của da đầu) — đếm theo tâm, không theo số lớp.
-    let ellipses = e.kids.allSatisfy { $0.tag == "Ellipse" && $0.props["ry"] == .number(25) }
-    let centres = Set(e.kids.compactMap { k -> Double? in if case .number(let x)? = k.props["cx"] { return x } else { return nil } })
-    let own = e.tag == "G" && !e.kids.isEmpty && ellipses && centres.count == 2 ? 1 : 0
-    return own + e.kids.reduce(0) { $0 + blinks($1) }
+    // nhóm nháy = `G` chỉ gồm elip nắp (ry 25) phủ ĐÚNG hai mắt (hai tâm), con của nó thì chưa (cảnh tủ đồ chia
+    // nắp theo từng mắt — Kiệt 21/11). Mỗi nắp có thể có thêm lớp quầng sáng đầu cùng hình — đếm theo tâm.
+    let mine = coverCentres(e)?.count == 2 && !e.kids.contains { coverCentres($0)?.count == 2 }
+    return (mine ? 1 : 0) + e.kids.reduce(0) { $0 + blinks($1) }
   }
 
   static func figure(_ e: KoaFlags.Expression, rn: Bool = false) -> KoaRender.Element {
@@ -487,5 +500,115 @@ struct KoaLidCloseTests {
     for k in want.keys { #expect(!drawn.contains(k), "không còn mí đứng yên") }
     for b in bag { #expect(drawn.contains(b), "bọng mắt giữ nguyên chỗ") }
     #expect(!stretched, "không còn phép giãn dọc nhóm mí")
+  }
+}
+
+/// Mắt + nắp chớp một khối (Kiệt 21/11: "gộp mắt và mí … ít bị lỗi"): trong cảnh tủ đồ mỗi nhóm chớp là hai nhóm
+/// con, mỗi mắt một nhóm; mặt mắt to (`eyesWide`, lớp `koaPop` phồng ×1,07) có nắp lớn phủ hết lòng trắng ở mọi
+/// mức phồng — trước đó nhắm mắt hở viền trắng quanh mắt (mặt plead).
+struct KoaWideEyeBlinkTests {
+  static func walk(_ n: KoaScene.Node, _ f: (KoaScene.Node) -> Void) {
+    f(n)
+    for k in n.kids ?? [] { walk(k, f) }
+  }
+  static func num(_ n: KoaScene.Node, _ k: String) -> Double { n.a?[k]?.number ?? .nan }
+
+  @Test func blinkGroupsArePerEyeAndCoverTheWideEyes() throws {
+    var pop: KoaScene.Node?
+    var groups: [KoaScene.Node] = []
+    for r in KoaScene.wardrobePayload.nodes {
+      Self.walk(r) { n in
+        if n.anim?.k == "koaPop" { pop = n }
+        if let k = n.anim?.k, KoaMath.blinkAnims.contains(k) { groups.append(n) }
+      }
+    }
+    let p = try #require(pop)
+    let frames = try #require(KoaScene.keyframes["koaPop"]?.tf)
+    var scale: Double = 1
+    for f in frames {
+      for op in f.ops + (f.to ?? []) where op.kind == "s" { scale = max(scale, op.values[0]) }
+    }
+    #expect(scale > 1.05, "lớp mắt to có phồng")
+    let o = p.o ?? [120, 96]
+    let big: [KoaScene.Node] = (p.kids ?? []).filter { $0.t == "ellipse" && Self.num($0, "rx") >= 14 }
+    let whites = big.sorted { Self.num($0, "cx") < Self.num($1, "cx") }
+    #expect(whites.count == 2)
+    #expect(groups.count == 2)
+    for g in groups {
+      func eyeX(_ n: KoaScene.Node) -> Double { Self.num(n.kids?.first ?? n, "cx") }
+      let eyes = (g.kids ?? []).sorted { eyeX($0) < eyeX($1) }
+      #expect(eyes.count == 2, "mỗi mắt một nhóm con")
+      for (eye, w) in zip(eyes, whites) {
+        // nắp lớn (chỉ khi eyesWide) phủ lòng trắng mắt to lúc phồng nhất, quanh tâm phồng của lớp
+        let wide = try #require(eye.kids?.first { $0.cond == "eyesWide" }?.kids?.first)
+        let (cx, cy, rx, ry) = (Self.num(wide, "cx"), Self.num(wide, "cy"), Self.num(wide, "rx"), Self.num(wide, "ry"))
+        let (wx, wy, wrx, wry) = (Self.num(w, "cx"), Self.num(w, "cy"), Self.num(w, "rx"), Self.num(w, "ry"))
+        // mọi mức phồng ×1 … ×max (lúc chưa phồng, mép trong mắt nằm xa tâm mặt hơn lúc phồng)
+        for step in 0...8 {
+          let k: Double = 1 + (scale - 1) * Double(step) / 8
+          for i in 0..<72 {
+            let t: Double = Double(i) / 72 * 2 * Double.pi
+            let px: Double = wx + wrx * cos(t)
+            let py: Double = wy + wry * sin(t)
+            let x: Double = o[0] + (px - o[0]) * k
+            let y: Double = o[1] + (py - o[1]) * k
+            let u: Double = (x - cx) / rx
+            let v: Double = (y - cy) / ry
+            #expect(u * u + v * v <= 1, "mức \(k), điểm \(i) của lòng trắng mắt to lọt ra ngoài nắp")
+          }
+        }
+      }
+    }
+  }
+
+  /// Nắp lớn chỉ vẽ cho mặt mắt to (plead); mặt thường (happy) không có.
+  @Test func wideCoverShowsOnlyForWideEyes() {
+    func coverRadii(_ e: KoaFlags.Expression) -> [Double] {
+      var o = KoaRender.Options()
+      o.expression = e
+      o.live = true
+      o.blink = 1
+      var ry: [Double] = []
+      func walk(_ el: KoaRender.Element) {
+        if el.tag == "Ellipse", case .number(let r)? = el.props["ry"] { ry.append(r) }
+        el.kids.forEach(walk)
+      }
+      walk(KoaRender.figure(o))
+      return ry
+    }
+    #expect(coverRadii(.plead).contains { $0 > 28 }, "mặt plead có nắp lớn")
+    #expect(!coverRadii(.happy).contains { $0 > 28 }, "mặt thường không có")
+  }
+}
+
+/// Nét mi lúc nhắm vẽ SAU mọi nắp chớp (Kiệt 21/11): trước đó nét mi đi cùng nhóm chớp đầu, nhóm chớp thứ hai
+/// vẽ nắp đè lên — nét mi mất nửa trong, mắt to (plead) mất gần hết.
+struct KoaLashOnTopTests {
+  /// thứ tự vẽ: (là nét mi?, là nắp?) của mọi hình, theo đúng thứ tự trong cây
+  static func order(_ e: KoaRender.Element, into out: inout [(lash: Bool, cover: Bool)]) {
+    if e.tag == "Path", e.props["strokeWidth"] == .number(KoaMath.lashWidth), case .string(let d)? = e.props["d"], KoaMath.lashPaths.contains(d) {
+      out.append((true, false))
+    } else if e.tag == "Ellipse", case .number(let ry)? = e.props["ry"], ry >= 25 {
+      out.append((false, true))
+    }
+    for k in e.kids { order(k, into: &out) }
+  }
+
+  @Test func lashDrawsAfterEveryCover() {
+    for e: KoaFlags.Expression in [.happy, .plead] {
+      for right in [nil, 0.6] as [Double?] {
+        var o = KoaRender.Options()
+        o.expression = e
+        o.live = true
+        o.blink = 1
+        o.blinkRight = right
+        var seq: [(lash: Bool, cover: Bool)] = []
+        Self.order(KoaRender.figure(o), into: &seq)
+        let lastCover = seq.lastIndex { $0.cover } ?? -1
+        let firstLash = seq.firstIndex { $0.lash } ?? -1
+        #expect(firstLash >= 0, "\(e): có nét mi")
+        #expect(firstLash > lastCover, "\(e) right \(String(describing: right)): nét mi phải vẽ sau mọi nắp")
+      }
+    }
   }
 }
