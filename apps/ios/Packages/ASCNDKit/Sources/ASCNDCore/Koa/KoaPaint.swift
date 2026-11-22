@@ -552,10 +552,42 @@ public enum KoaPaint {
     return out
   }
 
-  static func ops(_ e: KoaRender.Element, _ m: Mat, _ parent: Style, _ defs: Defs) -> [Op] {
+  /// Nhóm có khoá này: ma trận của nhóm chỉ áp lên HÌNH (toạ độ), không áp lên màu / dải đèn — màu vẫn
+  /// theo không gian cha. Dùng cho nắp chớp mắt: nắp co theo độ khép, đèn vẫn khớp da đầu.
+  public static let geometryOnly = "koaGeometryOnly"
+
+  static func transform(_ segs: [Segment], _ g: Mat) -> [Segment] {
+    func t(_ p: Point) -> Point { Point(g[0] * p.x + g[2] * p.y + g[4], g[1] * p.x + g[3] * p.y + g[5]) }
+    return segs.map {
+      switch $0 {
+      case .move(let p): .move(t(p))
+      case .line(let p): .line(t(p))
+      case .quad(let c, let p): .quad(t(c), t(p))
+      case .cubic(let c1, let c2, let p): .cubic(t(c1), t(c2), t(p))
+      case .close: .close
+      }
+    }
+  }
+
+  /// `geom`: phép biến đổi hình đang chờ (từ nhóm `geometryOnly` bên ngoài), áp thẳng vào toạ độ của hình;
+  /// khi có nó, ma trận vẽ (màu / đèn) dừng ở `m` của cha nhóm ấy.
+  static func ops(_ e: KoaRender.Element, _ m: Mat, _ parent: Style, _ defs: Defs, geom: Mat? = nil) -> [Op] {
     switch e.tag {
     case "Defs", "ClipPath", "LinearGradient", "RadialGradient", "Stop": return []
     default: break
+    }
+    if geom != nil || e.props[geometryOnly] != nil {
+      // hình đi theo g = geom · (ma trận của phần tử); màu vẽ trong `m`
+      let g = KoaMath.mul(geom ?? KoaMath.identity, e.matrix ?? KoaMath.identity)
+      let st = style(e.props, parent, defs)
+      let opacity = number(e.props["opacity"]) ?? 1
+      if let segs = segments(e) {
+        let ts = transform(segs, g)
+        return [.shape(Shape(segments: ts, bounds: bounds(ts), style: st, opacity: opacity, matrix: m))]
+      }
+      let inner = e.kids.flatMap { ops($0, m, st, defs, geom: g) }
+      if opacity >= 1 { return inner }
+      return inner.isEmpty ? [] : [.group(opacity: opacity, clip: nil, ops: inner)]
     }
     let mm = e.matrix.map { KoaMath.mul(m, $0) } ?? m
     let st = style(e.props, parent, defs)
