@@ -383,7 +383,7 @@ struct AssistantTab: View {
   private var koaWeek: KoaWeek.State? {
     KoaWeek.state(
       today: flow.today.today, library: flow.today.library, trained: flow.today.trained,
-      paused: services.koaPausedDay(userId: flow.today.userId, today: flow.today.today))
+      paused: services.koaPausedDay(userId: flow.today.userId, today: flow.today.today), walkOnly: KoaWeek.walkOnly(services.koaGainsHistory?.days))
   }
 
   private var progressSnapshot: ProgressStatusBook.Snapshot? {

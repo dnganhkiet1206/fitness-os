@@ -714,7 +714,7 @@ struct TodayExtras<Plan: View>: View {
     guard let flow else { return nil }
     return KoaWeek.state(
       today: flow.today.today, library: flow.today.library, trained: flow.today.trained,
-      paused: services.koaPausedDay(userId: flow.today.userId, today: flow.today.today))
+      paused: services.koaPausedDay(userId: flow.today.userId, today: flow.today.today), walkOnly: KoaWeek.walkOnly(services.koaGainsHistory?.days))
   }
 
   // MARK: - Thẻ đầu tuần (KoaWeekCoach, 03/11)
@@ -792,7 +792,7 @@ struct TodayExtras<Plan: View>: View {
     // Tuần trước trừ ngày Tạm nghỉ: tuần nghỉ có chủ đích không thành "lỡ buổi" → tuần nhẹ sai.
     let last = KoaWeek.state(
       today: today.adding(days: -7), library: library, trained: flow.today.trained,
-      paused: services.koaPausedDay(userId: flow.today.userId, today: today))
+      paused: services.koaPausedDay(userId: flow.today.userId, today: today), walkOnly: KoaWeek.walkOnly(services.koaGainsHistory?.days))
     let lastWeek = KoaWeekCoach.LastWeek(planned: last?.target ?? 0, done: last?.done ?? 0)
     guard KoaWeekCoach.shows(today: today, lastWeek: lastWeek, answered: answered),
       let insights = flow.insights, insights.loaded
@@ -860,7 +860,7 @@ struct TodayExtras<Plan: View>: View {
     if let flow {
       let lastWeek = KoaWeek.state(
         today: flow.today.today.adding(days: -7), library: flow.today.library, trained: flow.today.trained,
-        paused: services.koaPausedDay(userId: flow.today.userId, today: flow.today.today))
+        paused: services.koaPausedDay(userId: flow.today.userId, today: flow.today.today), walkOnly: KoaWeek.walkOnly(services.koaGainsHistory?.days))
       coins += await week.claimMissed(lastWeek) ?? 0
     }
     // Chỉ lượt VỪA nhận mới mới mừng (KOA-T05) — `.justClaimed` còn giữ để thẻ hiện,

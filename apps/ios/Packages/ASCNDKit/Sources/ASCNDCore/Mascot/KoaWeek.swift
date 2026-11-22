@@ -41,11 +41,14 @@ public enum KoaWeek {
 
   /// `nil` khi chưa đọc được lịch hay lịch không có buổi nào (chưa có tuần để đếm).
   /// Ngày tạm nghỉ (`KoaPauseLog`, cả đợt đã qua) không tính vào đích: tuần có nghỉ thì đích nhỏ lại theo.
+  /// `walkOnly`: ngày CHỈ có đi bộ (Health) — không tính là đã tập (KOA-T20, Kiệt 21/11: một luật đủ tuần với
+  /// +15 Gains; đi bộ đã có Gains riêng).
   public static func state(
     today: LocalDate, library: TemplateSnapshot?, trained: Set<LocalDate>,
-    paused: (LocalDate) -> Bool = { _ in false }
+    paused: (LocalDate) -> Bool = { _ in false }, walkOnly: Set<LocalDate> = []
   ) -> State? {
     guard let library else { return nil }
+    let trained = trained.subtracting(walkOnly)
     let week = KoaGains.Week(library)
     guard !week.planned.isEmpty || !library.overrides.isEmpty else { return nil }
     let start = WeeklyChallenges.weekStart(today)
@@ -58,6 +61,15 @@ public enum KoaWeek {
 }
 
 extension KoaWeek {
+  /// Ngày CHỈ có đi bộ trong lịch sử Gains (không buổi nặng / cardio nào cùng ngày) — bỏ khỏi "đã tập" (KOA-T20).
+  public static func walkOnly(_ history: [KoaGains.Day]?) -> Set<LocalDate> {
+    guard let history else { return [] }
+    var best: [LocalDate: KoaGains.Kind] = [:]
+    for d in history { best[d.date] = max(best[d.date] ?? d.kind, d.kind) }
+    return Set(best.filter { $0.value == .walk }.keys)
+  }
+
+
   /// Bảy ngày Thứ Hai → Chủ nhật của một tuần bất kỳ theo lịch đã áp (vòng ngày ở
   /// màn Tổng kết tuần). Cùng `plan(for:)` với `state` nên tuần này hai nơi giống nhau.
   public static func days(
@@ -95,7 +107,8 @@ extension KoaWeek {
     let end = weekStart.adding(days: 6)
     let week = KoaGains.Week(library)
     let inWeek = library.overrides.filter { $0.date >= weekStart && $0.date <= end }
-    let trained = Set(history.map(\.date).filter { $0 >= weekStart && $0 <= min(end, today) })
+    // KOA-T20: "đã tập" = ngày có buổi nặng / cardio — ngày chỉ đi bộ không tính (cùng luật với Gains).
+    let trained = Set(history.filter { $0.kind != .walk }.map(\.date).filter { $0 >= weekStart && $0 <= min(end, today) })
     let pausedPlanned = days(weekStart: weekStart, today: today, library: library, trained: trained)
       .filter { $0.planned && !$0.trained && paused($0.date) }.count
     let last = min(end, today)

@@ -897,7 +897,10 @@ final class AppServices {
   func loadKoaGains(userId: String) async -> KoaGainsSync.Loaded? {
     guard let rows else { return nil }
     let plans = await templates.cached(userId: userId)
-    return await KoaGainsSync.load(userId: userId, store: rows, plans: plans, now: SystemWallClock().nowMillis(), in: .current)
+    let now = SystemWallClock().nowMillis()
+    return await KoaGainsSync.load(
+      userId: userId, store: rows, plans: plans, now: now, in: .current,
+      pauses: koaPauseLog(userId: userId, today: LocalDate(now, in: .current)))
   }
 
   /// Các ngày có ghi, cho mốc ghi đều. Đọc hỏng thì giữ các ngày đang biết của đúng người này.
