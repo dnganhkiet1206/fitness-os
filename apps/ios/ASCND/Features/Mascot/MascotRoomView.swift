@@ -25,8 +25,6 @@ struct MascotRoomView: View {
   let room: MascotRoomController
   /// Sổ huy chương cho hàng "Huy hiệu" (`nav.push('/awards')`) — B truyền khi nối.
   var awards: AwardsBook? = nil
-  /// Sổ thử thách tuần cho hàng "Thử thách" (`nav.push('/challenges')`).
-  var challenges: WeeklyChallengesBook? = nil
   /// Tủ đồ dùng chung với Hôm nay (thay đồ ở đây, Koa ngoài kia đổi theo).
   var sharedShop: MascotShopBook? = nil
   @Environment(ProfileBook.self) private var profile: ProfileBook?
@@ -149,14 +147,6 @@ struct MascotRoomView: View {
         guard let amount else { return }
         say(amount == 1 ? String(localized: "mr.welcome.one") : String(localized: "mr.welcome.other \(amount)"))
         room.welcomeShown()
-      }
-      .alert(
-        String(localized: "mr.error.title"),
-        isPresented: Binding(get: { room.actionFailure != nil }, set: { if !$0 { room.clearFailure() } })
-      ) {
-        Button(String(localized: "common.cancel"), role: .cancel) {}
-      } message: {
-        Text(room.actionFailure.map(Self.message) ?? "")
       }
   }
 

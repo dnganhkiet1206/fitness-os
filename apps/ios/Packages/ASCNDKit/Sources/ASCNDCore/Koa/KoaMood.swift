@@ -17,10 +17,6 @@
 public enum KoaMood {
   /// `RISK_HOUR`: sàn của "buổi tối" khi người này chưa có giờ quen.
   public static let riskHour = 18.0
-  /// `RISK_MIN_STREAK`: chỉ lo cho một chuỗi app đã gọi là thành tích (huy chương 3 ngày).
-  public static let riskMinStreak = 3
-  /// `RISK_SPAN`: khung lo dài bao nhiêu giờ kể từ giờ muộn của người này.
-  public static let riskSpan = 6.0
   /// Giờ ngủ khi người dùng chưa đặt: từ 22:00 tới trước 06:00.
   public static let nightFrom = 22
   public static let morningFrom = 6
@@ -92,7 +88,7 @@ public enum KoaMood {
 
   /// Vì sao Koa có nét mặt này — câu của Koa đọc từ đây.
   public enum Reason: String, Sendable, Hashable, CaseIterable {
-    case unread, night, birthday, worry, allDone, overate, rested, shortSleep, trained, fed, emptyLate, calm
+    case unread, night, birthday, allDone, overate, rested, shortSleep, trained, fed, emptyLate, calm
   }
 
   public struct Read: Sendable, Hashable {
@@ -141,12 +137,8 @@ public enum KoaMood {
     }
   }
 
-  /// `streakInDanger`: chuỗi đủ dài, hôm nay thật sự trống, và đang trong khung
-  /// `riskSpan` giờ kể từ giờ muộn của người này (khung trên vòng 24 giờ).
-  public static func streakInDanger(streak: Int, emptyToday: Bool, hour: Int, riskHour: Double) -> Bool {
-    let since = (((Double(hour) - riskHour).truncatingRemainder(dividingBy: 24)) + 24).truncatingRemainder(dividingBy: 24)
-    return emptyToday && streak >= riskMinStreak && since < riskSpan
-  }
+  // "Chuỗi sắp mất" (`streakInDanger` / lý do `worry`) gỡ ở KOA-T13 (Kiệt 21/11): Koa không lo vì chuỗi
+  // ngày nữa (02/11, Koa Ecosystem V2) — ngày trống chỉ là ngày trống.
 
   /// Nét mặt của Koa, theo thứ tự ưu tiên ở đầu tệp.
   public static func read(_ i: Input) -> Read {

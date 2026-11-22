@@ -292,9 +292,7 @@ struct MascotRoomControllerTests {
     let (c, e) = make(s)
     await c.load()
     #expect(c.streak.count == 3)
-    #expect(!c.showsStreakBonus)
-    #expect(await c.claimStreakBonus() == nil)
-    #expect(e.claims.isEmpty)
+    #expect(e.claims.isEmpty, "chuỗi không có thưởng (KOA-T56)")
   }
 
   /// Koa Ecosystem V2 (02/11): không còn 15 xu chuỗi tự về mỗi ngày.
@@ -305,20 +303,6 @@ struct MascotRoomControllerTests {
     let (c, e) = make(s)
     await c.load()
     #expect(e.claims.isEmpty)
-    #expect(c.streakAutoClaim == nil)
-  }
-
-  /// Nhận tay bị từ chối thì báo đúng lỗi.
-  @Test func refusedClaimNamesTheFailure() async {
-    let s = FakeSource()
-    s.ledgerRows = Self.welcomed
-    s.dates = [today, LocalDate("2026-10-07")!]
-    let (c, e) = make(s)
-    e.claimError = MascotFailure.dailyCeiling
-    await c.load()
-    #expect(c.actionFailure == nil, "đọc phòng không tự nhận gì")
-    #expect(await c.claimStreakBonus() == nil)
-    #expect(c.actionFailure == .dailyCeiling)
   }
 
   // MARK: - Băng chuỗi
