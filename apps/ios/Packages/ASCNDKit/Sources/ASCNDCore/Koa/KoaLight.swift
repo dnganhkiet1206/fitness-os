@@ -57,6 +57,8 @@ public enum KoaLight {
   static let glowC: (Double, Double, Double) = (120, 76, 62)
   public static let glowStops: [(Double, Double)] = [(0, 0.17), (0.55, 0.075), (1, 0)]
   static let glowIds: Set<String> = ["head_front", "head_top_fur"]
+  /// Màu lông của bản vẽ: mảng lông nằm trong `FACE` (nắp chớp mắt, nắp mí, nắp nháy mắt) là một phần của da đầu.
+  static let furHex = "#BFC7CF"
 
   public static let formGradient = "koaForm"
   public static let formStops: [(Double, String, Double)] = [
@@ -226,13 +228,23 @@ public enum KoaLight {
       return id
     }
 
-    mutating func walk(_ nodes: [KoaScene.Node], _ parent: Mat, _ glowing: Bool) -> [Lit] {
+    /// `lids`: nắp mắt dùng đèn của da đầu (Kiệt 21/11: "lúc Koa nhắm mắt mí mắt bị dính như 2 lớp chồng lên
+    /// nhau") — tắt cho cảnh RN (golden giữ nguyên).
+    mutating func walk(_ nodes: [KoaScene.Node], _ parent: Mat, _ glowing: Bool, inFace: Bool = false, lids: Bool = false) -> [Lit] {
       var out: [Lit] = []
       for n in nodes {
-        let m = KoaMath.mul(parent, KoaLight.localMat(n))
+        // Nhóm chớp mắt có phép co TĨNH scale(1, 0) (mắt mở); lúc chạy KoaRender thay bằng scale(1, độ khép).
+        // Đèn tính trong không gian co về 0 thì sai hẳn → nắp lệch màu với da quanh mắt. Tính trong không gian
+        // của đầu: khi nhắm hẳn (co = 1) nắp trùng khít màu da.
+        let blinkGroup = lids && (n.anim.map { KoaMath.blinkAnims.contains($0.k) } ?? false)
+        let m = blinkGroup ? parent : KoaMath.mul(parent, KoaLight.localMat(n))
         let key = m.map(KoaLight.toFixed3).joined(separator: ",")
         if spaceMat[key] == nil { spaceMat[key] = m }
-        let lit = glowing || (n.id.map { KoaLight.glowIds.contains($0) } ?? false)
+        let face = inFace || (lids && n.id == "FACE")
+        var furInFace = false
+        if face, case .string(let fill)? = n.a?["fill"] { furInFace = fill.uppercased() == KoaLight.furHex }
+        // quầng sáng đầu phủ cả nắp mắt (trước chỉ head_front / head_top_fur → nắp tối hơn da quanh mắt)
+        let lit = glowing || furInFace || (n.id.map { KoaLight.glowIds.contains($0) } ?? false)
         var glow: String?
         if lit, n.t != "g", case .string(let f)? = n.a?["fill"], KoaLight.isHex(f) { glow = glowFor(key) }
         var ids: [String] = []
@@ -240,7 +252,7 @@ public enum KoaLight {
           if case .string(let c)? = p, KoaLight.isHex(c), c.uppercased() != KoaLight.shadowGrey { ids.append(rampFor(c, key)) }
         }
         var kids: [Lit] = []
-        if let k = n.kids { kids = walk(k, m, lit) }
+        if let k = n.kids { kids = walk(k, m, glowing || (n.id.map { KoaLight.glowIds.contains($0) } ?? false), inFace: face, lids: lids) }
         out.append(
           Lit(
             node: n, space: key, glow: glow, form: n.id.map { KoaLight.formIds.contains($0) } ?? false,
@@ -250,14 +262,14 @@ public enum KoaLight {
     }
   }
 
-  static func build(_ nodes: [KoaScene.Node]) -> Built {
+  static func build(_ nodes: [KoaScene.Node], lids: Bool) -> Built {
     var b = Built()
-    b.nodes = b.walk(nodes, KoaMath.identity, false)
+    b.nodes = b.walk(nodes, KoaMath.identity, false, lids: lids)
     return b
   }
 
-  static let wardrobeBuilt = build(KoaScene.wardrobePayload.nodes)
-  static let rnBuilt = build(KoaScene.rnPayload.nodes)
+  static let wardrobeBuilt = build(KoaScene.wardrobePayload.nodes, lids: true)
+  static let rnBuilt = build(KoaScene.rnPayload.nodes, lids: false)
   /// Cảnh đang vẽ (`KoaScene.rn` chọn cảnh RN cho test golden).
   static var built: Built { KoaScene.rn ? rnBuilt : wardrobeBuilt }
 

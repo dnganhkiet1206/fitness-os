@@ -116,8 +116,11 @@ struct KoaRenderGoldenTests {
 /// "một hình elip vẽ thêm". Mắt mở to vẫn nháy; bản RN giữ nguyên.
 struct KoaLazyEyesTests {
   static func blinks(_ e: KoaRender.Element) -> Int {
-    // nhóm nháy = `G` có đúng hai elip màu mí (#BFC7CF) phủ hai mắt
-    let own = e.tag == "G" && e.kids.count == 2 && e.kids.allSatisfy { $0.tag == "Ellipse" && $0.props["ry"] == .number(25) } ? 1 : 0
+    // nhóm nháy = `G` chỉ gồm elip mí (ry 25) phủ ĐÚNG hai mắt (hai tâm). Mỗi nắp có thể có thêm lớp
+    // quầng sáng đầu cùng hình (Kiệt 21/11: nắp mắt dùng đèn của da đầu) — đếm theo tâm, không theo số lớp.
+    let ellipses = e.kids.allSatisfy { $0.tag == "Ellipse" && $0.props["ry"] == .number(25) }
+    let centres = Set(e.kids.compactMap { k -> Double? in if case .number(let x)? = k.props["cx"] { return x } else { return nil } })
+    let own = e.tag == "G" && !e.kids.isEmpty && ellipses && centres.count == 2 ? 1 : 0
     return own + e.kids.reduce(0) { $0 + blinks($1) }
   }
 
@@ -241,3 +244,29 @@ struct KoaTapPoseTests {
     }
   }
 }
+
+/// Nắp mắt dùng đèn của da đầu (Kiệt 21/11: "lúc Koa nhắm mắt mí mắt bị dính như 2 lớp chồng lên nhau"):
+/// nắp chớp mắt (màu lông, trong FACE) có quầng sáng đầu như `head_front`; bản RN giữ nguyên.
+struct KoaLidLightTests {
+  static func glows(_ e: KoaRender.Element, under blink: Bool = false) -> (covers: Int, lit: Int) {
+    var covers = 0, lit = 0
+    let isCover = e.tag == "Ellipse" && e.props["ry"] == .number(25)
+    if blink, isCover {
+      covers += 1
+      if case .string(let f)? = e.props["fill"], f.hasPrefix("url(#koaGlow") { lit += 1 }
+    }
+    for k in e.kids { let r = glows(k, under: blink || e.tag == "G"); covers += r.covers; lit += r.lit }
+    return (covers, lit)
+  }
+
+  @Test func blinkCoversGetTheHeadGlow() {
+    var o = KoaRender.Options()
+    o.expression = .happy
+    o.t = 4800
+    let wardrobe = Self.glows(KoaRender.figure(o))
+    #expect(wardrobe.lit >= 2, "nắp chớp mắt phải có quầng sáng đầu: \(wardrobe)")
+    let rn = KoaScene.$rn.withValue(true) { Self.glows(KoaRender.figure(o)) }
+    #expect(rn.lit == 0, "bản RN giữ nguyên: \(rn)")
+  }
+}
+
