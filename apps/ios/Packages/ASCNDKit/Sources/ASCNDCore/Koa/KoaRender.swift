@@ -269,12 +269,19 @@ public enum KoaRender {
     var kids: [Element] = []
     // phần tử của TỪNG con: một hình có thể ra nhiều lượt tô (lượt nền + quầng sáng ở giao diện tối)
     var spans: [Range<Int>] = []
+    // Mắt có mí nhắm khi chớp (Kiệt 04/11: không có lớp elip nháy — chính MÍ hạ xuống). Cảnh tủ đồ: mép mí
+    // TRƯỢT xuống đường mắt nhắm, lông mí luôn vừa khít mắt, đường mi giữ độ dày, bọng mắt đứng yên (`KoaLid`,
+    // Kiệt 21/11 "rà lại kỹ" — trước đây kéo giãn cả nhóm: lộ vệt trắng, mi thành vệt đen dày, mí buồn không
+    // nhắm hết, bọng mắt tụt).
+    var lidSwap: [String: String] = [:]
+    if !KoaScene.rn, c.live, let b = c.blink, b > 0, let cond = n.cond { lidSwap = KoaLid.swaps(cond, close: b) }
     // đi: bàn chân gần người xem vẽ sau (đè lên chân kia)
     let order = n.id == "LEGS" && c.walk?.leftNear == true ? Array(l.kids.enumerated().reversed()) : Array(l.kids.enumerated())
     for (i, k) in order {
       let start = kids.count
-      kids += node(
+      let drawn = node(
         k, c, armPart: arms ? KoaMath.dressArmAt[i] : nil, armHidden: arms && KoaMath.dressArmHide.contains(i))
+      kids += lidSwap.isEmpty ? drawn : drawn.map { KoaLid.swap($0, lidSwap) }
       if kids.count > start { spans.append(start..<kids.count) }
     }
     // nụ cười đóng của cái liếc nằm TRONG `#FACE`, theo mọi thứ cái liếc làm
@@ -497,12 +504,6 @@ public enum KoaRender {
       if m[3] > KoaMath.lashMin { moved += lashes(m, nil) }
     }
 
-    // Mắt lờ đờ nhắm (Kiệt 04/11): không có lớp elip nháy — chính MÍ hạ xuống, từ mép trên mắt (y 72,5)
-    // tới đáy mắt; nét mi ở mép mí đi theo thành đường mắt nhắm.
-    if !KoaScene.rn, c.live, let b = c.blink, b > 0, let cond = n.cond, let k = KoaMath.lidDrop[cond] {
-      let s = 1 + (k - 1) * min(1, b)
-      moved = [Element("G", matrix: [1, 0, 0, s, 0, KoaMath.eyeTop * (1 - s)], kids: moved)]
-    }
 
     if c.gaze == nil, let e = c.eyes, isEyeGroup(n) { return [Element("G", matrix: KoaMath.eyeMat(e), kids: moved)] }
     guard let g = c.gaze else { return moved }

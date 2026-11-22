@@ -1371,6 +1371,67 @@ for k in legs_g['kids']:
         feet[leg_side(k)].append(k)
 legs_g['kids'] = [G(feet['L'], id='FOOT_L', bind='footL'), G(feet['R'], id='FOOT_R', bind='footR')]
 
+# ---- Mí mắt vẽ lại (Kiệt 21/11: "mí mắt của koa cũng chưa đạt nên phải vẽ lại") ----
+# Mí cũ (cảnh RN) là nửa elip BẰNG KHÍT mắt đặt lên trên: viền khử răng cưa của lòng trắng lộ thành một nét
+# mảnh trên mí; mí nặng là nửa elip ấy dời xuống 8 → hở hai vệt trắng phía trên; mép mí là nhát cắt thẳng.
+# Mí mới = phần của mắt (nới 1,5 để phủ kín viền) nằm TRÊN mép mí cong (bậc hai: đầu trong / giữa / đuôi),
+# tính sẵn thành đường khép kín (không cần clip); đường mi đậm ở giữa, thuôn hai đầu, có vẩy mi ở đuôi mắt.
+import math
+LID_CY, LID_RX, LID_RY = 96, 18, 23.5
+LID_EYES = [(82, -1), (158, 1)]  # tâm x, phía đuôi mắt
+LID_TYPES = {
+    "lidsHalf": dict(inner=-2, mid=0, outer=1.5, w=4.4),            # tự tin / gắng sức / suy nghĩ
+    "lidsHeavy": dict(inner=4, mid=7, outer=9, w=4.6, bag=True),    # mệt / buồn ngủ
+    "lidsSad": dict(inner=-13, mid=-6, outer=-1, w=3.8),            # buồn: đầu trong cao, đuôi thấp
+}
+def _r(v): return f"{v:.2f}".rstrip("0").rstrip(".")
+def lid_kids(p):
+    kids = []
+    for cx, side in LID_EYES:
+        xi, xo = cx - side * (LID_RX + 2), cx + side * (LID_RX + 2)
+        yi, ym, yo = LID_CY + p["inner"], LID_CY + p["mid"], LID_CY + p["outer"]
+        cyc = 2 * ym - (yi + yo) / 2
+        def edge_y(x):
+            t = (x - xi) / (xo - xi); u = 1 - t
+            return u * u * yi + 2 * u * t * cyc + t * t * yo
+        ex, ey = LID_RX + 1.5, LID_RY + 1.5
+        top, bot = [], []
+        N = 48
+        for i in range(N + 1):
+            x = cx - ex + 2 * ex * i / N
+            dx = (x - cx) / ex
+            h = ey * math.sqrt(max(0.0, 1 - dx * dx))
+            yt, yb = LID_CY - h, LID_CY + h
+            yl = min(edge_y(x), yb)
+            if yl <= yt + 0.05: continue
+            top.append((x, yt)); bot.append((x, yl))
+        pts = top + bot[::-1]
+        kids.append(P("M" + " L".join(f"{_r(x)} {_r(y)}" for x, y in pts) + " Z", fill="#BFC7CF"))
+        # đường mi: dải theo mép mí, dày nhất lệch về đuôi, thuôn hai đầu
+        M = 18; up, dn = [], []
+        for i in range(M + 1):
+            t = i / M; u = 1 - t
+            x = u * u * xi + 2 * u * t * cx + t * t * xo
+            y = u * u * yi + 2 * u * t * cyc + t * t * yo
+            dxt = 2 * u * (cx - xi) + 2 * t * (xo - cx); dyt = 2 * u * (cyc - yi) + 2 * t * (yo - cyc)
+            l = math.hypot(dxt, dyt) or 1; nx, ny = -dyt / l, dxt / l
+            k = math.sin(math.pi * min(1, t * 0.85 + 0.08)) * (0.55 + 0.45 * t)
+            hw = p["w"] / 2 * max(0.25, k)
+            up.append((x - nx * hw, y - ny * hw)); dn.append((x + nx * hw, y + ny * hw))
+        ring = up + dn[::-1]
+        d = "M" + " L".join(f"{_r(x)} {_r(y)}" for x, y in ring) + " Z"
+        # (Kiệt 21/11: bỏ vẩy mi ở đuôi mắt — "nét thừa phía ngoài cùng của mí")
+        kids.append(P(d, fill="#20242A"))
+        if p.get("bag"):
+            kids.append(P(f"M{_r(cx - 11)} {_r(LID_CY + LID_RY + 3)} Q{_r(cx)} {_r(LID_CY + LID_RY + 8)} {_r(cx + 11)} {_r(LID_CY + LID_RY + 3)}",
+                          stroke="#A9B2BC", **{"stroke-width": 2.2, "stroke-linecap": "round", "fill": "none"}))
+    return kids
+lid_done = set()
+for k in faceshift['kids']:
+    if k.get('if') in LID_TYPES:
+        k['kids'] = lid_kids(LID_TYPES[k['if']]); lid_done.add(k['if'])
+assert lid_done == set(LID_TYPES), f"thiếu nhóm mí: {set(LID_TYPES) - lid_done}"
+
 # ── NẮP CHỚP MẮT THEO TỪNG MẮT (Kiệt 21/11: "gộp mắt và mí … ít bị lỗi"). Cảnh RN: mỗi nhóm chớp (koaBlink /
 #     koaBlink2) là hai elip nắp 19 × 25 của CẢ hai mắt. Mặt mắt to (`eyesWide`: plead) có lớp mắt `koaPop`
 #     19,5 × 25,5 phồng tới ×1,07 quanh tâm mặt → nắp không phủ hết, nhắm mắt hở viền trắng. Giờ mỗi nhóm chớp
