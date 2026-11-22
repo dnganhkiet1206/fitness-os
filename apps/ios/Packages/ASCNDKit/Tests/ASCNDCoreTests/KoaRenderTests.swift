@@ -298,6 +298,36 @@ struct KoaBlinkGeometryTests {
     #expect(Self.squashed(Self.plan(rn: false), 0.5) == 0)
     #expect(Self.squashed(Self.plan(rn: true), 0.5) > 0, "bản RN vẫn co cả nắp lẫn màu")
   }
+
+  /// tâm elip của mọi nắp chớp, gom theo độ khép (matrix[3]) của nhóm chớp chứa nó
+  static func coversBySquash(_ e: KoaRender.Element, _ sy: Double? = nil, into out: inout [Double: [Double]]) {
+    let here: Double? = e.tag == "G" && e.props[KoaPaint.geometryOnly] != nil ? e.matrix?[3] : sy
+    if e.tag == "Ellipse", e.props["ry"] == .number(25), let sy = here, case .number(let x)? = e.props["cx"] {
+      out[sy, default: []].append(x)
+    }
+    for k in e.kids { coversBySquash(k, here, into: &out) }
+  }
+
+  /// Hai mắt chớp lệch (phòng Koa, Koa V2): ở giao diện tối mỗi nắp có thêm lượt quầng sáng — vẫn phải
+  /// tách đúng mắt, cả lượt nền lẫn lượt quầng của mắt phải theo độ khép của mắt phải (Devin #996).
+  @Test func rightLidKeepsItsOwnBlinkWithTheGlowPass() {
+    for flat in [false, true] {
+      var o = KoaRender.Options()
+      o.expression = .happy
+      o.live = true
+      o.flat = flat
+      o.blink = 0.6
+      o.blinkRight = 0.3
+      var got: [Double: [Double]] = [:]
+      Self.coversBySquash(KoaRender.figure(o), into: &got)
+      let left = got.filter { abs($0.key - 0.6) < 1e-9 }.flatMap(\.value)
+      let right = got.filter { abs($0.key - 0.3) < 1e-9 }.flatMap(\.value)
+      #expect(Set(left) == [82], "flat \(flat): mắt trái khép 0,6 — \(got)")
+      #expect(Set(right) == [158], "flat \(flat): mắt phải khép 0,3 — \(got)")
+      #expect(left.count == right.count, "flat \(flat): mỗi mắt cùng số lượt tô")
+      if !flat { #expect(right.count >= 2, "tối: nắp phải có cả lượt nền lẫn lượt quầng sáng") }
+    }
+  }
 }
 
 /// Mí mắt vẽ lại (Kiệt 21/11): mí phủ KÍN mép trên của mắt (trước: nắp bằng khít mắt lộ viền, mí nặng dời
