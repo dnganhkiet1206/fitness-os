@@ -56,4 +56,45 @@ struct LighterSessionTests {
     let short = Self.plan.sessionPlan(variant: .short)!.rows
     #expect(short == Self.plan.sessionPlan(variant: .full)!.rows, "hai bài → buổi ngắn giữ cả hai")
   }
+
+  // MARK: - Tuần nhẹ sau kỳ nghỉ dài giảm tạ thật (KOA-T04, Kiệt 21/11)
+
+  /// Tạ giảm đúng hệ số, làm tròn XUỐNG theo bước tạ — không bao giờ nặng hơn lời hứa trên thẻ.
+  @Test func lighterWeightRoundsDownToAPlateStep() {
+    #expect(LighterSession.lighterWeight(60, factor: 0.9) == 52.5, "54 → 52,5")
+    #expect(LighterSession.lighterWeight(60, factor: 0.8) == 47.5, "48 → 47,5")
+    #expect(LighterSession.lighterWeight(100, factor: 0.9) == 90)
+    #expect(LighterSession.lighterWeight(8, factor: 0.9) == 7, "tạ đơn: bước 1 (7,2 → 7)")
+    #expect(LighterSession.lighterWeight(4, factor: 0.9) == 3.5, "tạ rất nhẹ: bước 0,5 (3,6 → 3,5)")
+    #expect(LighterSession.lighterWeight(0, factor: 0.8) == 0, "bài tạ người")
+    #expect(LighterSession.lighterWeight(60, factor: 1) == 60, "bản nhẹ thường: giữ tạ")
+    for kg in stride(from: 0.5, through: 200, by: 0.5) {
+      for f in [0.8, 0.9] { #expect(LighterSession.lighterWeight(kg, factor: f) <= kg * f + 1e-9, "\(kg) × \(f)") }
+    }
+  }
+
+  /// Nghỉ 30 ngày → nhận tuần nhẹ → buổi đầu tạ 90 % (tiêu chí nghiệm thu của audit), bớt một hiệp.
+  @Test func lightWeekAfterThirtyDaysOffLowersTheLoads() {
+    let f = KoaWeekCoach.loadFactor(daysOff: 30)
+    #expect(f == 0.9)
+    let ex = LighterSession.exercises(Self.template.exercises, loadFactor: f)
+    #expect(ex.map(\.weightKg) == [52.5, 9], "60 → 52,5; 10 → 9")
+    #expect(ex.map(\.sets) == [2, 1])
+    let plain = Self.plan.sessionPlan(variant: .lighter)!.rows
+    let light = Self.plan.sessionPlan(variant: .lighter, loadFactor: f)!.rows
+    #expect(plain.count == light.count, "cùng số hiệp với bản nhẹ thường")
+    #expect(light != plain, "tạ trong buổi đã giảm")
+    #expect(Self.plan.sessionPlan(variant: .full, loadFactor: f)!.rows == Self.plan.sessionPlan(variant: .full)!.rows, "buổi đầy đủ không giảm")
+  }
+
+  @Test func loadFactorIsStoredPerUserDayAndTemplate() throws {
+    let d = try #require(UserDefaults(suiteName: "load-\(UUID())"))
+    #expect(LighterSession.loadFactor(userId: "u", date: Self.day, templateId: "t", in: d) == 1)
+    LighterSession.setLoadFactor(0.8, userId: "u", date: Self.day, templateId: "t", in: d)
+    #expect(LighterSession.loadFactor(userId: "u", date: Self.day, templateId: "t", in: d) == 0.8)
+    #expect(LighterSession.loadFactor(userId: "u", date: Self.day.adding(days: 1), templateId: "t", in: d) == 1)
+    #expect(LighterSession.loadFactor(userId: "x", date: Self.day, templateId: "t", in: d) == 1)
+    LighterSession.setLoadFactor(1, userId: "u", date: Self.day, templateId: "t", in: d)
+    #expect(LighterSession.loadFactor(userId: "u", date: Self.day, templateId: "t", in: d) == 1)
+  }
 }
