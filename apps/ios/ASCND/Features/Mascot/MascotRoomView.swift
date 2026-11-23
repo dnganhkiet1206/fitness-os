@@ -109,7 +109,9 @@ struct MascotRoomView: View {
         // soát phòng ngủ: ép giờ ngủ mà không chờ tới đêm
         .task {
           if ProcessInfo.processInfo.arguments.contains("-koaForceSleep") { devEmotion = .sleep }
-          // `-koaEmotion coat`: ép một nét mặt / bộ đồ để chụp (vd. áo ấm KOA-T29)
+          // `-koaEmotion coat`: ép một cảm xúc để chụp, như thanh thử DEBUG — giữ dáng và bộ đồ của cảm xúc
+          // (vd. áo ấm KOA-T29); nét mặt vẫn do đạo diễn đổi khi Koa đứng yên / nói (Devin #1008), nên
+          // không dùng cờ này để chụp đúng một nét mặt.
           let args = ProcessInfo.processInfo.arguments
           if let i = args.firstIndex(of: "-koaEmotion"), i + 1 < args.count, let e = KoaEmotion.Emotion(rawValue: args[i + 1]) {
             devEmotion = e
