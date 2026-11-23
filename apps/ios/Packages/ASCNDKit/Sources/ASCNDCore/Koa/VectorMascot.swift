@@ -19,9 +19,10 @@ public enum VectorMascot {
     /// khác thì không còn biết hôm nay ra sao). Ba mặt nên gộp: vui / bình thường / mệt.
     public init(_ e: KoaEmotion.Emotion) {
       switch e {
-      case .happy, .celebrate, .proud, .rested, .victory, .pumped, .ready, .warmup, .hat, .coat: self = .happy
+      // `curl` = chờ buổi tập theo lịch (trước là `warmup` → vui; gộp ở KOA-T29, Devin #1003)
+      case .happy, .celebrate, .proud, .rested, .victory, .pumped, .ready, .hat, .coat, .curl: self = .happy
       case .sad, .tired, .sleep, .worry, .oops, .breather: self = .tired
-      case .idle, .curl: self = .neutral
+      case .idle: self = .neutral
       }
     }
   }

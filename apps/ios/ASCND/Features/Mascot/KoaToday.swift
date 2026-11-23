@@ -28,7 +28,7 @@ enum KoaToday {
         streak: room.streak.count, loggedToday: room.streak.loggedToday, riskHour: riskHour,
         kcalTarget: profile.map { NutritionToday.calorieTarget($0) },
         isBirthday: isBirthday(profile?.dob, today: room.today), minute: minute,
-        sleep: KoaMood.SleepWindow(profile: profile)))
+        sleep: KoaMood.SleepWindow(profile: profile), month: room.today.month))
   }
 
   /// Câu riêng của Koa cho nét mặt này, có số thật; `nil` → câu "việc kế tiếp"

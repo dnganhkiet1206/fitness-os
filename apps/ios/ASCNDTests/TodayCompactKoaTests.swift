@@ -7,13 +7,14 @@ import Testing
 @MainActor
 @Suite struct TodayCompactKoaTests {
   @Test func compactKoaShowsNoFrown() {
-    for e: KoaEmotion.Emotion in [.sad, .oops, .warmup] {
+    // `curl` (cầm tạ gồng sức, đợi tập): trước là `warmup`, gộp ở KOA-T29
+    for e: KoaEmotion.Emotion in [.sad, .oops, .curl] {
       #expect(TodayDayBlock.compactEmotion(e) == .idle, "\(e)")
     }
   }
 
   @Test func compactKoaKeepsHappyFaces() {
-    for e: KoaEmotion.Emotion in [.idle, .happy, .celebrate, .proud, .rested, .sleep, .curl, .hat, .coat, .tired, .worry] {
+    for e: KoaEmotion.Emotion in [.idle, .happy, .celebrate, .proud, .rested, .sleep, .hat, .coat, .tired, .worry] {
       #expect(TodayDayBlock.compactEmotion(e) == e, "\(e)")
     }
   }
@@ -27,9 +28,9 @@ import Testing
   }
 
   @Test func poseOrOutfitChangesSwapTheFigure() {
-    #expect(TodayDayBlock.look(.idle) != TodayDayBlock.look(.warmup))
+    #expect(TodayDayBlock.look(.idle) != TodayDayBlock.look(.curl))
+    #expect(TodayDayBlock.look(.idle) != TodayDayBlock.look(.coat), "áo ấm là đổi đồ")
     #expect(TodayDayBlock.look(.idle) != TodayDayBlock.look(.tired))
     #expect(TodayDayBlock.look(.idle) != TodayDayBlock.look(.rested))
-    #expect(TodayDayBlock.look(.warmup) == TodayDayBlock.look(.curl))
   }
 }

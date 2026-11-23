@@ -3,9 +3,10 @@
 public enum KoaEmotion {
   /// `MascotEmotion`.
   public enum Emotion: String, Sendable, Hashable, CaseIterable {
+    /// `curl`: cầm tạ, mặt gồng sức — đợi tới buổi tập theo lịch (KOA-T29: trước có thêm `warmup` y hệt; gộp về
+    /// đây). `coat`: áo ấm sáng sớm mùa lạnh (KOA-T29). `worry`: còn trong dữ liệu gốc, KHÔNG dùng (KOA-T13 —
+    /// Koa không lo vì chuỗi).
     case idle, happy, sad, tired, sleep, celebrate, curl, worry, proud, rested, oops, hat, coat
-    /// Đợt 2 (sống theo lịch, 20/10): đợi ở phòng tập — cầm tạ khởi động, mặt gồng sức.
-    case warmup
     /// Mặt tập gym (05/11, Kiệt: "khi ghi set / xong bài"): nghỉ thở dốc sau một set, hét chiến thắng khi
     /// phá kỷ lục / tiến bộ, tập trung chờ set sau, tự hào khi xong buổi.
     case breather, victory, ready, pumped
@@ -39,7 +40,8 @@ public enum KoaEmotion {
     .tired: State(.meditate, .relaxing),
     .sleep: State(.meditate, .relaxing),
     .celebrate: State(.delighted, .idle),
-    // ghi buổi tập → cùng cuốn tạ
+    // đợi buổi tập theo lịch → cầm tạ khởi động. Cầm tạ thì mặt GỒNG SỨC như bản thiết kế
+    // (`KoaSheetView.poseFace[.lifting]`); mặt vui thường trên tư thế tạ đọc ra "không có biểu cảm" (20/10).
     .curl: State(.strain, .lifting),
     // nhắc nhẹ, không van nài cũng không làm người dùng thấy có lỗi (31/10)
     .worry: State(.surprised, .idle),
@@ -49,16 +51,18 @@ public enum KoaEmotion {
     .oops: State(.happytired, .idle),
     .rested: State(.happytired, .idle, [.head: "beanie"]),
     .hat: State(.happy, .idle, [.head: "santa"]),
-    // Cầm tạ thì mặt GỒNG SỨC như bản thiết kế (`KoaSheetView.poseFace[.lifting]`);
-    // mặt vui vẻ thường trên tư thế tạ đọc ra "không có biểu cảm" (20/10, chủ dự án).
-    .warmup: State(.strain, .lifting),
-    .coat: State(.happy, .idle),
+    // sáng sớm mùa lạnh: khoác áo hoodie (KOA-T29, Kiệt 21/11)
+    .coat: State(.happy, .idle, [.top: "hoodie"]),
     // vừa ghi set: ngồi xuống thở dốc (thay mặt thiền khép mắt — đọc ra "ngủ" giữa buổi tập)
     .breather: State(.gymPant, .relaxing),
     .victory: State(.roar, .idle),
     .ready: State(.gymFocus, .idle),
     .pumped: State(.smug, .idle),
   ]
+
+  /// Nét mặt KHÔNG bao giờ dùng cho người dùng (luật tính cách: Koa không giận, không trách người dùng). Bản vẽ
+  /// giữ lại; test chặn mọi cảm xúc / câu thoại dẫn tới chúng (KOA-T29).
+  public static let neverForUser: Set<KoaFlags.Expression> = [.angry]
 
   /// `koaStateFor`: cảm xúc lạ → như `idle`.
   public static func state(_ emotion: Emotion) -> State { states[emotion] ?? states[.idle]! }
