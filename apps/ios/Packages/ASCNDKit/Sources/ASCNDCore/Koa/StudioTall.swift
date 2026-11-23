@@ -76,7 +76,10 @@ public enum StudioTall {
       if t == "Rect", (n["p"]?["fill"]?.stringValue ?? "").hasPrefix("url(#decor"), glass == nil { glass = StudioScene.element(n, o, skin) }
       if t == "G", n["p"]?["clipPath"] != nil { inner = StudioScene.element(n, o, skin) }
     }
-    guard var glass, let inner else { return nil }
+    guard var glass, var inner else { return nil }
+    // biển (#799-B thời tiết, Kiệt duyệt 23/11): vệt trăng và gợn sóng vẽ động theo phối cảnh (`StudioWeather`),
+    // bỏ bản tĩnh của tranh để không có hai vệt chồng nhau
+    if id == "ocean" { inner.kids.removeAll(where: Self.isStaticSeaGlint) }
     glass.props["rx"] = .number(0)
     // ô kính gốc 278…361 × 101…206 → ô cửa vòm 206…368 × −151…160: trời giãn kín, cảnh giữ tỉ lệ, chạm bậu
     let sx = 162.0 / 83, sy = 311.0 / 105
@@ -85,6 +88,17 @@ public enum StudioTall {
       Element("G", matrix: [sx, 0, 0, sy, 206 - 278 * sx, -151 - 101 * sy], kids: [glass]),
       Element("G", matrix: [u, 0, 0, u, 206 - 278 * u, 160 - 206 * u], kids: [inner]),
     ]
+  }
+
+  /// Ô cửa vòm trong toạ độ phòng: x 206…368, y −151…160 (bậu ở y 160).
+  public static let arch = (x: 206.0, y: -151.0, w: 162.0, h: 311.0)
+  /// Cảnh biển đã mua: mặt nước (y 168 của tranh) và trăng (x 343) sau khi giãn vào ô cửa vòm.
+  public static let oceanHorizon = 160 + (168 - 206) * 162.0 / 83
+  public static let oceanMoonX = 206 + (343 - 278) * 162.0 / 83
+
+  /// Vệt trăng (ô vàng) và gợn sóng (nét tím) tĩnh của tranh biển.
+  static func isStaticSeaGlint(_ e: Element) -> Bool {
+    e.props["fill"] == .string("#FFC24D") || e.props["stroke"] == .string("#8F83FF")
   }
 
   static func sky(_ c: Ink) -> [Element] {

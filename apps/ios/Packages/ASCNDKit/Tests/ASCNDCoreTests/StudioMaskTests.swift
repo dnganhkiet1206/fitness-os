@@ -127,6 +127,20 @@ struct StudioTallDecorTests {
     }
   }
 
+  /// Biển đã mua: vệt trăng / gợn sóng tĩnh của tranh bị bỏ (vẽ động theo thời tiết); núi giữ nguyên tranh.
+  @Test func oceanDropsItsStaticGlitterPath() throws {
+    func glints(_ id: String) throws -> Int {
+      let parts = try #require(StudioTall.boughtWindow(Self.night(["window": id])))
+      let inner = try #require(parts.last)
+      return inner.kids.flatMap(\.kids).count(where: StudioTall.isStaticSeaGlint) + inner.kids.count(where: StudioTall.isStaticSeaGlint)
+    }
+    #expect(try glints("ocean") == 0)
+    let raw = try #require(StudioScene.decorData.variants["window.ocean"])
+    #expect(raw.description.contains("#FFC24D"), "tranh gốc có vệt trăng tĩnh")
+    #expect(abs(StudioTall.oceanHorizon - 85.83) < 0.01)
+    #expect(StudioTall.oceanMoonX > StudioTall.arch.x + StudioTall.arch.w / 2, "trăng lệch phải, không nằm sau song giữa")
+  }
+
   /// Cửa sổ mua: cảnh thay trời + toà nhà, nằm gọn trong khung ô cửa vòm (x 206…368, y −151…160).
   @Test func boughtWindowFillsTheArch() throws {
     for id in ["ocean", "mountain"] {
