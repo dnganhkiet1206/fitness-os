@@ -1,4 +1,10 @@
 {
+  "_shapes": {
+    "barbell_60kg": "f034b0",
+    "dumbbell_12kg": "0fa1da",
+    "utility_bench_08e5dd": "7f13e0",
+    "utility_bench_2c513b": "fa3ac3"
+  },
   "barbell_60kg": "87a010",
   "dumbbell_12kg": "f21580",
   "utility_bench_08e5dd": "08e5dd",

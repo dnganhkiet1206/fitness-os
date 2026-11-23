@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "id": "standing_military_press",
+  "title": "Standing Military Press",
+  "family_label": "press_overhead (đứng, tạ đòn)",
+  "aliases": [
+    "standing military press",
+    "military press",
+    "overhead press",
+    "barbell overhead press",
+    "standing barbell press",
+    "strict press",
+    "barbell shoulder press"
+  ],
+  "usdz": "standing_military_press_animation",
+  "loop": null,
+  "poster": "standing_military_press_poster",
+  "duration_s": 8.6,
+  "camera": {
+    "position": [
+      3.0212,
+      2.7372,
+      2.9267
+    ],
+    "target": [
+      0.0903,
+      1.2286,
+      -0.0042
+    ]
+  },
+  "legend": [
+    {
+      "hex": "#E8552B",
+      "name_key": "eg.demo3d.legend.deltoidAnterior",
+      "role_key": "eg.demo3d.legend.primary"
+    },
+    {
+      "hex": "#E8552B",
+      "name_key": "eg.demo3d.legend.deltoidLateral",
+      "role_key": "eg.demo3d.legend.primary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.tricepsBrachii",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.trapeziusUpper",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.serratusAnterior",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#F2A33A",
+      "name_key": "eg.demo3d.legend.trapezius",
+      "role_key": "eg.demo3d.legend.secondary"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.rectusAbdominis",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.obliques",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.erectorSpinae",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.gluteusMaximus",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    },
+    {
+      "hex": "#6FA7C9",
+      "name_key": "eg.demo3d.legend.rotatorCuffPosterior",
+      "role_key": "eg.demo3d.legend.stabilizer"
+    }
+  ],
+  "roles": {
+    "primary": [
+      "deltoid_anterior",
+      "deltoid_lateral"
+    ],
+    "secondary": [
+      "triceps_brachii",
+      "trapezius_upper",
+      "serratus_anterior",
+      "trapezius_lower"
+    ],
+    "stabilizing": [
+      "rectus_abdominis",
+      "obliques",
+      "erector_spinae",
+      "gluteus_maximus",
+      "rotator_cuff_posterior"
+    ]
+  },
+  "focus_prefix": "standing_military_press_focus",
+  "motion": "standing_military_press_motion",
+  "full_prefix": "standing_military_press_full",
+  "review": {
+    "date": "23/11",
+    "checked": [
+      "QA tự động 18/19: xương, tay bám đòn, chân không trượt, đòn không xuyên da, cổ tay thẳng (đòn lăn trong tay theo cẳng tay), khuỷu ≤ 150° (giới hạn chủ động AAOS), tay duỗi thẳng ở đỉnh, khớp nhịp tempo.json",
+      "Tờ soi tầm mắt 1,6 m, 5 góc × 3 khung + góc nghiêng không bánh tạ ở đáy / giữa / đỉnh",
+      "Đối chiếu 4 video YouTube người thật (4LBVP2Oe7fg, zSU7T1zZagQ, 3RdVYQ8l_V8, 5cSo71oxLVc) + powerliftingtechnique, barbend, stronglifts, trainheroic, Muscle & Strength, Human Kinetics, ExRx"
+    ],
+    "remaining": [
+      "Giãn da nách khi tay qua đầu 2,95 / 2,6 (giới hạn lưới nhân vật 003, như shoulder press 3,08)",
+      "Kiệt chưa duyệt động tác",
+      "Chưa có mẹo"
+    ]
+  },
+  "note": "Chờ Kiệt xem lại động tác (23/11). Chưa có mẹo kỹ thuật.",
+  "modules": {
+    "tempo": "standing_military_press_tempo"
+  }
+}

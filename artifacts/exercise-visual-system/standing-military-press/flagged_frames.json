@@ -1,0 +1,32 @@
+{
+  "exercise": "standing-military-press",
+  "source": "qa_report.json",
+  "sheet_frames": {
+    "a": 0,
+    "b": 31,
+    "c": 48
+  },
+  "flagged_frames": [
+    {
+      "frame": 39,
+      "checks": [
+        {
+          "id": "skin_stretch",
+          "status": "FAIL"
+        }
+      ]
+    },
+    {
+      "frame": 52,
+      "checks": [
+        {
+          "id": "skin_stretch",
+          "status": "FAIL"
+        }
+      ]
+    }
+  ],
+  "failing_checks_without_frames": [],
+  "mark_window_frames": 12,
+  "note": "Frames flagged by FAIL / REQUIRES_MANUAL_REVIEW checks in qa_report.json. The template validator records where.frame; the bench validator's report carries no structured per-frame data, so its failing checks are listed without frames. Review flagged frames closely plus a random sample. A sheet still whose own frame is flagged gets a red border; a still within 12 frames of a flagged frame gets an amber NEAR border."
+}
