@@ -74,7 +74,9 @@ public enum StudioTall {
       let t = n["t"]?.stringValue ?? ""
       if t == "Defs" { if let e = StudioScene.element(n, o, skin) { defs.append(e) } }
       if t == "Rect", (n["p"]?["fill"]?.stringValue ?? "").hasPrefix("url(#decor"), glass == nil { glass = StudioScene.element(n, o, skin) }
-      if t == "G", n["p"]?["clipPath"] != nil { inner = StudioScene.element(n, o, skin) }
+      // biển (thời tiết, Kiệt duyệt 23/11): vệt trăng và gợn sóng vẽ động theo phối cảnh (`StudioWeather`), bỏ bản
+      // tĩnh của tranh — lọc trên dữ liệu gốc, TRƯỚC khi đổi màu ban ngày (Devin #1005)
+      if t == "G", n["p"]?["clipPath"] != nil { inner = StudioScene.element(id == "ocean" ? Self.withoutSeaGlint(n) : n, o, skin) }
     }
     guard var glass, let inner else { return nil }
     glass.props["rx"] = .number(0)
@@ -85,6 +87,27 @@ public enum StudioTall {
       Element("G", matrix: [sx, 0, 0, sy, 206 - 278 * sx, -151 - 101 * sy], kids: [glass]),
       Element("G", matrix: [u, 0, 0, u, 206 - 278 * u, 160 - 206 * u], kids: [inner]),
     ]
+  }
+
+  /// Ô cửa vòm trong toạ độ phòng: x 206…368, y −151…160 (bậu ở y 160).
+  public static let arch = (x: 206.0, y: -151.0, w: 162.0, h: 311.0)
+  /// Cảnh biển đã mua: mặt nước (y 168 của tranh) và trăng (x 343) sau khi giãn vào ô cửa vòm.
+  public static let oceanHorizon = 160 + (168 - 206) * 162.0 / 83
+  public static let oceanMoonX = 206 + (343 - 278) * 162.0 / 83
+
+  /// Vệt trăng tĩnh (dải vàng cao 1,4) và gợn sóng tĩnh (nét tím ngang dài 10) của tranh biển, theo dữ liệu gốc.
+  /// Đèn hải đăng và tia sáng cùng màu vàng nhưng khác hình, nên được giữ (Devin #1005).
+  static func isStaticSeaGlint(_ n: JSONValue) -> Bool {
+    let t = n["t"]?.stringValue, p = n["p"]
+    if t == "Rect", p?["fill"]?.stringValue == "#FFC24D", p?["height"]?.doubleValue == 1.4 { return true }
+    if t == "Path", p?["stroke"]?.stringValue == "#8F83FF", p?["d"]?.stringValue?.hasSuffix(" l 10 0") == true { return true }
+    return false
+  }
+
+  static func withoutSeaGlint(_ n: JSONValue) -> JSONValue {
+    guard case .object(var g) = n, case .array(let kids)? = g["k"] else { return n }
+    g["k"] = .array(kids.filter { !isStaticSeaGlint($0) })
+    return .object(g)
   }
 
   static func sky(_ c: Ink) -> [Element] {

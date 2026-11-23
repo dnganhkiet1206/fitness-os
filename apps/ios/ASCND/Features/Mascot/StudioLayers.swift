@@ -207,6 +207,15 @@ struct StudioTallRoom: View {
   @AppStorage(KoaBedroomView.lampKey) private var lampOff = false
   @State private var motes = StudioMotes()
 
+  /// Thời tiết ngoài cửa sổ hôm nay (Kiệt chọn A 23/11: theo mùa, cố định theo ngày). DEBUG: `-koaWeather rain`.
+  private var weather: KoaWeather {
+    #if DEBUG
+      let args = ProcessInfo.processInfo.arguments
+      if let i = args.firstIndex(of: "-koaWeather"), i + 1 < args.count, let w = KoaWeather(rawValue: args[i + 1]) { return w }
+    #endif
+    return KoaWeather.of(Date.now, window: lens.options.decor["window"])
+  }
+
   var body: some View {
     GeometryReader { g in
       let width = g.size.width
@@ -259,11 +268,13 @@ struct StudioTallRoom: View {
             .rotationEffect(swings ? swing : .zero, anchor: pivot)
             .offset(x: shot.shift(layer.plane.amp) * k)
           // đồ động chen đúng tầng: mây sau thành phố, đèn nhà trên thành phố, bụi trong chùm đèn
-          // cửa sổ đã mua (#799-B): ô cửa vòm là cảnh của món — không mây, không đèn nhà của thành phố trôi lên đó
-          let boughtView = options.decor["window"] != nil && layer.id != "lamp"
-          if !reduceMotion, !boughtView, ["sky", "city", "lamp"].contains(layer.id) {
+          // cửa sổ đã mua (#799-B): ô cửa vòm là cảnh của món — không mây, không đèn nhà của thành phố trôi lên đó;
+          // thời tiết (mưa / tuyết / sương / vệt trăng biển) thì vẫn có. Giảm chuyển động: trời đứng yên một khung.
+          let outside = layer.id == "sky" || layer.id == "city"
+          if outside || (!reduceMotion && layer.id == "lamp") {
             StudioLive(
-              t: t, layer: layer.id, night: !options.light, drop: Double(drop), k: k, lamp: options.lamp, dust: options.dust, box: motes)
+              t: reduceMotion && outside ? 12 : t, layer: layer.id, night: !options.light, drop: Double(drop), k: k,
+              lamp: options.lamp, dust: options.dust, weather: weather, window: options.decor["window"], box: motes)
               .frame(width: size.width, height: size.height)
               .offset(x: shot.shift(layer.plane.amp) * k)
           }
@@ -304,6 +315,9 @@ private struct StudioLive: View {
   let lamp: Bool
   /// Mức bụi của phòng 0…3: bụi xám lơ lửng khắp phòng, bẩn càng nhiều.
   var dust = 0
+  /// Thời tiết hôm nay (`KoaWeather`) và cửa sổ đã mua (`nil` = thành phố).
+  var weather = KoaWeather.clear
+  var window: String?
   let box: StudioMotes
 
   var body: some View {
@@ -314,23 +328,20 @@ private struct StudioLive: View {
       c.scaleBy(x: k, y: k)
       switch layer {
       case "sky":
-        for (speed, y, r) in [(4.0, -40.0, 1.0), (2.6, 30.0, 0.7)] {
-          let x = 150 + (t * speed).truncatingRemainder(dividingBy: 280)
-          c.opacity = night ? 0.2 : 0.8
-          for (dx, dy, w) in [(0.0, 0.0, 44.0), (26.0, -9.0, 38.0), (52.0, 0.0, 40.0)] {
-            c.fill(
-              Path(ellipseIn: CGRect(x: x + dx * r, y: y + dy * r, width: w * r, height: 18 * r)),
-              with: .color(night ? Color(red: 0.6, green: 0.56, blue: 0.85) : .white))
+        var w = c
+        StudioWeather.sky(&w, t: t, weather: weather, night: night, bought: window != nil)
+      case "city":
+        // từng ô đèn tắt bật theo nhịp riêng, không đồng loạt (chỉ thành phố, ban đêm)
+        if night, window == nil {
+          var l = c
+          for (i, w) in [(236.0, 70.0), (292, 30), (298, 74), (330, 100), (358, 60), (204, 110)].enumerated() {
+            let on = sin(t * (0.21 + Double(i) * 0.07) + Double(i) * 1.9) > -0.2
+            l.opacity = on ? 0.95 : 0
+            l.fill(Path(CGRect(x: w.0, y: w.1, width: 5, height: 7)), with: .color(Color(red: 1, green: 0.8, blue: 0.45)))
           }
         }
-      case "city":
-        guard night else { return }
-        // từng ô đèn tắt bật theo nhịp riêng, không đồng loạt
-        for (i, w) in [(236.0, 70.0), (292, 30), (298, 74), (330, 100), (358, 60), (204, 110)].enumerated() {
-          let on = sin(t * (0.21 + Double(i) * 0.07) + Double(i) * 1.9) > -0.2
-          c.opacity = on ? 0.95 : 0
-          c.fill(Path(CGRect(x: w.0, y: w.1, width: 5, height: 7)), with: .color(Color(red: 1, green: 0.8, blue: 0.45)))
-        }
+        var w = c
+        StudioWeather.outside(&w, t: t, weather: weather, night: night, window: window)
       default:
         // trong chùm đèn hạt bắt sáng nên rõ, ngoài chùm chỉ thoáng thấy
         for m in motes {
