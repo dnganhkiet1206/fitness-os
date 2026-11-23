@@ -252,13 +252,15 @@ extension KoaRepairScene {
     public static let start = 172.0 / 30
     public static var duration: Double { T("end") - start }
 
+    /// Bảng dời `StudioScene.boardShift` (#799-B): mọi toạ độ ngang của cảnh dời theo cùng một lượng (px ảnh).
+    public static let shiftPx = StudioScene.boardShift * pxPerUnit
     /// Màn bảng trong ảnh phòng (px) — app quy về toạ độ phòng.
-    public static let screenPx = (x: 912.0, y: 1432.0, w: 338.0, h: 208.0)
-    public static let numberPx = (x: 978.0, y: 1516.0, w: 92.0, h: 62.0)
+    public static let screenPx = (x: 912.0 + shiftPx, y: 1432.0, w: 338.0, h: 208.0)
+    public static let numberPx = (x: 978.0 + shiftPx, y: 1516.0, w: 92.0, h: 62.0)
     /// Koa đứng gõ (tay khi gõ cách tâm +132 px → chạm mép trái bảng, đo) / rút phích.
-    static let kx = 786.0, px = 640.0
-    public static let socketPx = (x: 714.0, y: 1766.0)
-    public static let cableTopPx = (x: 936.0, y: 1644.0)
+    static let kx = 786.0 + shiftPx, px = 640.0 + shiftPx
+    public static let socketPx = (x: 714.0 + shiftPx, y: 1766.0)
+    public static let cableTopPx = (x: 936.0 + shiftPx, y: 1644.0)
 
     static let yay = Line("Để tớ xem!", key: "koa.repair.board.yay", at: T("yay") + 0.3)
     static let wait = Line("Tắt đi… bật lại…", key: "koa.repair.board.wait", at: T("wait") + 0.1, rate: 0.16)

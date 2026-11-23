@@ -22,8 +22,10 @@ public enum StudioTall {
   /// Phần tử tranh gốc được thay. `Defs` luôn giữ vì phần còn lại vẫn trỏ tới.
   public static func omit(_ o: StudioScene.Options) -> Set<Int> {
     var out = Set(0...24).union(95...95).union(97...107)
-    if o.decor["window"] == nil { out.formUnion(25...64) }
-    if o.decor["lamp"] == nil { out.formUnion(108...131) }
+    // Phòng khung dọc vẽ cửa sổ / đèn của chính nó; món đã mua được đặt lại theo khung dọc (`boughtWindow`,
+    // `boughtLamp`, #799-B, Kiệt duyệt mock 23/11) — tranh cửa sổ / đèn của phòng cũ luôn bỏ.
+    out.formUnion(25...64)
+    out.formUnion(108...131)
     return out.filter { StudioScene.template[$0]["t"]?.stringValue != "Defs" }
   }
 
@@ -49,8 +51,8 @@ public enum StudioTall {
   public static func tree(_ o: StudioScene.Options, layer id: String) -> [KoaRender.Element] {
     let c = ink(o)
     switch id {
-    case "sky": return sky(c)
-    case "city": return city(c)
+    case "sky": return boughtWindow(o) ?? sky(c)
+    case "city": return o.decor["window"] != nil ? [] : city(c)
     case "wall": return wall(o, c)
     case "floor": return floor(c)
     case "sides": return sides(o)
@@ -58,6 +60,31 @@ public enum StudioTall {
     case "lamp": return lamp(o, c)
     default: return []
     }
+  }
+
+  /// Cửa sổ đã mua (#799-B): CẢNH của món (trời, trăng, núi / biển…) thay trời + toà nhà trong ô cửa vòm. Trời giãn
+  /// kín ô, cảnh giữ tỉ lệ và chạm bậu; khung vòm, song, bậu của phòng giữ nguyên. Trước đây tranh cửa sổ của
+  /// phòng cũ vẽ đúng cỡ / chỗ cũ — một ô nhỏ đè lên góc ô cửa vòm.
+  static func boughtWindow(_ o: StudioScene.Options) -> [Element]? {
+    guard let id = o.decor["window"], let v = StudioScene.decorData.variants["window.\(id)"] else { return nil }
+    let table = o.light ? StudioScene.lightSkins : StudioScene.skins
+    let skin = table[o.skin] ?? table["default"]!
+    var defs: [Element] = [], glass: Element?, inner: Element?
+    for n in v {
+      let t = n["t"]?.stringValue ?? ""
+      if t == "Defs" { if let e = StudioScene.element(n, o, skin) { defs.append(e) } }
+      if t == "Rect", (n["p"]?["fill"]?.stringValue ?? "").hasPrefix("url(#decor"), glass == nil { glass = StudioScene.element(n, o, skin) }
+      if t == "G", n["p"]?["clipPath"] != nil { inner = StudioScene.element(n, o, skin) }
+    }
+    guard var glass, let inner else { return nil }
+    glass.props["rx"] = .number(0)
+    // ô kính gốc 278…361 × 101…206 → ô cửa vòm 206…368 × −151…160: trời giãn kín, cảnh giữ tỉ lệ, chạm bậu
+    let sx = 162.0 / 83, sy = 311.0 / 105
+    let u = 162.0 / 83
+    return defs + [
+      Element("G", matrix: [sx, 0, 0, sy, 206 - 278 * sx, -151 - 101 * sy], kids: [glass]),
+      Element("G", matrix: [u, 0, 0, u, 206 - 278 * u, 160 - 206 * u], kids: [inner]),
+    ]
   }
 
   static func sky(_ c: Ink) -> [Element] {
@@ -188,14 +215,45 @@ public enum StudioTall {
   /// Điểm treo đèn trên trần (dây đèn x 195 từ y −360).
   public static let lampPivot = (x: 195.0, y: -360.0)
 
-  /// Đèn trần đung đưa theo gió (Kiệt 04/11): thỉnh thoảng — mỗi 26 giây một cơn gió dài 9 giây — đèn
-  /// lắc như con lắc (nhịp 3,1 giây), tối đa 1,2°, vào ra êm từ 0 nên không giật; chao và chùm sáng
-  /// cùng lắc nên vệt sáng di chuyển theo. Nhẹ để không mỏi mắt, chỉ cho phòng sống động.
-  public static func lampSway(at t: Double) -> Double {
-    let gust = 9.0, period = 26.0
-    let p = t.truncatingRemainder(dividingBy: period)
-    guard p >= 0, p < gust else { return 0 }
-    return 1.2 * sin(Double.pi * p / gust) * sin(2 * Double.pi * p / 3.1)
+  /// Đèn trần đứng yên; chỉ lắc khi người dùng chạm vào đèn hay nghiêng máy mạnh (Kiệt 23/11 — trước đây tự lắc
+  /// theo "gió" mỗi 26 giây). Mỗi cú đẩy là một dao động con lắc (nhịp 3,1 giây) tắt dần; nhiều cú đẩy CỘNG vào
+  /// nhau nên đang lắc mà bị đẩy tiếp thì không giật. Chao và chùm sáng lắc theo; bụi trong chùm thì không.
+  public struct LampSwing: Sendable {
+    public static let period = 3.1
+    /// Biên độ giảm còn 1/e sau chừng ấy giây.
+    public static let decay = 2.4
+    /// Biên độ của cú đẩy mạnh nhất (độ).
+    public static let maxDegrees = 2.6
+    /// Sau chừng ấy giây coi như đã yên.
+    public static let life = 11.0
+    private var pushes: [(at: Double, amp: Double)] = []
+
+    public init() {}
+
+    public var isEmpty: Bool { pushes.isEmpty }
+
+    /// `strength` 0…1; `direction` ±1: đèn bắt đầu lắc sang phải / trái.
+    public mutating func push(at t: Double, strength: Double, direction: Double = 1) {
+      let a = max(0, min(1, strength)) * Self.maxDegrees * (direction < 0 ? -1 : 1)
+      guard a != 0 else { return }
+      pushes = pushes.filter { t - $0.at < Self.life }
+      if pushes.count >= 4 { pushes.removeFirst() }
+      pushes.append((t, a))
+    }
+
+    /// Góc lúc `t` (độ). 0 khi chưa ai đẩy hay đã yên.
+    public func angle(at t: Double) -> Double {
+      var sum = 0.0
+      for p in pushes {
+        let d = t - p.at
+        guard d >= 0, d < Self.life else { continue }
+        sum += p.amp * exp(-d / Self.decay) * sin(2 * Double.pi * d / Self.period)
+      }
+      return max(-Self.maxDegrees * 1.5, min(Self.maxDegrees * 1.5, sum))
+    }
+
+    /// Đang lắc (cần vẽ lại theo khung).
+    public func moving(at t: Double) -> Bool { pushes.contains { t - $0.at < Self.life } }
   }
 
   /// Chùm sáng tách lớp riêng để app làm nhoè mép (`coneBlur`), chao đèn phía trên vẫn nét.
@@ -218,9 +276,36 @@ public enum StudioTall {
     ]
   }
 
+  /// Chỗ treo đèn đã mua: hình món phóng `boughtLampScale` quanh dây (x 195), móc treo (y 40 của hình) ở y −110.
+  static let boughtLampScale = 1.25
+
+  /// Hình đèn đã mua đặt lại theo phòng khung dọc (#799-B). Bỏ luồng sáng hình nón và hạt bụi của tranh phòng cũ
+  /// (phòng khung dọc có luồng sáng / hạt bụi riêng ở lớp `cone`); giữ quầng, khung, bóng đèn, pha lê.
+  static func boughtLamp(_ o: StudioScene.Options) -> [Element]? {
+    guard let id = o.decor["lamp"], let v = StudioScene.decorData.variants["lamp.\(id)"] else { return nil }
+    let table = o.light ? StudioScene.lightSkins : StudioScene.skins
+    let skin = table[o.skin] ?? table["default"]!
+    let parts = v.filter { n in
+      let t = n["t"]?.stringValue ?? "", fill = n["p"]?["fill"]?.stringValue ?? ""
+      if t == "Path", fill.hasPrefix("url(#"), fill.contains("Cone") { return false }
+      if t == "Circle", (n["p"]?["opacity"]?.doubleValue ?? 1) < 0.2, (n["p"]?["cy"]?.doubleValue ?? 0) > 90 { return false }
+      if t == "Ellipse", fill == "url(#nsHalo)" { return false }
+      return true
+    }.compactMap { StudioScene.element($0, o, skin) }
+    let s = boughtLampScale
+    return [Element("G", matrix: [s, 0, 0, s, 195 - 195 * s, -110 - 40 * s], kids: parts)]
+  }
+
   static func lamp(_ o: StudioScene.Options, _ c: Ink) -> [Element] {
     var out: [Element] = [Element("Defs", kids: [KoaBedroom.glow("tallHalo", c.glow, 0.6)])]
     guard o.decor["lamp"] == nil else {
+      // Đèn đã mua (#799-B): hình của món phóng 1,25 (vừa bề ngang chao đèn), treo đúng chỗ chao đèn của phòng
+      // khung dọc. Ban ngày không treo đèn (như đèn gốc, 15/10).
+      guard o.lamp else { return [] }
+      if let parts = boughtLamp(o) {
+        out.append(KoaBedroom.ellipse(195, -36, 120, 90, "url(#tallHalo)"))
+        return out + [KoaBedroom.line("M195 -360V-106", c.rail, width: 3.5)] + parts
+      }
       return out + [KoaBedroom.line("M195 -360V30", c.rail, width: 3.5)]
     }
     // ban ngày đèn tắt (quyết định 15/10): vẫn có chao đèn, không có chùm sáng
