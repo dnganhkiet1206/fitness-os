@@ -221,7 +221,7 @@ struct TodayDayBlock: View {
   /// ngượng / gồng sức về mặt thường.
   static func compactEmotion(_ e: KoaEmotion.Emotion) -> KoaEmotion.Emotion {
     switch e {
-    case .sad, .oops, .warmup: .idle
+    case .sad, .oops, .curl: .idle
     default: e
     }
   }
@@ -300,7 +300,7 @@ struct TodayDayBlock: View {
   static func emotion(_ p: KoaSchedule.Phase) -> KoaEmotion.Emotion {
     switch p {
     case .pump: .proud
-    case .waiting: .warmup
+    case .waiting: .curl
     }
   }
 
