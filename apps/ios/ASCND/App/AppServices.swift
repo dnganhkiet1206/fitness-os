@@ -1637,10 +1637,13 @@ final class AppServices {
   /// `claim_quest_reward`.
   func makeMascotShop(userId: String) -> MascotShopBook? {
     guard let backend else { return nil }
-    return MascotShopBook(
+    let book = MascotShopBook(
       userId: userId, source: SupabaseMascotSource(backend: backend),
       wardrobe: SupabaseMascotWardrobe(backend: backend), economy: SupabaseMascotEconomy(backend: backend),
       gate: claimGate(userId: userId))
+    // KOA-T57: khoá theo hạng đọc Gains đã có (cùng người), không bắt đầu ở hạng 0.
+    if let now = koaGainsNow, now.userId == userId { book.gains = now.state }
+    return book
   }
 
   /// Feed Cộng đồng (#527, lát 1): đọc `community_*` qua RLS, ảnh minh hoạ ở
