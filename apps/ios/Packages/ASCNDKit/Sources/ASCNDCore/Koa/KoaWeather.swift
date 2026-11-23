@@ -49,8 +49,12 @@ public enum KoaWeather: String, CaseIterable, Sendable {
     return pick
   }
 
+  /// Ngày theo lịch Gregory ở múi giờ của `calendar` (đổi trời lúc nửa đêm địa phương). Máy dùng lịch khác
+  /// (Hồi giáo, Phật lịch…) vẫn ra đúng mùa (Devin #1005).
   public static func of(_ date: Date, calendar: Calendar = .current, window: String? = nil) -> KoaWeather {
-    let c = calendar.dateComponents([.year, .month, .day], from: date)
+    var g = Calendar(identifier: .gregorian)
+    g.timeZone = calendar.timeZone
+    let c = g.dateComponents([.year, .month, .day], from: date)
     return of(year: c.year ?? 2026, month: c.month ?? 1, day: c.day ?? 1, window: window)
   }
 
@@ -76,5 +80,20 @@ public enum KoaWeather: String, CaseIterable, Sendable {
     case .fog: 0.38
     case .snow: 0.22
     }
+  }
+
+  /// Gió của mưa / tuyết. Quãng trôi ngang là TÍCH PHÂN của vận tốc gió theo thời gian, không phải vận tốc × t:
+  /// `t` là giây kể từ 2001 (~8·10⁸), nhân vận tốc biến thiên thì hạt nhảy ngang mỗi khung (Devin #1005).
+  public enum Wind {
+    /// Hệ số gió của mưa: vận tốc ngang = `rainGust` × tốc độ rơi.
+    public static func rainGust(_ t: Double) -> Double { 0.16 + 0.05 * sin(t * 0.23) + 0.02 * sin(t * 0.9) }
+    /// ∫ `rainGust` dt.
+    public static func rainDrift(_ t: Double) -> Double {
+      0.16 * t - 0.05 / 0.23 * cos(t * 0.23) - 0.02 / 0.9 * cos(t * 0.9)
+    }
+    /// Gió đẩy tuyết (điểm / giây).
+    public static func snowWind(_ t: Double) -> Double { 5 + 2 * sin(t * 0.11) }
+    /// ∫ `snowWind` dt.
+    public static func snowDrift(_ t: Double) -> Double { 5 * t - 2 / 0.11 * cos(t * 0.11) }
   }
 }

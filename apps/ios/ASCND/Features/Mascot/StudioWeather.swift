@@ -119,7 +119,7 @@ enum StudioWeather {
   }
 
   static func rain(_ c: inout GraphicsContext, t: Double, night: Bool) {
-    let gust = 0.16 + 0.05 * sin(t * 0.23) + 0.02 * sin(t * 0.9)
+    let gust = KoaWeather.Wind.rainGust(t), drift = KoaWeather.Wind.rainDrift(t)
     let layers: [(n: Int, fall: Double, len: Double, lw: Double, a: Double, k: Double)] = [
       (90, 140, 0.08, 0.55, night ? 0.3 : 0.28, 0.6), (55, 200, 0.09, 0.85, night ? 0.42 : 0.38, 0.85),
       (14, 280, 0.1, 1.2, night ? 0.55 : 0.5, 1),
@@ -131,7 +131,8 @@ enum StudioWeather {
       var p = Path()
       for _ in 0..<l.n {
         let x0 = r.next() * (w + 80), y0 = r.next() * (h + 60), sp = 0.85 + r.next() * 0.3
-        let y = wrap(y0 + l.fall * sp * t, h + 60) - 30, x = wrap(x0 + vx * sp * t, w + 80) - 40
+        // ngang: quãng trôi = ∫ gió dt (không phải vận tốc tức thời × t, Devin #1005); vệt theo vận tốc tức thời
+        let y = wrap(y0 + l.fall * sp * t, h + 60) - 30, x = wrap(x0 + drift * l.fall * l.k * sp, w + 80) - 40
         p.move(to: CGPoint(x: x, y: y))
         p.addLine(to: CGPoint(x: x - vx * sp * l.len, y: y - l.fall * sp * l.len))
       }
@@ -170,7 +171,7 @@ enum StudioWeather {
   }
 
   static func snow(_ c: inout GraphicsContext, t: Double, night: Bool) {
-    let wind = 5 + 2 * sin(t * 0.11)
+    let drift = KoaWeather.Wind.snowDrift(t)
     let layers: [(n: Int, size: Double, fall: Double, amp: Double, a: Double, seed: UInt32, k: Double)] = [
       (70, 0.55, 9, 2, 0.55, 3, 0.5), (38, 1.05, 14, 3.5, 0.8, 4, 0.8), (9, 1.9, 21, 5, 0.9, 5, 1),
     ]
@@ -181,7 +182,7 @@ enum StudioWeather {
         let x0 = r.next() * (w + 40), y0 = r.next() * (h + 20), ph = r.next() * 6.3, per = 6 + r.next() * 8
         let v = 0.8 + r.next() * 0.4, sz = l.size * (0.75 + r.next() * 0.5)
         let y = wrap(y0 + l.fall * v * t, h + 20) - 10
-        let x = wrap(x0 + wind * l.k * t + sin(t * 2 * .pi / per + ph) * l.amp, w + 40) - 20
+        let x = wrap(x0 + drift * l.k + sin(t * 2 * .pi / per + ph) * l.amp, w + 40) - 20
         let edge = min(1, (y + 10) / 30, (h - y) / 24)
         guard edge > 0 else { continue }
         if l.k == 1 {

@@ -74,12 +74,11 @@ public enum StudioTall {
       let t = n["t"]?.stringValue ?? ""
       if t == "Defs" { if let e = StudioScene.element(n, o, skin) { defs.append(e) } }
       if t == "Rect", (n["p"]?["fill"]?.stringValue ?? "").hasPrefix("url(#decor"), glass == nil { glass = StudioScene.element(n, o, skin) }
-      if t == "G", n["p"]?["clipPath"] != nil { inner = StudioScene.element(n, o, skin) }
+      // biển (thời tiết, Kiệt duyệt 23/11): vệt trăng và gợn sóng vẽ động theo phối cảnh (`StudioWeather`), bỏ bản
+      // tĩnh của tranh — lọc trên dữ liệu gốc, TRƯỚC khi đổi màu ban ngày (Devin #1005)
+      if t == "G", n["p"]?["clipPath"] != nil { inner = StudioScene.element(id == "ocean" ? Self.withoutSeaGlint(n) : n, o, skin) }
     }
-    guard var glass, var inner else { return nil }
-    // biển (#799-B thời tiết, Kiệt duyệt 23/11): vệt trăng và gợn sóng vẽ động theo phối cảnh (`StudioWeather`),
-    // bỏ bản tĩnh của tranh để không có hai vệt chồng nhau
-    if id == "ocean" { inner.kids.removeAll(where: Self.isStaticSeaGlint) }
+    guard var glass, let inner else { return nil }
     glass.props["rx"] = .number(0)
     // ô kính gốc 278…361 × 101…206 → ô cửa vòm 206…368 × −151…160: trời giãn kín, cảnh giữ tỉ lệ, chạm bậu
     let sx = 162.0 / 83, sy = 311.0 / 105
@@ -96,9 +95,19 @@ public enum StudioTall {
   public static let oceanHorizon = 160 + (168 - 206) * 162.0 / 83
   public static let oceanMoonX = 206 + (343 - 278) * 162.0 / 83
 
-  /// Vệt trăng (ô vàng) và gợn sóng (nét tím) tĩnh của tranh biển.
-  static func isStaticSeaGlint(_ e: Element) -> Bool {
-    e.props["fill"] == .string("#FFC24D") || e.props["stroke"] == .string("#8F83FF")
+  /// Vệt trăng tĩnh (dải vàng cao 1,4) và gợn sóng tĩnh (nét tím ngang dài 10) của tranh biển, theo dữ liệu gốc.
+  /// Đèn hải đăng và tia sáng cùng màu vàng nhưng khác hình, nên được giữ (Devin #1005).
+  static func isStaticSeaGlint(_ n: JSONValue) -> Bool {
+    let t = n["t"]?.stringValue, p = n["p"]
+    if t == "Rect", p?["fill"]?.stringValue == "#FFC24D", p?["height"]?.doubleValue == 1.4 { return true }
+    if t == "Path", p?["stroke"]?.stringValue == "#8F83FF", p?["d"]?.stringValue?.hasSuffix(" l 10 0") == true { return true }
+    return false
+  }
+
+  static func withoutSeaGlint(_ n: JSONValue) -> JSONValue {
+    guard case .object(var g) = n, case .array(let kids)? = g["k"] else { return n }
+    g["k"] = .array(kids.filter { !isStaticSeaGlint($0) })
+    return .object(g)
   }
 
   static func sky(_ c: Ink) -> [Element] {

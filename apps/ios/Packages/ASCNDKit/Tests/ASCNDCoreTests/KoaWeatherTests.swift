@@ -80,4 +80,35 @@ struct KoaWeatherTests {
     #expect(KoaWeather.fog.cloudLayers == 0)
     #expect(KoaWeather.rain.denseClouds && !KoaWeather.clear.denseClouds)
   }
+
+  /// Lịch của máy không phải Gregory (Hồi giáo, Phật lịch) vẫn ra cùng kiểu trời như lịch Gregory (Devin #1005).
+  @Test func otherCalendarsGiveTheSameWeather() {
+    let tz = TimeZone(identifier: "UTC")!
+    var greg = Foundation.Calendar(identifier: .gregorian)
+    greg.timeZone = tz
+    for id in [Foundation.Calendar.Identifier.islamicCivil, .buddhist, .japanese, .hebrew] {
+      var other = Foundation.Calendar(identifier: id)
+      other.timeZone = tz
+      for day in stride(from: 0, to: 400, by: 7) {
+        let d = Date(timeIntervalSince1970: 1_783_814_400 + Double(day) * 86_400)  // từ 12/07/2026
+        for w in [nil, "mountain"] {
+          #expect(KoaWeather.of(d, calendar: other, window: w) == KoaWeather.of(d, calendar: greg, window: w), "\(id) \(day)")
+        }
+      }
+    }
+  }
+
+  /// Quãng trôi = tích phân của vận tốc gió: giữa hai khung (1/30 s) ở thời điểm thật (~8·10⁸ s kể từ 2001)
+  /// hạt chỉ dịch đúng vận tốc × khung, không nhảy (Devin #1005).
+  @Test func windDriftIsTheIntegralOfWindSpeed() {
+    let dt = 1.0 / 30
+    for t in [0.0, 12, 1_000, 817_105_792, 817_105_792.5] {
+      let rain = (KoaWeather.Wind.rainDrift(t + dt) - KoaWeather.Wind.rainDrift(t)) / dt
+      #expect(abs(rain - KoaWeather.Wind.rainGust(t + dt / 2)) < 1e-3, "mưa t=\(t)")
+      let snow = (KoaWeather.Wind.snowDrift(t + dt) - KoaWeather.Wind.snowDrift(t)) / dt
+      #expect(abs(snow - KoaWeather.Wind.snowWind(t + dt / 2)) < 1e-3, "tuyết t=\(t)")
+      // lớp mưa gần nhất (rơi 280 điểm/s, sp ≤ 1,15): mỗi khung dịch ngang < 3 điểm
+      #expect(abs(rain * 280 * 1.15 * dt) < 3)
+    }
+  }
 }

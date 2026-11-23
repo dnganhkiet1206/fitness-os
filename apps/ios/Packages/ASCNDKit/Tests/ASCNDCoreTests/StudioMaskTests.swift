@@ -127,16 +127,30 @@ struct StudioTallDecorTests {
     }
   }
 
-  /// Biển đã mua: vệt trăng / gợn sóng tĩnh của tranh bị bỏ (vẽ động theo thời tiết); núi giữ nguyên tranh.
-  @Test func oceanDropsItsStaticGlitterPath() throws {
-    func glints(_ id: String) throws -> Int {
-      let parts = try #require(StudioTall.boughtWindow(Self.night(["window": id])))
-      let inner = try #require(parts.last)
-      return inner.kids.flatMap(\.kids).count(where: StudioTall.isStaticSeaGlint) + inner.kids.count(where: StudioTall.isStaticSeaGlint)
-    }
-    #expect(try glints("ocean") == 0)
+  /// Biển đã mua: vệt trăng / gợn sóng tĩnh của tranh bị bỏ (vẽ động theo thời tiết), cả đêm lẫn ngày; đèn hải
+  /// đăng và tia sáng (cùng màu vàng) vẫn còn; núi giữ nguyên tranh (Devin #1005).
+  @Test func oceanDropsItsStaticGlitterPathOnly() throws {
     let raw = try #require(StudioScene.decorData.variants["window.ocean"])
-    #expect(raw.description.contains("#FFC24D"), "tranh gốc có vệt trăng tĩnh")
+    let g = try #require(raw.first { $0["t"]?.stringValue == "G" && $0["p"]?["clipPath"] != nil })
+    guard case .array(let kids)? = g["k"] else { Issue.record("không có lớp cảnh"); return }
+    #expect(kids.count(where: StudioTall.isStaticSeaGlint) == 14, "7 dải vệt trăng + 7 gợn sóng")
+    let kept = StudioTall.withoutSeaGlint(g)
+    guard case .array(let left)? = kept["k"] else { Issue.record("lọc hỏng"); return }
+    #expect(left.count == kids.count - 14)
+    // đèn hải đăng (ô 4 × 4) và tia sáng (tam giác) cùng màu vàng vẫn còn
+    #expect(left.contains { $0["t"]?.stringValue == "Rect" && $0["p"]?["width"]?.doubleValue == 4 && $0["p"]?["fill"]?.stringValue == "#FFC24D" })
+    #expect(left.contains { $0["t"]?.stringValue == "Path" && $0["p"]?["fill"]?.stringValue == "#FFC24D" })
+    // ban ngày: số phần tử của cảnh = số đã lọc (lọc trước khi đổi màu)
+    for light in [false, true] {
+      var o = Self.night(["window": "ocean"])
+      o.light = light
+      let inner = try #require(StudioTall.boughtWindow(o)?.last?.kids.first)
+      #expect(inner.kids.count == left.count, "light \(light)")
+    }
+    let mountain = try #require(StudioTall.boughtWindow(Self.night(["window": "mountain"]))?.last?.kids.first)
+    let rawMountain = try #require(StudioScene.decorData.variants["window.mountain"]?.first { $0["t"]?.stringValue == "G" && $0["p"]?["clipPath"] != nil })
+    guard case .array(let mk)? = rawMountain["k"] else { Issue.record("núi"); return }
+    #expect(mountain.kids.count == mk.count)
     #expect(abs(StudioTall.oceanHorizon - 85.83) < 0.01)
     #expect(StudioTall.oceanMoonX > StudioTall.arch.x + StudioTall.arch.w / 2, "trăng lệch phải, không nằm sau song giữa")
   }
