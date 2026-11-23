@@ -1186,6 +1186,8 @@ struct TodayExtras<Plan: View>: View {
     syncRestDay()
     guard let r = await services.loadKoaGains(userId: userId) else { return }
     mascot.gains = r.state
+    // KOA-T57: cửa hàng dùng chung (phòng, Hôm nay) đổi theo Gains vừa đọc — không khoá nhầm ở hạng 0.
+    shop?.gains = r.state
     services.koaBuild = r.state.rank
     services.koaGainsNow = (userId, r.state, r.week)
     services.koaLastSessionAt = r.lastSessionAt
