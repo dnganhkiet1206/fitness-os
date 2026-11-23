@@ -2,7 +2,7 @@
 // (đường CPU, giữ làm đường lùi), trong không gian tuyến tính:
 //   a        = độ phủ · hệ số                          (chỉ phần cơ có vai trò)
 //   albedo   = (nền·(1−a) + màu·a) · shade
-//   emission = màu·a·shade·0,24 + (màu·a·0,55 + 0,45)·viền·0,95
+//   emission = màu·a·shade·0,55 + (màu·a·0,30 + lạnh·0,70)·viền·0,95   (lạnh = 0,55 / 0,72 / 1; 23/11)
 //   normal   = thớ cơ trên phần cơ có vai trò, khối cơ ở chỗ khác (chỉ thân)
 //
 // Ô texture của CustomMaterial (đều nạp dạng raw, không đổi màu):
@@ -56,8 +56,9 @@ Paint paint(realitykit::surface_parameters params, float2 uv)
     half a = clamp(id.g * half(constants.w), 0.0h, 1.0h);
     half shade = tex.base_color().sample(smooth, uv).r;
     out.albedo = (base * (1.0h - a) + color * a) * shade;
-    half w = a > 0.0h ? 0.45h : 0.0h;
-    out.emission = color * a * shade * 0.24h + (color * a * 0.55h + w) * id.b * 0.95h;
+    // Viền neon xanh trắng quanh phần cơ (23/11, kiểu DEMIC STORY), cơ phát sáng mạnh hơn.
+    half w = a > 0.0h ? 0.70h : 0.0h;
+    out.emission = color * a * shade * 0.55h + (color * a * 0.30h + half3(0.55h, 0.72h, 1.0h) * w) * id.b * 0.95h;
     return out;
 }
 

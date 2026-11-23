@@ -20,6 +20,9 @@
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
+    /// Phòng theo giao diện của máy (Kiệt 23/11: ép phòng tối ở chế độ sáng làm lệch màu thẻ). Bản tối
+    /// dịu đi () để nhân vật trắng, đèn viền và cơ phát sáng nổi lên kiểu DEMIC STORY.
+    private var studioLook: String { scheme == .dark ? "dark" : "light" }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Máy quay bay vòng quanh bài; ghế và nhân vật đứng yên (Kiệt 13/11).
     @State private var yaw: Double
@@ -134,10 +137,10 @@
                 content.camera = .virtual  // dùng thực thể có PerspectiveCameraComponent ở trên
                 do {
                   // Phòng tập 3D, ánh sáng đã nướng sẵn: vẽ không cần đèn.
-                  if let room = await Self.loadRoom(look: scheme == .dark ? "dark" : "light") {
-                    Self.makeUnlit(room, dark: scheme == .dark)
+                  if let room = await Self.loadRoom(look: studioLook) {
+                    Self.makeUnlit(room, dark: scheme == .dark, brightness: Self.roomManifest(look: studioLook)?.room_brightness ?? 1)
                     // Sau makeUnlit: tạ trên kệ giữ vật liệu PBR, được đèn chiếu như dụng cụ của bài.
-                    await Self.mountRackItems(in: room, look: scheme == .dark ? "dark" : "light")
+                    await Self.mountRackItems(in: room, look: studioLook)
                     content.add(room)
                   }
                   // Bài dạng khối: nhân vật dùng chung + file chuyển động
@@ -170,7 +173,7 @@
                     // update{} không chạy lại khi texture nạp xong: gán ngay.
                     bodySkins.apply(focus: hideSecondary, force: true)
                   }
-                  Self.addLights(to: content, target: cameraTarget, look: scheme == .dark ? "dark" : "light")
+                  Self.addLights(to: content, target: cameraTarget, look: studioLook)
                   // Phòng nướng sẵn không còn bóng của bài nào (dùng chung,
                   // 16/11): bóng tiếp xúc mềm dưới nhân vật + dụng cụ.
                   if let shadow = Self.contactShadow(under: [scene] + [motion, apparel].compactMap { $0 }) {
@@ -635,7 +638,8 @@
     /// Phòng xuất từ Blender với màu đã nướng ánh sáng: đổi sang vật liệu
     /// không chiếu sáng để trông đúng như ảnh render. Biển logo dùng chính
     /// logo của app (`BrandMark`), sáng ở bản tối, xám kim loại ở bản sáng.
-    private static func makeUnlit(_ root: Entity, dark: Bool) {
+    private static func makeUnlit(_ root: Entity, dark: Bool, brightness: Float = 1) {
+      let k = CGFloat(min(max(brightness, 0), 1))
       var logoTexture: TextureResource?
       if let image = UIImage(named: "BrandMark")?.cgImage {
         logoTexture = try? TextureResource(image: image, options: .init(semantic: .color))
@@ -646,14 +650,15 @@
           model.materials = model.materials.map { material in
             if isLogo, let logoTexture {
               var unlit = UnlitMaterial()
+              // Logo dịu theo phòng nhưng ít hơn, vẫn đọc được.
               unlit.color = .init(
-                tint: dark ? UIColor(white: 1, alpha: 1) : UIColor(white: 0.32, alpha: 1), texture: .init(logoTexture))
+                tint: dark ? UIColor(white: min(1, k + 0.3), alpha: 1) : UIColor(white: 0.32, alpha: 1), texture: .init(logoTexture))
               unlit.opacityThreshold = 0.5
               return unlit
             }
             if let pbr = material as? PhysicallyBasedMaterial, let texture = pbr.baseColor.texture {
               var unlit = UnlitMaterial()
-              unlit.color = .init(tint: .white, texture: texture)
+              unlit.color = .init(tint: UIColor(white: k, alpha: 1), texture: texture)
               return unlit
             }
             return material
@@ -856,6 +861,8 @@
       let rack_items: [RackItem]?
       /// Độ sáng của dụng cụ trên kệ (phòng là ảnh nướng; tạ được đèn chiếu nên phòng tối cần dịu đi).
       let rack_item_brightness: Float?
+      /// Độ sáng vẽ phòng nướng (23/11): phòng dịu đi để nhân vật trắng và đèn viền nổi lên.
+      let room_brightness: Float?
     }
 
     private static func roomManifest(look: String) -> RoomManifest? {

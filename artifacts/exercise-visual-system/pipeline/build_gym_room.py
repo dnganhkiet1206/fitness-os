@@ -310,7 +310,9 @@ def export_parts(look_name: str, objs, out_dir: str, center: Vector, view: Vecto
                 ],
                 # The racks are baked, the rack items are lit by the character lights: the dark
                 # look dims them to sit in the room (Kiệt 17/11, measured on the simulator).
-                "rack_item_brightness": 0.5 if look_name == "dark" else 1.0,
+                # 23/11: halved again with the room drawn at room_brightness.
+                "rack_item_brightness": 0.25 if look_name == "dark" else 1.0,
+                "room_brightness": ROOM_BRIGHTNESS[look_name],
                 "facing": {"into_room": rk(-view), "along_wall": rk(side)},
                 "room": {"half_width_m": HALF, "height_m": HEIGHT, "center": rk(center)}}
     path = os.path.join(out_dir, f"room_manifest_{look_name}.json")
@@ -319,10 +321,21 @@ def export_parts(look_name: str, objs, out_dir: str, center: Vector, view: Vecto
     print(f"[evs] room manifest {path}")
 
 
+# Studio light on the character (Kiệt 23/11 "nhân vật như vậy luôn", after the DEMIC STORY study,
+# https://claude.ai/artifact/LJ29RfJxsyKD2jGFHEw42X): a soft warm key front-top, a weak fill, and two
+# cool rim lights from BEHIND the character on either side that draw a bright edge around shoulders,
+# arms and head against the dimmed room. The camera looks into the room along -into_room
+# (-0.707, 0, -0.707); "behind" is that direction, the sides run along_wall (0.707, 0, -0.707).
 DEFAULT_LIGHTS = [
-    {"name": "key", "color": "#FFFFFF", "intensity": 1200, "from": [2.0, 4.0, 2.0]},
-    {"name": "fill", "color": "#FFFFFF", "intensity": 400, "from": [-3.0, 1.0, -2.0]},
+    {"name": "key", "color": "#FFF6EC", "intensity": 1100, "from": [2.5, 3.5, 1.1]},
+    {"name": "fill", "color": "#FFFFFF", "intensity": 250, "from": [-3.0, 1.0, -2.0]},
+    {"name": "rim_left", "color": "#BFD4FF", "intensity": 1700, "from": [-0.64, 2.2, -2.9]},
+    {"name": "rim_right", "color": "#BFD4FF", "intensity": 1500, "from": [-2.9, 2.2, -0.64]},
 ]
+# The baked room is drawn at this brightness: the dark look is dimmed so the white character, its
+# rim light and the glowing muscle stand out; the light look stays as baked (the viewer follows the
+# device appearance, Kiệt 23/11).
+ROOM_BRIGHTNESS = {"dark": 0.42, "light": 1.0}
 
 
 def main() -> None:

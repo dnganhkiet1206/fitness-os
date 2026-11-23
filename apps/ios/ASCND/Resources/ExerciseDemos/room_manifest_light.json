@@ -87,22 +87,42 @@
   "lights": [
     {
       "name": "key",
-      "color": "#FFFFFF",
-      "intensity": 1200,
+      "color": "#FFF6EC",
+      "intensity": 1100,
       "from": [
-        2.0,
-        4.0,
-        2.0
+        2.5,
+        3.5,
+        1.1
       ]
     },
     {
       "name": "fill",
       "color": "#FFFFFF",
-      "intensity": 400,
+      "intensity": 250,
       "from": [
         -3.0,
         1.0,
         -2.0
+      ]
+    },
+    {
+      "name": "rim_left",
+      "color": "#BFD4FF",
+      "intensity": 1700,
+      "from": [
+        -0.64,
+        2.2,
+        -2.9
+      ]
+    },
+    {
+      "name": "rim_right",
+      "color": "#BFD4FF",
+      "intensity": 1500,
+      "from": [
+        -2.9,
+        2.2,
+        -0.64
       ]
     }
   ],
@@ -1029,5 +1049,6 @@
       "length_m": 0.33
     }
   ],
-  "rack_item_brightness": 1.0
+  "rack_item_brightness": 1.0,
+  "room_brightness": 1.0
 }
