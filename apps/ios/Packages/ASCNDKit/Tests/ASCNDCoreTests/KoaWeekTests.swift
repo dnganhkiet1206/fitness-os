@@ -40,6 +40,89 @@ struct KoaWeekTests {
     #expect(s.complete && g.points == 3 * KoaGains.plannedSession + KoaGains.fullWeek)
   }
 
+  // MARK: - Một luật đủ tuần cho +15 Gains và +50 xu (KOA-T20, Kiệt 21/11)
+
+  /// thưởng đủ tuần của Gains có trong tuần không
+  static func gainsPaid(_ days: [KoaGains.Day], week: KoaGains.Week, through: LocalDate) -> Bool {
+    KoaGains.ledger(days, week: week, today: through).contains { $0.0 >= Self.mon && $0.0 <= Self.mon.adding(days: 6) && $0.1.fullWeek }
+  }
+  static func heavy(_ o: Int...) -> [KoaGains.Day] { o.map { KoaGains.Day(date: Self.mon.adding(days: $0), personalRecord: false) } }
+
+  /// Tuần có Tạm nghỉ (T6 nghỉ, T2 + T4 đã tập): cả Tuần của Koa lẫn Gains đều coi là đủ (đích 2).
+  @Test func pausedDayLowersBothTargets() throws {
+    let pause = KoaPauseLog([KoaPause(start: Self.mon.adding(days: 4), last: Self.mon.adding(days: 4))])
+    let s = try #require(KoaWeek.state(
+      today: Self.mon.adding(days: 5), library: Self.lib(), trained: [Self.mon, Self.mon.adding(days: 2)],
+      paused: pause.contains))
+    #expect(s.target == 2 && s.complete)
+    var week = KoaGains.Week(Self.lib())
+    #expect(!Self.gainsPaid(Self.heavy(0, 2), week: week, through: Self.mon.adding(days: 5)), "không có sổ nghỉ: Gains chưa đủ")
+    week.pauses = pause
+    #expect(Self.gainsPaid(Self.heavy(0, 2), week: week, through: Self.mon.adding(days: 5)), "có sổ nghỉ: Gains đủ cùng lúc")
+  }
+
+  /// Tổng kết tuần: tuần đủ nhờ Tạm nghỉ có cả +15 Gains (cùng sổ với Hành trình — Devin #1002).
+  @Test func summaryGainsIncludeTheBonusEarnedThroughAPause() {
+    let pause = KoaPauseLog([KoaPause(start: Self.mon.adding(days: 4), last: Self.mon.adding(days: 4))])
+    let history = Self.heavy(0, 2)
+    let without = KoaWeek.summary(weekStart: Self.mon, today: Self.mon.adding(days: 6), library: Self.lib(), history: history,
+      paused: pause.contains)
+    let with = KoaWeek.summary(weekStart: Self.mon, today: Self.mon.adding(days: 6), library: Self.lib(), history: history,
+      paused: pause.contains, pauses: pause)
+    #expect(with.target == 2 && with.done == 2)
+    #expect(with.gains == without.gains + KoaGains.fullWeek)
+  }
+
+  /// Đợt Tạm nghỉ chỉ rơi khỏi sổ máy vì đã cũ (> 60 ngày) KHÔNG bị gửi lên như huỷ (Devin #1002).
+  @Test func prunedOldSpellIsNotPushedAsCancelled() {
+    let today = LocalDate("2026-11-22")!
+    let old = KoaPause(start: today.adding(days: -90), last: today.adding(days: -80))
+    let recent = KoaPause(start: today.adding(days: -10), last: today.adding(days: -8))
+    let synced = KoaPauseLog([old, recent])
+    let local = synced.pruned(today: today)
+    #expect(!local.spells.contains(old), "sổ máy đã cắt đợt cũ")
+    #expect(KoaPauseLogSync.pushRows(synced: synced, local: local, today: today, userId: "u").isEmpty, "không gửi gì")
+    // huỷ thật một đợt còn trong 60 ngày thì vẫn gửi
+    let cancelled = KoaPauseLog([])
+    let rows = KoaPauseLogSync.pushRows(synced: synced, local: cancelled, today: today, userId: "u")
+    #expect(rows.count == 1 && rows[0]["starts_on"] == .string(recent.start.description))
+  }
+
+  /// Ngày chỉ đi bộ không tính "đã tập" ở cả hai.
+  @Test func walkOnlyDaysCountForNeither() throws {
+    let walk = KoaGains.Day(date: Self.mon.adding(days: 4), personalRecord: false, kind: .walk)
+    let history = Self.heavy(0, 2) + [walk]
+    let wo = KoaWeek.walkOnly(history)
+    #expect(wo == [Self.mon.adding(days: 4)])
+    let s = try #require(KoaWeek.state(
+      today: Self.mon.adding(days: 5), library: Self.lib(), trained: Set(history.map(\.date)), walkOnly: wo))
+    #expect(s.done == 2 && !s.complete)
+    #expect(!Self.gainsPaid(history, week: KoaGains.Week(Self.lib()), through: Self.mon.adding(days: 5)))
+    let sum = KoaWeek.summary(weekStart: Self.mon, today: Self.mon.adding(days: 6), library: Self.lib(), history: history)
+    #expect(sum.done == 2, "tổng kết tuần cũng không tính ngày đi bộ")
+    #expect(KoaWeek.walkOnly(Self.heavy(4) + [walk]).isEmpty, "cùng ngày có buổi tạ thì không phải ngày chỉ đi bộ")
+  }
+
+  /// Tuần nghỉ trọn (mọi buổi theo lịch đều Tạm nghỉ): không có thưởng đủ tuần.
+  @Test func fullyPausedWeekPaysNothing() {
+    var week = KoaGains.Week(Self.lib())
+    week.pauses = KoaPauseLog([KoaPause(start: Self.mon, last: Self.mon.adding(days: 6))])
+    // một buổi cardio ngày thứ Ba (ngoài lịch) trong tuần nghỉ trọn: có Gains buổi, không có thưởng đủ tuần
+    let extra = [KoaGains.Day(date: Self.mon.adding(days: 1), personalRecord: false, kind: .cardio)]
+    #expect(week.target(week: Self.mon, active: { _ in false }) == 0)
+    #expect(!Self.gainsPaid(extra, week: week, through: Self.mon.adding(days: 6)))
+  }
+
+  /// Buổi thứ 7 tập liền: không có Gains riêng nhưng vẫn tính cho đủ tuần (như Tuần của Koa).
+  @Test func seventhStraightDayStillCountsTowardTheWeek() {
+    // tuần trước tập 6 ngày liền tới CN → T2 tuần này là ngày thứ 7 liền
+    let prev = (1...6).map { KoaGains.Day(date: Self.mon.adding(days: -$0), personalRecord: false) }
+    let wk = KoaGains.Week(planned: [0], rest: [])   // đích 1: buổi T2
+    let b = KoaGains.breakdown(prev + Self.heavy(0), week: wk, on: Self.mon)
+    #expect(b?.streak == 7)
+    #expect(b?.fullWeek == true, "buổi thứ 7 liền vẫn làm đủ tuần")
+  }
+
   @Test func noPlanNoWeek() {
     let empty = TemplateSnapshot(routine: [], templates: [], fetchedAt: EpochMillis(1))
     #expect(KoaWeek.state(today: Self.mon, library: empty, trained: []) == nil)

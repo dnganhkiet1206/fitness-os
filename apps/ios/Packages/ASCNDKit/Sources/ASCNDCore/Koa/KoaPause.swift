@@ -133,6 +133,28 @@ public enum KoaPauseLogSync {
       ], limit: 100)
   }
 
+  /// Mọi đợt từng có (không cắt 60 ngày): Gains tính lại từ đầu lịch sử nên đích tuần cũ có Tạm nghỉ phải
+  /// giữ đúng mãi — cắt bớt thì thưởng đủ tuần cũ biến mất, Gains tụt (KOA-T20).
+  public static func queryAll(userId: String) -> RowQuery {
+    RowQuery(table: table, columns: "starts_on,ends_on", filters: [.eq("user_id", .string(userId))], limit: 1000)
+  }
+
+  /// Như `decode` nhưng giữ mọi đợt (cho Gains).
+  public static func decodeAll(_ rows: [JSONValue]) -> KoaPauseLog {
+    KoaPauseLog(rows.compactMap { r -> KoaPause? in
+      guard let s = r["starts_on"]?.stringValue.flatMap(LocalDate.init),
+        let e = r["ends_on"]?.stringValue.flatMap(LocalDate.init), e >= s
+      else { return nil }
+      return KoaPause(stored: s, last: e)
+    })
+  }
+
+  /// Hợp hai sổ (server đầy đủ + máy): đợt nào có ở một bên thì giữ; trùng ngày bắt đầu thì lấy bên máy.
+  public static func merged(_ server: KoaPauseLog, _ local: KoaPauseLog) -> KoaPauseLog {
+    let mine = Set(local.spells.map(\.start))
+    return KoaPauseLog(local.spells + server.spells.filter { !mine.contains($0.start) })
+  }
+
   public static func decode(_ rows: [JSONValue], today: LocalDate) -> KoaPauseLog {
     let spells = rows.compactMap { r -> KoaPause? in
       guard let s = r["starts_on"]?.stringValue.flatMap(LocalDate.init),
@@ -152,6 +174,13 @@ public enum KoaPauseLogSync {
     let changed = new.spells.filter { !old.spells.contains($0) }.map { row($0.start, $0.last) }
     let cancelled = old.spells.filter { !kept.contains($0.start) }.map { row($0.start, $0.start.adding(days: -1)) }
     return changed + cancelled
+  }
+
+  /// Dòng cần gửi khi đẩy sổ trên máy (`local`, đã cắt 60 ngày) so với bản đã gửi lần cuối (`synced`).
+  /// `synced` cắt theo CÙNG mốc trước khi so: đợt chỉ rơi khỏi sổ máy vì đã cũ KHÔNG phải đợt bị huỷ —
+  /// trước đây bị gửi lên như huỷ (ghi đè `ends_on`), Gains tính lại mất thưởng đủ tuần cũ (Devin #1002).
+  public static func pushRows(synced: KoaPauseLog, local: KoaPauseLog, today: LocalDate, userId: String) -> [[String: JSONValue]] {
+    rows(from: synced.pruned(today: today), to: local, userId: userId)
   }
 
   /// Toàn bộ sổ, để gửi lại khi lần trước chưa gửi được (ghi đè theo khoá, gửi lại không sao).

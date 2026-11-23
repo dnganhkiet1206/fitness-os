@@ -383,7 +383,7 @@ struct AssistantTab: View {
   private var koaWeek: KoaWeek.State? {
     KoaWeek.state(
       today: flow.today.today, library: flow.today.library, trained: flow.today.trained,
-      paused: services.koaPausedDay(userId: flow.today.userId, today: flow.today.today))
+      paused: services.koaPausedDay(userId: flow.today.userId, today: flow.today.today), walkOnly: KoaWeek.walkOnly(services.koaGainsHistory?.days))
   }
 
   private var progressSnapshot: ProgressStatusBook.Snapshot? {
@@ -458,7 +458,7 @@ struct AssistantTab: View {
     let today = flow.today.today
     let s = KoaWeek.summary(
       weekStart: today.weekStart, today: today, library: library, history: history.days,
-      paused: services.koaPausedDay(userId: flow.today.userId, today: today))
+      paused: services.koaPausedDay(userId: flow.today.userId, today: today), pauses: history.week.pauses)
     return String(localized: "dp.week.count \(s.done) \(s.target)") + " · " + String(localized: "wr.plan.gains \(s.gains)")
   }
 

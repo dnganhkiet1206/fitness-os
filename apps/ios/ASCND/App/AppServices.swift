@@ -897,7 +897,10 @@ final class AppServices {
   func loadKoaGains(userId: String) async -> KoaGainsSync.Loaded? {
     guard let rows else { return nil }
     let plans = await templates.cached(userId: userId)
-    return await KoaGainsSync.load(userId: userId, store: rows, plans: plans, now: SystemWallClock().nowMillis(), in: .current)
+    let now = SystemWallClock().nowMillis()
+    return await KoaGainsSync.load(
+      userId: userId, store: rows, plans: plans, now: now, in: .current,
+      pauses: koaPauseLog(userId: userId, today: LocalDate(now, in: .current)))
   }
 
   /// Các ngày có ghi, cho mốc ghi đều. Đọc hỏng thì giữ các ngày đang biết của đúng người này.
@@ -1049,7 +1052,7 @@ final class AppServices {
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     let local = koaPauseLog(userId: userId, today: today)
     let synced = loadPauseLog("koa.pauselog.synced.\(userId)", userId: userId)
-    let changes = KoaPauseLogSync.rows(from: synced, to: local, userId: userId)
+    let changes = KoaPauseLogSync.pushRows(synced: synced, local: local, today: today, userId: userId)
     guard !changes.isEmpty else { return }
     do {
       try await rows.upsert(KoaPauseLogSync.table, changes, onConflict: KoaPauseLogSync.conflict)

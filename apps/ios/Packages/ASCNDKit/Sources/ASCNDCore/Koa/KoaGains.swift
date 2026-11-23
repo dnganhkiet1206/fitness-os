@@ -128,15 +128,27 @@ public enum KoaGains {
     public let rest: Set<Int>
     /// Đổi lịch theo ngày (GĐ1) — thắng `planned` / `rest` cho đúng ngày.
     public let overrides: [LocalDate: DayOverride]
-    public init(planned: Set<Int>, rest: Set<Int>, overrides: [LocalDate: DayOverride] = [:]) {
+    /// Các đợt Tạm nghỉ (KOA-T20, Kiệt 21/11: một luật đủ tuần): ngày theo lịch mà đang Tạm nghỉ và
+    /// không tập thì không tính vào đích tuần — cùng luật với `KoaWeek` (+50 xu).
+    public var pauses: KoaPauseLog
+    public init(planned: Set<Int>, rest: Set<Int>, overrides: [LocalDate: DayOverride] = [:], pauses: KoaPauseLog = KoaPauseLog()) {
       self.planned = planned
       self.rest = rest
       self.overrides = overrides
+      self.pauses = pauses
     }
     public static let none = Week(planned: [], rest: [])
     /// Đích tuần theo lịch mẫu. Dời buổi trong tuần không đổi số buổi; dời qua
     /// tuần khác thì tuần ấy vẫn giữ đích của lịch mẫu (một buổi dư không thưởng thêm).
     public var target: Int { planned.isEmpty ? KoaGains.defaultWeeklyTarget : planned.count }
+
+    /// Đích của tuần bắt đầu `monday` (KOA-T20): `target` trừ ngày theo lịch đang Tạm nghỉ mà KHÔNG có
+    /// buổi nặng / cardio (`active`). Có thể về 0 — tuần nghỉ trọn thì không có thưởng đủ tuần.
+    public func target(week monday: LocalDate, active: (LocalDate) -> Bool) -> Int {
+      guard !pauses.spells.isEmpty else { return target }
+      let paused = (0..<7).map { monday.adding(days: $0) }.filter { isPlanned($0) && pauses.contains($0) && !active($0) }
+      return max(0, target - paused.count)
+    }
 
     public func isPlanned(_ date: LocalDate) -> Bool {
       if let o = overrides[date] { return !o.isRest && o.templateId != nil }
@@ -325,6 +337,8 @@ public enum KoaGains {
     }
     // Tuần (theo ngày T2) có buổi nặng / cardio — ngày nghỉ của tuần ấy mới được Gains.
     let trainedWeeks = Set(kinds.filter { $0.value.active }.keys.map(monday))
+    func isActive(_ d: LocalDate) -> Bool { kinds[d]?.active ?? false }
+    var weekTarget = week.target(week: monday(first), active: isActive)
     var s = State.zero
     var weekSessions = 0
     var weekPaid = false
@@ -336,6 +350,7 @@ public enum KoaGains {
         weekSessions = 0
         weekPaid = false
         weekRests = 0
+        weekTarget = week.target(week: day, active: isActive)
       }
       let kind = kinds[day]
       var gain = 0
@@ -354,12 +369,13 @@ public enum KoaGains {
           } else {
             gain = cardioSession
           }
-          weekSessions += 1
-          if !weekPaid, weekSessions >= week.target {
-            gain += fullWeek
-            weekPaid = true
-            b.fullWeek = true
-          }
+        }
+        // KOA-T20: buổi thứ 7 tập liền không có Gains riêng nhưng vẫn tính cho "đủ tuần" (như Tuần của Koa).
+        weekSessions += 1
+        if !weekPaid, weekTarget > 0, weekSessions >= weekTarget {
+          gain += fullWeek
+          weekPaid = true
+          b.fullWeek = true
         }
       } else {
         streak = 0
@@ -511,14 +527,19 @@ public enum KoaGainsSync {
 
   /// `nil` khi đọc hỏng — giữ Gains cũ. KOA-T52: sổ tăng tải hỏng cũng là đọc hỏng (trước đây tính như
   /// chưa có ngày nào và CÔNG BỐ Gains thấp hơn — người dùng thấy Gains tụt rồi lại lên).
+  /// `pauses`: sổ Tạm nghỉ trên máy (KOA-T20) — hợp với toàn bộ sổ trên server; đọc server hỏng thì dùng
+  /// sổ trên máy (không coi là đọc hỏng Gains: sổ nghỉ chỉ có thể làm đích nhỏ đi).
   public static func load(
-    userId: String, store: any RowStore, plans: TemplateSnapshot?, now: EpochMillis, in tz: TimeZone
+    userId: String, store: any RowStore, plans: TemplateSnapshot?, now: EpochMillis, in tz: TimeZone,
+    pauses: KoaPauseLog = KoaPauseLog()
   ) async -> Loaded? {
     guard let sessions = try? await readAll(store, { query(userId: userId, page: $0) }),
       let overload = try? await readAll(store, { overloadQuery(userId: userId, page: $0) })
     else { return nil }
     let days = mark(days(sessions.rows, in: tz), overload: overloadDays(overload.rows))
-    let week = plans.map(KoaGains.Week.init) ?? .none
+    var week = plans.map(KoaGains.Week.init) ?? .none
+    let server = (try? await store.select(KoaPauseLogSync.queryAll(userId: userId))).map(KoaPauseLogSync.decodeAll)
+    week.pauses = KoaPauseLogSync.merged(server ?? KoaPauseLog(), pauses)
     return Loaded(
       days: days, week: week, state: KoaGains.compute(days, week: week, today: LocalDate(now, in: tz)),
       lastSessionAt: lastSessionAt(sessions.rows), truncated: sessions.truncated || overload.truncated)
