@@ -8,7 +8,8 @@
     "side_lateral_raise",
     "stiff_leg_dumbbell_deadlift",
     "bent_over_two_dumbbell_row",
-    "dumbbell_shoulder_press"
+    "dumbbell_shoulder_press",
+    "standing_military_press"
   ],
   "files": {
     "back_squat_demo": "8e0c4baf31cae9cf",
@@ -27,6 +28,8 @@
     "hammer_curl_tempo": "08d2e5839becb313",
     "side_lateral_raise_demo": "8abf8bc78707f4ce",
     "side_lateral_raise_tempo": "ed08a76899c16572",
+    "standing_military_press_demo": "6d336159dfca3295",
+    "standing_military_press_tempo": "dde9bc0c57563ad7",
     "stiff_leg_dumbbell_deadlift_demo": "d22e4d8be56ccd2d",
     "stiff_leg_dumbbell_deadlift_tempo": "353a00506d692c50"
   }

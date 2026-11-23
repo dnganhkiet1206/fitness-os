@@ -245,6 +245,11 @@ def main() -> None:
             socket = evs_rig.add_socket(obj, f"hand_{hand}", local)
             evs_rig.attach_control(rig, f"ctl_hand_{hand}", socket)
             rig[f"grip_{hand}"] = 1.0
+        # A two-handed implement the template moves each frame (a barbell
+        # pressed overhead): keyed like a held one, without a wrist fit.
+        if key not in static.get("attached", {}):
+            obj.rotation_mode = "QUATERNION"
+            sockets[key] = obj
     for item in exercise["equipment"]:
         hand = item.get("held_by")
         if not hand:

@@ -300,6 +300,33 @@ def geometry_hash(root) -> str:
     return h.hexdigest()[:6]
 
 
+def shape_hash(root) -> str:
+    """Like ``geometry_hash`` but blind to the order the mesh stores its
+    vertices and faces: each face is hashed as its corner COORDINATES (from
+    the lowest corner, winding kept) and the faces are sorted. 23/11: the
+    builder's bevel stores two pairs of collar vertices of the same 60 kg
+    barbell in a different order from one scene to the next, so the legacy
+    hash called the same bar a different model. Used to settle a legacy-hash
+    mismatch; the legacy hash stays the registry value (bench keys and app
+    file names contain it)."""
+    import hashlib
+    h = hashlib.md5()
+    inv = root.matrix_world.inverted()
+    parts = [root, *sorted((c for c in root.children_recursive if c.type == "MESH"), key=lambda o: o.name)]
+    for o in parts:
+        co = [tuple(float(x) + 0.0 for x in np.round(np.array(v.co[:]), 4)) for v in o.data.vertices]
+        faces = []
+        for p in o.data.polygons:
+            pts = [co[i] for i in p.vertices]
+            k = pts.index(min(pts))
+            faces.append(tuple(pts[k:] + pts[:k]))
+        faces.sort()
+        h.update(repr(faces).encode())
+        if o is not root:
+            h.update((np.round(np.array(inv @ o.matrix_world), 3) + 0.0).tobytes())
+    return h.hexdigest()[:6]
+
+
 def equipment_key(root) -> str:
     """Stable name of an implement model: type + mass when the scene gives a
     mass (dumbbell_12kg, barbell_60kg with its plates), else type + a short
@@ -330,10 +357,20 @@ def split_equipment(scene, equipment: list, eq_dir: Path, out_dir: Path, prefix:
     for root in roots:
         key = equipment_key(root)
         geo = geometry_hash(root)
+        shape = shape_hash(root)
+        shapes = registry.setdefault("_shapes", {})
         if registry.get(key, geo) != geo:
-            raise ValueError(f"equipment key {key!r} already holds geometry {registry[key]}, this scene has {geo}: "
-                             "give the new model its own mass / type, or update every exercise together")
+            # Same model stored in another vertex order (shape_hash): keep the
+            # registered legacy hash; anything else is a different model.
+            if shapes.get(key) != shape:
+                raise ValueError(f"equipment key {key!r} already holds geometry {registry[key]} (shape {shapes.get(key)}), "
+                                 f"this scene has {geo} (shape {shape}): give the new model its own mass / type, "
+                                 "or update every exercise together")
+            geo = registry[key]
+        elif shapes.get(key, shape) != shape:
+            raise ValueError(f"equipment key {key!r}: legacy hash {geo} matches but shape {shapes[key]} != {shape}")
         registry[key] = geo
+        shapes[key] = shape
         target = eq_dir / f"equipment_{key}.usdz"
         parts = [root, *[c for c in root.children_recursive if c.type == "MESH"]]
         # Model copy at the origin: root identity, children keep their local placement.

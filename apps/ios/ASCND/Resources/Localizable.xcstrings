@@ -74876,6 +74876,29 @@
         }
       }
     },
+    "eg.demo3d.legend.obliques": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obliques"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oblicuos"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cơ chéo bụng"
+          }
+        }
+      }
+    },
     "eg.demo3d.legend.pectoralisMajor": {
       "extractionState": "manual",
       "localizations": {

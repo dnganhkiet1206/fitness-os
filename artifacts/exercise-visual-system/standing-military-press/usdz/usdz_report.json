@@ -1,0 +1,46 @@
+{
+  "pipeline_version": "0.1.0",
+  "exercise_id": "standing_military_press",
+  "master_character_id": "master_character_003",
+  "usdz": "standing_military_press_animation.usdz",
+  "size_bytes": 7574505,
+  "zip_members": [
+    "standing_military_press_animation.usdc",
+    "textures/_usdz_apparel_emission.png",
+    "textures/_usdz_apparel_albedo.png",
+    "textures/_usdz_body_emission.png",
+    "textures/_usdz_body_normal.png",
+    "textures/_usdz_body_albedo.png"
+  ],
+  "default_camera": {
+    "preset_id": "three_quarter",
+    "position_m": [
+      3.0212,
+      2.7372,
+      2.9267
+    ],
+    "target_m": [
+      0.0903,
+      1.2286,
+      -0.0042
+    ],
+    "distance_m": 4.411,
+    "vertical_fov_deg": 41.26,
+    "aspect": 0.5625
+  },
+  "expectations": {
+    "deform_bones": 90,
+    "animation_duration_s": 8.625,
+    "animation_frames": 208
+  },
+  "reimport": {
+    "armatures": 1,
+    "bones": 90,
+    "mesh_objects": 5,
+    "skinned_mesh_objects": 2,
+    "mesh_vertices": 22356,
+    "actions": 1,
+    "last_animation_frame": 197.0,
+    "materials": 6
+  }
+}

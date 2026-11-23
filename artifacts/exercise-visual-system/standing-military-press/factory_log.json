@@ -1,0 +1,585 @@
+[
+  {
+    "version": 1,
+    "when": "2026-11-23T12:30:09",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 11.9
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 21.4
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.5
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 25.7
+      }
+    },
+    "total_seconds": 63.6,
+    "qa": "{\"PASS\": 14, \"FAIL\": 5, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 2,
+    "when": "2026-11-23T12:31:49",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.9
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 19.2
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.1
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 25.2
+      }
+    },
+    "total_seconds": 53.6,
+    "qa": "{\"PASS\": 14, \"FAIL\": 5, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 3,
+    "when": "2026-11-23T12:32:49",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.2
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 20.3
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 25.2
+      }
+    },
+    "total_seconds": 54.0,
+    "qa": "{\"PASS\": 14, \"FAIL\": 5, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 4,
+    "when": "2026-11-23T12:34:03",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.3
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 19.8
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 25.0
+      }
+    },
+    "total_seconds": 53.6,
+    "qa": "{\"PASS\": 15, \"FAIL\": 4, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 5,
+    "when": "2026-11-23T12:35:31",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 5.2
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 19.4
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 25.0
+      }
+    },
+    "total_seconds": 53.9,
+    "qa": "{\"PASS\": 14, \"FAIL\": 5, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 6,
+    "when": "2026-11-23T12:36:37",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.5
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 12.8
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 24.9
+      }
+    },
+    "total_seconds": 46.5,
+    "qa": "{\"PASS\": 17, \"FAIL\": 2, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 7,
+    "when": "2026-11-23T12:37:30",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.5
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 12.8
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.5
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 26.2
+      }
+    },
+    "total_seconds": 47.3,
+    "qa": "{\"PASS\": 17, \"FAIL\": 1, \"REQUIRES_MANUAL_REVIEW\": 1, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 8,
+    "when": "2026-11-23T12:38:17",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.2
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 13.2
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 25.4
+      }
+    },
+    "total_seconds": 47.1,
+    "qa": "{\"PASS\": 16, \"FAIL\": 3, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 9,
+    "when": "2026-11-23T12:39:10",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.9
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 13.0
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 24.9
+      }
+    },
+    "total_seconds": 46.4,
+    "qa": "{\"PASS\": 17, \"FAIL\": 1, \"REQUIRES_MANUAL_REVIEW\": 1, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 10,
+    "when": "2026-11-23T12:40:09",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.5
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 13.3
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 25.0
+      }
+    },
+    "total_seconds": 47.2,
+    "qa": "{\"PASS\": 16, \"FAIL\": 3, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 11,
+    "when": "2026-11-23T12:41:02",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.3
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 13.1
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.3
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 26.3
+      }
+    },
+    "total_seconds": 48.2,
+    "qa": "{\"PASS\": 16, \"FAIL\": 3, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 12,
+    "when": "2026-11-23T12:41:49",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.5
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 13.8
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.3
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 25.3
+      }
+    },
+    "total_seconds": 47.1,
+    "qa": "{\"PASS\": 16, \"FAIL\": 3, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 13,
+    "when": "2026-11-23T12:42:52",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.0
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 13.7
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.5
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 25.0
+      }
+    },
+    "total_seconds": 47.5,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 14,
+    "when": "2026-11-23T12:43:39",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.7
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 13.5
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.3
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 24.9
+      }
+    },
+    "total_seconds": 46.3,
+    "qa": "{\"PASS\": 17, \"FAIL\": 1, \"REQUIRES_MANUAL_REVIEW\": 1, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 15,
+    "when": "2026-11-23T12:44:38",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.7
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 16.8
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.3
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 28.9
+      }
+    },
+    "total_seconds": 54.6,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 16,
+    "when": "2026-11-23T12:46:37",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.6
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 12.4
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.3
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 24.6
+      }
+    },
+    "total_seconds": 44.5,
+    "qa": "{\"PASS\": 15, \"FAIL\": 4, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 17,
+    "when": "2026-11-23T12:47:38",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.0
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 12.5
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.1
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 24.8
+      }
+    },
+    "total_seconds": 45.0,
+    "qa": "{\"PASS\": 16, \"FAIL\": 3, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 18,
+    "when": "2026-11-23T12:48:33",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.7
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 13.7
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 24.7
+      }
+    },
+    "total_seconds": 46.4,
+    "qa": "{\"PASS\": 16, \"FAIL\": 3, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 19,
+    "when": "2026-11-23T12:49:20",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.9
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 13.0
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 25.1
+      }
+    },
+    "total_seconds": 46.4,
+    "qa": "{\"PASS\": 16, \"FAIL\": 3, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 20,
+    "when": "2026-11-23T12:50:11",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.1
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 13.2
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 25.3
+      }
+    },
+    "total_seconds": 46.8,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 21,
+    "when": "2026-11-23T12:50:57",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.0
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 12.8
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.3
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 25.3
+      }
+    },
+    "total_seconds": 46.3,
+    "qa": "{\"PASS\": 17, \"FAIL\": 1, \"REQUIRES_MANUAL_REVIEW\": 1, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 22,
+    "when": "2026-11-23T12:51:53",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.8
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 12.8
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 26.3
+      }
+    },
+    "total_seconds": 47.5,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 23,
+    "when": "2026-11-23T12:58:31",
+    "template": "press_overhead",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.0
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 12.7
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 25.5
+      },
+      "export": {
+        "ok": true,
+        "seconds": 51.3
+      },
+      "poster": {
+        "ok": true,
+        "seconds": 3.4
+      }
+    },
+    "total_seconds": 101.2,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1, \"NOT_TESTED\": 1}"
+  }
+]
