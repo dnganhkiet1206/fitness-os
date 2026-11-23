@@ -1052,7 +1052,7 @@ final class AppServices {
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     let local = koaPauseLog(userId: userId, today: today)
     let synced = loadPauseLog("koa.pauselog.synced.\(userId)", userId: userId)
-    let changes = KoaPauseLogSync.rows(from: synced, to: local, userId: userId)
+    let changes = KoaPauseLogSync.pushRows(synced: synced, local: local, today: today, userId: userId)
     guard !changes.isEmpty else { return }
     do {
       try await rows.upsert(KoaPauseLogSync.table, changes, onConflict: KoaPauseLogSync.conflict)

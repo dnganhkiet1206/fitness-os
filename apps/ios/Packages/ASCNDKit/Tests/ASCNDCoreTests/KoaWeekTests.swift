@@ -61,6 +61,33 @@ struct KoaWeekTests {
     #expect(Self.gainsPaid(Self.heavy(0, 2), week: week, through: Self.mon.adding(days: 5)), "có sổ nghỉ: Gains đủ cùng lúc")
   }
 
+  /// Tổng kết tuần: tuần đủ nhờ Tạm nghỉ có cả +15 Gains (cùng sổ với Hành trình — Devin #1002).
+  @Test func summaryGainsIncludeTheBonusEarnedThroughAPause() {
+    let pause = KoaPauseLog([KoaPause(start: Self.mon.adding(days: 4), last: Self.mon.adding(days: 4))])
+    let history = Self.heavy(0, 2)
+    let without = KoaWeek.summary(weekStart: Self.mon, today: Self.mon.adding(days: 6), library: Self.lib(), history: history,
+      paused: pause.contains)
+    let with = KoaWeek.summary(weekStart: Self.mon, today: Self.mon.adding(days: 6), library: Self.lib(), history: history,
+      paused: pause.contains, pauses: pause)
+    #expect(with.target == 2 && with.done == 2)
+    #expect(with.gains == without.gains + KoaGains.fullWeek)
+  }
+
+  /// Đợt Tạm nghỉ chỉ rơi khỏi sổ máy vì đã cũ (> 60 ngày) KHÔNG bị gửi lên như huỷ (Devin #1002).
+  @Test func prunedOldSpellIsNotPushedAsCancelled() {
+    let today = LocalDate("2026-11-22")!
+    let old = KoaPause(start: today.adding(days: -90), last: today.adding(days: -80))
+    let recent = KoaPause(start: today.adding(days: -10), last: today.adding(days: -8))
+    let synced = KoaPauseLog([old, recent])
+    let local = synced.pruned(today: today)
+    #expect(!local.spells.contains(old), "sổ máy đã cắt đợt cũ")
+    #expect(KoaPauseLogSync.pushRows(synced: synced, local: local, today: today, userId: "u").isEmpty, "không gửi gì")
+    // huỷ thật một đợt còn trong 60 ngày thì vẫn gửi
+    let cancelled = KoaPauseLog([])
+    let rows = KoaPauseLogSync.pushRows(synced: synced, local: cancelled, today: today, userId: "u")
+    #expect(rows.count == 1 && rows[0]["starts_on"] == .string(recent.start.description))
+  }
+
   /// Ngày chỉ đi bộ không tính "đã tập" ở cả hai.
   @Test func walkOnlyDaysCountForNeither() throws {
     let walk = KoaGains.Day(date: Self.mon.adding(days: 4), personalRecord: false, kind: .walk)

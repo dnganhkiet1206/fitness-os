@@ -102,10 +102,13 @@ extension KoaWeek {
   ///   `TodayController` — đủ phủ trọn tuần trước từ mọi ngày trong tuần; Tổng kết: lịch sử Gains).
   public static func summary(
     weekStart: LocalDate, today: LocalDate, library: TemplateSnapshot, history: [KoaGains.Day],
-    paused: (LocalDate) -> Bool = { _ in false }
+    paused: (LocalDate) -> Bool = { _ in false }, pauses: KoaPauseLog = KoaPauseLog()
   ) -> Summary {
     let end = weekStart.adding(days: 6)
-    let week = KoaGains.Week(library)
+    // Gains của tuần tính bằng CÙNG sổ Tạm nghỉ với Hành trình (KOA-T20, Devin #1002): thiếu sổ thì tuần đủ
+    // nhờ Tạm nghỉ mất +15 ở Tổng kết dù Hành trình đã cộng.
+    var week = KoaGains.Week(library)
+    week.pauses = pauses
     let inWeek = library.overrides.filter { $0.date >= weekStart && $0.date <= end }
     // KOA-T20: "đã tập" = ngày có buổi nặng / cardio — ngày chỉ đi bộ không tính (cùng luật với Gains).
     let trained = Set(history.filter { $0.kind != .walk }.map(\.date).filter { $0 >= weekStart && $0 <= min(end, today) })

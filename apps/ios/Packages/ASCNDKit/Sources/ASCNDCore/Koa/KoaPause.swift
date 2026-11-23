@@ -176,6 +176,13 @@ public enum KoaPauseLogSync {
     return changed + cancelled
   }
 
+  /// Dòng cần gửi khi đẩy sổ trên máy (`local`, đã cắt 60 ngày) so với bản đã gửi lần cuối (`synced`).
+  /// `synced` cắt theo CÙNG mốc trước khi so: đợt chỉ rơi khỏi sổ máy vì đã cũ KHÔNG phải đợt bị huỷ —
+  /// trước đây bị gửi lên như huỷ (ghi đè `ends_on`), Gains tính lại mất thưởng đủ tuần cũ (Devin #1002).
+  public static func pushRows(synced: KoaPauseLog, local: KoaPauseLog, today: LocalDate, userId: String) -> [[String: JSONValue]] {
+    rows(from: synced.pruned(today: today), to: local, userId: userId)
+  }
+
   /// Toàn bộ sổ, để gửi lại khi lần trước chưa gửi được (ghi đè theo khoá, gửi lại không sao).
   public static func rows(_ log: KoaPauseLog, userId: String) -> [[String: JSONValue]] {
     rows(from: KoaPauseLog(), to: log, userId: userId)
