@@ -184,6 +184,10 @@ struct MascotRoomView: View {
               }
             }
             .offset(y: drop)
+          // chạm vào đèn trần: đèn lắc rồi tắt dần (Kiệt 23/11). Chỉ khi đèn đang treo và có chuyển động.
+          if !reduceMotion, !lens.bedroom, repair == nil, lens.options.lamp || lens.options.decor["lamp"] == nil {
+            lampTap(k: k, drop: drop)
+          }
         }
         .modifier(KoaRepairCamera(
           camera: repair.flatMap { KoaRepairLayer.shot($0.shots, at: tl.date, start: $0.start)?.camera },
@@ -439,7 +443,7 @@ struct MascotRoomView: View {
           }
           return KoaTalkLine.text(beat, signals: room.signals, profile: profile?.profile)
         }, lens: lens,
-        offStage: (pullStart != nil && !lens.bedroom) || repair != nil, frozen: repair != nil, shelf: shelfItems, broken: repair == nil ? brokenItem : nil,
+        offStage: (pullStart != nil && !lens.bedroom) || repair != nil, frozen: repair != nil, boardRepair: repair?.item == .board, shelf: shelfItems, broken: repair == nil ? brokenItem : nil,
         overlay: repair.map { run in
           KoaRepairLayer(
             item: run.item, start: run.start, shots: run.shots, cues: run.cues,
@@ -1117,6 +1121,26 @@ struct MascotRoomView: View {
     }
   }
 
+  /// Vùng chạm của đèn trần (chao / đèn đã mua quanh dây x 195, y −150…−30 của phòng khung dọc), cao ít nhất
+  /// 44 điểm. Chạm bên trái đẩy đèn sang phải và ngược lại (góc dương = xoay chiều kim đồng hồ quanh điểm treo
+  /// trên chao = chao lệch sang TRÁI, nên chạm trái đẩy góc âm).
+  private func lampTap(k: CGFloat, drop: CGFloat) -> some View {
+    let w: CGFloat = 110 * k
+    let h: CGFloat = max(120 * k, 44)
+    let x: CGFloat = 140 * k
+    let y: CGFloat = drop - 150 * k + (120 * k - h) / 2
+    return Color.clear
+      .contentShape(Rectangle())
+      .frame(width: w, height: h)
+      .onTapGesture(coordinateSpace: .local) { p in
+        let push: Double = p.x < w / 2 ? -1 : 1
+        lens.lamp.push(at: Date.now.timeIntervalSinceReferenceDate, strength: 0.8, direction: push)
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+      .offset(x: x, y: y)
+      .accessibilityHidden(true)
+  }
+
   static func message(_ f: MascotFailure) -> String {
     switch f {
     case .offline: String(localized: "auth.error.network")
@@ -1199,6 +1223,8 @@ struct MascotStage: View {
   var offStage = false
   /// Đoạn diễn sửa đồ đang chạy: phòng đứng yên (không lia theo chiều sâu) để đồ vật của cảnh trùng khít.
   var frozen = false
+  /// Đoạn diễn sửa bảng số đang chạy: cảnh tự vẽ dây / phích, phòng thôi vẽ dây của bảng.
+  var boardRepair = false
   /// Cúp trên kệ và khung mốc trên tường (#792): chạm thì Koa kể. Trống = phòng như cũ.
   var shelf: [ShelfItem] = []
   /// Món đang hỏng (`KoaBreakage`): bảng kỷ lục / sân khấu / sàn vẽ ở đây, trên lớp của chúng;
@@ -1248,6 +1274,7 @@ struct MascotStage: View {
     o.energy = energy
     o.board = board ?? RoomBoard.rank(build, of: MascotRules.ranks.count, lang: lang)
     o.decor = MascotShop.decorChoice(equipped: Set(equipped))
+    o.boardCord = !boardRepair
     o.dust = dust
     o.shelf = ShelfItem.display(shelf)
     // theo ngày: `.now` đổi mỗi lần tính, làm bộ nhớ đệm của phòng trượt ở mọi khung
@@ -1435,6 +1462,11 @@ struct MascotStage: View {
     .accessibilityAction(named: Text(lampOff ? "mr.lamp.on.a11y" : "mr.lamp.off.a11y")) {
       if bedShown { lampOff.toggle() }
     }
+    // đèn trần cho VoiceOver (Devin #1004): cùng điều kiện và cùng cú đẩy với vùng chạm `lampTap`
+    .accessibilityAction(named: Text("mr.lamp.swing.a11y")) {
+      guard !reduceMotion, !inBedroom, !bedShown, let lens, studio.lamp || studio.decor["lamp"] == nil else { return }
+      lens.lamp.push(at: Date.now.timeIntervalSinceReferenceDate, strength: 0.8, direction: 1)
+    }
     // cúp / khung mốc (#792): mỗi món một hành động, Koa kể và VoiceOver đọc câu ấy
     .accessibilityActions {
       ForEach(shelf) { item in
@@ -1510,7 +1542,7 @@ struct MascotStage: View {
     }
     .buttonStyle(.plain)
     .frame(width: 102 * k, height: max(62 * k, 44))
-    .offset(x: 270 * k, y: 245 * k)
+    .offset(x: (270 + StudioScene.boardShift) * k, y: 245 * k)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     .accessibilityLabel(Text(verbatim: "\(b?.word ?? "") \(b?.value ?? "")"))
     .accessibilityHint(Text("mr.board.hint"))
@@ -1618,6 +1650,10 @@ struct MascotStage: View {
       // đoạn diễn sửa đồ: giữ khung phóng sẵn như lúc đứng yên (không lia, không đẩy) để đồ vật của cảnh trùng khít
       let shot = !layered ? KoaParallax.Shot(framing: 0) : frozen ? KoaParallax.Shot() : director.shot
       let _ = (lens?.shot = shot)
+      // nghiêng máy mạnh: đèn trần lắc (Kiệt 23/11)
+      let _ = director.takeLampJolt().map { j in
+        lens?.lamp.push(at: tl.date.timeIntervalSinceReferenceDate, strength: j.strength, direction: j.direction)
+      }
       let x = still?.x ?? f?.x ?? KoaRoomMap.stageMark.x
       let y = still.map(KoaRoomMap.screenY) ?? f?.screenY ?? StudioScene.stageMark.y
       let _ = (lens?.koa = (x: x, y: y, scale: still.map { KoaRoomMap.scale($0.d) } ?? f?.scale ?? 1))

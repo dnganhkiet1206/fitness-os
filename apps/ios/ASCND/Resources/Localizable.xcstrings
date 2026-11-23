@@ -15692,6 +15692,29 @@
         }
       }
     },
+    "mr.lamp.swing.a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Push the ceiling lamp"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empujar la lámpara del techo"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đẩy đèn trần"
+          }
+        }
+      }
+    },
     "mr.level %lld": {
       "extractionState": "manual",
       "localizations": {

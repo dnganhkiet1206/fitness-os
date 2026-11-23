@@ -120,6 +120,8 @@ public enum StudioScene {
     public var depth = false
     /// Lá chậu cây bên phải rung (độ) — Koa đi sát / ngửi lá (29/10). 0 = đứng yên như cũ.
     public var plantSway = 0.0
+    /// Dây điện + ổ cắm của bảng số (storyboard sửa bảng). `false` lúc đoạn diễn sửa bảng tự vẽ dây / phích.
+    public var boardCord = true
     /// Bỏ các phần tử này của `template` (30/10: phòng vẽ sẵn không có chậu cây khi chậu
     /// cây được vẽ riêng ở lớp trên để rung — khỏi vẽ lại cả phòng mỗi khung).
     public var omit: Set<Int> = []
@@ -299,21 +301,34 @@ public enum StudioScene {
       guard mask, let only else { return true }
       return n["t"]?.stringValue == "Defs" || n["at"]?.intValue.map { only.contains($0) } == true
     }
-    for (i, v) in template.enumerated() {
+    // Bảng số dời theo `boardShift` (#799-B, Kiệt 23/11: bảng lòi khỏi mép phải khung dọc): mọi phần tử của chỗ
+    // bảng (gốc hay đồ mua) và bụi nằm trên nó; khung mốc vẽ cùng chỉ số nhưng nằm chỗ khác — không dời.
+    // chỉ bảng số của app (`board != nil`); bảng chuỗi của RN (golden) giữ nguyên chỗ, không dây
+    let boardSpot = o.board == nil ? Set<Int>() : Set(decorData.spots["board"] ?? [])
+    func onBoard(_ n: JSONValue) -> Bool { n["at"]?.intValue.map { boardSpot.contains($0) } == true }
+    func shiftedOne(_ e: KoaRender.Element) -> KoaRender.Element { boardDust(e) }
+    func shifted(_ es: [KoaRender.Element]) -> [KoaRender.Element] {
+      es.isEmpty || boardShift == 0 ? es : [KoaRender.Element("G", matrix: [1, 0, 0, 1, boardShift, 0], kids: es)]
+    }
+    // bụi: từng hạt một (giữ thứ tự, số phần tử như cũ), hạt nằm trên bảng dời theo bảng
+    func dustTree(_ ns: [JSONValue]) -> [KoaRender.Element] {
+      ns.compactMap { n in element(n, o, skin).map { onBoard(n) ? shiftedOne($0) : $0 } }
+    }
+    func step(_ i: Int, _ v: JSONValue, _ cur: inout [KoaRender.Element]) {
       if mask, !o.omit.contains(i), let extra = swap[i] {
-        out += extra.filter(masked).compactMap { element($0, o, skin) }
+        cur += extra.filter(masked).compactMap { element($0, o, skin) }
       }
-      if let only, !only.contains(i), v["t"]?.stringValue != "Defs" { continue }
-      if o.omit.contains(i) { continue }
-      if !mask, let extra = swap[i] { out += extra.compactMap { element($0, o, skin) } }
+      if let only, !only.contains(i), v["t"]?.stringValue != "Defs" { return }
+      if o.omit.contains(i) { return }
+      if !mask, let extra = swap[i] { cur += extra.compactMap { element($0, o, skin) } }
       // cúp và khung mốc (#792): vẽ cạnh món cuối của kệ / của tường nên theo đúng lớp của chúng,
       // và vẫn có khi kệ / bảng là đồ đã mua (phần tử gốc khi ấy bị bỏ qua ngay dưới)
-      if decor, i == KoaShelf.cupsAt { out += KoaShelf.cupTree(o) }
+      if decor, i == KoaShelf.cupsAt { cur += KoaShelf.cupTree(o) }
       if decor, i == KoaShelf.framesAt { out += KoaShelf.frameTree(o) }
       if skip.contains(i) {
         // bụi vẫn nằm sau chỗ này khi nó là đồ mua (cây mua thay cả quả bóng; trước đây mất hết bụi)
-        if !mask, i == decorData.dustAfter { out += dust.compactMap { element($0, o, skin) } }
-        continue
+        if !mask, i == decorData.dustAfter { cur += dustTree(dust) }
+        return
       }
       if i == plantIndex, o.plantSway != 0, var e = element(v, o, skin) {
         // từng lá một góc riêng quanh gốc lá; chậu đứng yên
@@ -323,22 +338,68 @@ public enum StudioScene {
           let m = KoaMath.opMat(KoaScene.Op("r", [Self.leafAngle(j, t: t, side: side), plantPivot.x, plantPivot.y]))
           return KoaRender.Element("G", matrix: m, kids: [k])
         }
-        out.append(e)
-        continue
+        cur.append(e)
+        return
       }
-      if !o.lamp, isLamp(v) { continue }
+      if !o.lamp, isLamp(v) { return }
       // ban ngày không có sao ngoài cửa sổ
       if o.light, v["t"]?.stringValue == "Circle", v["p"]?["fill"]?.stringValue == "#FFFFFF",
         v["p"]?["opacity"]?.doubleValue == 0.85
-      { continue }
-      if let e = element(v, o, skin) { out.append(e) }
+      { return }
+      if let e = element(v, o, skin) { cur.append(e) }
       // lớp chiều sâu ngay sau mép sàn, trước đồ đạc
-      if o.depth, isFloorEdge(v) { out += depthLayer.compactMap { element($0, o, skin) } }
+      if o.depth, isFloorEdge(v) { cur += depthLayer.compactMap { element($0, o, skin) } }
       // bụi trên đồ đạc, dưới vignette / đèn / bục
-      if !mask, i == decorData.dustAfter { out += dust.compactMap { element($0, o, skin) } }
+      if !mask, i == decorData.dustAfter { cur += dustTree(dust) }
     }
-    if mask { out += dust.filter(masked).compactMap { element($0, o, skin) } }
+    for (i, v) in template.enumerated() {
+      var cur: [KoaRender.Element] = []
+      step(i, v, &cur)
+      out += boardSpot.contains(i) ? shifted(cur) : cur
+      if decor, !mask, o.boardCord, let last = boardSpot.max(), i == last, only.map({ $0.contains(last) }) ?? true {
+        out += boardCord()
+      }
+    }
+    if mask { out += dustTree(dust.filter(masked)) }
     return out
+  }
+
+  /// Bảng số dời sang trái (đơn vị phòng) cho gọn trong khung dọc: phòng phóng sẵn ×`overscan` quanh giữa nên mép
+  /// phải bảng (x 370) hiện ở 386 / 390 và lòi khỏi màn khi máy lia (Kiệt 23/11). Mọi thứ gắn với bảng dời theo:
+  /// đồ mua, bụi, vết nứt, đoạn diễn sửa bảng, chỗ Koa nhìn, vùng chạm.
+  public static let boardShift = -16.0
+
+  /// Một phần tử (bụi) nằm trên bảng: dời theo bảng.
+  public static func boardDust(_ e: KoaRender.Element) -> KoaRender.Element {
+    boardShift == 0 ? e : KoaRender.Element("G", matrix: [1, 0, 0, 1, boardShift, 0], kids: [e])
+  }
+
+  /// Dây điện từ đáy bảng xuống ổ cắm trên ván ốp chân tường — đúng đường của storyboard sửa bảng
+  /// (`KoaRepairScene.Board.cableTopPx` / `socketPx`, quy về toạ độ phòng); phích cắm trong ổ.
+  /// Toạ độ của storyboard đã gồm `boardShift` (`KoaRepairScene.Board.shiftPx`) — không bọc thêm phép dời.
+  public static func boardCord() -> [KoaRender.Element] {
+    let B = KoaRepairScene.Board.self, u = KoaRepairScene.pxPerUnit
+    func len(_ px: Double) -> Double { px / u }
+    let top = KoaRepairScene.room(B.cableTopPx.x, B.cableTopPx.y), sk = KoaRepairScene.room(B.socketPx.x, B.socketPx.y)
+    let f = { (v: Double) in String(format: "%.2f", v) }
+    let bend = (x: top.x - len(40), y: top.y + len(114))
+    let d = "M\(f(top.x)) \(f(top.y))L\(f(top.x - len(6))) \(f(top.y + len(96)))"
+      + "Q\(f(top.x - len(12))) \(f(top.y + len(112))) \(f(bend.x)) \(f(bend.y))"
+      + "L\(f(sk.x + len(40))) \(f(bend.y))"
+      + "C\(f(sk.x + len(20))) \(f(bend.y)) \(f(sk.x + len(20))) \(f(sk.y + len(60))) \(f(sk.x)) \(f(sk.y))"
+    var cable = KoaBedroom.line(d, "#2B2B33", width: len(7))
+    cable.props["strokeLinecap"] = .string("round")
+    cable.props["strokeLinejoin"] = .string("round")
+    var plate = KoaBedroom.rect(sk.x - len(24), sk.y - len(28), len(48), len(56), "#F5EDE3", r: len(10))
+    plate.props["stroke"] = .string("#C9BAA6")
+    plate.props["strokeWidth"] = .number(len(3))
+    return [
+      plate,
+      KoaBedroom.ellipse(sk.x - len(8), sk.y, len(4), len(4), "#6B6157"),
+      KoaBedroom.ellipse(sk.x + len(8), sk.y, len(4), len(4), "#6B6157"),
+      cable,
+      KoaBedroom.rect(sk.x - len(14), sk.y - len(16), len(28), len(32), "#3A3A45", r: len(7)),
+    ]
   }
 
   static func element(_ v: JSONValue, _ o: Options, _ skin: Skin) -> KoaRender.Element? {

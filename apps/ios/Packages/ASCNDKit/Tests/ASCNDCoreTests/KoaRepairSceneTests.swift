@@ -39,7 +39,8 @@ struct KoaRepairSceneTests {
   func boardMapsOntoRoomBoard() {
     let p = KoaRepairScene.Board.screenPx
     let a = KoaRepairScene.room(p.x, p.y), b = KoaRepairScene.room(p.x + p.w, p.y + p.h)
-    #expect(abs((a.x + b.x) / 2 - 321) < 1.5)
+    // bảng đã dời `boardShift` (#799-B): cảnh sửa bảng dời theo, vẫn rơi đúng khung bảng của phòng
+    #expect(abs((a.x + b.x) / 2 - (321 + StudioScene.boardShift)) < 1.5)
     #expect(abs((a.y + b.y) / 2 - 277) < 1.5)
   }
 }

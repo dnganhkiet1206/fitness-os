@@ -122,6 +122,12 @@ final class KoaDirectorDriver {
   @ObservationIgnored private var camera = KoaParallax.Camera()
   @ObservationIgnored private let tiltSensor = KoaTiltSensor()
   @ObservationIgnored private var tilt = 0.0
+  /// Cú lắc máy mạnh chưa chuyển cho đèn trần (phòng đọc rồi xoá, `takeLampJolt`).
+  @ObservationIgnored private var lampJolt: (strength: Double, direction: Double)?
+  func takeLampJolt() -> (strength: Double, direction: Double)? {
+    defer { lampJolt = nil }
+    return lampJolt
+  }
   /// Máy quay giữ khung phòng; Koa đi ngủ thì lui về khung gốc để khớp cảnh ngủ.
   @ObservationIgnored var framed = true
   /// Khung máy quay hiện tại (`view` đọc mỗi khung, không phải trạng thái quan sát).
@@ -210,6 +216,7 @@ final class KoaDirectorDriver {
     if plane != f.plane { plane = f.plane }
     camera.step(dt, koaX: f.x, framed: framed)
     tilt = tiltSensor.read(dt, at: now)
+    if let j = tiltSensor.jolt(at: now) { lampJolt = j }
     let wall = Date.now.timeIntervalSince1970
     #if DEBUG
       if f.reacted != nil, forcedMoment != nil { return f }

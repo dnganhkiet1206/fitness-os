@@ -168,6 +168,20 @@ final class KoaTiltSensor {
     return tilt.value
   }
 
+  /// Cú nghiêng / lắc mạnh của máy trong khung này: tốc độ xoay quanh trục dọc màn (rad/s) vượt
+  /// `joltRate` → độ mạnh 0…1 và chiều (dấu). `nil` khi máy cầm yên hay chưa có cảm biến. Có quãng nghỉ
+  /// `joltGap` để một lần lắc không đẩy đèn nhiều lần.
+  static let joltRate = 2.2
+  static let joltGap = 0.8
+  private var lastJolt = -Double.infinity
+  func jolt(at now: Double) -> (strength: Double, direction: Double)? {
+    guard on, let r = motion.deviceMotion?.rotationRate, now - lastJolt > Self.joltGap else { return nil }
+    let rate = abs(r.y) > abs(r.z) ? r.y : r.z
+    guard abs(rate) > Self.joltRate else { return nil }
+    lastJolt = now
+    return (min(1, 0.45 + (abs(rate) - Self.joltRate) / 4), rate < 0 ? -1 : 1)
+  }
+
   /// Rời màn / ra nền: tắt cảm biến. Lần sau lấy lại tư thế cầm làm giữa.
   func stop() {
     guard on else { return }
@@ -233,8 +247,9 @@ struct StudioTallRoom: View {
       // truyền giờ vào: view con đọc đồng hồ tự nó thì SwiftUI thấy tham số không đổi, không vẽ lại
       let t = timeline.date.timeIntervalSinceReferenceDate
       ZStack(alignment: .topLeading) {
-        // đèn đung đưa theo gió quanh điểm treo; chùm sáng và bụi trong chùm lắc cùng
-        let swing = Angle.degrees(StudioTall.lampSway(at: t))
+        // đèn chỉ lắc khi bị chạm / máy nghiêng mạnh (`KoaLens.lamp`); chùm sáng lắc cùng, bụi trong chùm thì
+        // KHÔNG (Kiệt 23/11: "bụi bị lắc lư theo đèn" — bụi lơ lửng trong phòng, không treo vào đèn)
+        let swing = Angle.degrees(lens.lamp.angle(at: t))
         let pivot = UnitPoint(
           x: StudioTall.lampPivot.x / StudioScene.width, y: (Double(drop) + StudioTall.lampPivot.y * k) / Double(size.height))
         ForEach(StudioTall.layers) { layer in
@@ -244,11 +259,12 @@ struct StudioTallRoom: View {
             .rotationEffect(swings ? swing : .zero, anchor: pivot)
             .offset(x: shot.shift(layer.plane.amp) * k)
           // đồ động chen đúng tầng: mây sau thành phố, đèn nhà trên thành phố, bụi trong chùm đèn
-          if !reduceMotion, ["sky", "city", "lamp"].contains(layer.id) {
+          // cửa sổ đã mua (#799-B): ô cửa vòm là cảnh của món — không mây, không đèn nhà của thành phố trôi lên đó
+          let boughtView = options.decor["window"] != nil && layer.id != "lamp"
+          if !reduceMotion, !boughtView, ["sky", "city", "lamp"].contains(layer.id) {
             StudioLive(
               t: t, layer: layer.id, night: !options.light, drop: Double(drop), k: k, lamp: options.lamp, dust: options.dust, box: motes)
               .frame(width: size.width, height: size.height)
-              .rotationEffect(layer.id == "lamp" ? swing : .zero, anchor: pivot)
               .offset(x: shot.shift(layer.plane.amp) * k)
           }
           if layer.id == "wall", broken == .neon, let broken {
@@ -363,7 +379,7 @@ struct StudioBroken: View {
   let k: Double
 
   /// Khung các món trong toạ độ phòng.
-  static let board = CGRect(x: 272, y: 248, width: 98, height: 58)
+  static let board = CGRect(x: 272 + StudioScene.boardShift, y: 248, width: 98, height: 58)
   static let stage = (x: 195.0, y: 411.5, rx: 137.0, ry: 30.5)
 
   var body: some View {
@@ -558,6 +574,8 @@ final class KoaLens {
   @ObservationIgnored var koa = (x: StudioScene.stageMark.x, y: StudioScene.stageMark.y, scale: 1.0)
   /// Tranh hạ xuống bao nhiêu điểm trong khung dọc.
   @ObservationIgnored var drop: CGFloat = 0
+  /// Đèn trần: lắc khi bị chạm hay máy nghiêng mạnh, tắt dần (Kiệt 23/11).
+  @ObservationIgnored var lamp = StudioTall.LampSwing()
 }
 
 extension View {
