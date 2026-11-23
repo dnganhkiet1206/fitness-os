@@ -905,7 +905,7 @@ struct RoomThumb: View {
   /// Khung cắt của từng chỗ, theo toạ độ phòng 390 × 476.
   static let frames: [String: CGRect] = [
     "shelf": CGRect(x: 0, y: 228, width: 150, height: 172),
-    "board": CGRect(x: 258 + StudioScene.boardShift, y: 236, width: 126, height: 84),
+    "board": CGRect(x: 258 + StudioScene.boardShift, y: 236 + StudioScene.boardLift, width: 126, height: 84),
     "window": CGRect(x: 258, y: 88, width: 126, height: 138),
     "plants": CGRect(x: 262, y: 300, width: 128, height: 140),
     "lamp": CGRect(x: 120, y: 0, width: 150, height: 130),
@@ -915,7 +915,7 @@ struct RoomThumb: View {
   /// Khung ôm sát đồ vật của từng chỗ (viền chọn + vùng chạm trên phòng xem trước).
   static let outlines: [String: CGRect] = [
     "shelf": CGRect(x: 4, y: 232, width: 136, height: 166),
-    "board": CGRect(x: 264 + StudioScene.boardShift, y: 240, width: 114, height: 74),
+    "board": CGRect(x: 264 + StudioScene.boardShift, y: 240 + StudioScene.boardLift, width: 114, height: 74),
     "window": CGRect(x: 264, y: 90, width: 110, height: 130),
     "plants": CGRect(x: 278, y: 322, width: 106, height: 114),
     "lamp": CGRect(x: 150, y: 30, width: 90, height: 64),

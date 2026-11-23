@@ -140,7 +140,7 @@ public enum KoaRoomMap {
       name: "window", stand: Spot(.floor, 258, 370), look: (326, 214), distance: 60, action: .gaze,
       expression: .happytired),
     Anchor(
-      name: "board", stand: Spot(.stage, 262 + StudioScene.boardShift, 424), look: (321 + StudioScene.boardShift, 276),
+      name: "board", stand: Spot(.stage, 262 + StudioScene.boardShift, 424), look: (321 + StudioScene.boardShift, 276 + StudioScene.boardLift),
       distance: 50, action: .read,
       expression: .confident),
   ]

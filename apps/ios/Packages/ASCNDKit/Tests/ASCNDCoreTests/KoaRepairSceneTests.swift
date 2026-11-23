@@ -15,15 +15,15 @@ struct KoaRepairSceneTests {
       #expect(abs(s.camera.zoom - 1) < 0.01)
     }
     #expect(last.board.dark < 0.05)
-    #expect(last.board.plugged)
+    #expect(last.board.powered)
     #expect(last.repaired)
   }
 
-  @Test("giữa cảnh bảng tắt, bị rút phích rồi đếm khởi động")
+  @Test("giữa cảnh bảng tắt, Koa bấm nút nguồn tắt rồi bật, đếm khởi động")
   func boardGoesDarkAndReboots() {
     let shots = KoaRepairScene.Board.shots()
     #expect(shots.contains { $0.board.dark > 0.9 })
-    #expect(shots.contains { !$0.board.plugged })
+    #expect(shots.contains { !$0.board.powered })
     #expect(shots.contains { $0.board.count != nil })
   }
 
@@ -41,7 +41,62 @@ struct KoaRepairSceneTests {
     let a = KoaRepairScene.room(p.x, p.y), b = KoaRepairScene.room(p.x + p.w, p.y + p.h)
     // bảng đã dời `boardShift` (#799-B): cảnh sửa bảng dời theo, vẫn rơi đúng khung bảng của phòng
     #expect(abs((a.x + b.x) / 2 - (321 + StudioScene.boardShift)) < 1.5)
-    #expect(abs((a.y + b.y) / 2 - 277) < 1.5)
+    // bảng nhích lên `boardLift` (Kiệt 23/11): cảnh sửa bảng nhích theo
+    #expect(abs((a.y + b.y) / 2 - (277 + StudioScene.boardLift)) < 1.5)
+  }
+
+  /// Bảng nhích lên gần bậu cửa sổ (Kiệt 23/11) nhưng không chạm bậu (y 160…172).
+  @Test func boardSitsCloserToTheWindowSill() {
+    let p = KoaRepairScene.Board.screenPx
+    let top = KoaRepairScene.room(p.x, p.y).y
+    #expect(StudioScene.boardLift < 0)
+    #expect(top > 172 + 16, "\(top)")
+    #expect(top < 248, "\(top)")
+  }
+
+  /// Bảng cao hơn tầm tay: Koa bật nhảy khi gõ, tiếng "cộc" nằm trong khung bảng, rồi đáp xuống sàn.
+  @Test func koaJumpsToKnockTheLiftedBoard() {
+    let B = KoaRepairScene.Board.self, fps = 30.0
+    let p = B.screenPx
+    let a = KoaRepairScene.room(p.x, p.y), b = KoaRepairScene.room(p.x + p.w, p.y + p.h)
+    for h in B.hits {
+      let s = B.shot(at: h - B.start + 0.01)
+      #expect(s.lift > 0, "nhảy khi gõ \(h)")
+      let knock = s.pops.first { $0.text.hasPrefix("koa.repair.pop.knock") }
+      #expect(knock != nil, "có tiếng gõ \(h)")
+      if let k = knock { #expect(k.y > a.y && k.y < b.y, "tiếng gõ trong khung bảng (\(k.y) ∉ \(a.y)…\(b.y))") }
+    }
+    // giữa hai lượt gõ, lúc cáu và lúc rút phích: đứng trên sàn
+    for t in [B.hits[1] + 0.3, 9.9, 11.8] {
+      #expect(B.shot(at: t - B.start).lift < 0.01, "đứng sàn lúc \(t)")
+    }
+    // từ lúc nhảy xuống sàn tới lúc cáu: chân không giật (≤ 12 đơn vị mỗi khung 1/30 giây, bằng cú nhảy xuống đã duyệt)
+    let shots = B.shots(fps: fps)
+    func step(_ r: Range<Double>) -> Double {
+      let ys = shots.enumerated().filter { r.contains(Double($0.offset) / fps + B.start) }.map(\.element.feet)   // `feet` đã gồm độ nhảy
+      return zip(ys, ys.dropFirst()).map { abs($0 - $1) }.max() ?? 0
+    }
+    #expect(step(6.8..<9.8) <= 12, "\(step(6.8..<9.8))")
+  }
+
+  /// Gỡ dây điện (Kiệt 23/11): Koa nhảy lên bấm nút nguồn hai lần — lần 1 tắt, lần 2 bật lại.
+  /// Đỉnh nhảy, tay (cách tâm +132 px, y 1593 − độ nhảy) chạm đúng nút; giữa hai lần Koa đứng sàn.
+  @Test func koaJumpsToPressThePowerButtonTwice() {
+    let B = KoaRepairScene.Board.self
+    for (at, poweredAfter) in [(B.T("pop"), false), (B.T("click"), true)] {
+      let s = B.shot(at: at - B.start)
+      #expect(s.lift > 0, "nhảy lúc bấm \(at)")
+      let paw = (x: B.pressX + 132, y: 1593 - s.lift * KoaRepairScene.pxPerUnit)
+      #expect(abs(paw.x - B.buttonPx.x) < 1)
+      #expect(abs(paw.y - B.buttonPx.y) < B.buttonRPx + 12, "tay chạm nút (\(paw.y) vs \(B.buttonPx.y))")
+      #expect(B.shot(at: at - B.start + 0.05).board.press > 0.5, "nút lún")
+      #expect(B.shot(at: at - B.start + 0.3).board.powered == poweredAfter)
+      #expect(s.pops.contains { $0.text == "koa.repair.pop.click" } || B.shot(at: at - B.start + 0.02).pops.contains { $0.text == "koa.repair.pop.click" })
+    }
+    #expect(B.shot(at: B.T("wait") + 0.2 - B.start).lift < 0.01, "đứng chờ trên sàn")
+    // nút nằm ngay dưới mép bảng, không đè vào màn bảng
+    let p = B.screenPx
+    #expect(B.buttonPx.y - B.buttonRPx > p.y + p.h - B.buttonRPx && B.buttonPx.x > p.x && B.buttonPx.x < p.x + p.w / 2)
   }
 }
 

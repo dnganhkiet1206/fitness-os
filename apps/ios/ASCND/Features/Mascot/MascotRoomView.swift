@@ -1284,7 +1284,7 @@ struct MascotStage: View {
         }
       }
     #endif
-    o.boardCord = !boardRepair
+    o.boardButton = !boardRepair
     o.dust = dust
     o.shelf = ShelfItem.display(shelf)
     // theo ngày: `.now` đổi mỗi lần tính, làm bộ nhớ đệm của phòng trượt ở mọi khung
@@ -1552,7 +1552,7 @@ struct MascotStage: View {
     }
     .buttonStyle(.plain)
     .frame(width: 102 * k, height: max(62 * k, 44))
-    .offset(x: (270 + StudioScene.boardShift) * k, y: 245 * k)
+    .offset(x: (270 + StudioScene.boardShift) * k, y: (245 + StudioScene.boardLift) * k)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     .accessibilityLabel(Text(verbatim: "\(b?.word ?? "") \(b?.value ?? "")"))
     .accessibilityHint(Text("mr.board.hint"))

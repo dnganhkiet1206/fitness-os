@@ -188,7 +188,6 @@ struct KoaRepairLayer: View {
     if let prop = s.prop, let paw = KoaRender.paws(o).right {
       let p = CGPoint(x: foot.x + sc * s.stretchX * flip * (paw.x - 120), y: foot.y + sc * s.stretchY * (paw.y - 240 * KoaMath.aspect))
       switch prop {
-      case .plug: drawPlugCable(&c, end: p, inPaw: true)
       case let .glue(angle, scale) where scale > 0:
         // tuýp trong hình 240 của Koa (storyboard vẽ ở hình 480: phóng 0,5), tay ôm ngoài tuýp
         var g = f
@@ -296,33 +295,19 @@ struct KoaRepairLayer: View {
         c.stroke(Path(roundedRect: rect.insetBy(dx: -len(16), dy: -len(16)), cornerRadius: len(34)),
                  with: .color(Color(red: 1, green: 0.44, blue: 0.66).opacity(0.8 * b.glow)), lineWidth: len(18 * b.glow))
       }
-      // ổ cắm + dây (phích trong ổ, hoặc trên tay — khi đó vẽ sau Koa)
-      let sk = r(B.socketPx.x, B.socketPx.y)
-      c.fill(Path(roundedRect: CGRect(x: sk.x - len(24), y: sk.y - len(28), width: len(48), height: len(56)), cornerRadius: len(10)),
-             with: .color(Color(red: 0.96, green: 0.93, blue: 0.89)))
-      c.stroke(Path(roundedRect: CGRect(x: sk.x - len(24), y: sk.y - len(28), width: len(48), height: len(56)), cornerRadius: len(10)),
-               with: .color(Color(red: 0.79, green: 0.73, blue: 0.65)), lineWidth: len(3))
-      for dx in [-8.0, 8] { c.fill(Path(ellipseIn: CGRect(x: sk.x + len(dx) - len(4), y: sk.y - len(4), width: len(8), height: len(8))), with: .color(Color(red: 0.42, green: 0.38, blue: 0.34))) }
-      if b.plugged { drawPlugCable(&c, end: sk, inPaw: false) }
-      if b.spark > 0 { drawSpark(&c, at: sk, r: len(34) * b.spark) }
-    }
-  }
-
-  private func drawPlugCable(_ c: inout GraphicsContext, end: CGPoint, inPaw: Bool) {
-    let B = KoaRepairScene.Board.self
-    let top = r(B.cableTopPx.x, B.cableTopPx.y), sk = r(B.socketPx.x, B.socketPx.y)
-    var p = Path()
-    p.move(to: top)
-    p.addLine(to: CGPoint(x: top.x - len(6), y: top.y + len(96)))
-    p.addQuadCurve(to: CGPoint(x: top.x - len(40), y: top.y + len(114)), control: CGPoint(x: top.x - len(12), y: top.y + len(112)))
-    p.addLine(to: CGPoint(x: sk.x + len(40), y: top.y + len(114)))
-    let sag = len(inPaw ? 20 : 60)
-    p.addCurve(to: end, control1: CGPoint(x: sk.x + len(20), y: top.y + len(114)), control2: CGPoint(x: end.x + len(20), y: end.y + sag))
-    c.stroke(p, with: .color(Color(red: 0.17, green: 0.17, blue: 0.2)), style: StrokeStyle(lineWidth: len(7), lineCap: .round, lineJoin: .round))
-    let body = CGRect(x: end.x - len(14), y: end.y - len(16), width: len(28), height: len(32))
-    c.fill(Path(roundedRect: body, cornerRadius: len(7)), with: .color(Color(red: 0.23, green: 0.23, blue: 0.27)))
-    if inPaw {
-      for dx in [-8.0, 4] { c.fill(Path(CGRect(x: end.x + len(dx), y: end.y + len(14), width: len(4), height: len(10))), with: .color(Color(red: 0.79, green: 0.7, blue: 0.48))) }
+      // nút nguồn dưới mép bảng (cùng hình `StudioScene.boardButton`): lún khi Koa bấm, đèn tắt khi mất điện
+      let bc = r(B.buttonPx.x, B.buttonPx.y), br = len(B.buttonRPx)
+      let dark = Color(red: 0.17, green: 0.17, blue: 0.2)
+      c.fill(Path(roundedRect: CGRect(x: bc.x - br * 1.5, y: bc.y - br * 1.25, width: br * 3, height: br * 1.25), cornerRadius: br * 0.4), with: .color(dark))
+      c.fill(Path(ellipseIn: CGRect(x: bc.x - br * 1.25, y: bc.y - br * 1.25, width: br * 2.5, height: br * 2.5)), with: .color(dark))
+      let face = br * (1 - 0.18 * b.press), dy = br * 0.3 * b.press
+      c.fill(Path(ellipseIn: CGRect(x: bc.x - face, y: bc.y - face - dy, width: face * 2, height: face * 2)), with: .color(Color(red: 0.29, green: 0.29, blue: 0.34)))
+      if b.powered {
+        let led = br * 0.36
+        c.fill(Path(ellipseIn: CGRect(x: bc.x - led, y: bc.y - br * 0.15 - dy - led, width: led * 2, height: led * 2)),
+               with: .color(Color(red: 0.49, green: 0.96, blue: 0.63)))
+      }
+      if b.spark > 0 { drawSpark(&c, at: bc, r: len(34) * b.spark) }
     }
   }
 
