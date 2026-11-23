@@ -745,14 +745,18 @@ struct TodayExtras<Plan: View>: View {
       kind: coach.kind, lastWeek: coach.lastWeek, highlight: coach.highlight, targets: coach.targets,
       cue: services.trainingCue(userId: userId), build: services.koaBuild,
       accept: {
-        switch coach.kind {
-        case .light: flow.today.setLighterWeek(through: coach.monday.adding(days: 6))
-        // KOA-T23 (Kiệt 19/11: "nối thật vào buổi sau"): mục tiêu tăng tải vào các buổi tuần này.
-        case .progress: flow.today.setProgressWeek(coach.targets)
-        case .steady, .paused: break
-        }
         answerWeekCoach(coach.monday)
-        dailyPlan?.recompute(services: services, flow: flow)
+        // Lưu lựa chọn rồi dựng lại buổi hôm nay đã tải sẵn (Devin #1001), sau đó mới tính lại việc chính.
+        Task {
+          switch coach.kind {
+          // KOA-T04 (Kiệt 21/11): tạ giảm thật theo hệ số trên thẻ.
+          case .light(let f): await flow.setLighterWeek(through: coach.monday.adding(days: 6), loadFactor: f)
+          // KOA-T23 (Kiệt 19/11: "nối thật vào buổi sau"): mục tiêu tăng tải vào các buổi tuần này.
+          case .progress: await flow.setProgressWeek(coach.targets)
+          case .steady, .paused: break
+          }
+          dailyPlan?.recompute(services: services, flow: flow)
+        }
       },
       keep: { answerWeekCoach(coach.monday) })
   }

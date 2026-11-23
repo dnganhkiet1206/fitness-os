@@ -320,6 +320,22 @@ public final class WorkoutFlow {
     return true
   }
 
+  /// Tuần nhẹ (KOA-T04): lưu bản nhẹ + hệ số tạ cho các buổi tới hết tuần, rồi DỰNG LẠI buổi hôm nay đã tải sẵn
+  /// (Devin #1001: trước đây chỉ lưu lựa chọn — bấm bắt đầu vẫn mở buổi đầy đủ, tạ cũ). Buổi đang tập dở giữ nguyên
+  /// (`installNow` không thay buổi đã chạm); các ngày sau vẫn nhẹ.
+  @discardableResult
+  public func setLighterWeek(through last: LocalDate, loadFactor: Double = 1) async -> Int {
+    let n = today.setLighterWeek(through: last, loadFactor: loadFactor)
+    await install()
+    return n
+  }
+
+  /// Tuần lên tạ (KOA-T23): như `setLighterWeek` — nhận mục tiêu rồi dựng lại buổi hôm nay chưa chạm.
+  public func setProgressWeek(_ items: [OverloadPlan.Item]) async {
+    today.setProgressWeek(items)
+    await install()
+  }
+
   static func untouched(_ s: WorkoutSessionController) -> Bool {
     switch s.phase {
     case .idle, .loading: true

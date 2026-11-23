@@ -76,6 +76,9 @@ private final class Harness {
   var enqueued: [OutboxEntry] = []
   private(set) var flow: WorkoutFlow!
 
+  /// Lựa chọn buổi (nhẹ / ngắn / tuần nhẹ) — kho riêng mỗi harness: test chạy song song không giẫm nhau.
+  let choices = UserDefaults(suiteName: "flow-\(UUID())")!
+
   init(_ s: TemplateSnapshot = snap(), store: InMemoryWorkoutStore = InMemoryWorkoutStore()) {
     self.store = store
     templates = Templates(s)
@@ -86,7 +89,7 @@ private final class Harness {
   func make() -> WorkoutFlow {
     let today = TodayController(
       userId: "u1", repository: TodayRepository(source: templates, cache: templates), history: NoHistory(),
-      workouts: store, clock: clock, timeZone: saigon)
+      workouts: store, clock: clock, timeZone: saigon, choices: choices)
     return WorkoutFlow(
       today: today, records: RecordBook(userId: "u1", history: NoHistory(), cache: caches),
       performance: PerformanceBook(userId: "u1", source: NoHistory(), cache: caches, clock: clock, timeZone: saigon),
@@ -106,6 +109,29 @@ struct WorkoutFlowTests {
     #expect(s.plan.templateId == "tpl")
     #expect(s.plan.rows.map(\.key) == ["0-0", "0-1"])
     #expect(s.phase == .idle)
+  }
+
+  /// KOA-T04 (Devin #1001): buổi hôm nay đã dựng sẵn; nhận tuần nhẹ thì buổi ấy đổi NGAY — bớt hiệp, tạ ×0,9 —
+  /// không cần tải lại hay mở lại app. Buổi đang tập dở thì giữ nguyên.
+  @Test func acceptingALightWeekRebuildsTodaysLoadedSession() async throws {
+    let h = Harness(snap(template(sets: 3)))
+    await h.flow.start()
+    #expect(h.flow.session?.plan.rows.map(\.weightKg) == [60, 60, 60])
+    let n = await h.flow.setLighterWeek(through: tuesday, loadFactor: 0.9)
+    #expect(n == 2, "hôm nay và thứ Ba")
+    let s = try #require(h.flow.session)
+    #expect(s.plan.rows.map(\.weightKg) == [52.5, 52.5], "bớt một hiệp, 60 → 52,5")
+  }
+
+  @Test func lightWeekKeepsASessionAlreadyUnderway() async throws {
+    let h = Harness(snap(template(sets: 3)))
+    await h.flow.start()
+    let s = try #require(h.flow.session)
+    await s.toggle(s.plan.rows[0].key)
+    #expect(s.phase == .active)
+    await h.flow.setLighterWeek(through: tuesday, loadFactor: 0.9)
+    #expect(h.flow.session === s, "buổi đang tập dở giữ nguyên")
+    #expect(s.plan.rows.map(\.weightKg) == [60, 60, 60])
   }
 
   @Test func restDayHasNoSession() async {
