@@ -443,6 +443,11 @@ struct KoaWidgetWaterTests {
     #expect(KoaMood.read(.init(signals: KoaMoodTests.day(workout: true), hour: 7, month: 1)).emotion == .proud)
   }
 
+  /// Chờ buổi tập (`curl`) là nét VUI ở mascot khác Koa, như `warmup` trước khi gộp (Devin #1003).
+  @Test func waitingToTrainStaysHappyOnOtherMascots() {
+    #expect(VectorMascot.Mood(.curl) == .happy)
+      }
+
   /// Koa không giận người dùng: không cảm xúc, không câu thoại nào dẫn tới nét mặt cấm.
   @Test func noEmotionOrTalkReachesAForbiddenFace() {
     for e in KoaEmotion.Emotion.allCases {
