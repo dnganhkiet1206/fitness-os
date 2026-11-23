@@ -390,7 +390,7 @@ struct StudioBroken: View {
   let k: Double
 
   /// Khung các món trong toạ độ phòng.
-  static let board = CGRect(x: 272 + StudioScene.boardShift, y: 248, width: 98, height: 58)
+  static let board = CGRect(x: 272 + StudioScene.boardShift, y: 248 + StudioScene.boardLift, width: 98, height: 58)
   static let stage = (x: 195.0, y: 411.5, rx: 137.0, ry: 30.5)
 
   var body: some View {

@@ -236,12 +236,12 @@ struct StudioLampSwingTests {
   }
 }
 
-/// Bảng số vừa khung dọc và có dây điện + ổ cắm như storyboard sửa bảng (Kiệt 23/11).
+/// Bảng số vừa khung dọc; nút nguồn thay dây điện + ổ cắm (Kiệt 23/11: "gỡ cái dây điện cho gọn").
 struct StudioBoardCordTests {
-  static func room(_ cord: Bool = true) -> StudioScene.Options {
+  static func room(_ button: Bool = true) -> StudioScene.Options {
     var o = StudioScene.Options()
     o.board = RoomBoard.rank(2, of: MascotRules.ranks.count, lang: "vi")
-    o.boardCord = cord
+    o.boardButton = button
     return o
   }
 
@@ -252,17 +252,21 @@ struct StudioBoardCordTests {
     #expect(shown <= 390 - 16, "\(shown)")
   }
 
-  /// Dây + ổ cắm có trong phòng (đúng toạ độ storyboard), tắt được khi đoạn diễn sửa bảng tự vẽ.
-  @Test func cordAndSocketAreDrawn() {
-    let cord = Set(StudioScene.boardCord())
-    #expect(cord.count == 5)
-    #expect(Set(StudioScene.tree(Self.room())).isSuperset(of: cord))
-    #expect(Set(StudioScene.tree(Self.room(false))).isDisjoint(with: cord))
-    let sk = KoaRepairScene.room(KoaRepairScene.Board.socketPx.x, KoaRepairScene.Board.socketPx.y)
-    #expect(sk.y > 300 && sk.y < 362, "ổ cắm trên ván ốp chân tường")
+  /// Nút nguồn có trong phòng (đúng toạ độ storyboard), tắt được khi đoạn diễn sửa bảng tự vẽ; không còn dây / ổ cắm.
+  @Test func powerButtonIsDrawnAndTheCordIsGone() {
+    let button = Set(StudioScene.boardButton())
+    #expect(button.count == 4)
+    let room = StudioScene.tree(Self.room())
+    #expect(Set(room).isSuperset(of: button))
+    #expect(Set(StudioScene.tree(Self.room(false))).isDisjoint(with: button))
+    // không còn nét dây (màu dây cũ #2B2B33 dạng đường) hay mặt ổ cắm (#F5EDE3) trong phòng
+    func flat(_ es: [KoaRender.Element]) -> [KoaRender.Element] { es.flatMap { [$0] + flat($0.kids) } }
+    #expect(!flat(room).contains { $0.props["fill"] == .string("#F5EDE3") }, "ổ cắm đã gỡ")
+    #expect(!flat(room).contains { $0.tag == "Path" && $0.props["stroke"] == .string("#2B2B33") }, "dây đã gỡ")
     var rn = StudioScene.Options()
     rn.board = nil
-    #expect(Set(StudioScene.tree(rn)).isDisjoint(with: cord), "bảng chuỗi RN (golden) không có dây")
+    #expect(Set(StudioScene.tree(rn)).isDisjoint(with: button), "bảng chuỗi RN (golden) không có nút")
   }
+
 }
 

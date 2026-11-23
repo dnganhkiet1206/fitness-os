@@ -125,7 +125,6 @@ public enum KoaRepairScene {
 
   /// Món đồ Koa đang cầm.
   public enum Prop: Sendable, Hashable {
-    case plug
     /// Búa: góc và cỡ trong hình 240 của Koa (đầu búa cách tay 128 × cỡ).
     case hammer(angle: Double, scale: Double)
     case glue(angle: Double, scale: Double)
@@ -234,9 +233,11 @@ extension KoaRepairScene {
     public var count: Int?
     /// Viền bừng sáng 0…1.
     public var glow = 0.0
-    /// Phích đang cắm trong ổ.
-    public var plugged = true
-    /// Tia lửa ở ổ cắm 0…1.
+    /// Bảng có điện (tắt khi Koa bấm nút nguồn lần đầu, bật lại ở lần bấm sau).
+    public var powered = true
+    /// Nút nguồn đang lún 0…1 (Koa vừa bấm).
+    public var press = 0.0
+    /// Tia lửa ở nút nguồn 0…1.
     public var spark = 0.0
   }
 
@@ -254,13 +255,23 @@ extension KoaRepairScene {
 
     /// Bảng dời `StudioScene.boardShift` (#799-B): mọi toạ độ ngang của cảnh dời theo cùng một lượng (px ảnh).
     public static let shiftPx = StudioScene.boardShift * pxPerUnit
+    /// Bảng nhích lên `StudioScene.boardLift` (Kiệt 23/11): mọi toạ độ dọc của bảng dời theo (px ảnh, âm = lên).
+    public static let liftPx = StudioScene.boardLift * pxPerUnit
     /// Màn bảng trong ảnh phòng (px) — app quy về toạ độ phòng.
-    public static let screenPx = (x: 912.0 + shiftPx, y: 1432.0, w: 338.0, h: 208.0)
-    public static let numberPx = (x: 978.0 + shiftPx, y: 1516.0, w: 92.0, h: 62.0)
-    /// Koa đứng gõ (tay khi gõ cách tâm +132 px → chạm mép trái bảng, đo) / rút phích.
-    static let kx = 786.0 + shiftPx, px = 640.0 + shiftPx
-    public static let socketPx = (x: 714.0 + shiftPx, y: 1766.0)
-    public static let cableTopPx = (x: 936.0 + shiftPx, y: 1644.0)
+    public static let screenPx = (x: 912.0 + shiftPx, y: 1432.0 + liftPx, w: 338.0, h: 208.0)
+    public static let numberPx = (x: 978.0 + shiftPx, y: 1516.0 + liftPx, w: 92.0, h: 62.0)
+    /// Koa đứng gõ (tay khi gõ cách tâm +132 px → chạm mép trái bảng, đo).
+    static let kx = 786.0 + shiftPx
+    /// Nút nguồn ở mép dưới bảng, phía trái (Kiệt 23/11: gỡ dây điện + ổ cắm cho gọn — Koa nhảy lên bấm nút
+    /// "tắt đi… bật lại…" thay cho rút phích). Tâm nút (px ảnh), bán kính `buttonRPx`.
+    public static let buttonPx = (x: screenPx.x + 64, y: screenPx.y + screenPx.h + 6)
+    public static let buttonRPx = 21.0
+    /// Koa đứng dưới nút: tay giơ lên (cách tâm +132 px như lúc gõ) đúng tâm nút; nhảy vừa chạm nút.
+    static let pressX = buttonPx.x - 132
+    static let pressJumpPx = max(0, 1593 - buttonPx.y + 10)
+    /// Bảng cao hơn tầm tay Koa đứng sàn (tay gõ ở y 1593 px khi bảng chưa nhích): Koa bật nhảy để gõ —
+    /// mỗi cú gõ là một cú nhún, đỉnh nhảy đúng lúc tay chạm bảng.
+    static let knockJumpPx = max(0, -liftPx + 24)
 
     static let yay = Line("Để tớ xem!", key: "koa.repair.board.yay", at: T("yay") + 0.3)
     static let wait = Line("Tắt đi… bật lại…", key: "koa.repair.board.wait", at: T("wait") + 0.1, rate: 0.16)
@@ -282,9 +293,10 @@ extension KoaRepairScene {
       c += [(T("lit2"), "koa-buzz", 0.4), (T("off2"), "koa-click", 0.5), (T("mad"), "koa-v-nonono", 0.7),
             (T("idea"), "koa-coin", 0.6), (T("idea") + 0.1, "koa-v-ui", 0.7),
             (T("go") + 0.1, "koa-step-wood-1", 0.5), (T("go") + 0.35, "koa-step-wood-1", 0.5),
-            (T("pull"), "koa-v-mmm", 0.4), (T("pull") + 0.2, "koa-creak", 0.4), (T("pull") + 0.4, "koa-creak", 0.4),
+            (T("pull"), "koa-v-mmm", 0.4), (T("pop") - 0.22, "koa-hop", 0.6),
             (T("pop"), "koa-click", 1.0), (T("pop") + 0.02, "koa-buzz", 0.6), (T("pop") + 0.05, "koa-v-oi", 0.8),
-            (T("pop") + 0.35, "koa-land", 0.5), (T("plug"), "koa-step-wood-1", 0.5), (T("click"), "koa-click", 0.9),
+            (T("pop") + 0.22, "koa-land", 0.5), (T("click") - 0.22, "koa-hop", 0.6), (T("click"), "koa-click", 0.9),
+            (T("click") + 0.22, "koa-land", 0.5),
             (T("boot"), "koa-buzz", 0.5)]
       for k in 0..<10 { c.append((T("count") + Double(k) * 0.07, "koa-tick", 0.35)) }
       c += [(T("full"), "koa-coin", 0.8), (T("cheer"), "koa-v-yay", 0.8), (T("cheer") + 0.05, "koa-cheer", 0.6),
@@ -317,7 +329,7 @@ extension KoaRepairScene {
         let a = ease(seg(t, T("yay") + 0.25, T("yay") + 0.45)) * (1 - seg(t, T("down") - 0.1, T("down") + 0.1))
         if a > 0 { s.bubble = yay.bubble(at: t, x: roomX(330), y: roomY(1090), width: 380 / pxPerUnit, alpha: a) }
       } else if t < T("go") {                             // xuống sàn, gõ bảng
-        if t < T("k1") - 0.2 {
+        if t < T("down") + 0.62 {                        // nhảy xuống cho trọn rồi mới gõ (trước cắt ngang ở k1 − 0,2: chân giật 15)
           let h = hop(t, T("down"), 0.12, 0.5, 0)
           let u = seg(t, T("down") + 0.12, T("down") + 0.62)
           px = lerp(stagePx.x, kx, ease(u)); w = lerp(stagePx.w, floorPx.w, ease(u))
@@ -338,8 +350,17 @@ extension KoaRepairScene {
             if h <= t, t < h + 0.12 { arm = -118 - (strong ? 12 : 0) + 18 * seg(t, h, h + 0.12); knock = h }
           }
           p.armRight = arm; p.armLeft = -8; p.turn = 0.3; p.lean = (strong ? 6 : 2) * (knock == nil ? 0 : 1)
+          // bảng nhích cao (Kiệt 23/11): bật nhảy theo từng cú gõ, đỉnh nhảy đúng lúc tay chạm bảng
+          if t < T("mad") {
+            let up = set.map { h -> Double in
+              let u = t - h
+              return abs(u) > 0.2 ? 0 : 1 - pow(u / 0.2, 2)   // lên xuống đều như rơi tự do
+            }.max() ?? 0
+            lift = knockJumpPx * up
+            if up > 0 { p.left.lift = 6 * up; p.right.lift = 6 * up; s.stretchY = 1 + 0.04 * up; s.stretchX = 1 - 0.03 * up }
+          }
           if let k = knock {
-            let pawPx = (x: kx + 132, y: 1593.0)
+            let pawPx = (x: kx + 132, y: 1593.0 - knockJumpPx)
             s.pops.append(Pop(text: k >= T("k2") ? "koa.repair.pop.knockHard" : "koa.repair.pop.knock", x: roomX(pawPx.x + 30), y: roomY(pawPx.y - 40),
                               u: seg(t, k, k + 0.25), size: (k >= T("k2") ? 52 : 40) / pxPerUnit))
           }
@@ -350,53 +371,55 @@ extension KoaRepairScene {
             s.stretchY = 1 - 0.04 * abs(w3)
             s.gaze = .init(x: 0, y: 0.2, k: 1)
           }
-          if t >= T("idea") {                             // nảy ý: nhìn theo dây xuống ổ cắm
+          if t >= T("idea") {                             // nảy ý: thấy nút nguồn ở mép dưới bảng
             exprs = [(0, .surprised), (T("idea") + 0.3, .grin)]
-            s.gaze = .init(x: -0.4, y: 0.9 * ease(seg(t, T("idea"), T("idea") + 0.4)), k: 1)
+            s.gaze = .init(x: 0.5, y: -0.9 * ease(seg(t, T("idea"), T("idea") + 0.4)), k: 1)
             s.gesture = .curious; s.gestureAmount = ease(seg(t, T("idea"), T("idea") + 0.2))
             p.armRight = -30; p.armLeft = 0; p.turn = 0
           }
         }
-      } else if t < T("boot") {                           // rút phích → tắt đi bật lại → cắm lại
+      } else if t < T("boot") {                           // nhảy bấm nút nguồn → "tắt đi… bật lại…" → bấm lần nữa
         feet = floorPx.feet; w = floorPx.w
-        if t < T("pull") {
+        // một cú bấm: nhún → bật lên 0,22 s, tay chạm nút đúng `at` → đáp sau 0,22 s (đều như rơi tự do)
+        func pressJump(_ at: Double) -> Double {
+          let u = t - at
+          return abs(u) > 0.22 ? 0 : pressJumpPx * (1 - pow(u / 0.22, 2))
+        }
+        if t < T("pull") {                                // bước tới dưới nút, ngước nhìn
           let u = seg(t, T("go"), T("go") + 0.5)
-          px = lerp(kx, Self.px, ease(u)); lift = 10 * abs(sin(u * .pi * 2))
+          px = lerp(kx, pressX, ease(u)); lift = 10 * abs(sin(u * .pi * 2))
           exprs = [(0, .grin)]
-          p.turn = -0.3; p.lean = 10 * seg(t, T("go") + 0.4, T("pull")); p.armRight = 20 * seg(t, T("go") + 0.4, T("pull"))
-          s.gaze = .init(x: 0.2, y: 0.9, k: 1)
-        } else if t < T("pop") {
-          px = Self.px
-          exprs = [(0, .focus)]
-          let g = (t - T("pull")) / 0.2, w2 = pow(sin(g * .pi), 2)
-          p.lean = 10 - 16 * w2; p.armRight = 25; p.armLeft = 20; p.earLag = 4 * w2
-          s.stretchX = 1 + 0.03 * w2; s.stretchY = 1 - 0.03 * w2
-          s.gaze = .init(x: 0.2, y: 0.9, k: 1)
-        } else if t < T("wait") {
-          let u = seg(t, T("pop"), T("pop") + 0.4)
-          exprs = [(0, .yikes)]
-          lift = hop(t, T("pop"), 0, 0.3, 40).lift
-          px = Self.px - 70 * eout(u)
-          p.lean = -14 * (1 - u); p.armRight = -60; p.armLeft = 70; p.earLag = settle(t, T("pop"), 14, 3, 5)
-          s.prop = .plug
-        } else if t < T("plug") {
-          px = Self.px - 70
+          p.turn = 0.3
+          s.gaze = .init(x: 0.5, y: -0.9, k: 1)
+        } else if t < T("wait") {                         // nhún, bật lên bấm lần 1, đáp
+          px = pressX
+          exprs = [(0, .focus), (T("pop") + 0.05, .yikes)]
+          let crouch = seg(t, T("pop") - 0.5, T("pop") - 0.22) * (1 - seg(t, T("pop") - 0.22, T("pop") - 0.18))
+          lift = pressJump(T("pop")); s.stretchY = 1 - 0.08 * crouch + 0.04 * (lift / max(1, pressJumpPx))
+          s.stretchX = 2 - s.stretchY
+          let up = lift / max(1, pressJumpPx)
+          p.armRight = lerp(-40, -118, ease(seg(t, T("pop") - 0.3, T("pop") - 0.05))); p.armLeft = -8 - 20 * up; p.turn = 0.3
+          if t >= T("pop") + 0.1 { p.armRight = lerp(-118, -60, ease(seg(t, T("pop") + 0.1, T("pop") + 0.3))); p.earLag = settle(t, T("pop"), 14, 3, 5) }
+          s.gaze = .init(x: 0.5, y: -0.9, k: 1)
+        } else if t < T("plug") {                         // đứng chờ: "Tắt đi… bật lại…"
+          px = pressX
           exprs = [(0, .tease)]
-          p.armRight = -40; p.bob = 1.5 * sin(t * 6)
+          p.armRight = -40; p.bob = 1.5 * sin(t * 6); p.turn = 0.3
           s.gaze = .init(x: 0.3, y: -0.2, k: 1)
-          s.mouth = wait.mouth(at: t); s.prop = .plug
+          s.mouth = wait.mouth(at: t)
           let a = ease(seg(t, T("wait"), T("wait") + 0.2)) * (1 - seg(t, T("plug") - 0.1, T("plug")))
           s.bubble = wait.bubble(at: t, x: roomX(430), y: roomY(1330), width: 430 / pxPerUnit, alpha: a)
-        } else {
-          let u = seg(t, T("plug"), T("plug") + 0.3)
-          px = lerp(Self.px - 70, Self.px, ease(u))
+        } else {                                          // bấm lần 2
+          px = pressX
           exprs = [(0, .focus)]
-          p.lean = 10 * ease(seg(t, T("click") - 0.15, T("click"))); p.armRight = lerp(-40, 30, ease(u))
-          s.gaze = .init(x: 0.2, y: 0.9, k: 1)
-          if t < T("click") { s.prop = .plug }
+          lift = pressJump(T("click"))
+          let crouch = seg(t, T("click") - 0.32, T("click") - 0.22) * (1 - seg(t, T("click") - 0.22, T("click") - 0.18))
+          s.stretchY = 1 - 0.08 * crouch; s.stretchX = 2 - s.stretchY
+          p.armRight = lerp(-40, -118, ease(seg(t, T("plug"), T("click") - 0.05))); p.armLeft = -8; p.turn = 0.3
+          s.gaze = .init(x: 0.5, y: -0.9, k: 1)
         }
       } else if t < T("back") {                           // bảng khởi động: ngó lên, mừng, nhảy cẫng
-        px = Self.px; feet = floorPx.feet; w = floorPx.w
+        px = pressX; feet = floorPx.feet; w = floorPx.w
         exprs = [(0, .surprised), (T("count") + 0.2, .delighted)]
         s.gaze = .init(x: 0.6, y: -0.8, k: 1)
         p.turn = 0.3
@@ -410,7 +433,7 @@ extension KoaRepairScene {
         if t < T("thanks") {
           let h = hop(t, T("back"), 0.12, 0.5, 0)
           let u = seg(t, T("back") + 0.12, T("back") + 0.62)
-          px = lerp(Self.px, stagePx.x, ease(u)); w = lerp(floorPx.w, stagePx.w, ease(u))
+          px = lerp(pressX, stagePx.x, ease(u)); w = lerp(floorPx.w, stagePx.w, ease(u))
           feet = lerp(floorPx.feet, stagePx.feet, ease(u)) - (h.phase == .air ? 130 * 4 * u * (1 - u) : 0)
           s.stretchY = h.squash; s.stretchX = 2 - h.squash
           p.armRight = -150 * sin(.pi * u); p.armLeft = 150 * sin(.pi * u)
@@ -433,15 +456,16 @@ extension KoaRepairScene {
       s.board = boardState(t)
       s.camera = camera(t)
       s.repaired = t >= T("full")
-      if T("click") <= t, t < T("click") + 0.3 {
-        s.pops.append(Pop(text: "koa.repair.pop.click", x: roomX(socketPx.x + 40), y: roomY(socketPx.y - 50), u: seg(t, T("click"), T("click") + 0.3), size: 40 / pxPerUnit))
+      for at in [T("pop"), T("click")] where at <= t && t < at + 0.3 {
+        s.pops.append(Pop(text: "koa.repair.pop.click", x: roomX(buttonPx.x + 40), y: roomY(buttonPx.y + 40), u: seg(t, at, at + 0.3), size: 40 / pxPerUnit))
       }
       return s
     }
 
     static func boardState(_ t: Double) -> BoardState {
       var b = BoardState()
-      b.plugged = !(T("pop") <= t && t < T("click"))
+      b.powered = !(T("pop") <= t && t < T("click"))
+      b.press = [T("pop"), T("click")].map { at in at - 0.04 <= t && t < at + 0.18 ? 1 - seg(t, at + 0.06, at + 0.18) : 0 }.max() ?? 0
       b.spark = T("pop") <= t && t < T("pop") + 0.35 ? 1 - seg(t, T("pop"), T("pop") + 0.35) : 0
       if T("lit1") <= t, t < T("off1") {
         b.dark = sin(t * 60) > -0.3 ? 0.2 : 0.7; b.noise = Int(t * 30)
@@ -466,8 +490,8 @@ extension KoaRepairScene {
       (9.0, 1.5, 900, 1580),
       (9.5, 1.62, 900, 1600),   // gõ mạnh: đẩy sát hơn
       (10.5, 1.62, 860, 1640),
-      (11.0, 1.75, 700, 1680),  // lần theo dây xuống ổ cắm
-      (13.65, 1.75, 680, 1680), // cận ổ cắm: rút / cắm phích
+      (11.0, 1.7, 860, 1600),   // ngước theo nút nguồn ở mép dưới bảng
+      (13.65, 1.7, 860, 1600),  // Koa + nút trong một khung: bấm tắt / chờ / bấm bật
       (13.85, 1.8, 1080, 1540), // CẮT sang bảng: khởi động, số đếm lên
       (15.0, 1.8, 1080, 1540),
       (15.3, 1.35, 840, 1560),  // lùi ra: Koa nhảy mừng dưới bảng sáng

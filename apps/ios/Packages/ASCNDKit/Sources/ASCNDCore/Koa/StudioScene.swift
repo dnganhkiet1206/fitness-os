@@ -120,8 +120,9 @@ public enum StudioScene {
     public var depth = false
     /// Lá chậu cây bên phải rung (độ) — Koa đi sát / ngửi lá (29/10). 0 = đứng yên như cũ.
     public var plantSway = 0.0
-    /// Dây điện + ổ cắm của bảng số (storyboard sửa bảng). `false` lúc đoạn diễn sửa bảng tự vẽ dây / phích.
-    public var boardCord = true
+    /// Nút nguồn ở mép dưới bảng số (storyboard sửa bảng; thay dây điện + ổ cắm, Kiệt 23/11 "gỡ cái dây điện
+    /// cho gọn"). `false` lúc đoạn diễn sửa bảng tự vẽ nút (lún, đèn tắt / bật).
+    public var boardButton = true
     /// Bỏ các phần tử này của `template` (30/10: phòng vẽ sẵn không có chậu cây khi chậu
     /// cây được vẽ riêng ở lớp trên để rung — khỏi vẽ lại cả phòng mỗi khung).
     public var omit: Set<Int> = []
@@ -308,7 +309,7 @@ public enum StudioScene {
     func onBoard(_ n: JSONValue) -> Bool { n["at"]?.intValue.map { boardSpot.contains($0) } == true }
     func shiftedOne(_ e: KoaRender.Element) -> KoaRender.Element { boardDust(e) }
     func shifted(_ es: [KoaRender.Element]) -> [KoaRender.Element] {
-      es.isEmpty || boardShift == 0 ? es : [KoaRender.Element("G", matrix: [1, 0, 0, 1, boardShift, 0], kids: es)]
+      es.isEmpty || (boardShift == 0 && boardLift == 0) ? es : [KoaRender.Element("G", matrix: [1, 0, 0, 1, boardShift, boardLift], kids: es)]
     }
     // bụi: từng hạt một (giữ thứ tự, số phần tử như cũ), hạt nằm trên bảng dời theo bảng
     func dustTree(_ ns: [JSONValue]) -> [KoaRender.Element] {
@@ -356,8 +357,8 @@ public enum StudioScene {
       var cur: [KoaRender.Element] = []
       step(i, v, &cur)
       out += boardSpot.contains(i) ? shifted(cur) : cur
-      if decor, !mask, o.boardCord, let last = boardSpot.max(), i == last, only.map({ $0.contains(last) }) ?? true {
-        out += boardCord()
+      if decor, !mask, o.boardButton, let last = boardSpot.max(), i == last, only.map({ $0.contains(last) }) ?? true {
+        out += boardButton()
       }
     }
     if mask { out += dustTree(dust.filter(masked)) }
@@ -368,39 +369,30 @@ public enum StudioScene {
   /// phải bảng (x 370) hiện ở 386 / 390 và lòi khỏi màn khi máy lia (Kiệt 23/11). Mọi thứ gắn với bảng dời theo:
   /// đồ mua, bụi, vết nứt, đoạn diễn sửa bảng, chỗ Koa nhìn, vùng chạm.
   public static let boardShift = -16.0
+  /// Bảng số nhích lên gần bậu cửa sổ (đơn vị phòng; âm = lên) — Kiệt 23/11 khoanh chỗ mới trên ảnh simulator.
+  /// Cũng như `boardShift`: mọi thứ gắn với bảng dời theo; dây điện dài ra, ổ cắm đứng yên trên ván ốp.
+  public static let boardLift = -20.0
 
   /// Một phần tử (bụi) nằm trên bảng: dời theo bảng.
   public static func boardDust(_ e: KoaRender.Element) -> KoaRender.Element {
-    boardShift == 0 ? e : KoaRender.Element("G", matrix: [1, 0, 0, 1, boardShift, 0], kids: [e])
+    boardShift == 0 && boardLift == 0 ? e : KoaRender.Element("G", matrix: [1, 0, 0, 1, boardShift, boardLift], kids: [e])
   }
 
-  /// Dây điện từ đáy bảng xuống ổ cắm trên ván ốp chân tường — đúng đường của storyboard sửa bảng
-  /// (`KoaRepairScene.Board.cableTopPx` / `socketPx`, quy về toạ độ phòng); phích cắm trong ổ.
-  /// Toạ độ của storyboard đã gồm `boardShift` (`KoaRepairScene.Board.shiftPx`) — không bọc thêm phép dời.
-  public static func boardCord() -> [KoaRender.Element] {
+  /// Nút nguồn nhỏ dưới mép bảng (toạ độ `KoaRepairScene.Board.buttonPx`, đã gồm `boardShift` / `boardLift`):
+  /// vỏ tối, mặt nút, đèn báo xanh. Đoạn diễn sửa bảng vẽ cùng hình (`KoaRepairLayer`) nên vào / ra cảnh không giật.
+  public static func boardButton() -> [KoaRender.Element] {
     let B = KoaRepairScene.Board.self, u = KoaRepairScene.pxPerUnit
-    func len(_ px: Double) -> Double { px / u }
-    let top = KoaRepairScene.room(B.cableTopPx.x, B.cableTopPx.y), sk = KoaRepairScene.room(B.socketPx.x, B.socketPx.y)
-    let f = { (v: Double) in String(format: "%.2f", v) }
-    let bend = (x: top.x - len(40), y: top.y + len(114))
-    let d = "M\(f(top.x)) \(f(top.y))L\(f(top.x - len(6))) \(f(top.y + len(96)))"
-      + "Q\(f(top.x - len(12))) \(f(top.y + len(112))) \(f(bend.x)) \(f(bend.y))"
-      + "L\(f(sk.x + len(40))) \(f(bend.y))"
-      + "C\(f(sk.x + len(20))) \(f(bend.y)) \(f(sk.x + len(20))) \(f(sk.y + len(60))) \(f(sk.x)) \(f(sk.y))"
-    var cable = KoaBedroom.line(d, "#2B2B33", width: len(7))
-    cable.props["strokeLinecap"] = .string("round")
-    cable.props["strokeLinejoin"] = .string("round")
-    var plate = KoaBedroom.rect(sk.x - len(24), sk.y - len(28), len(48), len(56), "#F5EDE3", r: len(10))
-    plate.props["stroke"] = .string("#C9BAA6")
-    plate.props["strokeWidth"] = .number(len(3))
+    let c = KoaRepairScene.room(B.buttonPx.x, B.buttonPx.y), r = B.buttonRPx / u
     return [
-      plate,
-      KoaBedroom.ellipse(sk.x - len(8), sk.y, len(4), len(4), "#6B6157"),
-      KoaBedroom.ellipse(sk.x + len(8), sk.y, len(4), len(4), "#6B6157"),
-      cable,
-      KoaBedroom.rect(sk.x - len(14), sk.y - len(16), len(28), len(32), "#3A3A45", r: len(7)),
+      KoaBedroom.rect(c.x - r * 1.5, c.y - r * 1.25, r * 3, r * 1.25, "#2B2B33", r: r * 0.4),
+      KoaBedroom.ellipse(c.x, c.y, r * 1.25, r * 1.25, "#2B2B33"),
+      KoaBedroom.ellipse(c.x, c.y, r, r, "#4A4A57"),
+      KoaBedroom.ellipse(c.x, c.y - r * 0.15, r * 0.36, r * 0.36, buttonLED),
     ]
   }
+
+  /// Đèn báo của nút nguồn khi bảng có điện.
+  public static let buttonLED = "#7CF5A0"
 
   static func element(_ v: JSONValue, _ o: Options, _ skin: Skin) -> KoaRender.Element? {
     guard let tag = v["t"]?.stringValue else { return nil }

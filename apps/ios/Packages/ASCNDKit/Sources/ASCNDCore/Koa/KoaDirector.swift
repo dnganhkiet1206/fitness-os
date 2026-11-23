@@ -650,7 +650,7 @@ public enum KoaDirector {
           gestureWant = 1
         }
         // liếc bảng hạng rồi về người xem
-        if at(1.0) { gaze.glance(at: .point(x: 321, y: 276), koa: koa, turn: turn, for: 0.6) }
+        if at(1.0) { gaze.glance(at: .point(x: 321 + StudioScene.boardShift, y: 276 + StudioScene.boardLift), koa: koa, turn: turn, for: 0.6) }
       case .object(let a):
         guard let anchor = b.anchor else { return }
         let lx = anchor.look.x, ly = anchor.look.y
