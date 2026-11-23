@@ -126,7 +126,13 @@ def main() -> None:
     gidx = np.where(stack.max(axis=-1) > 127, stack.argmax(axis=-1), -1)
     gidx[~valid] = -1
     labels = muscle_sculpt.part_labels(gidx.ravel(), groups, pos.reshape(-1, 3).astype(float), joints, parts_cfg["groups"]).reshape(res, res)
-    outlines = muscle_sculpt.boundary_points_by_kind(labels, pos, valid)
+    # Group code (label // 1_000_000 = index + 1) -> whole muscle (muscle_map "aggregates").
+    aggregate = np.arange(len(groups) + 1)
+    for members in muscle_map.get("aggregates", {}).values():
+        idx = [groups.index(g) + 1 for g in members if g in groups]
+        for i in idx:
+            aggregate[i] = idx[0]
+    outlines = muscle_sculpt.boundary_points_by_kind(labels, pos, valid, aggregate=aggregate)
     trees = {}
     for k, pts in outlines.items():
         tree = KDTree(max(len(pts), 1))
@@ -139,24 +145,41 @@ def main() -> None:
     outline = np.concatenate(list(outlines.values()))
     print(f"[evs] sculpt: {len(np.unique(labels)) - 1} parts, outline points {({k: len(v) for k, v in outlines.items()})} ({time.time() - t0:.1f}s)")
 
-    def field(points: np.ndarray, is_muscle: np.ndarray, profile: dict) -> np.ndarray:
+    head_depth_by_group = parts_cfg.get("heads_depth_by_group", {})
+
+    def head_depths(point_labels: np.ndarray, default: float) -> np.ndarray:
+        """Per-point depth of the grooves between parts of one muscle, from the point's group."""
+        out = np.full(len(point_labels), float(default))
+        gi = point_labels // 1_000_000 - 1
+        for name, depth in head_depth_by_group.items():
+            # A whole-muscle name (aggregate) sets the depth for all its groups.
+            for g in muscle_map.get("aggregates", {}).get(name, [name]):
+                if g in groups:
+                    out[gi == groups.index(g)] = float(depth)
+        return out
+
+    def field(points: np.ndarray, is_muscle: np.ndarray, profile: dict, point_labels: np.ndarray | None = None) -> np.ndarray:
         d = {k: nearest_distance(trees[k], points, 3 * profile[k]["width_m"]) for k in trees}
+        if point_labels is not None and head_depth_by_group:
+            profile = {**profile, "heads": {**profile["heads"], "depth": head_depths(point_labels, profile["heads"]["depth"])}}
         return muscle_sculpt.relief(d, is_muscle, profile)
 
     # Texture field (narrow grooves).
     muscle_tex = labels > 0
     h_tex = np.zeros((res, res), np.float32)
     idx = np.flatnonzero(muscle_tex.ravel())
-    h_tex.ravel()[idx] = field(pos.reshape(-1, 3)[idx], np.ones(len(idx), bool), parts_cfg["texture"]["profile"])
+    h_tex.ravel()[idx] = field(pos.reshape(-1, 3)[idx], np.ones(len(idx), bool), parts_cfg["texture"]["profile"],
+                               labels.ravel()[idx])
     # Grow the field past the UV island borders before taking gradients, or
     # every island edge inside a muscle becomes a false groove.
     h_tex = muscles._dilate(h_tex, valid, 8)
     # Outlines follow texels and come out jagged (a stitched-seam look on
     # the spine and the back of the legs): soften by ~2 mm before shading.
     h_tex = fiber_lic.box_blur(fiber_lic.box_blur(h_tex.astype(np.float64), 2), 2).astype(np.float32)
-    np.savez_compressed(atlas / "sculpt_height.npz", height=h_tex.astype(np.float16), relief=np.float32(parts_cfg["texture"]["relief"]))
+    relief = parts_cfg["texture"]["relief"] * float(cfg.get("muscle_sculpt", {}).get("texture_relief_scale", 1.0))
+    np.savez_compressed(atlas / "sculpt_height.npz", height=h_tex.astype(np.float16), relief=np.float32(relief))
     flat_points = give_patch_uv_island(body, valid)
-    normal = fiber_lic.flatten_points(fiber_lic.normal_map(h_tex * parts_cfg["texture"]["relief"]), flat_points)
+    normal = fiber_lic.flatten_points(fiber_lic.normal_map(h_tex * relief), flat_points)
     pngio.write_png(atlas / "sculpt_normal.png", (np.flipud(normal) * 255.0 + 0.5).astype(np.uint8))
     print(f"[evs] sculpt: texture field written ({time.time() - t0:.1f}s)")
 
@@ -182,8 +205,28 @@ def main() -> None:
     vstack = np.stack([values[g] for g in groups], axis=-1)
     vg = np.where(vstack.max(axis=-1) > 0.5, vstack.argmax(axis=-1), -1)
     vlab = muscle_sculpt.part_labels(vg, groups, co, joints, parts_cfg["groups"])
+    # 23/11: the per-vertex group evaluation (threshold 0.5) labels only ~2k of 11k vertices, so
+    # the abdomen and most limbs got no geometric relief. Vertices that it misses take the label
+    # of the texel under their UV (the same label image the texture field uses).
+    uv_layer = mesh.uv_layers.active
+    if uv_layer is not None:
+        uv_sum = np.zeros((len(co), 2))
+        uv_n = np.zeros(len(co))
+        loop_uv = np.empty(len(mesh.loops) * 2)
+        uv_layer.data.foreach_get("uv", loop_uv)
+        loop_v = np.empty(len(mesh.loops), np.int64)
+        mesh.loops.foreach_get("vertex_index", loop_v)
+        np.add.at(uv_sum, loop_v, loop_uv.reshape(-1, 2))
+        np.add.at(uv_n, loop_v, 1)
+        uv = uv_sum / np.maximum(uv_n, 1)[:, None]
+        col = np.clip((uv[:, 0] * res).astype(int), 0, res - 1)
+        row = np.clip((uv[:, 1] * res).astype(int), 0, res - 1)
+        tex_lab = labels[row, col]
+        miss = (vlab == 0) & (tex_lab > 0)
+        vlab = np.where(miss, tex_lab, vlab)
+        print(f"[evs] sculpt: {int(miss.sum())} vertices labelled from the UV label image")
     geo = parts_cfg["geometry"]
-    h_v = field(co, vlab > 0, geo["profile"])
+    h_v = field(co, vlab > 0, geo["profile"], vlab)
     keep = np.ones(len(co))
     if shorts is not None:
         dg = bpy.context.evaluated_depsgraph_get()
@@ -199,7 +242,17 @@ def main() -> None:
             hit = sbvh.find_nearest(mw @ Vector(p), 2 * skip)
             if hit[0] is not None:
                 keep[i] = np.clip((hit[3] - skip) / skip, 0.0, 1.0)
+    # Per character: 005's shape comes from a sculpt (sculpt_fit), so the procedural blocks are off.
+    gscale = float(cfg.get("muscle_sculpt", {}).get("geometry_scale", 1.0))
     disp = geo["amplitude_m"] * h_v * keep
+    # Rounded bellies sized to each part (23/11): big muscles (chest, deltoids, thighs) rise
+    # higher than small ones; the groove field h_v still cuts them apart.
+    dm = geo.get("dome")
+    if dm:
+        d_any = np.min([nearest_distance(trees[k], co, dm["max_radius_m"]) for k in trees], axis=0)
+        shape, radius = muscle_sculpt.dome(d_any, vlab)
+        disp = disp + dm["height_per_radius"] * np.minimum(radius, dm["max_radius_m"]) * shape * np.clip(h_v, 0, 1) * keep
+    disp = disp * gscale
     bl_util.set_mesh_coords(mesh, (co + no * disp[:, None]).astype(np.float32))
     mesh.update()
 

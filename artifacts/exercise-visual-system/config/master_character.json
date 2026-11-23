@@ -1,7 +1,7 @@
 {
-  "master_character_id": "master_character_003",
-  "version": "3.3.0",
-  "description": "One faceless athletic male figure reused by every exercise and every camera. Built from the MakeHuman base mesh through MPFB (generated characters are CC0), then made faceless and given shorts by this pipeline.",
+  "master_character_id": "master_character_005",
+  "version": "5.0.0",
+  "description": "Athletic male figure reused by every exercise and camera (character 005, Kiệt 23/11): a MakeHuman (CC0) body whose shape below the neck is fitted to the sculpt 'Male base muscular anatomy' by CharacterZone (CC BY 4.0, level B), with a MakeHuman head (face 8b) and shorts from this pipeline.",
   "generator": {
     "tool": "MPFB (MakeHuman Plugin For Blender)",
     "tool_version_tested": "2.0.18",
@@ -18,34 +18,54 @@
     "muscle_definition": 1.0,
     "leanness": 0.0,
     "race": {
-      "asian": 0.33,
-      "caucasian": 0.34,
-      "african": 0.33
+      "asian": 0.1,
+      "caucasian": 0.9,
+      "african": 0.0
     },
     "chosen": "Kiệt chose option A on 14/11/2026 (docs/exercise-visual-system/character_options_v3.png): 002 (muscle_definition 2.15) went past the strongest MakeHuman body and looked unnatural (traps up to the ears, shoulders 1.15x an average man). A stays inside the MakeHuman data range: maximum muscle, ideal proportions, local targets about half of 002. Option B was rejected: chest abnormally large.",
     "muscle_targets": {
       "torso-muscle-pectoral-incr": 0.6,
-      "torso-muscle-dorsi-incr": 0.3,
-      "torso-vshape-incr": 0.15,
-      "l-upperarm-shoulder-muscle-incr": 0.35,
-      "l-upperarm-muscle-incr": 0.3,
-      "l-lowerarm-muscle-incr": 0.2,
-      "l-upperleg-muscle-incr": 0.3,
-      "l-lowerleg-muscle-incr": 0.25,
-      "r-upperarm-shoulder-muscle-incr": 0.35,
-      "r-upperarm-muscle-incr": 0.3,
-      "r-lowerarm-muscle-incr": 0.2,
-      "r-upperleg-muscle-incr": 0.3,
-      "r-lowerleg-muscle-incr": 0.25
+      "torso-muscle-dorsi-incr": 0.55,
+      "torso-vshape-incr": 0.45,
+      "l-upperarm-shoulder-muscle-incr": 0.65,
+      "l-upperarm-muscle-incr": 0.45,
+      "l-lowerarm-muscle-incr": 0.3,
+      "l-upperleg-muscle-incr": 0.4,
+      "l-lowerleg-muscle-incr": 0.35,
+      "r-upperarm-shoulder-muscle-incr": 0.65,
+      "r-upperarm-muscle-incr": 0.45,
+      "r-lowerarm-muscle-incr": 0.3,
+      "r-upperleg-muscle-incr": 0.4,
+      "r-lowerleg-muscle-incr": 0.35,
+      "head-age-decr": 0.2,
+      "head-fat-decr": 0.4,
+      "l-eye-bag-decr": 0.5,
+      "r-eye-bag-decr": 0.5,
+      "head-square": 0.4,
+      "chin-prominent-incr": 0.55,
+      "chin-width-incr": 0.4,
+      "l-cheek-bones-incr": 0.5,
+      "r-cheek-bones-incr": 0.5,
+      "nose-hump-decr": 0.4,
+      "nose-scale-horiz-decr": 0.3,
+      "nose-point-width-decr": 0.3,
+      "eyebrows-trans-down": 0.35,
+      "l-cheek-volume-decr": 0.45,
+      "r-cheek-volume-decr": 0.45,
+      "mouth-cupidsbow-incr": 0.25,
+      "mouth-lowerlip-volume-decr": 0.2,
+      "l-eye-height2-incr": 0.5,
+      "r-eye-height2-incr": 0.5,
+      "l-eye-scale-incr": 0.15,
+      "r-eye-scale-incr": 0.15,
+      "forehead-temple-decr": 0.2,
+      "l-eye-epicanthus-out": 0.5,
+      "r-eye-epicanthus-out": 0.5,
+      "nose-scale-vert-incr": 0.2,
+      "nose-trans-forward": 0.25,
+      "eyebrows-trans-forward": 0.35
     },
-    "muscle_targets_comment": "14/11 option A: local MakeHuman muscle targets at moderate weights; muscle separation comes from the layered muscle sculpt, not from more volume.",
-    "trapezius_volume": {
-      "level": "E",
-      "mask_amplitude_m": 0.03,
-      "tall_amplitude_m": 0.032,
-      "neck_reach": 0.5,
-      "chosen": "Kiệt chose level E on 15/11/2026 (docs/exercise-visual-system/trapezius_options.jpg, round 2): tall, prominent upper traps as on trained American and European lifters, neck still slim. Same character id: only the trapezius volume changed; every exercise is rebuilt on it (version 3.1.0)."
-    }
+    "muscle_targets_comment": "005: body muscle targets only shape the MakeHuman base before sculpt_fit replaces the shape below the neck; the face targets are face 8b (Kiệt 23/11, picked from 13 renders: 7b looked too Asian)."
   },
   "faceless": {
     "comment": "The frontal face (eyes, nose, mouth and their inner pockets) is cut out between the forehead and the chin and replaced by an evenly meshed surface. That surface is the front of the original head seen as a height field, with hollows narrower than fill_radius filled, bumps narrower than remove_radius removed, and a blur; it fades back into the original surface over rim_blend. Metres.",
@@ -59,8 +79,23 @@
     "fill_radius": 0.016,
     "remove_radius": 0.022,
     "blur_sigma": 0.008,
-    "rim_blend": 0.01
+    "rim_blend": 0.01,
+    "enabled": false
   },
+  "mannequin_head": {
+    "comment": "Kiệt 23/11 (\"tỉ lệ nhân vật và cấu trúc nhân vật và mọi thứ liên quan đến nhân vật đều giống demic\"): the whole head is a smooth egg like a studio fitness mannequin (no ears, nose or brow), a little smaller than the anatomical head. evs/character.mannequin_head.",
+    "enabled": false,
+    "width": 0.96,
+    "depth": 0.97,
+    "jaw_taper": 0.86,
+    "blend_m": 0.03,
+    "head_scale": 0.95,
+    "relax_iterations": 12,
+    "centre_fraction": 0.52,
+    "below_chin_m": 0.05
+  },
+  "base_subdivision": 1,
+  "base_subdivision_comment": "23/11: one level of subdivision applied to the base mesh before the muscle sculpt (evs/character.densify); rig.subdivision_render_levels lowered 2 -> 1 so the exported mesh keeps its size.",
   "shorts": {
     "waist_above_hip_joint": 0.105,
     "waist_front_drop_deg": 6.0,
@@ -71,8 +106,8 @@
   "rig": {
     "mpfb_rig": "game_engine",
     "comment": "53 game deform bones (Unreal-style names) plus anatomical helper bones from MPFB's default rig (14/11): shoulder blades, pectorals and twist bones, so the shoulder girdle and chest move like a real body and later exercises (rows, pull-ups, presses, curls) have the bones they need. Control bones (ctl_) and helper bones (mch_) are added by evs/rig.py and are never exported.",
-    "subdivision_render_levels": 2,
-    "subdivision_viewport_levels": 1,
+    "subdivision_render_levels": 1,
+    "subdivision_viewport_levels": 0,
     "weight_source_rig": "default",
     "extra_bones": {
       "scapula_l": [
@@ -398,5 +433,60 @@
       75.0
     ],
     "palm_surface": 0.014
+  },
+  "muscle_sculpt": {
+    "geometry_scale": 0.0,
+    "texture_relief_scale": 0.4,
+    "comment": "005: the shape comes from the sculpt; procedural blocks off, light grooves in the normal map only."
+  },
+  "sculpt_fit": {
+    "enabled": true,
+    "source_blend": "characters/sources/male_base_muscular_cc_by/sculpt_B.blend",
+    "object": "SculptBody",
+    "height_ratio": 1.0,
+    "neck_base_below_m": 0.065,
+    "neck_blend_m": 0.04,
+    "comment": "evs/sculpt_fit.py; attribution in the source folder.",
+    "bones": {
+      "arm": {
+        "l": [
+          "upperarm_l",
+          "lowerarm_l"
+        ],
+        "r": [
+          "upperarm_r",
+          "lowerarm_r"
+        ]
+      },
+      "leg": {
+        "l": [
+          "thigh_l",
+          "calf_l"
+        ],
+        "r": [
+          "thigh_r",
+          "calf_r"
+        ]
+      }
+    },
+    "keep_bone_keywords": [
+      "hand",
+      "thumb",
+      "index",
+      "middle",
+      "ring",
+      "pinky",
+      "foot",
+      "ball"
+    ],
+    "max_reach_m": 0.09,
+    "trunk_bone_prefixes": [
+      "spine",
+      "pelvis",
+      "clavicle",
+      "pec",
+      "scapula",
+      "neck"
+    ]
   }
 }

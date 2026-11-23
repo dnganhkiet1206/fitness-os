@@ -84,16 +84,22 @@ def part_labels(group_index: np.ndarray, groups: list[str], points: np.ndarray, 
 KINDS = ("groups", "midline", "heads", "skin")
 
 
-def boundary_kind(la: np.ndarray, lb: np.ndarray) -> np.ndarray:
+def boundary_kind(la: np.ndarray, lb: np.ndarray, aggregate: np.ndarray | None = None) -> np.ndarray:
     """0 groups (two different muscles), 1 midline (same muscle, left/right),
-    2 heads (parts of one muscle), 3 skin (muscle ends: tendon, fades)."""
+    2 heads (parts of one muscle), 3 skin (muscle ends: tendon, fades).
+    ``aggregate`` maps a group code (label // 1_000_000) to its whole muscle (muscle_map
+    "aggregates"; 23/11): two groups of one muscle (the three pectoral heads) meet like heads,
+    not like two muscles."""
     ga, gb = la // 1_000_000, lb // 1_000_000
+    if aggregate is not None:
+        ga, gb = aggregate[ga], aggregate[gb]
     sa, sb = la % 2, lb % 2
     kind = np.where(ga != gb, 0, np.where(sa != sb, 1, 2))
     return np.where((la == 0) | (lb == 0), 3, kind)
 
 
-def boundary_points_by_kind(labels: np.ndarray, positions: np.ndarray, valid: np.ndarray, max_gap: float = 0.01) -> dict:
+def boundary_points_by_kind(labels: np.ndarray, positions: np.ndarray, valid: np.ndarray, max_gap: float = 0.01,
+                            aggregate: np.ndarray | None = None) -> dict:
     out = {k: [] for k in KINDS}
     for dy, dx in ((0, 1), (1, 0)):
         la, lb = labels[: labels.shape[0] - dy, : labels.shape[1] - dx], labels[dy:, dx:]
@@ -101,7 +107,7 @@ def boundary_points_by_kind(labels: np.ndarray, positions: np.ndarray, valid: np
         va, vb = valid[: labels.shape[0] - dy, : labels.shape[1] - dx], valid[dy:, dx:]
         m = va & vb & (la != lb) & ((la > 0) | (lb > 0))
         m &= np.linalg.norm(pa - pb, axis=-1) < max_gap
-        kind = boundary_kind(la[m], lb[m])
+        kind = boundary_kind(la[m], lb[m], aggregate)
         mid = 0.5 * (pa[m] + pb[m])
         for i, k in enumerate(KINDS):
             out[k].append(mid[kind == i])
@@ -116,8 +122,26 @@ def relief(distances: dict, is_muscle: np.ndarray, profile: dict) -> np.ndarray:
     h = 1.0 - np.exp(-(distances["skin"] / p["width_m"]) ** 2)
     for k in ("groups", "midline", "heads"):
         p = profile[k]
-        h = h * (1.0 - p["depth"] * np.exp(-(distances[k] / p["width_m"]) ** 2))
+        # ``heads`` depth may be one value per point (23/11: deep rows on the abdomen and the
+        # serratus, a light split on the chest, ``heads_depth_by_group``).
+        depth = np.asarray(p["depth"], float)
+        h = h * (1.0 - depth * np.exp(-(distances[k] / p["width_m"]) ** 2))
     return np.where(is_muscle, h, 0.0)
+
+
+def dome(distance: np.ndarray, labels: np.ndarray, percentile: float = 85.0) -> tuple[np.ndarray, np.ndarray]:
+    """Rounded belly per part (23/11, DEMIC STORY study: each muscle is a convex mass whose height
+    follows its size, not a flat-topped block). ``distance`` = distance to the nearest outline of
+    any kind. Returns (shape 0..1, 0 at the outline and 1 in the middle, sine profile; the part's
+    radius in metres = the ``percentile`` of its distances)."""
+    radius = np.zeros(len(distance))
+    for lab in np.unique(labels):
+        if lab == 0:
+            continue
+        m = labels == lab
+        radius[m] = max(float(np.percentile(distance[m], percentile)), 1e-3)
+    shape = np.where(labels > 0, np.sin(0.5 * np.pi * np.clip(distance / np.maximum(radius, 1e-3), 0.0, 1.0)), 0.0)
+    return shape, radius
 
 
 def boundary_points(labels: np.ndarray, positions: np.ndarray, valid: np.ndarray, max_gap: float = 0.01) -> np.ndarray:

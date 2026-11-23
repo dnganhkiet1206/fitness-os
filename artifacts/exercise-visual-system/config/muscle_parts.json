@@ -5,7 +5,7 @@
     "OpenStax Anatomy and Physiology 2e (CC BY 4.0), chapter 11: axial and appendicular muscles."
   ],
   "geometry": {
-    "amplitude_m": 0.004,
+    "amplitude_m": 0.006,
     "skip_near_apparel_m": 0.012,
     "profile": {
       "skin": {
@@ -13,20 +13,24 @@
       },
       "groups": {
         "width_m": 0.014,
-        "depth": 0.9
+        "depth": 1.0
       },
       "midline": {
         "width_m": 0.01,
-        "depth": 0.7
+        "depth": 0.9
       },
       "heads": {
         "width_m": 0.01,
-        "depth": 0.35
+        "depth": 0.25
       }
+    },
+    "dome": {
+      "height_per_radius": 0.35,
+      "max_radius_m": 0.07
     }
   },
   "texture": {
-    "relief": 2.2,
+    "relief": 3.0,
     "profile": {
       "skin": {
         "width_m": 0.03
@@ -37,11 +41,11 @@
       },
       "midline": {
         "width_m": 0.005,
-        "depth": 0.7
+        "depth": 0.9
       },
       "heads": {
         "width_m": 0.006,
-        "depth": 0.3
+        "depth": 0.25
       }
     }
   },
@@ -79,5 +83,24 @@
       }
     ]
   },
-  "profile_comment": "Anatomy: separations between different muscles (deltoid/pectoral, deltoid/biceps, serratus/obliques) are the deepest; the linea alba and the spinal groove next; heads of one muscle (pectoral heads, quadriceps, triceps, gastrocnemius) and the abdominal tendinous intersections are shallow. Where a muscle ends in tendon (elbow, knee, wrist, ankle, sternum) it fades into the skin over 3 cm, never as a cut line."
+  "profile_comment": "Anatomy: separations between different muscles (deltoid/pectoral, deltoid/biceps, serratus/obliques) are the deepest; the linea alba and the spinal groove next; heads of one muscle (pectoral heads, quadriceps, triceps, gastrocnemius) and the abdominal tendinous intersections are shallow. Where a muscle ends in tendon (elbow, knee, wrist, ankle, sternum) it fades into the skin over 3 cm, never as a cut line.",
+  "geometry_comment": "23/11 (character 004, DEMIC STORY study): each part is a rounded belly whose height follows its size (dome: 0.35 x the part's radius, up to 7 cm radius) on top of a small even lift (amplitude 6 mm); grooves between whole muscles stay deep; grooves between parts of one muscle are light (0.25) except the abdominal rows and the serratus digitations (heads_depth_by_group).",
+  "heads_depth_by_group": {
+    "rectus_abdominis": 0.95,
+    "serratus_anterior": 0.85,
+    "obliques": 0.5,
+    "pectoralis_major": 0.15,
+    "trapezius": 0.2,
+    "rhomboids": 0.1,
+    "rotator_cuff_posterior": 0.3,
+    "erector_spinae": 0.3,
+    "biceps_brachii": 0.2,
+    "triceps_brachii": 0.6,
+    "forearm_muscles": 0.4,
+    "quadriceps": 0.7,
+    "hamstrings": 0.5,
+    "adductors": 0.3,
+    "calves": 0.6
+  },
+  "heads_depth_comment": "23/11 (DEMIC STORY study): groove depth between parts of one muscle, per muscle. Whole-muscle names expand to their muscle_map groups. The chest reads as one smooth plate; the quadriceps teardrop, triceps and calf heads stay visible; abdominal rows and serratus digitations are cut deep."
 }

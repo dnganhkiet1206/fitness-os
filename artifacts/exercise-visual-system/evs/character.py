@@ -629,6 +629,98 @@ def _distance_to_polygon(pt, poly: np.ndarray) -> float:
     return float(np.linalg.norm(a + ab * t[:, None] - p, axis=1).min())
 
 
+def mannequin_head(body: bpy.types.Object, cfg: dict) -> dict:
+    """Mannequin head (Kiệt 23/11, after the DEMIC STORY study): the whole head
+    becomes a smooth egg, no ears, no nose, no brow, as on studio fitness
+    mannequins, and it is a little smaller than the anatomical head so the body
+    reads heroic. Run after ``make_faceless``.
+
+    Every head vertex above the jaw line is moved onto an ellipsoid fitted to
+    the skull (ears excluded from the fit), whose lower half narrows towards the
+    chin (``jaw_taper``), blending back to the original surface just above the
+    neck over ``blend_m``. Then the head is scaled by ``head_scale`` about the
+    base of the skull, fading out on the neck, and the region is relaxed. The
+    rig and weights are unchanged (vertices only move)."""
+    m = cfg.get("mannequin_head") or {}
+    if not m.get("enabled"):
+        return {}
+    mesh = body.data
+    co = bl_util.mesh_coords(mesh)
+    head_w = bl_util.group_weights(body, ["head"])[:, 0]
+    ears = bl_util.group_members(body, "ears") if "ears" in body.vertex_groups else np.zeros(len(co), bool)
+    head = head_w > 0.5
+    skull = head & ~ears
+    # Jaw line: the lowest head vertices at the front midline.
+    front = skull & (np.abs(co[:, 0]) < 0.015)
+    menton = float(co[front, 2].min()) if front.any() else float(co[skull, 2].min())
+    top = float(co[skull, 2].max())
+    lo, hi = co[skull].min(axis=0), co[skull].max(axis=0)
+    c = 0.5 * (lo + hi)
+    c[0] = 0.0
+    c[2] = menton + m.get("centre_fraction", 0.52) * (top - menton)
+    rx = float(np.abs(co[skull, 0]).max()) * m.get("width", 0.96)
+    ry = 0.5 * float(hi[1] - lo[1]) * m.get("depth", 0.97)
+    rz_up = top - c[2]
+    # The egg's lower tip sits BELOW the chin (``below_chin_m``) so at chin height the shell is
+    # still jaw-wide; a tip at the chin pinched the jaw into a thin stalk (23/11, first build).
+    rz_dn = (c[2] - menton) + m.get("below_chin_m", 0.05)
+    c[1] = 0.5 * (lo[1] + hi[1])
+    taper = m.get("jaw_taper", 0.8)
+    blend = m.get("blend_m", 0.035)
+    z0 = menton - 0.005
+    region = (co[:, 2] > z0) & (head_w > 0.05)
+    d = co - c
+    below = d[:, 2] < 0
+    t = np.clip(-d[:, 2] / max(rz_dn, 1e-6), 0, 1)
+    k = np.where(below, 1.0 - (1.0 - taper) * t * t, 1.0)
+    rz = np.where(below, rz_dn, rz_up)
+    q = np.sqrt((d[:, 0] / (rx * k)) ** 2 + (d[:, 1] / (ry * k)) ** 2 + (d[:, 2] / rz) ** 2)
+    target = c + d / np.maximum(q, 1e-6)[:, None]
+    w = np.clip((co[:, 2] - z0) / blend, 0, 1)
+    w = w * w * (3 - 2 * w) * np.clip(head_w * 2, 0, 1)
+    w[~region] = 0.0
+    out = co + (target - co) * w[:, None]
+    # Smaller head about the base of the skull, fading out down the neck.
+    s = m.get("head_scale", 1.0)
+    if abs(s - 1.0) > 1e-6:
+        pivot = np.array([0.0, c[1], menton])
+        ws = np.clip((out[:, 2] - menton) / 0.03, 0, 1) * np.clip(head_w * 2, 0, 1)
+        out = out + (pivot + (out - pivot) * s - out) * ws[:, None]
+    bl_util.set_mesh_coords(mesh, out)
+    # Relax the moved region (ears collapsed onto the shell leave folds).
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    bm.verts.ensure_lookup_table()
+    sel = [bm.verts[i] for i in np.nonzero(w > 0.02)[0]]
+    for _ in range(int(m.get("relax_iterations", 12))):
+        bmesh.ops.smooth_vert(bm, verts=sel, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    bm.to_mesh(mesh)
+    bm.free()
+    mesh.update()
+    return {"mannequin_head": {"vertices_moved": int((w > 0.02).sum()), "ear_vertices": int(ears.sum()),
+                               "egg_radii_m": [round(rx, 4), round(ry, 4), round(rz_up, 4), round(rz_dn, 4)],
+                               "head_scale": s}}
+
+
+def densify(body: bpy.types.Object, levels: int) -> dict:
+    """Applies ``levels`` of Catmull-Clark subdivision to the base mesh (23/11, character 004):
+    the muscle sculpt then has 4x the vertices to hold its grooves and bellies (on the 11k-vertex
+    MakeHuman mesh a 1.4 cm groove fell between vertices). Vertex groups and UVs are interpolated
+    by the modifier; the render subdivision is lowered by the same amount (config), so the exported
+    mesh keeps its size."""
+    if levels <= 0:
+        return {}
+    before = len(body.data.vertices)
+    mod = body.modifiers.new("Densify", "SUBSURF")
+    mod.levels = levels
+    mod.render_levels = levels
+    mod.uv_smooth = "PRESERVE_BOUNDARIES"
+    with bpy.context.temp_override(object=body, active_object=body, selected_objects=[body]):
+        bpy.ops.object.modifier_move_to_index(modifier=mod.name, index=0)
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+    return {"densify": {"levels": levels, "vertices_before": before, "vertices_after": len(body.data.vertices)}}
+
+
 def remove_nipples(body: bpy.types.Object) -> int:
     region = bl_util.group_members(body, "nipple") | bl_util.group_members(body, "nippleTip")
     if not region.any():

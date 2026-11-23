@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import bpy  # noqa: E402
 from mathutils import Vector  # noqa: E402
 
-from evs import bl_util, character, config, helper_bones, materials, studio  # noqa: E402
+from evs import bl_util, character, config, helper_bones, materials, sculpt_fit, studio  # noqa: E402
 from evs import rig as evs_rig  # noqa: E402
 
 
@@ -49,7 +49,11 @@ def main() -> None:
         scene = bl_util.reset_scene()
         bl_util.enable_mpfb()
         body, rig, facts = character.build_body(cfg)
-        facts.update(character.make_faceless(body, cfg, facts))
+        if cfg.get("faceless", {}).get("enabled", True):
+            facts.update(character.make_faceless(body, cfg, facts))
+        facts.update(character.mannequin_head(body, cfg))
+        facts.update(character.densify(body, cfg.get("base_subdivision", 0)))
+        facts.update(sculpt_fit.fit_to_sculpt(body, rig, cfg))
         facts["nipple_vertices_faired"] = character.remove_nipples(body)
         character.drop_landmark_groups(body)
         # Before the shorts: they copy the body's weights, helpers included.
