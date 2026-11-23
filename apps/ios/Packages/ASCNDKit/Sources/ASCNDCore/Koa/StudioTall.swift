@@ -232,7 +232,8 @@ public enum StudioTall {
 
     public var isEmpty: Bool { pushes.isEmpty }
 
-    /// `strength` 0…1; `direction` ±1: đèn bắt đầu lắc sang phải / trái.
+    /// `strength` 0…1; `direction` ±1: dấu của góc đầu tiên. Góc dương = xoay chiều kim đồng hồ quanh điểm treo,
+    /// tức chao lệch sang TRÁI trước; −1 thì chao lệch sang phải trước.
     public mutating func push(at t: Double, strength: Double, direction: Double = 1) {
       let a = max(0, min(1, strength)) * Self.maxDegrees * (direction < 0 ? -1 : 1)
       guard a != 0 else { return }

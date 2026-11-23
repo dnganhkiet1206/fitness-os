@@ -1122,7 +1122,8 @@ struct MascotRoomView: View {
   }
 
   /// Vùng chạm của đèn trần (chao / đèn đã mua quanh dây x 195, y −150…−30 của phòng khung dọc), cao ít nhất
-  /// 44 điểm. Chạm bên trái đẩy đèn sang phải và ngược lại.
+  /// 44 điểm. Chạm bên trái đẩy đèn sang phải và ngược lại (góc dương = xoay chiều kim đồng hồ quanh điểm treo
+  /// trên chao = chao lệch sang TRÁI, nên chạm trái đẩy góc âm).
   private func lampTap(k: CGFloat, drop: CGFloat) -> some View {
     let w: CGFloat = 110 * k
     let h: CGFloat = max(120 * k, 44)
@@ -1132,7 +1133,7 @@ struct MascotRoomView: View {
       .contentShape(Rectangle())
       .frame(width: w, height: h)
       .onTapGesture(coordinateSpace: .local) { p in
-        let push: Double = p.x < w / 2 ? 1 : -1
+        let push: Double = p.x < w / 2 ? -1 : 1
         lens.lamp.push(at: Date.now.timeIntervalSinceReferenceDate, strength: 0.8, direction: push)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -1460,6 +1461,11 @@ struct MascotStage: View {
     }
     .accessibilityAction(named: Text(lampOff ? "mr.lamp.on.a11y" : "mr.lamp.off.a11y")) {
       if bedShown { lampOff.toggle() }
+    }
+    // đèn trần cho VoiceOver (Devin #1004): cùng điều kiện và cùng cú đẩy với vùng chạm `lampTap`
+    .accessibilityAction(named: Text("mr.lamp.swing.a11y")) {
+      guard !reduceMotion, !inBedroom, !bedShown, let lens, studio.lamp || studio.decor["lamp"] == nil else { return }
+      lens.lamp.push(at: Date.now.timeIntervalSinceReferenceDate, strength: 0.8, direction: 1)
     }
     // cúp / khung mốc (#792): mỗi món một hành động, Koa kể và VoiceOver đọc câu ấy
     .accessibilityActions {
