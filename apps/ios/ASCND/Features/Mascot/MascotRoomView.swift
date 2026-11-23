@@ -1274,6 +1274,16 @@ struct MascotStage: View {
     o.energy = energy
     o.board = board ?? RoomBoard.rank(build, of: MascotRules.ranks.count, lang: lang)
     o.decor = MascotShop.decorChoice(equipped: Set(equipped))
+    #if DEBUG
+      // `-koaDecor window=mountain`: thử cửa sổ / đồ đã mua mà không cần mua trong tiệm.
+      let args = ProcessInfo.processInfo.arguments
+      if let i = args.firstIndex(of: "-koaDecor"), i + 1 < args.count {
+        for pair in args[i + 1].split(separator: ",") {
+          let kv = pair.split(separator: "=")
+          if kv.count == 2 { o.decor[String(kv[0])] = String(kv[1]) }
+        }
+      }
+    #endif
     o.boardCord = !boardRepair
     o.dust = dust
     o.shelf = ShelfItem.display(shelf)
