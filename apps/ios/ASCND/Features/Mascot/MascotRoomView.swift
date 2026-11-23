@@ -109,6 +109,11 @@ struct MascotRoomView: View {
         // soát phòng ngủ: ép giờ ngủ mà không chờ tới đêm
         .task {
           if ProcessInfo.processInfo.arguments.contains("-koaForceSleep") { devEmotion = .sleep }
+          // `-koaEmotion coat`: ép một nét mặt / bộ đồ để chụp (vd. áo ấm KOA-T29)
+          let args = ProcessInfo.processInfo.arguments
+          if let i = args.firstIndex(of: "-koaEmotion"), i + 1 < args.count, let e = KoaEmotion.Emotion(rawValue: args[i + 1]) {
+            devEmotion = e
+          }
         }
         // soát đoạn diễn sửa đồ: `KOA_REPAIR=board` — ép Koa thức, tự diễn sau 2 giây
         .task {
@@ -641,11 +646,27 @@ struct MascotRoomView: View {
   /// Nét mặt của ngày (Koa đợt 1) — CÙNG bộ máy với Koa ở Hôm nay.
   private var mood: KoaEmotion.Emotion { moodRead.emotion }
 
+  /// Giờ, phút, tháng cho nét mặt. DEBUG: `-koaMoodHour N` / `-koaMonth N` thử nét mặt theo giờ / mùa
+  /// (vd. áo ấm sáng tháng 12–2, KOA-T29); `-koaHour` chỉ đổi trời ngày / đêm như cũ.
+  private var moodClock: (Int, Int, Int?) {
+    #if DEBUG
+      let args = ProcessInfo.processInfo.arguments
+      func arg(_ name: String) -> Int? {
+        args.firstIndex(of: name).flatMap { $0 + 1 < args.count ? Int(args[$0 + 1]) : nil }
+      }
+      if let h = arg("-koaMoodHour") { return (h, 0, arg("-koaMonth")) }
+      if let m = arg("-koaMonth") {
+        return (Calendar.current.component(.hour, from: clock), Calendar.current.component(.minute, from: clock), m)
+      }
+    #endif
+    return (Calendar.current.component(.hour, from: clock), Calendar.current.component(.minute, from: clock), nil)
+  }
+
   private var moodRead: KoaMood.Read {
-    let hour = Calendar.current.component(.hour, from: clock), minute = Calendar.current.component(.minute, from: clock)
+    let (hour, minute, month) = moodClock
     let day = KoaToday.read(
       room: room, localWaterMl: nil, profile: profile?.profile,
-      riskHour: KoaToday.riskHour(services.habitHours, userId: room.userId), hour: hour, minute: minute)
+      riskHour: KoaToday.riskHour(services.habitHours, userId: room.userId), hour: hour, minute: minute, month: month)
     // KOA-T30: cùng pha theo lịch với Hôm nay (vừa tập xong → tự hào, tới giờ tập → khởi động).
     let phase = TodayDayBlock.schedulePhase(
       services: services, room: room, plannedToday: room.questDay == .training, profile: profile?.profile,
