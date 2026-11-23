@@ -260,7 +260,7 @@ extension KoaRepairScene {
     /// Màn bảng trong ảnh phòng (px) — app quy về toạ độ phòng.
     public static let screenPx = (x: 912.0 + shiftPx, y: 1432.0 + liftPx, w: 338.0, h: 208.0)
     public static let numberPx = (x: 978.0 + shiftPx, y: 1516.0 + liftPx, w: 92.0, h: 62.0)
-    /// Koa đứng gõ (tay khi gõ cách tâm +132 px → chạm mép trái bảng, đo) / rút phích.
+    /// Koa đứng gõ (tay khi gõ cách tâm +132 px → chạm mép trái bảng, đo).
     static let kx = 786.0 + shiftPx
     /// Nút nguồn ở mép dưới bảng, phía trái (Kiệt 23/11: gỡ dây điện + ổ cắm cho gọn — Koa nhảy lên bấm nút
     /// "tắt đi… bật lại…" thay cho rút phích). Tâm nút (px ảnh), bán kính `buttonRPx`.
@@ -380,7 +380,7 @@ extension KoaRepairScene {
         }
       } else if t < T("boot") {                           // nhảy bấm nút nguồn → "tắt đi… bật lại…" → bấm lần nữa
         feet = floorPx.feet; w = floorPx.w
-        /// một cú bấm: nhún (0,25 s) → bật lên, tay chạm nút đúng `at` → đáp (đều như rơi tự do)
+        // một cú bấm: nhún → bật lên 0,22 s, tay chạm nút đúng `at` → đáp sau 0,22 s (đều như rơi tự do)
         func pressJump(_ at: Double) -> Double {
           let u = t - at
           return abs(u) > 0.22 ? 0 : pressJumpPx * (1 - pow(u / 0.22, 2))
