@@ -97,31 +97,31 @@ struct TodayPlanHero: View {
           .disabled(busy)
           .padding(.top, DS.Spacing.xs)
       }
-      if !shownAlternatives.isEmpty {
-        VStack(spacing: 2) {
-          ForEach(shownAlternatives, id: \.self) { alt in
-            Button { onAlternative(alt) } label: {
-              Text(verbatim: Self.label(alt))
-                .font(DS.TextStyle.footnote.weight(.semibold))
-                .frame(maxWidth: .infinity, minHeight: Self.minTap)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(DS.Color.primary.swiftUI)
-            .disabled(busy)
+      // Phương án + tạm nghỉ chung một nhóm, không giãn cách (24/11 audit: hai vùng chạm 44 pt cộng khoảng
+      // cách của thẻ để lại ~50 pt trống giữa "Đổi thành ngày nghỉ" và "Tạm nghỉ vài ngày…").
+      VStack(spacing: 0) {
+        ForEach(shownAlternatives, id: \.self) { alt in
+          Button { onAlternative(alt) } label: {
+            Text(verbatim: Self.label(alt))
+              .font(DS.TextStyle.footnote.weight(.semibold))
+              .frame(maxWidth: .infinity, minHeight: Self.minTap)
+              .contentShape(Rectangle())
           }
+          .buttonStyle(.plain)
+          .foregroundStyle(DS.Color.primary.swiftUI)
+          .disabled(busy)
         }
-      }
-      if let onPause {
-        Button(action: onPause) {
-          Text("pause.entry")
-            .font(DS.TextStyle.footnote)
-            .frame(maxWidth: .infinity, minHeight: Self.minTap)
-            .contentShape(Rectangle())
+        if let onPause {
+          Button(action: onPause) {
+            Text("pause.entry")
+              .font(DS.TextStyle.footnote)
+              .frame(maxWidth: .infinity, minHeight: Self.minTap)
+              .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .accessibilityIdentifier("today.pause.open")
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .accessibilityIdentifier("today.pause.open")
       }
       if failed {
         Text("dp.failed")
