@@ -1189,6 +1189,9 @@ struct TodayExtras<Plan: View>: View {
     guard let mascot else { return }
     syncRestDay()
     guard let r = await services.loadKoaGains(userId: userId) else { return }
+    // Lượt đọc chạy riêng (không huỷ theo màn) → có thể về sau khi đăng xuất / đổi tài khoản:
+    // không ghi hạng của phiên cũ vào dịch vụ dùng chung (vóc dáng Koa của tài khoản kế tiếp).
+    guard services.session.session?.userId == userId else { return }
     mascot.gains = r.state
     // KOA-T57: cửa hàng dùng chung (phòng, Hôm nay) đổi theo Gains vừa đọc — không khoá nhầm ở hạng 0.
     shop?.gains = r.state
