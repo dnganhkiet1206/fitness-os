@@ -58,6 +58,8 @@
       var characterFile: String = ExerciseDemo3D.sharedCharacterFile
       var apparelFile: String = ExerciseDemo3D.sharedApparelFile
       var muscleMapSuffix: String = ""
+      /// Trọng số blend shape nướng sẵn từng khung (`BlendTrack`, 24/11); nil = chỉ skinning.
+      var blendTrackFile: String?
       /// File 3D phải có trong bundle để mở bài: file chuyển động (dạng khối)
       /// hoặc USDZ đầy đủ (bài cũ).
       var bundledFile: String { motionFile ?? usdzFile }
@@ -154,6 +156,7 @@
         d.apparelFile = c.apparel
         d.muscleMapSuffix = c.maps_suffix
       }
+      d.blendTrackFile = f.modules?["blendshapes"]
       d.tips = (module(f, "tips", ExerciseDemoContent.TipsFile.self)?.tips ?? []).compactMap { t in
         guard let anchor = vector(t.anchor) else { return nil }
         return ExerciseTip(id: t.id, anchor: anchor, joint: t.joint, offset: vector(t.offset), text: t.text)

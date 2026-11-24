@@ -184,7 +184,13 @@
                   // một chuyển động phát trên nhân vật và trên file chuyển động
                   // (dụng cụ), bắt đầu cùng khung hình nên khớp nhau.
                   if let animation = (motion ?? scene).availableAnimations.first {
-                    let controllers = [scene, motion, apparel].compactMap { $0?.playAnimation(animation.repeat()) }
+                    var controllers = [scene, motion, apparel].compactMap { $0?.playAnimation(animation.repeat()) }
+                    // Biến dạng nướng sẵn (24/11): trọng số blend shape cùng nhịp với xương.
+                    if let file = demoInfo?.blendTrackFile, let track = ExerciseDemo3D.BlendTrack.load(file),
+                      let body = Self.skinnedBody(in: scene), let c = track.play(on: body)
+                    {
+                      controllers.append(c)
+                    }
                     playback.duration = animation.definition.duration
                     playback.controllers = controllers
                     playback.setSpeed(slowMotion ? 0.5 : 1)
