@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import bpy  # noqa: E402
 from mathutils import Vector  # noqa: E402
 
-from evs import bl_util, character, config, helper_bones, materials, sculpt_fit, studio  # noqa: E402
+from evs import bl_util, character, config, graft_body, helper_bones, materials, sculpt_fit, studio  # noqa: E402
 from evs import rig as evs_rig  # noqa: E402
 
 
@@ -54,10 +54,14 @@ def main() -> None:
         facts.update(character.mannequin_head(body, cfg))
         facts.update(character.densify(body, cfg.get("base_subdivision", 0)))
         facts.update(sculpt_fit.fit_to_sculpt(body, rig, cfg))
-        facts["nipple_vertices_faired"] = character.remove_nipples(body)
+        facts.update(graft_body.replace_with_graft(body, rig, cfg))
+        facts.update(graft_body.recentre_limb_joints(body, rig, cfg))
+        if not cfg.get("graft", {}).get("enabled"):
+            facts["nipple_vertices_faired"] = character.remove_nipples(body)
         character.drop_landmark_groups(body)
         # Before the shorts: they copy the body's weights, helpers included.
         facts["helper_bones"] = helper_bones.add_helpers(body, rig, cfg["rig"].get("helper_bones", {}))
+        facts.update(graft_body.smooth_shoulder_weights(body, rig, cfg))
         shorts = character.build_shorts(body, rig, cfg)
         character.finish_body(body, rig, cfg)
         facts["grip_joint_angles_deg"] = evs_rig.add_controls(rig, cfg["grip"], body)["l"]

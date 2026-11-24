@@ -494,7 +494,18 @@
     "sculpt_cut_below_neck_m": 0.065,
     "head_cut_below_neck_m": 0.035,
     "comment": "evs/graft_body.py: the sculpt below the base of its neck + MakeHuman head and neck; groups and UVs transferred from the fitted MakeHuman body.",
-    "align_vertical_fraction": 0.5
+    "align_vertical_fraction": 0.5,
+    "shoulder_weight_smooth": {
+      "enabled": true,
+      "_note": "24/11: armpit/shoulder folds of the sculpt stretched 25x overhead; see graft_body.smooth_shoulder_weights",
+      "radius_m": 0.04,
+      "z_range_m": [
+        1.1,
+        1.57
+      ],
+      "max_abs_x_m": 0.34,
+      "fade_m": 0.05
+    }
   },
   "muscle_refit": {
     "enabled": true,

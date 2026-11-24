@@ -149,6 +149,55 @@ def _smooth_weights(obj: bpy.types.Object, rig: bpy.types.Object, head_cut: floa
             g.add([int(i)], float(W[i, j]), "REPLACE")
 
 
+def smooth_shoulder_weights(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict) -> dict:
+    """24/11: in the sculpt's dense armpit and shoulder folds, neighbours 1-2 mm apart carried
+    weights that differ by 0.4 (scapula vs spine_03, plus the helper bones), so with the arms
+    overhead those edges stretched 25x (shoulder press QA skin_stretch p99.9 6.05 > 2.6). Edge
+    (Laplacian) smoothing barely moves weights on such a dense mesh; this averages every deform
+    weight over a sphere (Gaussian, ``radius_m``) inside a box around both shoulders, after the
+    helper bones exist."""
+    sc = (cfg.get("graft") or {}).get("shoulder_weight_smooth") or {}
+    if not (cfg.get("graft") or {}).get("enabled") or not sc.get("enabled"):
+        return {}
+    from mathutils import kdtree
+    me = body.data
+    n = len(me.vertices)
+    co = bl_util.mesh_coords(me).astype(float)
+    names = [b.name for b in rig.data.bones if b.use_deform and b.name in body.vertex_groups]
+    col = {body.vertex_groups[nm].index: j for j, nm in enumerate(names)}
+    W = np.zeros((n, len(names)))
+    for v in me.vertices:
+        for g in v.groups:
+            j = col.get(g.group)
+            if j is not None:
+                W[v.index, j] = g.weight
+    z0, z1 = sc.get("z_range_m", [1.10, 1.57])
+    x1 = sc.get("max_abs_x_m", 0.34)
+    fade = sc.get("fade_m", 0.05)
+    ax, z = np.abs(co[:, 0]), co[:, 2]
+    r = np.clip(np.minimum.reduce([(z - z0) / fade, (z1 - z) / fade, (x1 - ax) / fade]), 0.0, 1.0)
+    rad = float(sc.get("radius_m", 0.04))
+    kd = kdtree.KDTree(n)
+    for i, c in enumerate(co):
+        kd.insert(c, i)
+    kd.balance()
+    out = W.copy()
+    sel = np.flatnonzero(r > 0.0)
+    for i in sel:
+        hits = kd.find_range(co[i], rad)
+        idx = np.fromiter((h[1] for h in hits), int)
+        d = np.fromiter((h[2] for h in hits), float)
+        g = np.exp(-(d / (0.5 * rad)) ** 2)
+        out[i] = (1.0 - r[i]) * W[i] + r[i] * (g[:, None] * W[idx]).sum(0) / g.sum()
+    out /= np.maximum(out.sum(axis=1, keepdims=True), 1e-9)
+    for j, nm in enumerate(names):
+        g = body.vertex_groups[nm]
+        g.remove(list(range(n)))
+        for i in np.flatnonzero(out[:, j] > 1e-4):
+            g.add([int(i)], float(out[i, j]), "REPLACE")
+    return {"shoulder_weight_smooth": {"vertices": int(len(sel)), "radius_m": rad}}
+
+
 def _uv_array(me) -> np.ndarray:
     a = np.zeros(len(me.loops) * 2)
     me.uv_layers.active.data.foreach_get("uv", a)
@@ -421,36 +470,50 @@ def recentre_limb_joints(body: bpy.types.Object, rig: bpy.types.Object, cfg: dic
     chains = [("arm", ["upperarm", "lowerarm", "hand"], ["upperarm", "upperarm_twist"], ["lowerarm", "lowerarm_twist"]),
               ("leg", ["thigh", "calf", "foot"], ["thigh", "thigh_twist"], ["calf"])]
     _edit_mode(rig)
-    if True:
-        eb = rig.data.edit_bones
-        for side in ("l", "r"):
-            for kind, (b0, b1, b2), seg1, seg2 in chains:
-                n0, n1, n2 = (f"{x}_{side}" for x in (b0, b1, b2))
-                if not all(n in eb for n in (n0, n1, n2)):
-                    continue
-                J0, J1, J2 = (np.array(eb[n].head) for n in (n0, n1, n2))
-                l1 = _centreline(co, gw([f"{x}_{side}" for x in seg1]), J0, J1)
-                l2 = _centreline(co, gw([f"{x}_{side}" for x in seg2]), J1, J2)
-                N0 = _closest_on_line(J0, l1)
-                # the old joint projected onto both segment lines (their intersection slides along
-                # the limb when it is nearly straight: 23/11 it moved the knee up 12 cm)
-                N1 = 0.5 * (_closest_on_line(J1, l1) + _closest_on_line(J1, l2))
-                N2 = _closest_on_line(J2, l2)
-                d0, d1, d2 = N0 - J0, N1 - J1, N2 - J2
-                # every bone under the chain root moves with the segment it sits in
-                root = eb[n0]
-                for b in [root] + list(root.children_recursive):
-                    for end in ("head", "tail"):
-                        p = np.array(getattr(b, end))
-                        def seg_delta(p):
-                            for (A, B, dA, dB) in ((J0, J1, d0, d1), (J1, J2, d1, d2)):
-                                ab = B - A
-                                t = float((p - A) @ ab / (ab @ ab))
-                                if -0.05 <= t <= 1.05:
-                                    t = min(max(t, 0.0), 1.0)
-                                    return dA + (dB - dA) * t
-                            return d2  # hand / foot and fingers / toes
-                        setattr(b, end, Vector(p + seg_delta(p)))
-                out[f"{kind}_{side}_shift_cm"] = [round(float(np.linalg.norm(x)) * 100, 1) for x in (d0, d1, d2)]
-        bpy.ops.object.mode_set(mode="OBJECT")
+    eb = rig.data.edit_bones
+    # 1. targets per side
+    targets = {}
+    for side in ("l", "r"):
+        for kind, (b0, b1, b2), seg1, seg2 in chains:
+            names = tuple(f"{x}_{side}" for x in (b0, b1, b2))
+            if not all(n in eb for n in names):
+                continue
+            J = [np.array(eb[n].head) for n in names]
+            l1 = _centreline(co, gw([f"{x}_{side}" for x in seg1]), J[0], J[1])
+            l2 = _centreline(co, gw([f"{x}_{side}" for x in seg2]), J[1], J[2])
+            # the old joint projected onto both segment lines (their intersection slides along
+            # the limb when it is nearly straight: 23/11 it moved the knee up 12 cm)
+            N = [_closest_on_line(J[0], l1), 0.5 * (_closest_on_line(J[1], l1) + _closest_on_line(J[1], l2)),
+                 _closest_on_line(J[2], l2)]
+            targets[(kind, side)] = (names, J, N)
+    # 2. mirror-average left and right (24/11: the sculpt is not exactly symmetric and the elbows ended
+    # 6 mm apart, which QA's left_right_symmetry caught as 2.2 cm at the top of a press)
+    mirror = np.array([-1.0, 1.0, 1.0])
+    for kind in ("arm", "leg"):
+        if (kind, "l") in targets and (kind, "r") in targets:
+            nl, Jl, Nl = targets[(kind, "l")]
+            nr, Jr, Nr = targets[(kind, "r")]
+            avg = [0.5 * (a + b * mirror) for a, b in zip(Nl, Nr)]
+            targets[(kind, "l")] = (nl, Jl, avg)
+            targets[(kind, "r")] = (nr, Jr, [a * mirror for a in avg])
+    # 3. every bone under the chain root moves with the segment it sits in
+    for (kind, side), (names, J, N) in targets.items():
+        J0, J1, J2 = J
+        d0, d1, d2 = (n - j for n, j in zip(N, J))
+        root = eb[names[0]]
+        for b in [root] + list(root.children_recursive):
+            for end in ("head", "tail"):
+                p = np.array(getattr(b, end))
+
+                def seg_delta(p):
+                    for (A, B, dA, dB) in ((J0, J1, d0, d1), (J1, J2, d1, d2)):
+                        ab = B - A
+                        t = float((p - A) @ ab / (ab @ ab))
+                        if -0.05 <= t <= 1.05:
+                            t = min(max(t, 0.0), 1.0)
+                            return dA + (dB - dA) * t
+                    return d2  # hand / foot and fingers / toes
+                setattr(b, end, Vector(p + seg_delta(p)))
+        out[f"{kind}_{side}_shift_cm"] = [round(float(np.linalg.norm(x)) * 100, 1) for x in (d0, d1, d2)]
+    bpy.ops.object.mode_set(mode="OBJECT")
     return {"recentre_joints": out}
