@@ -165,6 +165,22 @@ struct WorkoutFlowTests {
     #expect(target == RestTarget(exerciseName: "Bench", setNumber: 2, totalSets: 2))
   }
 
+  /// Set cuối của cả buổi: không mở quãng nghỉ (audit 24/11) — vào thẳng "Hoàn thành".
+  @Test func lastSetOfSessionStartsNoRest() async throws {
+    let h = Harness()
+    await h.flow.start()
+    let s = try #require(h.flow.session)
+    await s.toggle("0-0")
+    #expect(h.rests.last?.0 == .start(seconds: WorkoutPlanning.defaultRest))
+    await s.toggle("0-1")
+    #expect(h.rests.last?.0 == .cancel)
+    // Bỏ tick (huỷ như cũ) rồi tick lại — lại là set cuối còn thiếu, vẫn không nghỉ.
+    await s.toggle("0-0")
+    #expect(h.rests.last?.0 == .cancel)
+    await s.toggle("0-0")
+    #expect(h.rests.last?.0 == .cancel)
+  }
+
   /// Chốt: hàng outbox bền → app được báo (kick sync); ngày thành `done` ngay;
   /// buổi vào cả bảng kỷ lục lẫn "lần trước" — không đợi mạng.
   @Test func finishFeedsTodayRecordsAndLastPerformance() async throws {

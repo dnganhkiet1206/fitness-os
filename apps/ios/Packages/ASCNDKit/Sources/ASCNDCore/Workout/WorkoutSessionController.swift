@@ -415,8 +415,11 @@ public final class WorkoutSessionController {
     guard editable(key), let row = row(key) else { return false }
     let on = !(progress.done[key] ?? false)
     if on && !WorkoutDay.isReady(row, progress) { return false }
-    let event = WorkoutDay.toggle(row, &progress)
+    var event = WorkoutDay.toggle(row, &progress)
     if on { WorkoutDay.carryForward(from: row, in: rows, &progress) }
+    // Audit 24/11: set CUỐI của cả buổi không mở quãng nghỉ — không còn set nào để nghỉ chờ,
+    // người tập phải bấm "Bỏ qua nghỉ" mới tới "Hoàn thành buổi tập" (RT-1 của RN bỏ, Kiệt 19/10).
+    if on, rows.allSatisfy({ progress.done[$0.key] == true }) { event = .cancel }
     updateClock()
     onRest(event, WorkoutDay.next(after: row, in: rows))
     liveRecord = on ? record(of: row) : nil

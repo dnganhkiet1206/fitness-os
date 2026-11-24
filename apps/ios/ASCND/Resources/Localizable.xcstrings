@@ -46414,7 +46414,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "+%lld buổi trong lịch"
+            "value": "Buổi trong lịch +%lld"
           }
         },
         "es": {
@@ -46437,7 +46437,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "+%lld buổi ngoài lịch"
+            "value": "Buổi ngoài lịch +%lld"
           }
         },
         "es": {
@@ -46460,7 +46460,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "+%lld kỷ lục cá nhân"
+            "value": "Kỷ lục cá nhân +%lld"
           }
         },
         "es": {
@@ -46483,7 +46483,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "+%lld tuần đủ buổi"
+            "value": "Tuần đủ buổi +%lld"
           }
         },
         "es": {
@@ -70581,7 +70581,7 @@
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "+%lld tăng tải"
+            "value": "Tăng tải +%lld"
           }
         },
         "en": {
