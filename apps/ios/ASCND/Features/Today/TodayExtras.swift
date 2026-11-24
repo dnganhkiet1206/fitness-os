@@ -418,7 +418,10 @@ struct TodayExtras<Plan: View>: View {
       await loadMeals()
       await loadPlanNext()
       await mascot?.load()
-      await loadGains()
+      // 24/11 (soát KOA-T57 trên simulator, Gains về chậm): mở phòng Koa lúc Gains còn đang đọc thì lượt
+      // `.task` này bị huỷ, Gains không bao giờ về — phòng / thanh Koa kẹt "Newbie · 0 Gains", cửa hàng khoá
+      // nhầm tới lần mở app sau. Lượt đọc Gains chạy riêng, không bị huỷ theo màn.
+      await Task { await loadGains() }.value
       await reloadDailyPlan()
       dayLoaded = true
       await shop?.load()
@@ -1125,7 +1128,8 @@ struct TodayExtras<Plan: View>: View {
     _ dailyPlan: DailyPlanSource, _ flow: WorkoutFlow, hint: (text: String, up: Bool)?
   ) -> TodayPlanHero {
     TodayPlanHero(
-      result: dailyPlan.result, lighterOn: flow.today.lighterToday, shortOn: flow.today.shortToday,
+      result: dailyPlan.result, lighterOn: flow.today.lighterToday, lighterLoad: flow.today.loadFactorToday,
+      shortOn: flow.today.shortToday,
       lastSession: services.koaGainsNow?.state.lastSession, busy: planBusy, failed: planFailed,
       overloadHint: hint, onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) },
       onPause: dailyPlan.result.action.session == nil ? nil : { showsPause = true })

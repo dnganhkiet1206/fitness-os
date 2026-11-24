@@ -123,6 +123,8 @@
       // mỗi buổi đúng +10 Gains: 7 buổi = 70, thêm 3 = 100, buổi hôm nay chạm mốc 110 (Gym Rat II) —
       // để xem thẻ lên bậc ở màn tổng kết mà không phải tập bốn buổi.
       let extra: [Int] = tierUp ? [15, 17, 19] : []
+      // `-uiTestLongBreak`: buổi tập lùi 30 ngày (nhật ký ăn / ngủ giữ nguyên): lần cuối tập ~31 ngày trước.
+      let breakDays = UITestMode.longBreak ? 30 : 0
       for back in Array(1...13) + extra {
         let o = -back
         let trained = back % 2 == 1
@@ -140,10 +142,10 @@
           }
           let volume = sets.reduce(0.0) { $0 + ($1["weight"]?.doubleValue ?? 0) * ($1["reps"]?.doubleValue ?? 0) }
           sessions.append([
-            "id": id(4, back), "user_id": user, "date_time": iso(at(o, 18)), "template_id": JSONValue.string(template.0),
+            "id": id(4, back), "user_id": user, "date_time": iso(at(o - breakDays, 18)), "template_id": JSONValue.string(template.0),
             "template_name": JSONValue.string(template.1), "session_rpe": 8, "volume_load": JSONValue.number(volume),
-            "pr_detected": false, "sets": JSONValue.array(sets), "source": "manual", "created_at": iso(at(o, 19)),
-            "updated_at": iso(at(o, 19)),
+            "pr_detected": false, "sets": JSONValue.array(sets), "source": "manual", "created_at": iso(at(o - breakDays, 19)),
+            "updated_at": iso(at(o - breakDays, 19)),
           ])
         }
         if back > 13 { continue }
@@ -185,10 +187,25 @@
           "id": id(11, back), "user_id": user, "date": JSONValue.string(dateString(day(o))), "steps": JSONValue.number(Double(6000 + back * 250)),
           "kcal": JSONValue.number(dayKcal), "protein_g": JSONValue.number(dayProtein), "carbs_g": 180, "fat_g": 54, "fiber_g": 18,
           "water_ml": JSONValue.number(Double(ml)), "sleep_duration_min": JSONValue.number(Double(asleep)), "sleep_quality": 4,
-          "workout_count": JSONValue.number(trained ? 1 : 0), "volume_load": JSONValue.number(trained ? 1800 : 0),
+          "workout_count": JSONValue.number(trained && breakDays == 0 ? 1 : 0),
+          "volume_load": JSONValue.number(trained && breakDays == 0 ? 1800 : 0),
           "readiness_score": JSONValue.number(Double(70 + back % 3 * 5)), "readiness_status": "good",
           "active_kcal": 420, "active_minutes": 45, "created_at": iso(at(o, 23)), "updated_at": iso(at(o, 23)),
         ])
+      }
+      if UITestMode.pauseWalk {
+        // Hôm qua chỉ đi bộ (Apple Health "Walking"): bỏ buổi tạ giả của hôm qua nếu có.
+        let yesterday = FakeSupabaseStore.iso(at(-1, 18))
+        sessions.removeAll { ($0["date_time"] as? JSONValue)?.stringValue == yesterday }
+        sessions.append([
+          "id": id(4, 900), "user_id": user, "date_time": iso(at(-1, 7)), "template_id": JSONValue.null,
+          "template_name": "Walking", "session_rpe": JSONValue.null, "volume_load": 0, "pr_detected": false,
+          "sets": JSONValue.array([]), "source": "apple_health", "created_at": iso(at(-1, 8)), "updated_at": iso(at(-1, 8)),
+        ])
+        // Tạm nghỉ hai ngày trước hôm qua.
+        t["koa_pause_log"] = [[
+          "user_id": user, "starts_on": JSONValue.string(dateString(day(-3))), "ends_on": JSONValue.string(dateString(day(-2))),
+        ]]
       }
       t["workout_sessions"] = sessions
       t["daily_logs"] = daily

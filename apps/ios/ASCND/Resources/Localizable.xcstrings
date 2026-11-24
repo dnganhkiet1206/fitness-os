@@ -5453,6 +5453,29 @@
         }
       }
     },
+    "dp.lighter.load %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lighter today: one set fewer, about %lld%% less weight"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hôm nay tập nhẹ: bớt 1 hiệp, giảm khoảng %lld%% tạ"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoy más suave: una serie menos y cerca de %lld%% menos peso"
+          }
+        }
+      }
+    },
     "dp.lighter.on": {
       "extractionState": "manual",
       "localizations": {

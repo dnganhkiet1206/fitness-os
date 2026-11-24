@@ -52,6 +52,21 @@
       }
     }
 
+    /// Cờ kịch bản (24/11, kiểm NOT RUN của audit Koa trên simulator): đúng tên, bỏ dấu `-` đầu.
+    static func flag(_ name: String) -> Bool {
+      ProcessInfo.processInfo.arguments.contains { $0.trimmingCharacters(in: CharacterSet(charactersIn: "-")) == name }
+    }
+
+    /// `-uiTestLongBreak`: mọi buổi tập lùi 30 ngày, coi như nghỉ dài (KOA-T04: thẻ tuần nhẹ → buổi nhẹ giảm tạ).
+    static var longBreak: Bool { flag("uiTestLongBreak") }
+
+    /// `-uiTestPauseWalk`: Tạm nghỉ 3 và 2 ngày trước, hôm qua chỉ đi bộ (Apple Health) (KOA-T20: đích tuần trừ ngày Tạm nghỉ, ngày chỉ đi bộ không tính).
+    static var pauseWalk: Bool { flag("uiTestPauseWalk") }
+
+    /// `-uiTestSlowGains`: lịch sử Gains về chậm 45 s (KOA-T57: mở phòng Koa trước khi Gains về thì cửa
+    /// hàng không được khoá như hạng 0).
+    static var slowGains: Bool { flag("uiTestSlowGains") }
+
     /// Ảnh UX: `-uiTestDark` / `-uiTestLight` ép sáng tối cho lần mở này. Không có
     /// cờ thì trả về "theo máy", để flow khác không kế thừa theme của lần chụp.
     static func applyScreenshotTheme() {

@@ -24,14 +24,20 @@ struct KoaWeekCoachCard: View {
 
   var body: some View {
     // Vừa khung: nút đi liền sau chữ. Khung thấp (việc chính ngắn): chữ cuộn, nút ở đáy.
+    // 24/11 (soát T20 trên simulator): khung của việc chính thường thấp hơn thẻ đầy đủ một dòng, nên thẻ
+    // rơi xuống bản cuộn và dòng mô tả bị cắt ngang. Bản gọn ở giữa (Koa nhỏ, bỏ đường kẻ) vừa khung.
     ViewThatFits(in: .vertical) {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        info
+        info(compact: false)
+        actions
+      }
+      VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+        info(compact: true)
         actions
       }
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         ScrollView {
-          info.frame(maxWidth: .infinity, alignment: .leading)
+          info(compact: true).frame(maxWidth: .infinity, alignment: .leading)
         }
         .scrollBounceBehavior(.basedOnSize)
         .scrollIndicators(.hidden)
@@ -45,22 +51,22 @@ struct KoaWeekCoachCard: View {
 
   private var text: ExerciseCompareText { ExerciseCompareText(unit: unit, locale: locale) }
 
-  private var info: some View {
-    VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+  private func info(compact: Bool) -> some View {
+    VStack(alignment: .leading, spacing: compact ? DS.Spacing.xs : DS.Spacing.sm) {
       Text("coach.eyebrow")
         .font(DS.TextStyle.caption.weight(.semibold))
         .textCase(.uppercase)
         .tracking(0.8)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       HStack(alignment: .top, spacing: DS.Spacing.sm) {
-        MascotFigureView(emotion: kind.emotion, size: 48, animated: false, build: build)
+        MascotFigureView(emotion: kind.emotion, size: compact ? 32 : 48, animated: false, build: build)
           .accessibilityHidden(true)
         Text(verbatim: recap(text))
           .font(DS.TextStyle.body)
           .foregroundStyle(DS.Color.foreground.swiftUI)
           .fixedSize(horizontal: false, vertical: true)
       }
-      Divider()
+      if !compact { Divider() }
       Text(verbatim: title)
         .font(DS.TextStyle.title2.weight(.bold))
         .foregroundStyle(DS.Color.foreground.swiftUI)

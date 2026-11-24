@@ -9,6 +9,8 @@ struct TodayPlanHero: View {
   let result: DailyPlan.Result
   /// Buổi hôm nay đang là bản nhẹ (đã chọn "Tập nhẹ hơn").
   var lighterOn = false
+  /// Hệ số tạ của buổi nhẹ (tuần nhẹ sau kỳ nghỉ dài, KOA-T04); 1 = chỉ bớt hiệp.
+  var lighterLoad = 1.0
   /// Buổi hôm nay là buổi ngắn (quay lại sau ≥ 4 tuần nghỉ).
   var shortOn = false
   /// Ngày tập gần nhất (Gains) — dòng "Lần cuối" của thẻ quay lại.
@@ -72,7 +74,11 @@ struct TodayPlanHero: View {
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.foreground.swiftUI)
       } else if lighterOn, result.action.session != nil {
-        Label(String(localized: "dp.lighter.on"), systemImage: "arrow.down.circle")
+        // 24/11: thẻ tuần hứa "giảm khoảng 10 % tạ", dòng này phải nói cùng điều (trước chỉ nói bớt hiệp).
+        Label(
+          lighterLoad < 1
+            ? String(localized: "dp.lighter.load \(Int((1 - lighterLoad) * 100 + 0.5))")
+            : String(localized: "dp.lighter.on"), systemImage: "arrow.down.circle")
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.foreground.swiftUI)
       }
