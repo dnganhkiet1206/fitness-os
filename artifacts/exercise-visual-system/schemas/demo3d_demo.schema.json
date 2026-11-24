@@ -220,6 +220,27 @@
           "pattern": "^[a-z0-9_]+$"
         }
       }
+    },
+    "character": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "body",
+        "apparel",
+        "maps_suffix"
+      ],
+      "properties": {
+        "body": {
+          "type": "string"
+        },
+        "apparel": {
+          "type": "string"
+        },
+        "maps_suffix": {
+          "type": "string"
+        }
+      },
+      "description": "Per-exercise character (24/11); absent = the shared character_003."
     }
   }
 }

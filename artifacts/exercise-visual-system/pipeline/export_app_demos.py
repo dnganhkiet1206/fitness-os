@@ -43,6 +43,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+SHARED_CHARACTER = "master_character_003"  # character_003.usdz / apparel_shorts.usdz / muscle_ids.png
 APP = ROOT.parent.parent / "apps" / "ios" / "ASCND" / "Resources" / "ExerciseDemos"
 SCHEMAS = ROOT / "schemas"
 LANGS = ("en", "es", "vi")
@@ -163,6 +164,13 @@ def demo(ex_dir: Path, keys: dict, colors: dict) -> tuple[str, dict[str, dict], 
         # Independent module files (20/11): the app reads <prefix>_<module>.json only when listed.
         "modules": {name: f"{prefix}_{name}" for name, v in modules.items() if v},
     }
+    char_id = exercise.get("master_character_id", SHARED_CHARACTER)
+    if modular and char_id != SHARED_CHARACTER:
+        # 24/11: an exercise may run on a newer character before the whole library moves
+        # (character 005 tried on the shoulder press first). Body, shorts and muscle maps carry
+        # the character's number; the app falls back to the shared character without this block.
+        n = char_id.rsplit("_", 1)[-1]
+        d["character"] = {"body": f"character_{n}", "apparel": f"apparel_shorts_{n}", "maps_suffix": f"_{n}"}
     files = {f"{prefix}_demo": d}
     if modules["tips"]:
         # Technique tips (B1, 17/11): id, anchor on the skin in the first frame, and the joint +

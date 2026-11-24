@@ -64,15 +64,19 @@ import Foundation
       let aggregates: [String: [String]]
     }
 
-    nonisolated(unsafe) private static var cached: Shared?
+    /// Theo hậu tố bộ ảnh ("" = nhân vật 003; "_005" = nhân vật 005, 24/11).
+    nonisolated(unsafe) private static var cached: [String: Shared] = [:]
     private static let lock = NSLock()
 
     /// Nạp một lần (dùng chung cho mọi bài). nil = thiếu tệp.
-    static func shared() -> Shared? {
+    static func shared(suffix: String = "") -> Shared? {
       lock.lock()
       defer { lock.unlock() }
-      if let cached { return cached }
-      guard let partsURL = Bundle.main.url(forResource: "muscle_parts", withExtension: "json"),
+      if let s = cached[suffix] { return s }
+      func pixels(_ name: String, channels: Int) -> (width: Int, height: Int, bytes: [UInt8])? {
+        Self.pixels(name + suffix, channels: channels)
+      }
+      guard let partsURL = Bundle.main.url(forResource: "muscle_parts" + suffix, withExtension: "json"),
         let data = try? Data(contentsOf: partsURL),
         let file = try? JSONDecoder().decode(PartsFile.self, from: data),
         let ids = pixels("muscle_ids", channels: 4),
@@ -89,7 +93,7 @@ import Foundation
         width: ids.width, height: ids.height, ids: ids.bytes, ids2: ids2.bytes, shade: shade.bytes, normal: normal.bytes,
         fiberNormal: fiber.bytes, parts: file.parts,
         aggregates: file.aggregates)
-      cached = s
+      cached[suffix] = s
       return s
     }
 

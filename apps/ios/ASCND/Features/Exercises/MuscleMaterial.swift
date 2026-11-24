@@ -25,26 +25,27 @@ import Foundation
       let aggregates: [String: [String]]
     }
 
-    private static var cached: Textures?
-    private static var cachedParts: Parts?
+    /// Theo hậu tố bộ ảnh ("" = nhân vật 003; "_005" = nhân vật 005, 24/11).
+    private static var cached: [String: Textures] = [:]
+    private static var cachedParts: [String: Parts] = [:]
     private static var shaders: (body: CustomMaterial.SurfaceShader, apparel: CustomMaterial.SurfaceShader)?
 
-    static func parts() -> Parts? {
-      if let cachedParts { return cachedParts }
-      guard let url = Bundle.main.url(forResource: "muscle_parts", withExtension: "json"),
+    static func parts(suffix: String = "") -> Parts? {
+      if let p = cachedParts[suffix] { return p }
+      guard let url = Bundle.main.url(forResource: "muscle_parts" + suffix, withExtension: "json"),
         let data = try? Data(contentsOf: url), let p = try? JSONDecoder().decode(Parts.self, from: data)
       else { return nil }
-      cachedParts = p
+      cachedParts[suffix] = p
       return p
     }
 
     /// Nạp năm texture song song (lần đầu); các lần sau trả bản đã nạp (review #936).
-    static func textures() async -> Textures? {
-      if let cached { return cached }
+    static func textures(suffix: String = "") async -> Textures? {
+      if let t = cached[suffix] { return t }
       func load(_ name: String, mipmaps: Bool = true) async -> TextureResource? {
         // JPEG hay PNG đều được (máy xuất không có ImageMagick thì ra PNG, review #931).
-        guard let url = Bundle.main.url(forResource: name, withExtension: "jpg")
-          ?? Bundle.main.url(forResource: name, withExtension: "png")
+        guard let url = Bundle.main.url(forResource: name + suffix, withExtension: "jpg")
+          ?? Bundle.main.url(forResource: name + suffix, withExtension: "png")
         else { return nil }
         // raw: số đọc ra đúng như đã lưu (nhãn phần cơ phải chính xác từng điểm ảnh).
         return try? await TextureResource(
@@ -59,7 +60,7 @@ import Foundation
         let fiber = await fiber
       else { return nil }
       let t = Textures(ids: ids, ids2: ids2, shade: shade, normal: normal, fiberNormal: fiber)
-      cached = t
+      cached[suffix] = t
       return t
     }
 

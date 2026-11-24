@@ -144,14 +144,17 @@
                   // (khung xương, dụng cụ). Bài cũ: một USDZ chứa tất cả.
                   let motionFile = demoInfo?.motionFile
                   let scene = try await Entity(
-                    named: motionFile == nil ? (demoInfo?.usdzFile ?? "bench_press_animation") : ExerciseDemo3D.sharedCharacterFile,
+                    named: motionFile == nil
+                      ? (demoInfo?.usdzFile ?? "bench_press_animation")
+                      : (demoInfo?.characterFile ?? ExerciseDemo3D.sharedCharacterFile),
                     in: .main)
                   content.add(scene)
                   if let body = Self.skinnedBody(in: scene) { tipAnchors.attach(body) }
                   let motion: Entity? = if let motionFile { try await Entity(named: motionFile, in: .main) } else { nil }
                   // Quần áo là khối riêng (Kiệt 16/11); bản nhân vật cũ còn quần
                   // trong thân thì không có file này.
-                  let apparel: Entity? = motionFile == nil ? nil : try? await Entity(named: ExerciseDemo3D.sharedApparelFile, in: .main)
+                  let apparel: Entity? = motionFile == nil ? nil : try? await Entity(
+                      named: demoInfo?.apparelFile ?? ExerciseDemo3D.sharedApparelFile, in: .main)
                   if let apparel { content.add(apparel) }
                   if let motion, let motionFile {
                     content.add(motion)
@@ -161,7 +164,8 @@
                   // thì lùi về texture nướng sẵn như trước.
                   let painted: Bool =
                     if motionFile != nil, let roles = demoInfo?.roles, !roles.isEmpty {
-                      await bodySkins.prepareShader(scene: scene, apparel: apparel, roles: roles)
+                      await bodySkins.prepareShader(
+                        scene: scene, apparel: apparel, roles: roles, mapSuffix: demoInfo?.muscleMapSuffix ?? "")
                     } else { false }
                   if painted {
                     bodySkins.apply(focus: hideSecondary, force: true)
@@ -1117,17 +1121,17 @@
     /// Tô cơ lúc chạy (17/11, `MuscleShader`): da pha từ bộ ảnh dùng chung theo vai trò cơ của bài,
     /// thay texture nướng sẵn từng bài. false = thiếu tệp hay không tìm thấy lưới thân, để bên gọi
     /// lùi về texture nướng sẵn.
-    func prepareShader(scene: Entity, apparel: Entity?, roles: [String: [String]]) async -> Bool {
+    func prepareShader(scene: Entity, apparel: Entity?, roles: [String: [String]], mapSuffix: String = "") async -> Bool {
       guard let body = Self.find(in: scene), body.model != nil else { return false }
       var gpuAllowed = true
       #if DEBUG
         // So hai đường: chạy với biến môi trường ASCND_MUSCLE_CPU=1 để ép đường CPU.
         gpuAllowed = ProcessInfo.processInfo.environment["ASCND_MUSCLE_CPU"] == nil
       #endif
-      if gpuAllowed, await prepareGPU(body: body, apparel: apparel, roles: roles) { return true }
+      if gpuAllowed, await prepareGPU(body: body, apparel: apparel, roles: roles, mapSuffix: mapSuffix) { return true }
       let skins = await Task.detached(priority: .userInitiated) { () -> MuscleShader.Skins? in
         let start = Date()
-        guard let shared = MuscleShader.shared() else { return nil }
+        guard let shared = MuscleShader.shared(suffix: mapSuffix) else { return nil }
         let skins = MuscleShader.skins(roles: roles, shared: shared)
         #if DEBUG
           NSLog("[muscle] CPU composed in %d ms", Int(Date().timeIntervalSince(start) * 1000))
@@ -1175,11 +1179,11 @@
     }
     @ObservationIgnored private var gpu: GPUSkin?
 
-    private func prepareGPU(body: ModelEntity, apparel: Entity?, roles: [String: [String]]) async -> Bool {
+    private func prepareGPU(body: ModelEntity, apparel: Entity?, roles: [String: [String]], mapSuffix: String) async -> Bool {
       #if DEBUG
         let start = Date()
       #endif
-      guard let parts = MuscleMaterial.parts(), let textures = await MuscleMaterial.textures(),
+      guard let parts = MuscleMaterial.parts(suffix: mapSuffix), let textures = await MuscleMaterial.textures(suffix: mapSuffix),
         let full = MuscleMaterial.palette(roles: roles, parts: parts, primaryOnly: false),
         let focus = MuscleMaterial.palette(roles: roles, parts: parts, primaryOnly: true),
         let materials = body.model?.materials,

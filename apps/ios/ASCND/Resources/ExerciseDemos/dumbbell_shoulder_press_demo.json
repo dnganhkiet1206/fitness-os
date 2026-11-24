@@ -104,5 +104,10 @@
   "modules": {
     "tips": "dumbbell_shoulder_press_tips",
     "tempo": "dumbbell_shoulder_press_tempo"
+  },
+  "character": {
+    "body": "character_005",
+    "apparel": "apparel_shorts_005",
+    "maps_suffix": "_005"
   }
 }

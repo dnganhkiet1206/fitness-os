@@ -53,6 +53,11 @@
       var tempo: ExerciseTempo?
       /// Clip lỗi sai thường gặp (C2, 17/11).
       var mistakes: [ExerciseMistake] = []
+      /// Nhân vật của bài (24/11: thử nhân vật 005 trên một bài trước khi đổi cả thư viện):
+      /// thân, quần và hậu tố bộ ảnh tô cơ (`muscle_ids<hậu tố>`...). Mặc định nhân vật dùng chung.
+      var characterFile: String = ExerciseDemo3D.sharedCharacterFile
+      var apparelFile: String = ExerciseDemo3D.sharedApparelFile
+      var muscleMapSuffix: String = ""
       /// File 3D phải có trong bundle để mở bài: file chuyển động (dạng khối)
       /// hoặc USDZ đầy đủ (bài cũ).
       var bundledFile: String { motionFile ?? usdzFile }
@@ -100,6 +105,9 @@
       let roles: [String: [String]]?
       let review: ReviewFile?
       let note: String?
+      struct CharacterRef: Decodable { let body: String; let apparel: String; let maps_suffix: String }
+      /// Nhân vật riêng của bài (24/11); thiếu = nhân vật dùng chung.
+      let character: CharacterRef?
       /// Khối nội dung độc lập (20/11): `tips` / `tempo` / `mistakes` → tên tệp `<bài>_<khối>.json`.
       let modules: [String: String]?
     }
@@ -141,6 +149,11 @@
       d.motionFile = f.motion
       d.fullTexturePrefix = f.full_prefix
       d.roles = f.roles ?? [:]
+      if let c = f.character {
+        d.characterFile = c.body
+        d.apparelFile = c.apparel
+        d.muscleMapSuffix = c.maps_suffix
+      }
       d.tips = (module(f, "tips", ExerciseDemoContent.TipsFile.self)?.tips ?? []).compactMap { t in
         guard let anchor = vector(t.anchor) else { return nil }
         return ExerciseTip(id: t.id, anchor: anchor, joint: t.joint, offset: vector(t.offset), text: t.text)
