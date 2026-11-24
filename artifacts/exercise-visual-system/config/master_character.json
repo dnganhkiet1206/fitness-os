@@ -554,10 +554,18 @@
       },
       "foot": {
         "donor_above_joint_m": 0.07,
-        "gap_m": 0.05
+        "gap_m": 0.05,
+        "taper_m": 0.10
       },
+      "max_swell": 1.6,
       "fair_reach_m": 0.05,
       "fair_iterations": 4000
+    },
+    "forearm_rescale": {
+      "enabled": true,
+      "_note": "24/11 Kiệt 'tay có bị dài quá k': forearm 0.172 H / hand 0.118 H vs Drillis & Contini 0.146 / 0.108; graft_body.rescale_forearms.",
+      "forearm_h": 0.150,
+      "hand_h": 0.108
     },
     "torso_arm_falloff": {
       "enabled": true,

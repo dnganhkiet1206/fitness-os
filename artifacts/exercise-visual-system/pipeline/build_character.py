@@ -63,6 +63,7 @@ def main() -> None:
         facts["helper_bones"] = helper_bones.add_helpers(body, rig, cfg["rig"].get("helper_bones", {}))
         facts.update(graft_body.smooth_joint_weights(body, rig, cfg))
         facts.update(graft_body.torso_arm_falloff(body, rig, cfg))
+        facts.update(graft_body.rescale_forearms(body, rig, cfg))
         shorts = character.build_shorts(body, rig, cfg)
         character.finish_body(body, rig, cfg)
         facts["grip_joint_angles_deg"] = evs_rig.add_controls(rig, cfg["grip"], body)["l"]

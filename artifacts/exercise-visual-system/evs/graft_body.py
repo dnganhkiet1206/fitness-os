@@ -432,6 +432,60 @@ def torso_arm_falloff(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict) 
     return {"torso_arm_falloff": {"vertices": int(changed), "depth_m": depth, "arm_radius_m": r_arm, "soft_m": soft}}
 
 
+def rescale_forearms(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict) -> dict:
+    """24/11 (Kiệt: "tay có bị dài quá k"): forearm 0.172 H and hand 0.118 H against 0.146 H / 0.108 H
+    (Drillis & Contini); arm span 1.056 H. Compress the forearm along elbow->wrist, then the hand along
+    wrist->middle fingertip, in the rest pose: each vertex moves by the mapping weighted by its summed
+    forearm / hand / finger skin weight (so the elbow and upper arm stay put), and every bone of the
+    chain moves with the same mapping. UVs are untouched."""
+    rc = (cfg.get("graft") or {}).get("forearm_rescale") or {}
+    if not (cfg.get("graft") or {}).get("enabled") or not rc.get("enabled"):
+        return {}
+    me = body.data
+    co = bl_util.mesh_coords(me).astype(float)
+    H = float(np.ptp(co[:, 2]))
+    report = {}
+    _edit_mode(rig)
+    eb = rig.data.edit_bones
+    for side in ("l", "r"):
+        el = np.array(eb[f"lowerarm_{side}"].head)
+        wr = np.array(eb[f"hand_{side}"].head)
+        tips = [np.array(b.tail) for b in eb if b.name.startswith("middle_") and b.name.endswith(f"_{side}")]
+        tip = max(tips, key=lambda p: np.linalg.norm(p - wr))
+        a1 = (wr - el) / np.linalg.norm(wr - el)
+        a2 = (tip - wr) / np.linalg.norm(tip - wr)
+        L1, L2 = float(np.linalg.norm(wr - el)), float(np.linalg.norm(tip - wr))
+        s1 = float(rc.get("forearm_h", 0.150)) * H / L1
+        s2 = float(rc.get("hand_h", 0.108)) * H / L2
+
+        def mapping(p: np.ndarray) -> np.ndarray:
+            p = np.atleast_2d(p).astype(float)
+            t1 = (p - el) @ a1
+            d = np.zeros_like(p)
+            fore = np.clip(t1, 0.0, L1)
+            d += ((s1 - 1.0) * fore)[:, None] * a1
+            t2 = np.clip((p - wr) @ a2, 0.0, None)
+            beyond = t1 > L1 - 1e-6
+            d += ((s2 - 1.0) * t2 * beyond)[:, None] * a2
+            return d
+
+        names = [b.name for b in eb if b.name.endswith(f"_{side}") and any(b.name.startswith(k) for k in (
+            "lowerarm", "hand", "thumb", "index", "middle", "ring", "pinky", "elbow_fold"))]
+        w = bl_util.group_weights(body, [n for n in names if n in body.vertex_groups]).sum(axis=1)
+        w = np.clip(w, 0.0, 1.0) * ((co[:, 0] * (1 if side == "l" else -1)) > 0)
+        co = co + mapping(co) * w[:, None]
+        root = eb[f"lowerarm_{side}"]
+        for b in [root] + list(root.children_recursive):
+            for end in ("head", "tail"):
+                p = np.array(getattr(b, end))
+                setattr(b, end, Vector((p + mapping(p)[0]).tolist()))
+        report[side] = {"forearm_cm": [round(L1 * 100, 1), round(L1 * s1 * 100, 1)], "hand_cm": [round(L2 * 100, 1), round(L2 * s2 * 100, 1)]}
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bl_util.set_mesh_coords(me, co.astype(np.float32))
+    me.update()
+    return {"forearm_rescale": report}
+
+
 def _uv_array(me) -> np.ndarray:
     a = np.zeros(len(me.loops) * 2)
     me.uv_layers.active.data.foreach_get("uv", a)
@@ -784,6 +838,31 @@ def _graft_extremities(graft: bpy.types.Object, donor_mesh, rig: bpy.types.Objec
                 part.data.transform(Matrix.Translation(Vector(shift.tolist())))
                 p["donor"] = p["donor"] + shift
         p["shift"] = shift
+        # 24/11 (Kiệt khoanh bàn chân): MakeHuman's ankle is 4.8 cm wide under the sculpt's
+        # bodybuilder shin (8 cm at the cut) - a peg. Swell the part across the limb axis to the
+        # sculpt loop's size at the cut, fading back to 1 over ``taper_m`` towards the hand / foot.
+        taper = float((ec.get(p["kind"]) or {}).get("taper_m", 0.0))
+        if taper > 0 and cs is not None and cd is not None:
+            def loop_radius(o, at, centre):
+                me_ = o.data
+                c_ = np.array([tuple(v.co) for v in me_.vertices])
+                h_ = (c_ - p[at]) @ p["n"]
+                ring = c_[(np.abs(h_) < 0.003) & (c_[:, 0] * p["sign"] > 0)]
+                r_ = ring - centre
+                r_ -= np.outer(r_ @ p["n"], p["n"])
+                return float(np.linalg.norm(r_, axis=1).mean()) if len(ring) else 0.0
+            rs, rd = loop_radius(graft, "sculpt", cs), loop_radius(part, "donor", cs)
+            if rs > 0 and rd > 0:
+                ratio = min(rs / rd, float(ec.get("max_swell", 1.5)))
+                pc = np.array([tuple(v.co) for v in part.data.vertices])
+                h = (pc - p["donor"]) @ p["n"]  # depth beyond the cut towards the extremity (n points out)
+                f = 1.0 + (ratio - 1.0) * np.clip(1.0 - h / taper, 0.0, 1.0)
+                rel = pc - cs
+                axial = np.outer(rel @ p["n"], p["n"])
+                pc = cs + axial + (rel - axial) * f[:, None]
+                part.data.vertices.foreach_set("co", pc.astype(np.float32).ravel())
+                part.data.update()
+                p["swell"] = round(ratio, 2)
         if donor is not None:
             for g in donor.vertex_groups:
                 part.vertex_groups.new(name=g.name)

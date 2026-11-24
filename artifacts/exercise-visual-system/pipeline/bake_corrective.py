@@ -134,11 +134,18 @@ def main() -> None:
     for m in others:
         m.show_viewport = False
     f0, f1 = scene.frame_start, scene.frame_end
+    # Nguồn MHR (24/11): dịch chuyển thế giới từng khung do hình sửa của MHR (fit_mhr.py), thay cho giải Laplacian.
+    ext = np.load(os.environ["EVS_CORR_NPZ"])["D"] if os.environ.get("EVS_CORR_NPZ") else None
+    gain = float(os.environ.get("EVS_CORR_GAIN", "1.0"))
     C = []
     for f in range(f0, f1 + 1):
         scene.frame_set(f)
         S = skin_matrices(body, rig, W, names)
         M3 = S[:, :, :3]
+        if ext is not None:
+            c = np.einsum("nij,nj->ni", np.linalg.inv(M3), ext[f - f0].astype(float) * gain)
+            C.append(c.ravel())
+            continue
         P = np.einsum("nij,nj->ni", M3, X) + S[:, :, 3]
         R = polar_rot(M3)
         rd = np.einsum("nij,nj->ni", R, delta)

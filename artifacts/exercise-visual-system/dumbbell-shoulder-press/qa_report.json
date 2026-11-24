@@ -50,7 +50,7 @@
       "measured": 7.528,
       "limit": 12.0,
       "where": {
-        "bone": "lowerarm_r",
+        "bone": "lowerarm_l",
         "frame": 130
       },
       "detail": "deg per frame"
@@ -60,11 +60,11 @@
       "stage": "B",
       "title": "Hands stay on the implements in every frame",
       "status": "PASS",
-      "measured": 1e-05,
+      "measured": 0.0,
       "limit": 0.004,
       "where": {
         "implement": "SOCKET_hand_r",
-        "frame": 113
+        "frame": 200
       },
       "detail": "m wrist to grip socket"
     },
@@ -96,7 +96,7 @@
       "limit": 0.003,
       "where": {
         "joint": "elbow",
-        "frame": 56
+        "frame": 46
       },
       "detail": "m"
     },
@@ -105,10 +105,10 @@
       "stage": "C",
       "title": "Implements do not pass through the body",
       "status": "PASS",
-      "measured": 0.0024,
+      "measured": 0.0034,
       "limit": 0.004,
       "where": {
-        "implement": "Dumbbell_r",
+        "implement": "Dumbbell_l",
         "frame": 0
       },
       "detail": "m inside"
@@ -122,7 +122,7 @@
       "limit": 25.0,
       "where": {
         "side": "r",
-        "frame": 48
+        "frame": 154
       },
       "detail": "deg"
     },
@@ -205,11 +205,11 @@
       "where": {
         "frame": 53
       },
-      "detail": "p99.9 edge stretch per frame: f0 1.658, f53 3.066, f106 1.658",
+      "detail": "p99.9 edge stretch per frame: f0 1.636, f53 3.066, f106 1.636",
       "per_frame": {
-        "0": 1.658,
+        "0": 1.636,
         "53": 3.066,
-        "106": 1.658
+        "106": 1.636
       }
     },
     {
@@ -217,7 +217,7 @@
       "stage": "D",
       "title": "press_vertical: wrist_over_head_m inside the family bounds",
       "status": "PASS",
-      "measured": 0.437,
+      "measured": 0.399,
       "limit": [
         0.05,
         null
@@ -243,7 +243,7 @@
       "stage": "D",
       "title": "press_vertical: elbow_max_deg inside the family bounds",
       "status": "PASS",
-      "measured": 166.633,
+      "measured": 166.635,
       "limit": [
         160,
         null

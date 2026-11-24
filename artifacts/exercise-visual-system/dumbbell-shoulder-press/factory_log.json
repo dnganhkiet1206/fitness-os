@@ -1197,5 +1197,30 @@
     },
     "total_seconds": 93.9,
     "qa": "{\"PASS\": 18, \"FAIL\": 1, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 44,
+    "when": "2026-11-24T16:41:26",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 6.6
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 9.0
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.9
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 67.9
+      }
+    },
+    "total_seconds": 91.4,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1, \"NOT_TESTED\": 1}"
   }
 ]

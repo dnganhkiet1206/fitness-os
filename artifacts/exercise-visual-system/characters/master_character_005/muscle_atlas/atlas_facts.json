@@ -1,7 +1,7 @@
 {
   "atlas_resolution": 2048,
-  "samples": 13321321,
-  "uv_coverage": 0.3615,
+  "samples": 13377354,
+  "uv_coverage": 0.3629,
   "groups": {
     "pectoralis_major_clavicular": {
       "texels": 23867,
@@ -36,27 +36,27 @@
       "label": "Triceps, lateral head"
     },
     "triceps_medial_head": {
-      "texels": 27211,
+      "texels": 27207,
       "label": "Triceps, medial head"
     },
     "biceps_long_head": {
-      "texels": 16426,
+      "texels": 16564,
       "label": "Biceps, long head"
     },
     "biceps_short_head": {
-      "texels": 40869,
+      "texels": 40865,
       "label": "Biceps, short head"
     },
     "brachioradialis": {
-      "texels": 17473,
+      "texels": 17291,
       "label": "Brachioradialis"
     },
     "wrist_extensors": {
-      "texels": 40603,
+      "texels": 40438,
       "label": "Wrist and finger extensors"
     },
     "wrist_flexors": {
-      "texels": 52174,
+      "texels": 52027,
       "label": "Wrist and finger flexors"
     },
     "rectus_abdominis": {
@@ -76,7 +76,7 @@
       "label": "Latissimus dorsi"
     },
     "trapezius_upper": {
-      "texels": 53685,
+      "texels": 53405,
       "label": "Trapezius, upper"
     },
     "trapezius_middle": {
@@ -124,23 +124,23 @@
       "label": "Gluteus medius"
     },
     "rectus_femoris": {
-      "texels": 50205,
+      "texels": 50204,
       "label": "Rectus femoris"
     },
     "vastus_lateralis": {
-      "texels": 72077,
+      "texels": 72107,
       "label": "Vastus lateralis"
     },
     "vastus_medialis": {
-      "texels": 32214,
+      "texels": 32225,
       "label": "Vastus medialis"
     },
     "adductor_longus": {
-      "texels": 25952,
+      "texels": 25925,
       "label": "Adductor longus"
     },
     "gracilis": {
-      "texels": 17427,
+      "texels": 17422,
       "label": "Gracilis"
     },
     "adductor_magnus": {
@@ -148,39 +148,39 @@
       "label": "Adductor magnus"
     },
     "biceps_femoris": {
-      "texels": 71966,
+      "texels": 71930,
       "label": "Biceps femoris"
     },
     "semitendinosus": {
-      "texels": 24088,
+      "texels": 24086,
       "label": "Semitendinosus"
     },
     "semimembranosus": {
-      "texels": 26937,
+      "texels": 26956,
       "label": "Semimembranosus"
     },
     "gastrocnemius_medial": {
-      "texels": 50954,
+      "texels": 51053,
       "label": "Gastrocnemius, medial head"
     },
     "gastrocnemius_lateral": {
-      "texels": 20823,
+      "texels": 20830,
       "label": "Gastrocnemius, lateral head"
     },
     "soleus": {
-      "texels": 44152,
+      "texels": 42718,
       "label": "Soleus"
     },
     "tibialis_anterior": {
-      "texels": 59379,
+      "texels": 59434,
       "label": "Tibialis anterior"
     },
     "brachialis": {
-      "texels": 7538,
+      "texels": 7566,
       "label": "Brachialis"
     },
     "sartorius": {
-      "texels": 28494,
+      "texels": 28484,
       "label": "Sartorius"
     },
     "tensor_fasciae_latae": {
@@ -192,7 +192,7 @@
       "label": "Teres major"
     },
     "fibularis_longus": {
-      "texels": 19232,
+      "texels": 19243,
       "label": "Fibularis (peroneus) longus"
     },
     "pectoralis_major": {
@@ -205,7 +205,7 @@
       ]
     },
     "trapezius": {
-      "texels": 84457,
+      "texels": 84177,
       "label": "trapezius",
       "parts": [
         "trapezius_upper",
@@ -239,7 +239,7 @@
       ]
     },
     "biceps_brachii": {
-      "texels": 57295,
+      "texels": 57429,
       "label": "biceps_brachii",
       "parts": [
         "biceps_long_head",
@@ -247,7 +247,7 @@
       ]
     },
     "triceps_brachii": {
-      "texels": 82940,
+      "texels": 82936,
       "label": "triceps_brachii",
       "parts": [
         "triceps_long_head",
@@ -256,7 +256,7 @@
       ]
     },
     "forearm_muscles": {
-      "texels": 110250,
+      "texels": 109756,
       "label": "forearm_muscles",
       "parts": [
         "brachioradialis",
@@ -265,7 +265,7 @@
       ]
     },
     "quadriceps": {
-      "texels": 154496,
+      "texels": 154536,
       "label": "quadriceps",
       "parts": [
         "rectus_femoris",
@@ -274,7 +274,7 @@
       ]
     },
     "hamstrings": {
-      "texels": 122991,
+      "texels": 122972,
       "label": "hamstrings",
       "parts": [
         "biceps_femoris",
@@ -283,7 +283,7 @@
       ]
     },
     "adductors": {
-      "texels": 45385,
+      "texels": 45353,
       "label": "adductors",
       "parts": [
         "adductor_longus",
@@ -292,7 +292,7 @@
       ]
     },
     "calves": {
-      "texels": 115929,
+      "texels": 114601,
       "label": "calves",
       "parts": [
         "gastrocnemius_medial",
@@ -350,10 +350,10 @@
   },
   "refit": {
     "band_px": 40,
-    "seeds": 1300699,
-    "flooded": 1520831,
-    "unreached_kept": 31961,
-    "texels_changed": 557841,
+    "seeds": 1306126,
+    "flooded": 1516622,
+    "unreached_kept": 30743,
+    "texels_changed": 558017,
     "region_texels": 2853491,
     "sources": {
       "occlusion": "body_occlusion_2048.png",
