@@ -13,6 +13,9 @@ struct TodayPlanHero: View {
   var lighterLoad = 1.0
   /// Buổi hôm nay là buổi ngắn (quay lại sau ≥ 4 tuần nghỉ).
   var shortOn = false
+  /// Số phút của buổi đã dựng sẵn (đúng các hiệp sẽ tập: tuần nhẹ / buổi ngắn đã bớt), theo mẫu.
+  /// Có thì thay số phút ước từ mẫu gốc — 24/11 audit: Hôm nay ghi ~15 phút, Tập luyện ~8 phút cùng buổi.
+  var builtMinutes: (templateId: String, minutes: Int)?
   /// Ngày tập gần nhất (Gains) — dòng "Lần cuối" của thẻ quay lại.
   var lastSession: LocalDate?
   /// Đang ghi một phương án (dời / nghỉ) — khoá nút để không bấm hai lần.
@@ -175,7 +178,7 @@ struct TodayPlanHero: View {
     switch result.action {
     case .loading: nil
     case .resume(let s), .start(let s), .comeback(let s), .nextSession(_, let s):
-      String(localized: "dp.title.session \(s.name) \(s.minutes)")
+      String(localized: "dp.title.session \(s.name) \(builtMinutes?.templateId == s.templateId ? builtMinutes!.minutes : s.minutes)")
     case .setUpWeek: String(localized: "dp.title.setUpWeek")
     case .postWorkoutMeal: String(localized: "dp.title.meal")
     case .progress: String(localized: "dp.title.progress")

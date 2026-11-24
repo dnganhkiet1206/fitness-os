@@ -1129,7 +1129,7 @@ struct TodayExtras<Plan: View>: View {
   ) -> TodayPlanHero {
     TodayPlanHero(
       result: dailyPlan.result, lighterOn: flow.today.lighterToday, lighterLoad: flow.today.loadFactorToday,
-      shortOn: flow.today.shortToday,
+      shortOn: flow.today.shortToday, builtMinutes: Self.builtMinutes(flow),
       lastSession: services.koaGainsNow?.state.lastSession, busy: planBusy, failed: planFailed,
       overloadHint: hint, onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) },
       onPause: dailyPlan.result.action.session == nil ? nil : { showsPause = true })
@@ -1208,6 +1208,15 @@ struct TodayExtras<Plan: View>: View {
     }
     await services.syncKoaPauseLog(userId: userId)
     await services.loadKoaDust(userId: userId)
+  }
+
+  /// Số phút của buổi hôm nay theo đúng các hiệp sẽ tập — CÙNG nguồn với thẻ ở Tập luyện
+  /// (`WorkoutsHomeView.planRows`), để hai nơi không ghi hai số phút khác nhau cho một buổi.
+  static func builtMinutes(_ flow: WorkoutFlow) -> (templateId: String, minutes: Int)? {
+    let plan = flow.session?.plan ?? flow.today.plan?.sessionPlan
+    let rows = flow.session?.rows ?? plan?.rows ?? []
+    guard let id = plan?.templateId, !rows.isEmpty else { return nil }
+    return (id, WorkoutHome.minutes(WorkoutHome.lines(rows)))
   }
 
   /// Không có buổi trong lịch hôm nay → nhiệm vụ chính là hồi phục (#527 đợt 1).
