@@ -42,7 +42,7 @@ class PressVerticalTemplate(HingeTemplate):
         "trunk_lean_deg": -19.0,          # back along the pad (bench at 70 deg, 14/11 Kiệt)
         "back_pad_angle_from_vertical_deg": 20.0,  # must match utility_bench_70
         "pelvis_share_of_lean": 0.6,
-        "head_extension_share_of_lean": 0.6,  # 24/11: face 11 deg nearer level, throat less stretched (Kiệt: neck front)
+        "head_extension_share_of_lean": 0.3,  # 24/11: face ~6 deg nearer level (throat less stretched) yet the head stays on the pad
         "seated_ankle_half_width_m": 0.17,  # 24/11: 0.20 with knees inside looked knock-kneed (Kiệt)
         "seated_knee_over_foot": 1.0,       # knee x / ankle x: 1 = shin vertical seen from the front
         "seated_toe_out_deg": 12.0,
