@@ -241,21 +241,25 @@ struct TodayDayBlock: View {
         Text("koa.card.name")
           .font(.system(size: nameSize, weight: .semibold))
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        ViewThatFits(in: .horizontal) {
-          HStack(spacing: 8) {
-            tierTitle(title)
-            KoaTierPips(tier: tier)
+        VStack(alignment: .leading, spacing: 4) {
+          ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+              tierTitle(title)
+              KoaTierPips(tier: tier)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+              tierTitle(title, oneLine: false)
+              KoaTierPips(tier: tier)
+            }
           }
-          VStack(alignment: .leading, spacing: 4) {
-            tierTitle(title, oneLine: false)
-            KoaTierPips(tier: tier)
-          }
+          KoaTierBar(tier: tier)
+          Text(KoaTierText.toNext(tier, lang: lang))
+            .font(DS.TextStyle.footnote)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .fixedSize(horizontal: false, vertical: true)
         }
-        KoaTierBar(tier: tier)
-        Text(KoaTierText.toNext(tier, lang: lang))
-          .font(DS.TextStyle.footnote)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-          .fixedSize(horizontal: false, vertical: true)
+        // KOA-T57 (24/11): Gains của tài khoản này chưa về → khung chờ, không hiện "Newbie · 0 Gains" như số thật.
+        .redacted(reason: gainsPending ? .placeholder : [])
         // phòng bám bụi (phần 5): nhắc nhẹ, không phạt
         if let dust = services?.koaDust, dust.userId == room.userId, dust.state.level > 0 {
           Label(String(localized: "koa.dust.nudge"), systemImage: "sparkles")
@@ -267,6 +271,8 @@ struct TodayDayBlock: View {
     }
     .accessibilityElement(children: .combine)
   }
+
+  private var gainsPending: Bool { services.map { $0.koaGainsNow?.userId != room.userId } ?? false }
 
   /// Một dòng thì giữ nguyên bề ngang (để `ViewThatFits` biết có vừa cạnh vạch bậc không); chật thì xuống dòng.
   private func tierTitle(_ title: String, oneLine: Bool = true) -> some View {
