@@ -365,6 +365,26 @@
           "share": 0.6,
           "soft_m": 0.07,
           "why": "The chest and the front of the armpit lie on the pectoralis major, which the arm pulls; the game rig weighted them to spine_03. The share ramps from 0 at x 0.08 to 0.8 at x 0.15 so there is no new seam (15/11 ROM audit)."
+        },
+        {
+          "name": "lat_skin_{s}",
+          "from": [
+            "spine_03",
+            "spine_02"
+          ],
+          "to": "lat_fold_{s}",
+          "x_m": [
+            0.13,
+            0.27
+          ],
+          "z_m": [
+            1.08,
+            1.31
+          ],
+          "facing_y": null,
+          "share": 0.55,
+          "soft_m": 0.07,
+          "why": "24/11: the flank under the armpit (lats, teres major, serratus) rides partly on lat_fold so it stretches with the raised arm instead of bunching; soft edges so no new seam."
         }
       ],
       "follow_bones": [
@@ -375,6 +395,15 @@
           "influence": 0.25,
           "why": "The pectoralis major runs from the sternum to the humerus, so the arm pulls the chest: this bone turns a quarter of the arm's motion and carries the chest skin near the armpit (15/11 ROM audit).",
           "why_target": "16/11: the pectoralis follows the arm direction; the humeral twist must not twist the chest skin."
+        },
+        {
+          "name": "lat_fold_{s}",
+          "target": "upperarm_swing_{s}",
+          "parent_bone": "spine_03",
+          "influence": 0.35,
+          "why": "24/11 (Kiệt asked to fix the armpit): latissimus dorsi and teres major insert on the humerus, so raising the arm stretches the side of the chest upward. Character 005's sculpted lats flare wider than MakeHuman's torso, got spine weights and bunched into a lump with a sharp crease under the raised arm.",
+          "why_target": "swing bone: the arm's twist must not twist the flank.",
+          "tried": "24/11: 0.5 (+share 0.65, z to 1.34) made a new lump low on the flank and stretch 3.51 vs 3.13 at 0.35"
         }
       ],
       "swing": [

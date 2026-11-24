@@ -259,7 +259,9 @@ def _attach(body, spec: dict, co: np.ndarray, side: str, sign: float) -> int:
     soft = spec.get("soft_m", 0.03)
     region = (smoothstep(x0 - soft, x0, x) * (1 - smoothstep(x1, x1 + soft, x)) *
               smoothstep(z0 - soft, z0, co[:, 2]) * (1 - smoothstep(z1, z1 + soft, co[:, 2])))
-    facing = smoothstep(0.0, 0.4, nor[:, 1] * spec.get("facing_y", 1.0))
+    # facing_y null = any facing (24/11: the side of the chest under the armpit faces sideways)
+    fy = spec.get("facing_y", 1.0)
+    facing = np.ones(len(co)) if fy is None else smoothstep(0.0, 0.4, nor[:, 1] * fy)
     touched = np.zeros(len(co), dtype=bool)
     for src_name in sources:
         src = names.index(src_name.replace("{s}", side))
