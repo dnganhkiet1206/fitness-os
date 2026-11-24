@@ -548,8 +548,14 @@
     "extremities": {
       "enabled": true,
       "_note": "24/11 Kiệt duyệt 'Ghép tay+chân MakeHuman': the sculpt's hands (sausage fingers, no knuckles to grip with) and feet (flat, no arch) replaced by MakeHuman's at wrist / ankle; graft_body._graft_extremities.",
-      "hand": {"donor_above_joint_m": 0.01, "gap_m": 0.025},
-      "foot": {"donor_above_joint_m": 0.07, "gap_m": 0.05},
+      "hand": {
+        "donor_above_joint_m": 0.01,
+        "gap_m": 0.025
+      },
+      "foot": {
+        "donor_above_joint_m": 0.07,
+        "gap_m": 0.05
+      },
       "fair_reach_m": 0.05,
       "fair_iterations": 4000
     },
@@ -559,9 +565,15 @@
       "depth_m": 0.12,
       "arm_radius_m": 0.065,
       "soft_m": 0.04,
-      "armpit_below_shoulder_m": 0.10,
+      "armpit_below_shoulder_m": 0.1,
       "smooth_radius_m": 0.2,
-      "laplace_iters": 15
+      "laplace_iters": 15,
+      "arm_tube_m": 0.08,
+      "arm_tube_soft_m": 0.04,
+      "arm_clean_t": [
+        0.15,
+        0.45
+      ]
     },
     "neck_fair": {
       "enabled": true,

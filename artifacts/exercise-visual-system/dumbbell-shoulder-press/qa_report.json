@@ -6,12 +6,13 @@
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 19,
+      "PASS": 18,
+      "FAIL": 1,
       "NOT_TESTED": 1
     },
-    "technically_validated": true,
+    "technically_validated": false,
     "states": {
-      "technically_validated": true,
+      "technically_validated": false,
       "biomechanically_reviewed": false,
       "human_approved": false,
       "production_approved": false
@@ -33,7 +34,7 @@
       "stage": "B",
       "title": "No joint moves faster than a human joint plausibly does",
       "status": "PASS",
-      "measured": 1.013,
+      "measured": 1.003,
       "limit": 2.5,
       "where": {
         "joint": "knuckle_l",
@@ -59,11 +60,11 @@
       "stage": "B",
       "title": "Hands stay on the implements in every frame",
       "status": "PASS",
-      "measured": 0.0,
+      "measured": 1e-05,
       "limit": 0.004,
       "where": {
-        "implement": "SOCKET_hand_l",
-        "frame": 155
+        "implement": "SOCKET_hand_r",
+        "frame": 113
       },
       "detail": "m wrist to grip socket"
     },
@@ -95,7 +96,7 @@
       "limit": 0.003,
       "where": {
         "joint": "elbow",
-        "frame": 57
+        "frame": 56
       },
       "detail": "m"
     },
@@ -104,10 +105,10 @@
       "stage": "C",
       "title": "Implements do not pass through the body",
       "status": "PASS",
-      "measured": 0.0025,
+      "measured": 0.0024,
       "limit": 0.004,
       "where": {
-        "implement": "Dumbbell_l",
+        "implement": "Dumbbell_r",
         "frame": 0
       },
       "detail": "m inside"
@@ -117,11 +118,11 @@
       "stage": "C",
       "title": "Wrists stay near straight (forearm to hand)",
       "status": "PASS",
-      "measured": 11.627,
+      "measured": 11.626,
       "limit": 25.0,
       "where": {
         "side": "r",
-        "frame": 154
+        "frame": 48
       },
       "detail": "deg"
     },
@@ -130,10 +131,10 @@
       "stage": "C",
       "title": "Elbow flexion inside the soft-tissue limit",
       "status": "PASS",
-      "measured": 143.0,
+      "measured": 142.999,
       "limit": 145.0,
       "where": {
-        "side": "r",
+        "side": "l",
         "frame": 0
       },
       "detail": "deg"
@@ -198,17 +199,17 @@
       "id": "skin_stretch",
       "stage": "C",
       "title": "Skin stretch stays within limits",
-      "status": "PASS",
-      "measured": 2.586,
+      "status": "FAIL",
+      "measured": 3.066,
       "limit": 2.6,
       "where": {
         "frame": 53
       },
-      "detail": "p99.9 edge stretch per frame: f0 1.614, f53 2.586, f106 1.614",
+      "detail": "p99.9 edge stretch per frame: f0 1.658, f53 3.066, f106 1.658",
       "per_frame": {
-        "0": 1.614,
-        "53": 2.586,
-        "106": 1.614
+        "0": 1.658,
+        "53": 3.066,
+        "106": 1.658
       }
     },
     {
@@ -216,7 +217,7 @@
       "stage": "D",
       "title": "press_vertical: wrist_over_head_m inside the family bounds",
       "status": "PASS",
-      "measured": 0.449,
+      "measured": 0.437,
       "limit": [
         0.05,
         null
@@ -229,7 +230,7 @@
       "stage": "D",
       "title": "press_vertical: elbow_min_deg inside the family bounds",
       "status": "PASS",
-      "measured": 37.0,
+      "measured": 37.001,
       "limit": [
         null,
         100

@@ -1072,5 +1072,130 @@
     },
     "total_seconds": 64.9,
     "qa": "{\"PASS\": 19, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 39,
+    "when": "2026-11-24T15:02:50",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 5.6
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 7.4
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.4
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 40.5
+      }
+    },
+    "total_seconds": 58.0,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 40,
+    "when": "2026-11-24T15:06:03",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 6.3
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 12.9
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 70.9
+      }
+    },
+    "total_seconds": 95.5,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 41,
+    "when": "2026-11-24T15:08:19",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 6.1
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 10.7
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.0
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 67.9
+      }
+    },
+    "total_seconds": 89.7,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 42,
+    "when": "2026-11-24T15:12:26",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 5.1
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 6.1
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.5
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 52.9
+      }
+    },
+    "total_seconds": 70.8,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 43,
+    "when": "2026-11-24T15:25:24",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 9.7
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 12.0
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 2.1
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 66.9
+      }
+    },
+    "total_seconds": 93.9,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1, \"NOT_TESTED\": 1}"
   }
 ]

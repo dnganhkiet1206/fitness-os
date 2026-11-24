@@ -16,6 +16,8 @@ MakeHuman's UV layout for the muscle atlas, fibre maps and normal maps):
 """
 from __future__ import annotations
 
+import json
+
 import bmesh
 import bpy
 import numpy as np
@@ -258,21 +260,52 @@ def smooth_joint_weights(body: bpy.types.Object, rig: bpy.types.Object, cfg: dic
             d = np.linalg.norm(co - c, axis=1)
             r = np.maximum(r, np.clip((jr["radius_m"] - d) / fade, 0.0, 1.0))
     rad = float(sc.get("radius_m", 0.04))
-    kd = kdtree.KDTree(n)
-    for i, c in enumerate(co):
-        kd.insert(c, i)
-    kd.balance()
     out = W.copy()
     sel = np.flatnonzero(r > 0.0)
-    for i in sel:
-        hits = kd.find_range(co[i], rad)
-        idx = np.fromiter((h[1] for h in hits), int)
-        d = np.fromiter((h[2] for h in hits), float)
-        # never across the midline (inner thighs lie 2-3 cm apart at the crotch)
-        same = (co[idx, 0] * co[i, 0] >= 0.0) | (np.abs(co[idx, 0]) < 0.01) | (abs(co[i, 0]) < 0.01)
-        idx, d = idx[same], d[same]
-        g = np.exp(-(d / (0.5 * rad)) ** 2)
-        out[i] = (1.0 - r[i]) * W[i] + r[i] * (g[:, None] * W[idx]).sum(0) / g.sum()
+    if sc.get("geodesic", True):
+        # 24/11 (Kiệt: "tay kì vậy", "cơ liên sườn còn dính vào cơ ngực"): a straight-line radius
+        # reached across the armpit gap (the inner upper arm lies 3-5 cm from the ribs in the rest
+        # A-pose), so a third of the upper arm's weight became spine / scapula / clavicle: raised, the
+        # upper arm lost 20-30 % of its radius and the side of the ribs was dragged into one web
+        # with the pectoral. Neighbours are now found ALONG THE SKIN (bounded Dijkstra on the edge
+        # graph), which never jumps a gap between two surfaces.
+        import heapq
+        edges = np.array([e.vertices[:] for e in me.edges])
+        elen = np.linalg.norm(co[edges[:, 0]] - co[edges[:, 1]], axis=1)
+        adj = [[] for _ in range(n)]
+        for (a_, b_), l_ in zip(edges.tolist(), elen.tolist()):
+            adj[a_].append((b_, l_))
+            adj[b_].append((a_, l_))
+        for i in sel:
+            dist = {int(i): 0.0}
+            heap = [(0.0, int(i))]
+            while heap:
+                d0, u = heapq.heappop(heap)
+                if d0 > dist.get(u, 1e9):
+                    continue
+                for v_, l_ in adj[u]:
+                    nd = d0 + l_
+                    if nd <= rad and nd < dist.get(v_, 1e9):
+                        dist[v_] = nd
+                        heapq.heappush(heap, (nd, v_))
+            idx = np.fromiter(dist.keys(), int)
+            d = np.fromiter(dist.values(), float)
+            g = np.exp(-(d / (0.5 * rad)) ** 2)
+            out[i] = (1.0 - r[i]) * W[i] + r[i] * (g[:, None] * W[idx]).sum(0) / g.sum()
+    else:
+        kd = kdtree.KDTree(n)
+        for i, c in enumerate(co):
+            kd.insert(c, i)
+        kd.balance()
+        for i in sel:
+            hits = kd.find_range(co[i], rad)
+            idx = np.fromiter((h[1] for h in hits), int)
+            d = np.fromiter((h[2] for h in hits), float)
+            # never across the midline (inner thighs lie 2-3 cm apart at the crotch)
+            same = (co[idx, 0] * co[i, 0] >= 0.0) | (np.abs(co[idx, 0]) < 0.01) | (abs(co[i, 0]) < 0.01)
+            idx, d = idx[same], d[same]
+            g = np.exp(-(d / (0.5 * rad)) ** 2)
+            out[i] = (1.0 - r[i]) * W[i] + r[i] * (g[:, None] * W[idx]).sum(0) / g.sum()
     out /= np.maximum(out.sum(axis=1, keepdims=True), 1e-9)
     for j, nm in enumerate(names):
         g = body.vertex_groups[nm]
@@ -354,6 +387,35 @@ def torso_arm_falloff(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict) 
             W[i, jx["spine_03"]] += removed * k3
             W[i, jx["spine_02"]] += removed * (1.0 - k3)
         changed += len(sel)
+        # The converse (24/11, Kiệt: "tay kì vậy"): the sculpt's inner upper arm got a third of its
+        # weight from MakeHuman's TORSO in the nearest-surface transfer (spine_03, scapula, clavicle,
+        # chest/lat folds), so raised the upper arm lost 20-30 % of its radius. Inside the arm tube,
+        # torso weight is allowed near the shoulder (deltoid rides the girdle) and fades to 0 down
+        # the arm; it goes to the upper-arm chain in proportion to what is already there.
+        if fc.get("arm_clean", True):
+            tube = float(fc.get("arm_tube_m", 0.09))
+            t0, t1 = fc.get("arm_clean_t", [0.12, 0.38])
+            # soft in both directions: along the arm (t) and across the tube wall (d), so the
+            # cleaned arm skin blends into the ribs instead of meeting them at a ridge
+            tube_soft = float(fc.get("arm_tube_soft_m", 0.03))
+            inside = 1.0 - smooth01((d - (tube - tube_soft)) / (2.0 * tube_soft))
+            keep_torso = 1.0 - inside * smooth01((t - t0) / max(t1 - t0, 1e-6))
+            in_tube = (inside > 1e-3) & (t > 0.0) & (t < 1.0) & ((co[:, 0] * sign) > 0.02)
+            torso_cols = [j for nm, j in jx.items() if not nm.startswith(("upperarm", "lowerarm", "hand", "thumb", "index",
+                                                                         "middle", "ring", "pinky", "elbow_fold"))]
+            chain_cols = [j for nm, j in jx.items() if nm.startswith(("upperarm", "lowerarm", "elbow_fold"))
+                          and (nm.endswith(f"_{side}") or any(nm.endswith(f"_{side}_{k}") for k in "123"))]
+            for i in np.flatnonzero(in_tube & (keep_torso < 0.999)):
+                tw = W[i, torso_cols].sum()
+                if tw < 1e-4:
+                    continue
+                moved = tw * (1.0 - keep_torso[i])
+                W[i, torso_cols] *= keep_torso[i]
+                cw = W[i, chain_cols].sum()
+                if cw > 1e-6:
+                    W[i, chain_cols] += moved * W[i, chain_cols] / cw
+                else:
+                    W[i, jx[f"upperarm_{side}"]] += moved
     edges = np.array([e.vertices[:] for e in me.edges])
     deg = np.bincount(edges.ravel(), minlength=n).astype(float)
     for _ in range(int(fc.get("laplace_iters", 15))):
@@ -540,7 +602,7 @@ def replace_with_graft(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict)
     me.update()
     boundary = sum(1 for e in bmesh_edges_boundary(me))
     bridge_faces = _strip_uv_for_bridge(me, body_cut, head_cut, verts_before)
-    ext = _graft_extremities(graft, donor_mesh, rig, gc)
+    ext = _graft_extremities(graft, donor_mesh, rig, gc, donor=donor)
     planes = ext.pop("_planes", [])
     me = graft.data
 
@@ -555,8 +617,24 @@ def replace_with_graft(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict)
     mod.vert_mapping = "POLYINTERP_NEAREST"
     mod.layers_vgroup_select_src = "ALL"
     mod.layers_vgroup_select_dst = "NAME"
+    if "_graft_part" in graft.vertex_groups:
+        # the grafted hands / feet keep the weights they were copied with (they were slid off the
+        # donor's surface, so a nearest-surface transfer would read the wrong part of it)
+        mod.vertex_group = "_graft_part"
+        mod.invert_vertex_group = True
     with bpy.context.temp_override(object=graft, active_object=graft):
         bpy.ops.object.modifier_apply(modifier=mod.name)
+    if "_graft_part" in graft.vertex_groups:
+        graft.vertex_groups.remove(graft.vertex_groups["_graft_part"])
+    # the slide of each hand / foot, in the rest frame of its bone, for recentre_limb_joints
+    shifts = {}
+    for p in planes:
+        pb = rig.pose.bones.get(f"{p['kind']}_{p['side']}")
+        if pb is None:
+            continue
+        r = (pb.matrix.to_3x3() @ pb.bone.matrix_local.to_3x3().inverted())
+        shifts[f"{p['kind']}_{p['side']}"] = list(r.inverted() @ Vector(p["shift"].tolist()))
+    rig["extremity_shift"] = json.dumps(shifts)
 
     # 3b. smooth the transferred bone weights (23/11: they change abruptly where MakeHuman's elbow sits
     # off the sculpt's, which left a ring on the forearm once unposed); the head keeps its own.
@@ -659,7 +737,23 @@ def _bisect_keep(o, p: dict, at: str, keep_beyond: bool) -> None:
     o.data.update()
 
 
-def _graft_extremities(graft: bpy.types.Object, donor_mesh, rig: bpy.types.Object, gc: dict) -> dict:
+def _loop_centre(o, p: dict, at: str) -> np.ndarray | None:
+    """Centre of the open boundary loop of ``o`` lying on plane ``p[at]`` (own side only)."""
+    me = o.data
+    co = np.array([tuple(v.co) for v in me.vertices])
+    if not len(co):
+        return None
+    h = (co - p[at]) @ p["n"]
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    ids = {v.index for e in bm.edges if e.is_boundary for v in e.verts
+           if abs(h[v.index]) < 0.003 and v.co.x * p["sign"] > 0}
+    bm.free()
+    return co[list(ids)].mean(0) if ids else None
+
+
+def _graft_extremities(graft: bpy.types.Object, donor_mesh, rig: bpy.types.Object, gc: dict,
+                       donor: bpy.types.Object | None = None) -> dict:
     """24/11 (Kiệt: "ngón tay bị cái gì vậy", "bàn chân nhìn cũng kì"): the CC-BY sculpt's hands
     and feet are blocky (sausage fingers, flat feet with no arch, no knuckles), and its fingers
     have no joints to grip with. Replace them with MakeHuman's from the posed, fitted donor, the
@@ -676,6 +770,25 @@ def _graft_extremities(graft: bpy.types.Object, donor_mesh, rig: bpy.types.Objec
         scene.collection.objects.link(part)
         _bisect_keep(part, p, "donor", keep_beyond=True)
         _bisect_keep(graft, p, "sculpt", keep_beyond=False)
+        # 24/11 (Kiệt: "cổ tay bị gì vậy"): in the sculpt pose MakeHuman's hand sat 6 cm to the side
+        # of the sculpt's forearm end (ankle 3.6 cm), and the 2.5 cm bridge bent sideways into an S.
+        # Slide the part across the limb axis so its cut loop is centred on the sculpt's; it keeps
+        # its own skin weights (copied from the donor mesh), and the hand / foot bones follow the
+        # same slide in ``recentre_limb_joints`` (``rig["extremity_shift"]``).
+        shift = np.zeros(3)
+        if ec.get("align", True):
+            cs, cd = _loop_centre(graft, p, "sculpt"), _loop_centre(part, p, "donor")
+            if cs is not None and cd is not None:
+                shift = cs - cd
+                shift -= p["n"] * float(shift @ p["n"])
+                part.data.transform(Matrix.Translation(Vector(shift.tolist())))
+                p["donor"] = p["donor"] + shift
+        p["shift"] = shift
+        if donor is not None:
+            for g in donor.vertex_groups:
+                part.vertex_groups.new(name=g.name)
+        mark = part.vertex_groups.new(name="_graft_part")
+        mark.add(list(range(len(part.data.vertices))), 1.0, "REPLACE")
         part.data.materials.clear()
         _pack_head_uv(graft, part)
         bpy.ops.object.select_all(action="DESELECT")
@@ -729,6 +842,7 @@ def _graft_extremities(graft: bpy.types.Object, donor_mesh, rig: bpy.types.Objec
         bm.free()
         me.update()
         report.append({"part": f"{p['kind']}_{p['side']}", "loop_verts": len(sel),
+                       "align_shift_cm": round(float(np.linalg.norm(p["shift"])) * 100, 1),
                        "bridge_faces": _strip_uv_axis(me, verts_before, p)})
     return {"extremities": report, "_planes": planes}
 
@@ -843,6 +957,12 @@ def recentre_limb_joints(body: bpy.types.Object, rig: bpy.types.Object, cfg: dic
             # line moved the hand bones 6.4 cm off the hand (fingers could not close on a bar).
             if (gc.get("extremities") or {}).get("enabled"):
                 N[2] = J[2].copy()
+                try:
+                    sh = json.loads(rig.get("extremity_shift", "{}")).get(names[2])
+                except (TypeError, ValueError):
+                    sh = None
+                if sh:
+                    N[2] = J[2] + np.array(sh)
             targets[(kind, side)] = (names, J, N)
     # 2. mirror-average left and right (24/11: the sculpt is not exactly symmetric and the elbows ended
     # 6 mm apart, which QA's left_right_symmetry caught as 2.2 cm at the top of a press)
