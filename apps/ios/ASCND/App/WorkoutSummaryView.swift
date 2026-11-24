@@ -283,8 +283,12 @@ public struct WorkoutSummaryView: View {
 
   /// Buổi vừa xong là bản nhẹ có chủ đích của buổi trong lịch hôm nay (tuần nhẹ / "Tập nhẹ hơn"):
   /// tạ giảm là theo kế hoạch, chip ghi "Buổi nhẹ" thay vì màu lùi sức (Kiệt 24/11).
+  /// Chỉ buổi CỦA HÔM NAY (Devin #1014): ghi bù buổi thứ Hai cùng tên mẫu từ Kế hoạch tuần dùng
+  /// bảng thường, không được mượn lựa chọn nhẹ của hôm nay.
   private var lightSession: Bool {
-    guard let today = flow?.today, today.lighterToday else { return false }
+    guard let today = flow?.today, today.lighterToday,
+      LocalDate(summary.dateTime, in: .current) == today.today
+    else { return false }
     return today.plan?.template?.name == summary.templateName
   }
 
