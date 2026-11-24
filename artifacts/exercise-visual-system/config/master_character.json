@@ -488,5 +488,27 @@
       "scapula",
       "neck"
     ]
+  },
+  "graft": {
+    "enabled": true,
+    "sculpt_cut_below_neck_m": 0.065,
+    "head_cut_below_neck_m": 0.035,
+    "comment": "evs/graft_body.py: the sculpt below the base of its neck + MakeHuman head and neck; groups and UVs transferred from the fitted MakeHuman body.",
+    "align_vertical_fraction": 0.5
+  },
+  "muscle_refit": {
+    "enabled": true,
+    "_note": "24/11 Kiệt: 'vẽ các nhóm cơ phải bám theo đúng nhóm cơ thật của charactor'. Watershed of the atlas borders onto the sculpt's grooves (AO + normal map); see evs/mask_refit.py.",
+    "source_dir": "characters/sources/male_base_muscular_cc_by",
+    "occlusion": "body_occlusion_2048.png",
+    "normal": "body_normal_2048.png",
+    "band_px": 40,
+    "seed_fraction": 0.6,
+    "ao_radius_px": 10,
+    "min_occlusion": 0.03,
+    "edge_blur_px": 2,
+    "stray_cost": 0.1,
+    "height_blur_px": 6,
+    "smooth_px": 9
   }
 }

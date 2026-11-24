@@ -16,3 +16,10 @@ neck; the head is MakeHuman's.
 ## Credit line (shown in the app)
 
 "3D body based on 'Male base muscular anatomy' by CharacterZone (Sketchfab), CC BY 4.0. Modified."
+
+## Textures kept (24/11)
+
+`body_occlusion_2048.png` and `body_normal_2048.png` are the archive's `Body_Occlusion.jpeg` and
+`Body_Normal.jpeg` downscaled from 4096² to 2048² (PNG). `pipeline/refit_muscle_masks.py` reads
+their grooves so the muscle-group borders follow the sculpt's real muscles; they are not shipped
+in the app.

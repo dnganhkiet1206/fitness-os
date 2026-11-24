@@ -60,7 +60,8 @@ def blender(script: str, *args: str) -> tuple[bool, str, float]:
     return p.returncode == 0 and "Traceback" not in out, out, round(time.time() - t, 1)
 
 
-CHARACTER_CHAIN = ("pipeline/build_character.py --no-preview", "pipeline/bake_muscle_atlas.py", "pipeline/sculpt_trapezius.py",
+CHARACTER_CHAIN = ("pipeline/build_character.py --no-preview", "pipeline/bake_muscle_atlas.py",
+                   "pipeline/refit_muscle_masks.py --debug", "pipeline/sculpt_trapezius.py",
                    "pipeline/bake_fiber_fields.py",
                    "pipeline/bake_fiber_directions.py", "pipeline/sculpt_muscles.py", "pipeline/build_character.py --preview-only")
 
