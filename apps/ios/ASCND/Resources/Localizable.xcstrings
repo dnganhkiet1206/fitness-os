@@ -12935,6 +12935,30 @@
         }
       }
     },
+    "xp.chip.light %@": {
+      "comment": "Màn tổng kết: buổi nhẹ có chủ đích (tuần nhẹ / Tập nhẹ hơn) mà tạ giảm — chip trung tính, không màu lùi sức (Kiệt 24/11). %@ là mức giảm đã có dấu, vd. \"−10 kg\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light day · %@"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buổi nhẹ · %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Día ligero · %@"
+          }
+        }
+      }
+    },
     "xp.chip.same": {
       "comment": "Tiến bộ từng bài theo mức tạ (Kiệt duyệt mock 28/10). Chip: giữ nguyên.",
       "extractionState": "manual",
