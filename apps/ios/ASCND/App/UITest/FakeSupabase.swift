@@ -110,6 +110,11 @@
           reply.headers["Content-Range"] = total == 0 ? "*/0" : "0-\(max(matched.count - 1, 0))/\(total)"
         }
         if method == "HEAD" { reply.body = Data() }
+        // `-uiTestSlowGains` (KOA-T57): chỉ truy vấn lịch sử Gains (`KoaGainsHistory.query`) về chậm,
+        // để mở phòng Koa trước khi Gains về.
+        if UITestMode.slowGains, table == "workout_sessions",
+          select.replacingOccurrences(of: " ", with: "") == "id,date_time,pr_detected,source,template_name"
+        { reply.delay = 45 }
         return reply
 
       case "POST":

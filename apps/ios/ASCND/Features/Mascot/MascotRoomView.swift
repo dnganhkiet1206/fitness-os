@@ -732,6 +732,7 @@ struct MascotRoomView: View {
           .padding(.bottom, 6)
           .accessibilityHidden(true)
         }
+        .redacted(reason: gainsPending ? .placeholder : [])
       }
     }
     .buttonStyle(TodayPressStyle())
@@ -842,13 +843,17 @@ struct MascotRoomView: View {
   private var rankCard: some View {
     DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
-        levelRow
+        levelRow.redacted(reason: gainsPending ? .placeholder : [])
         Divider().opacity(0.6)
         journeySub
         RankJourneyView(ranks: MascotRules.ranks, currentKey: gainsRank.key, lang: lang)
       }
     }
   }
+
+  /// KOA-T57 (24/11): Gains của tài khoản này chưa về (mạng chậm) → thẻ hạng hiện khung chờ, không
+  /// hiện "Newbie · 0 Gains" như số thật.
+  private var gainsPending: Bool { services.koaGainsNow?.userId != room.userId }
 
   /// Hạng theo Gains (GĐ2) — CÙNG hạng của vóc dáng Koa; cấp XP rời giao diện.
   private var gainsRank: MascotRules.Rank {

@@ -418,7 +418,10 @@ struct TodayExtras<Plan: View>: View {
       await loadMeals()
       await loadPlanNext()
       await mascot?.load()
-      await loadGains()
+      // 24/11 (soát KOA-T57 trên simulator, Gains về chậm): mở phòng Koa lúc Gains còn đang đọc thì lượt
+      // `.task` này bị huỷ, Gains không bao giờ về — phòng / thanh Koa kẹt "Newbie · 0 Gains", cửa hàng khoá
+      // nhầm tới lần mở app sau. Lượt đọc Gains chạy riêng, không bị huỷ theo màn.
+      await Task { await loadGains() }.value
       await reloadDailyPlan()
       dayLoaded = true
       await shop?.load()
@@ -1125,7 +1128,8 @@ struct TodayExtras<Plan: View>: View {
     _ dailyPlan: DailyPlanSource, _ flow: WorkoutFlow, hint: (text: String, up: Bool)?
   ) -> TodayPlanHero {
     TodayPlanHero(
-      result: dailyPlan.result, lighterOn: flow.today.lighterToday, shortOn: flow.today.shortToday,
+      result: dailyPlan.result, lighterOn: flow.today.lighterToday, lighterLoad: flow.today.loadFactorToday,
+      shortOn: flow.today.shortToday, builtMinutes: Self.builtMinutes(flow),
       lastSession: services.koaGainsNow?.state.lastSession, busy: planBusy, failed: planFailed,
       overloadHint: hint, onPrimary: { primary(dailyPlan.result.action) }, onAlternative: { alternative($0, flow) },
       onPause: dailyPlan.result.action.session == nil ? nil : { showsPause = true })
@@ -1185,6 +1189,9 @@ struct TodayExtras<Plan: View>: View {
     guard let mascot else { return }
     syncRestDay()
     guard let r = await services.loadKoaGains(userId: userId) else { return }
+    // Lượt đọc chạy riêng (không huỷ theo màn) → có thể về sau khi đăng xuất / đổi tài khoản:
+    // không ghi hạng của phiên cũ vào dịch vụ dùng chung (vóc dáng Koa của tài khoản kế tiếp).
+    guard services.session.session?.userId == userId else { return }
     mascot.gains = r.state
     // KOA-T57: cửa hàng dùng chung (phòng, Hôm nay) đổi theo Gains vừa đọc — không khoá nhầm ở hạng 0.
     shop?.gains = r.state
@@ -1201,6 +1208,15 @@ struct TodayExtras<Plan: View>: View {
     }
     await services.syncKoaPauseLog(userId: userId)
     await services.loadKoaDust(userId: userId)
+  }
+
+  /// Số phút của buổi hôm nay theo đúng các hiệp sẽ tập — CÙNG nguồn với thẻ ở Tập luyện
+  /// (`WorkoutsHomeView.planRows`), để hai nơi không ghi hai số phút khác nhau cho một buổi.
+  static func builtMinutes(_ flow: WorkoutFlow) -> (templateId: String, minutes: Int)? {
+    let plan = flow.session?.plan ?? flow.today.plan?.sessionPlan
+    let rows = flow.session?.rows ?? plan?.rows ?? []
+    guard let id = plan?.templateId, !rows.isEmpty else { return nil }
+    return (id, WorkoutHome.minutes(WorkoutHome.lines(rows)))
   }
 
   /// Không có buổi trong lịch hôm nay → nhiệm vụ chính là hồi phục (#527 đợt 1).

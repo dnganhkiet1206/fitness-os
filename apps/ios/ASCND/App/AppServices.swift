@@ -1029,11 +1029,23 @@ final class AppServices {
   @ObservationIgnored private var uiTestPauseLogs: [String: KoaPauseLog] = [:]
 
   private func loadPauseLog(_ key: String, userId: String) -> KoaPauseLog {
-    if !koaLocalSyncEnabled { return uiTestPauseLogs[key] ?? KoaPauseLog() }
+    if !koaLocalSyncEnabled { return uiTestPauseLogs[key] ?? Self.uiTestSeedPauseLog(key, userId: userId) }
     guard let data = UserDefaults.standard.data(forKey: key),
       let log = try? JSONDecoder().decode(KoaPauseLog.self, from: data)
     else { return KoaPauseLog() }
     return log
+  }
+
+  /// Máy chủ giả `-uiTestPauseWalk` (KOA-T20): chế độ thử không kéo `koa_pause_log` về sổ máy, nên
+  /// sổ thử bắt đầu bằng đúng đợt đã gieo trên máy chủ giả (3 và 2 ngày trước).
+  private static func uiTestSeedPauseLog(_ key: String, userId: String) -> KoaPauseLog {
+    #if DEBUG
+      guard UITestMode.pauseWalk, key == "koa.pauselog.\(userId)" else { return KoaPauseLog() }
+      let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+      return KoaPauseLog([KoaPause(start: today.adding(days: -3), last: today.adding(days: -2))])
+    #else
+      KoaPauseLog()
+    #endif
   }
 
   private func storePauseLog(_ log: KoaPauseLog, _ key: String, userId: String) {

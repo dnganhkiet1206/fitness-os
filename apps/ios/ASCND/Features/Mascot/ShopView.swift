@@ -23,6 +23,7 @@ struct ShopView: View {
   enum Tab: Hashable { case outfits, room }
   enum Filter: Hashable { case all, mine, buyable }
 
+  @State private var retrying = false
   @State private var tab: Tab = .outfits
   @State private var slot: KoaFlags.Slot?
   /// Chỗ đang chọn ở tab Đồ phòng: `theme` (chủ đề) hay một chỗ của `StudioScene.decorSpots`.
@@ -70,9 +71,23 @@ struct ShopView: View {
           case .loading:
             ProgressView().frame(maxWidth: .infinity).padding(.vertical, DS.Spacing.xl)
           case .failed:
-            Text("shop.loadfailed")
-              .font(DS.TextStyle.body)
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            // KOA-T57 (24/11): màn lỗi có nút thử lại (trước chỉ có kéo-làm-mới, khó thấy).
+            VStack(spacing: DS.Spacing.sm) {
+              Text("shop.loadfailed")
+                .font(DS.TextStyle.body)
+                .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                .multilineTextAlignment(.center)
+              Button {
+                Task { retrying = true; await book.load(); retrying = false }
+              } label: {
+                if retrying { ProgressView() } else { Text("common.retry") }
+              }
+                .buttonStyle(.bordered)
+                .disabled(retrying)
+                .accessibilityIdentifier("shop.retry")
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, DS.Spacing.xl)
           case .ready:
             shelf
           }

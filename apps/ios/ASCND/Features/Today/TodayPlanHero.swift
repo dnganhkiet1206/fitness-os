@@ -9,8 +9,13 @@ struct TodayPlanHero: View {
   let result: DailyPlan.Result
   /// Buổi hôm nay đang là bản nhẹ (đã chọn "Tập nhẹ hơn").
   var lighterOn = false
+  /// Hệ số tạ của buổi nhẹ (tuần nhẹ sau kỳ nghỉ dài, KOA-T04); 1 = chỉ bớt hiệp.
+  var lighterLoad = 1.0
   /// Buổi hôm nay là buổi ngắn (quay lại sau ≥ 4 tuần nghỉ).
   var shortOn = false
+  /// Số phút của buổi đã dựng sẵn (đúng các hiệp sẽ tập: tuần nhẹ / buổi ngắn đã bớt), theo mẫu.
+  /// Có thì thay số phút ước từ mẫu gốc — 24/11 audit: Hôm nay ghi ~15 phút, Tập luyện ~8 phút cùng buổi.
+  var builtMinutes: (templateId: String, minutes: Int)?
   /// Ngày tập gần nhất (Gains) — dòng "Lần cuối" của thẻ quay lại.
   var lastSession: LocalDate?
   /// Đang ghi một phương án (dời / nghỉ) — khoá nút để không bấm hai lần.
@@ -72,7 +77,11 @@ struct TodayPlanHero: View {
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.foreground.swiftUI)
       } else if lighterOn, result.action.session != nil {
-        Label(String(localized: "dp.lighter.on"), systemImage: "arrow.down.circle")
+        // 24/11: thẻ tuần hứa "giảm khoảng 10 % tạ", dòng này phải nói cùng điều (trước chỉ nói bớt hiệp).
+        Label(
+          lighterLoad < 1
+            ? String(localized: "dp.lighter.load \(Int((1 - lighterLoad) * 100 + 0.5))")
+            : String(localized: "dp.lighter.on"), systemImage: "arrow.down.circle")
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.foreground.swiftUI)
       }
@@ -88,31 +97,31 @@ struct TodayPlanHero: View {
           .disabled(busy)
           .padding(.top, DS.Spacing.xs)
       }
-      if !shownAlternatives.isEmpty {
-        VStack(spacing: 2) {
-          ForEach(shownAlternatives, id: \.self) { alt in
-            Button { onAlternative(alt) } label: {
-              Text(verbatim: Self.label(alt))
-                .font(DS.TextStyle.footnote.weight(.semibold))
-                .frame(maxWidth: .infinity, minHeight: Self.minTap)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(DS.Color.primary.swiftUI)
-            .disabled(busy)
+      // Phương án + tạm nghỉ chung một nhóm, không giãn cách (24/11 audit: hai vùng chạm 44 pt cộng khoảng
+      // cách của thẻ để lại ~50 pt trống giữa "Đổi thành ngày nghỉ" và "Tạm nghỉ vài ngày…").
+      VStack(spacing: 0) {
+        ForEach(shownAlternatives, id: \.self) { alt in
+          Button { onAlternative(alt) } label: {
+            Text(verbatim: Self.label(alt))
+              .font(DS.TextStyle.footnote.weight(.semibold))
+              .frame(maxWidth: .infinity, minHeight: Self.minTap)
+              .contentShape(Rectangle())
           }
+          .buttonStyle(.plain)
+          .foregroundStyle(DS.Color.primary.swiftUI)
+          .disabled(busy)
         }
-      }
-      if let onPause {
-        Button(action: onPause) {
-          Text("pause.entry")
-            .font(DS.TextStyle.footnote)
-            .frame(maxWidth: .infinity, minHeight: Self.minTap)
-            .contentShape(Rectangle())
+        if let onPause {
+          Button(action: onPause) {
+            Text("pause.entry")
+              .font(DS.TextStyle.footnote)
+              .frame(maxWidth: .infinity, minHeight: Self.minTap)
+              .contentShape(Rectangle())
+          }
+          .buttonStyle(.plain)
+          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .accessibilityIdentifier("today.pause.open")
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .accessibilityIdentifier("today.pause.open")
       }
       if failed {
         Text("dp.failed")
@@ -169,7 +178,7 @@ struct TodayPlanHero: View {
     switch result.action {
     case .loading: nil
     case .resume(let s), .start(let s), .comeback(let s), .nextSession(_, let s):
-      String(localized: "dp.title.session \(s.name) \(s.minutes)")
+      String(localized: "dp.title.session \(s.name) \(builtMinutes?.templateId == s.templateId ? builtMinutes!.minutes : s.minutes)")
     case .setUpWeek: String(localized: "dp.title.setUpWeek")
     case .postWorkoutMeal: String(localized: "dp.title.meal")
     case .progress: String(localized: "dp.title.progress")
