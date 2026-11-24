@@ -42,8 +42,9 @@ class PressVerticalTemplate(HingeTemplate):
         "trunk_lean_deg": -19.0,          # back along the pad (bench at 70 deg, 14/11 Kiệt)
         "back_pad_angle_from_vertical_deg": 20.0,  # must match utility_bench_70
         "pelvis_share_of_lean": 0.6,
-        "head_extension_share_of_lean": 0.0,
-        "seated_ankle_half_width_m": 0.20,
+        "head_extension_share_of_lean": 0.6,  # 24/11: face 11 deg nearer level, throat less stretched (Kiệt: neck front)
+        "seated_ankle_half_width_m": 0.17,  # 24/11: 0.20 with knees inside looked knock-kneed (Kiệt)
+        "seated_knee_over_foot": 1.0,       # knee x / ankle x: 1 = shin vertical seen from the front
         "seated_toe_out_deg": 12.0,
         # Start: upper arm a little below level, forearm vertical, so the
         # handles sit at ear height beside the head (ACE; free-exercise-db
@@ -110,7 +111,7 @@ class PressVerticalTemplate(HingeTemplate):
     def frame(self, progress: float) -> dict:
         t, s = self.t, self.s
         out = {"body": {"hip_centre": self.hip, "trunk_lean_deg": self.lean, "pelvis_share": t["pelvis_share_of_lean"],
-                        "head_extension_deg": 0.0},
+                        "head_extension_deg": self.lean * t["head_extension_share_of_lean"]},
                "poles": {}, "implements": {}, "wrists": {}, "girdle": {}, "metrics": {}}
         for side, sign in (("l", 1.0), ("r", -1.0)):
             a = self._arm(side, progress)
@@ -133,7 +134,7 @@ class PressVerticalTemplate(HingeTemplate):
             out["metrics"][f"arm_elevation_{side}_deg"] = a["elevation"]
             out["metrics"][f"scapula_upward_{side}_deg"] = a["girdle"]["upward_rotation_deg"]
             out["metrics"][f"elbow_flexion_{side}_deg"] = math.degrees(math.acos(float(np.clip(np.dot(unit(a["elbow"] - a["shoulder"]), fore), -1, 1))))
-            out["poles"][f"ctl_knee_{side}"] = self._seated_legs()[1][side] + np.array([sign * 0.1, -0.6, 0.2])
+            out["poles"][f"ctl_knee_{side}"] = self._seated_legs()[1][side] + np.array([sign * 0.25, -0.6, 0.2])
         return out
 
     def _seated_legs(self) -> tuple[dict, dict]:
@@ -143,7 +144,16 @@ class PressVerticalTemplate(HingeTemplate):
             hip_side = self.hip + (np.asarray(s[f"hip_{side}"], float) - self.hip_rest)
             ankle = np.array([sign * t["seated_ankle_half_width_m"], hip_side[1] - 0.92 * s["thigh_m"], s[f"ankle_{side}"][2]])
             ankles[side] = ankle
-            knees[side] = two_bone_knee(hip_side, ankle, s["thigh_m"], s["shin_m"], forward=unit(FORWARD + UP))
+            # 24/11 Kiệt: "chân xoè ra 2 bên nhìn như con gái": bending straight forward put the knees
+            # inside the feet (shins splayed out, knock-kneed). The knee now opens outward until it sits
+            # over the foot: shins vertical seen from the front, knees in line with the toes.
+            best = None
+            for k in np.linspace(0.0, 1.5, 61):
+                knee = two_bone_knee(hip_side, ankle, s["thigh_m"], s["shin_m"], forward=unit(FORWARD + UP + sign * k * LEFT))
+                err = abs(knee[0] - ankle[0] * t.get("seated_knee_over_foot", 1.0))
+                if best is None or err < best[0]:
+                    best = (err, knee)
+            knees[side] = best[1]
         return ankles, knees
 
     def static(self) -> dict:

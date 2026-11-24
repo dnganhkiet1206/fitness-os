@@ -149,14 +149,52 @@ def _smooth_weights(obj: bpy.types.Object, rig: bpy.types.Object, head_cut: floa
             g.add([int(i)], float(W[i, j]), "REPLACE")
 
 
-def smooth_shoulder_weights(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict) -> dict:
+def fair_neck(co: np.ndarray, edges: np.ndarray, z_lo: float, z_hi: float, fade: float = 0.02, iters: int = 3000,
+              alpha: float = 0.1, max_r: float = 0.13) -> np.ndarray:
+    """24/11 (Kiệt: "phần nối chỗ cổ bị lỗi nhiều", then "còn khấc ở cổ trông không liền mạch"): the
+    bridge joined MakeHuman's slim neck to the sculpt's heavy trapezius with a ring and a step.
+    Bi-Laplacian fairing of the band between the cuts (free weight fades out over ``fade`` above and
+    below and beyond ``max_r`` from the neck axis): the band becomes the smoothest surface that meets
+    the fixed parts with the same position AND slope, so the step goes, not only the ripples (Taubin
+    smoothing removed the ring but left the step). Rest-pose coordinates."""
+    co = co.copy()
+    n = len(co)
+    band = (co[:, 2] > z_lo) & (co[:, 2] < z_hi)
+    axis = co[band][:, :2].mean(0)
+    r = np.hypot(co[:, 0] - axis[0], co[:, 1] - axis[1])
+    w = np.clip(np.minimum((co[:, 2] - (z_lo - fade)) / fade, ((z_hi + fade) - co[:, 2]) / fade), 0.0, 1.0)
+    w *= np.clip((max_r - r) / 0.02, 0.0, 1.0)
+    keep = w > 0
+    for _ in range(3):  # the fixed rings the fairing leans on
+        m = keep[edges[:, 0]] | keep[edges[:, 1]]
+        keep[edges[m].ravel()] = True
+    ids = np.flatnonzero(keep)
+    loc = -np.ones(n, int)
+    loc[ids] = np.arange(len(ids))
+    e = loc[edges[keep[edges[:, 0]] & keep[edges[:, 1]]]]
+    k = len(ids)
+    a = np.concatenate([e[:, 0], e[:, 1]])
+    b = np.concatenate([e[:, 1], e[:, 0]])
+    deg = np.maximum(np.bincount(a, minlength=k), 1).astype(float)[:, None]
+
+    def lap(x):
+        return np.stack([np.bincount(a, weights=x[b, c], minlength=k) for c in range(3)], 1) / deg - x
+    x = co[ids]
+    wf = w[ids][:, None]
+    for _ in range(iters):
+        x -= alpha * wf * lap(lap(x))
+    co[ids] = x
+    return co
+
+
+def smooth_joint_weights(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict) -> dict:
     """24/11: in the sculpt's dense armpit and shoulder folds, neighbours 1-2 mm apart carried
     weights that differ by 0.4 (scapula vs spine_03, plus the helper bones), so with the arms
     overhead those edges stretched 25x (shoulder press QA skin_stretch p99.9 6.05 > 2.6). Edge
     (Laplacian) smoothing barely moves weights on such a dense mesh; this averages every deform
     weight over a sphere (Gaussian, ``radius_m``) inside a box around both shoulders, after the
     helper bones exist."""
-    sc = (cfg.get("graft") or {}).get("shoulder_weight_smooth") or {}
+    sc = (cfg.get("graft") or {}).get("joint_weight_smooth") or {}
     if not (cfg.get("graft") or {}).get("enabled") or not sc.get("enabled"):
         return {}
     from mathutils import kdtree
@@ -176,6 +214,16 @@ def smooth_shoulder_weights(body: bpy.types.Object, rig: bpy.types.Object, cfg: 
     fade = sc.get("fade_m", 0.05)
     ax, z = np.abs(co[:, 0]), co[:, 2]
     r = np.clip(np.minimum.reduce([(z - z0) / fade, (z1 - z) / fade, (x1 - ax) / fade]), 0.0, 1.0)
+    # 24/11 (Kiệt: "dáng chân hơi kì"): seated, the groin bulged into lumps beside the shorts and the
+    # knees went knobby; same smoothing in spheres round the hip and knee joints (rest pose).
+    for jr in sc.get("joint_regions", []):
+        for side in ("l", "r"):
+            b = rig.data.bones.get(f"{jr['bone']}_{side}")
+            if b is None:
+                continue
+            c = np.array(rig.matrix_world @ b.head_local)
+            d = np.linalg.norm(co - c, axis=1)
+            r = np.maximum(r, np.clip((jr["radius_m"] - d) / fade, 0.0, 1.0))
     rad = float(sc.get("radius_m", 0.04))
     kd = kdtree.KDTree(n)
     for i, c in enumerate(co):
@@ -187,6 +235,9 @@ def smooth_shoulder_weights(body: bpy.types.Object, rig: bpy.types.Object, cfg: 
         hits = kd.find_range(co[i], rad)
         idx = np.fromiter((h[1] for h in hits), int)
         d = np.fromiter((h[2] for h in hits), float)
+        # never across the midline (inner thighs lie 2-3 cm apart at the crotch)
+        same = (co[idx, 0] * co[i, 0] >= 0.0) | (np.abs(co[idx, 0]) < 0.01) | (abs(co[i, 0]) < 0.01)
+        idx, d = idx[same], d[same]
         g = np.exp(-(d / (0.5 * rad)) ** 2)
         out[i] = (1.0 - r[i]) * W[i] + r[i] * (g[:, None] * W[idx]).sum(0) / g.sum()
     out /= np.maximum(out.sum(axis=1, keepdims=True), 1e-9)
@@ -195,7 +246,7 @@ def smooth_shoulder_weights(body: bpy.types.Object, rig: bpy.types.Object, cfg: 
         g.remove(list(range(n)))
         for i in np.flatnonzero(out[:, j] > 1e-4):
             g.add([int(i)], float(out[i, j]), "REPLACE")
-    return {"shoulder_weight_smooth": {"vertices": int(len(sel)), "radius_m": rad}}
+    return {"joint_weight_smooth": {"vertices": int(len(sel)), "radius_m": rad}}
 
 
 def _uv_array(me) -> np.ndarray:
@@ -390,6 +441,10 @@ def replace_with_graft(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict)
     # 4. back to rest, then replace the body mesh
     posed = np.array([tuple(v.co) for v in me.vertices])
     rest_g = unskin(posed, graft, rig)
+    nf = gc.get("neck_fair") or {}
+    if nf.get("enabled", True):
+        rest_g = fair_neck(rest_g, np.array([e.vertices[:] for e in me.edges]), body_cut - nf.get("below_m", 0.05),
+                           head_cut + nf.get("above_m", 0.05), iters=nf.get("iterations", 3000))
     bl_util.set_mesh_coords(me, rest_g.astype(np.float32))
     me.update()
     for pb in rig.pose.bones:

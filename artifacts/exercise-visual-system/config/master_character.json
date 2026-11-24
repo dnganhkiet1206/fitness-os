@@ -495,16 +495,33 @@
     "head_cut_below_neck_m": 0.035,
     "comment": "evs/graft_body.py: the sculpt below the base of its neck + MakeHuman head and neck; groups and UVs transferred from the fitted MakeHuman body.",
     "align_vertical_fraction": 0.5,
-    "shoulder_weight_smooth": {
+    "joint_weight_smooth": {
       "enabled": true,
-      "_note": "24/11: armpit/shoulder folds of the sculpt stretched 25x overhead; see graft_body.smooth_shoulder_weights",
+      "_note": "24/11: shoulder box (armpit folds stretched 25x overhead) + spheres round hips and knees (seated groin lumps, knobby knees); see graft_body.smooth_joint_weights",
       "radius_m": 0.04,
       "z_range_m": [
         1.1,
         1.57
       ],
       "max_abs_x_m": 0.34,
-      "fade_m": 0.05
+      "fade_m": 0.05,
+      "joint_regions": [
+        {
+          "bone": "thigh",
+          "radius_m": 0.13
+        },
+        {
+          "bone": "calf",
+          "radius_m": 0.1
+        }
+      ]
+    },
+    "neck_fair": {
+      "enabled": true,
+      "_note": "24/11 Kiệt: neck seam had a ring, then 'còn khấc' — bi-Laplacian fairing of the bridge band; graft_body.fair_neck",
+      "below_m": 0.05,
+      "above_m": 0.05,
+      "iterations": 3000
     }
   },
   "muscle_refit": {
