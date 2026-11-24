@@ -14,16 +14,20 @@ import Foundation
   /// tuyến tính:
   ///   a        = độ phủ · hệ số · có vai trò
   ///   albedo   = (nền·(1−a) + màu·a) · shade               (shade chỉ trên phần cơ có vai trò)
-  ///   emission = màu·a·shade·0,24 + (màu·a·0,55 + 0,45)·viền·0,95
+  ///   emission = màu·a·shade·0,55 + (màu·a·0,30 + lạnh·0,70)·viền·0,95   (lạnh = xanh trắng 0,55 / 0,72 / 1)
   enum MuscleShader {
     /// Ba vai trò, đúng màu `muscle_primary` / `_secondary` / `_stabilizer` (`brand.config.json`).
     /// Vai trò sau đè vai trò trước (ổn định → phụ → chính), như pipeline.
     static let roleHex: [(role: String, hex: String)] = [
       ("stabilizing", "#6FA7C9"), ("secondary", "#F2A33A"), ("primary", "#E8552B"),
     ]
-    /// Nền thân trong trình xem (`character_body_viewer`) và quần (`character_apparel`).
-    static let bodyHex = "#C9CDD3"
-    static let apparelHex = "#26282C"
+    /// Nền thân trong trình xem và quần. 23/11 (Kiệt "nhân vật như vậy luôn", phân tích DEMIC
+    /// STORY): thân trắng như sứ để khối cơ hiện bằng bóng đổ, quần gần đen; cơ chính phát sáng
+    /// mạnh hơn và viền neon xanh trắng thay viền trắng.
+    static let bodyHex = "#E2E5EA"
+    static let apparelHex = "#131417"
+    /// Màu viền neon quanh phần cơ có vai trò (tuyến tính).
+    static let rimCool = SIMD3<Float>(0.55, 0.72, 1.0)
     static let bodyGain: Float = 1.0
     static let apparelGain: Float = 0.8
 
@@ -213,11 +217,11 @@ import Foundation
                       al[i] = pack(
                         enc((baseLin.x * (1 - a) + r * a) * sh, l), enc((baseLin.y * (1 - a) + g * a) * sh, l),
                         enc((baseLin.z * (1 - a) + b * a) * sh, l))
-                      let w: Float = a > 0 ? 0.45 : 0
+                      let w: Float = a > 0 ? 0.70 : 0
                       em[i] = pack(
-                        enc(r * a * sh * 0.24 + (r * a * 0.55 + w) * rim * 0.95, l),
-                        enc(g * a * sh * 0.24 + (g * a * 0.55 + w) * rim * 0.95, l),
-                        enc(b * a * sh * 0.24 + (b * a * 0.55 + w) * rim * 0.95, l))
+                        enc(r * a * sh * 0.55 + (r * a * 0.30 + rimCool.x * w) * rim * 0.95, l),
+                        enc(g * a * sh * 0.55 + (g * a * 0.30 + rimCool.y * w) * rim * 0.95, l),
+                        enc(b * a * sh * 0.55 + (b * a * 0.30 + rimCool.z * w) * rim * 0.95, l))
                     }
                   }
                 }
