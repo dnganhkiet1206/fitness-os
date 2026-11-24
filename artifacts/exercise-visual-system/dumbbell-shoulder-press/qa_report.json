@@ -1,12 +1,13 @@
 {
   "tool": "pipeline/validate_motion.py",
-  "date": "2026-11-16",
+  "date": "2026-11-24",
   "exercise_id": "dumbbell_shoulder_press",
   "frames": 213,
   "fps": 24,
   "summary": {
     "counts": {
-      "PASS": 19
+      "PASS": 19,
+      "NOT_TESTED": 1
     },
     "technically_validated": true,
     "states": {
@@ -32,10 +33,10 @@
       "stage": "B",
       "title": "No joint moves faster than a human joint plausibly does",
       "status": "PASS",
-      "measured": 0.895,
+      "measured": 1.013,
       "limit": 2.5,
       "where": {
-        "joint": "wrist_l",
+        "joint": "knuckle_l",
         "frame": 130
       },
       "detail": "m/s"
@@ -48,7 +49,7 @@
       "measured": 7.528,
       "limit": 12.0,
       "where": {
-        "bone": "lowerarm_l",
+        "bone": "lowerarm_r",
         "frame": 130
       },
       "detail": "deg per frame"
@@ -58,11 +59,11 @@
       "stage": "B",
       "title": "Hands stay on the implements in every frame",
       "status": "PASS",
-      "measured": 2e-05,
+      "measured": 0.0,
       "limit": 0.004,
       "where": {
         "implement": "SOCKET_hand_l",
-        "frame": 2
+        "frame": 155
       },
       "detail": "m wrist to grip socket"
     },
@@ -80,8 +81,8 @@
         "lift_m": 0.005
       },
       "where": {
-        "foot": "foot_r",
-        "frame": 5
+        "foot": null,
+        "frame": null
       },
       "detail": ""
     },
@@ -94,7 +95,7 @@
       "limit": 0.003,
       "where": {
         "joint": "elbow",
-        "frame": 159
+        "frame": 57
       },
       "detail": "m"
     },
@@ -103,11 +104,11 @@
       "stage": "C",
       "title": "Implements do not pass through the body",
       "status": "PASS",
-      "measured": 0.0,
+      "measured": 0.0025,
       "limit": 0.004,
       "where": {
-        "implement": null,
-        "frame": null
+        "implement": "Dumbbell_l",
+        "frame": 0
       },
       "detail": "m inside"
     },
@@ -116,11 +117,11 @@
       "stage": "C",
       "title": "Wrists stay near straight (forearm to hand)",
       "status": "PASS",
-      "measured": 11.624,
+      "measured": 11.627,
       "limit": 25.0,
       "where": {
         "side": "r",
-        "frame": 48
+        "frame": 154
       },
       "detail": "deg"
     },
@@ -129,11 +130,11 @@
       "stage": "C",
       "title": "Elbow flexion inside the soft-tissue limit",
       "status": "PASS",
-      "measured": 142.997,
+      "measured": 143.0,
       "limit": 145.0,
       "where": {
         "side": "r",
-        "frame": 5
+        "frame": 0
       },
       "detail": "deg"
     },
@@ -155,10 +156,10 @@
       "stage": "C",
       "title": "Head stays near neutral (not dropped to the chest)",
       "status": "PASS",
-      "measured": 3.61,
+      "measured": 5.19,
       "limit": 30.0,
       "where": {
-        "frame": 2
+        "frame": 0
       },
       "detail": "deg, + = chin towards chest"
     },
@@ -198,58 +199,63 @@
       "stage": "C",
       "title": "Skin stretch stays within limits",
       "status": "PASS",
-      "measured": 2.453,
+      "measured": 2.586,
       "limit": 2.6,
       "where": {
         "frame": 53
       },
-      "detail": "p99.9 edge stretch"
+      "detail": "p99.9 edge stretch per frame: f0 1.614, f53 2.586, f106 1.614",
+      "per_frame": {
+        "0": 1.614,
+        "53": 2.586,
+        "106": 1.614
+      }
     },
     {
       "id": "movement_wrist_over_head_m",
       "stage": "D",
       "title": "press_vertical: wrist_over_head_m inside the family bounds",
       "status": "PASS",
-      "measured": 0.361,
+      "measured": 0.449,
       "limit": [
         0.05,
         null
       ],
       "where": null,
-      "detail": "provisional bound"
+      "detail": "ROM envelope only: AAOS reference values (shoulder flexion 180 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Full overhead reach is inside the envelope; the 0.05 m clearance itself is coaching consensus, no press study read."
     },
     {
       "id": "movement_elbow_min_deg",
       "stage": "D",
       "title": "press_vertical: elbow_min_deg inside the family bounds",
       "status": "PASS",
-      "measured": 37.003,
+      "measured": 37.0,
       "limit": [
         null,
         100
       ],
       "where": null,
-      "detail": "provisional bound"
+      "detail": "ROM envelope only: AAOS reference values (elbow flexion 140-150 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound sits inside the envelope; no overhead-press study read."
     },
     {
       "id": "movement_elbow_max_deg",
       "stage": "D",
       "title": "press_vertical: elbow_max_deg inside the family bounds",
       "status": "PASS",
-      "measured": 166.637,
+      "measured": 166.633,
       "limit": [
         160,
         null
       ],
       "where": null,
-      "detail": "provisional bound"
+      "detail": "ROM envelope only: AAOS reference values (elbow extension 0 deg), via Physiopedia Range of Motion Normative Values (Botman et al. supplement compilation), read 2026-11-14. Bound sits inside the envelope; no overhead-press study read."
     },
     {
       "id": "movement_torso_lean_max_deg",
       "stage": "D",
       "title": "press_vertical: torso_lean_max_deg inside the family bounds",
       "status": "PASS",
-      "measured": 16.133,
+      "measured": 19.201,
       "limit": [
         null,
         20
@@ -269,6 +275,16 @@
       ],
       "where": null,
       "detail": "provisional bound"
+    },
+    {
+      "id": "reference_measurements",
+      "stage": "D",
+      "title": "Golden measurements: reference comparison",
+      "status": "NOT_TESTED",
+      "measured": null,
+      "limit": null,
+      "where": null,
+      "detail": "No reference measurements: this exercise has no reference_measurements.json and declares no reference_checks. Golden measurements are not established yet; this is neither a pass nor a fail."
     }
   ]
 }

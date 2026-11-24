@@ -1,0 +1,363 @@
+{
+  "atlas_resolution": 2048,
+  "samples": 13485433,
+  "uv_coverage": 0.3748,
+  "groups": {
+    "pectoralis_major_clavicular": {
+      "texels": 23721,
+      "label": "Pectoralis major, clavicular part"
+    },
+    "pectoralis_major_sternocostal": {
+      "texels": 19123,
+      "label": "Pectoralis major, sternocostal part"
+    },
+    "pectoralis_major_abdominal": {
+      "texels": 18220,
+      "label": "Pectoralis major, abdominal part"
+    },
+    "deltoid_anterior": {
+      "texels": 45455,
+      "label": "Deltoid, anterior head"
+    },
+    "deltoid_lateral": {
+      "texels": 24386,
+      "label": "Deltoid, lateral head"
+    },
+    "deltoid_posterior": {
+      "texels": 35948,
+      "label": "Deltoid, posterior head"
+    },
+    "triceps_long_head": {
+      "texels": 44096,
+      "label": "Triceps, long head"
+    },
+    "triceps_lateral_head": {
+      "texels": 10698,
+      "label": "Triceps, lateral head"
+    },
+    "triceps_medial_head": {
+      "texels": 27446,
+      "label": "Triceps, medial head"
+    },
+    "biceps_long_head": {
+      "texels": 16219,
+      "label": "Biceps, long head"
+    },
+    "biceps_short_head": {
+      "texels": 43606,
+      "label": "Biceps, short head"
+    },
+    "brachioradialis": {
+      "texels": 7182,
+      "label": "Brachioradialis"
+    },
+    "wrist_extensors": {
+      "texels": 31018,
+      "label": "Wrist and finger extensors"
+    },
+    "wrist_flexors": {
+      "texels": 56086,
+      "label": "Wrist and finger flexors"
+    },
+    "rectus_abdominis": {
+      "texels": 42231,
+      "label": "Rectus abdominis"
+    },
+    "obliques": {
+      "texels": 47340,
+      "label": "External obliques"
+    },
+    "serratus_anterior": {
+      "texels": 33866,
+      "label": "Serratus anterior"
+    },
+    "latissimus_dorsi": {
+      "texels": 80771,
+      "label": "Latissimus dorsi"
+    },
+    "trapezius_upper": {
+      "texels": 52666,
+      "label": "Trapezius, upper"
+    },
+    "trapezius_middle": {
+      "texels": 4357,
+      "label": "Trapezius, middle"
+    },
+    "trapezius_lower": {
+      "texels": 26404,
+      "label": "Trapezius, lower"
+    },
+    "rhomboid_minor": {
+      "texels": 9736,
+      "label": "Rhomboid minor"
+    },
+    "rhomboid_major": {
+      "texels": 2568,
+      "label": "Rhomboid major"
+    },
+    "infraspinatus": {
+      "texels": 10088,
+      "label": "Infraspinatus"
+    },
+    "teres_minor": {
+      "texels": 2409,
+      "label": "Teres minor"
+    },
+    "erector_spinalis": {
+      "texels": 7605,
+      "label": "Erector spinae, spinalis"
+    },
+    "erector_longissimus": {
+      "texels": 9072,
+      "label": "Erector spinae, longissimus"
+    },
+    "erector_iliocostalis": {
+      "texels": 13632,
+      "label": "Erector spinae, iliocostalis"
+    },
+    "gluteus_maximus": {
+      "texels": 78782,
+      "label": "Gluteus maximus"
+    },
+    "gluteus_medius": {
+      "texels": 35739,
+      "label": "Gluteus medius"
+    },
+    "rectus_femoris": {
+      "texels": 50232,
+      "label": "Rectus femoris"
+    },
+    "vastus_lateralis": {
+      "texels": 72172,
+      "label": "Vastus lateralis"
+    },
+    "vastus_medialis": {
+      "texels": 31950,
+      "label": "Vastus medialis"
+    },
+    "adductor_longus": {
+      "texels": 25885,
+      "label": "Adductor longus"
+    },
+    "gracilis": {
+      "texels": 17375,
+      "label": "Gracilis"
+    },
+    "adductor_magnus": {
+      "texels": 1972,
+      "label": "Adductor magnus"
+    },
+    "biceps_femoris": {
+      "texels": 72571,
+      "label": "Biceps femoris"
+    },
+    "semitendinosus": {
+      "texels": 24237,
+      "label": "Semitendinosus"
+    },
+    "semimembranosus": {
+      "texels": 27185,
+      "label": "Semimembranosus"
+    },
+    "gastrocnemius_medial": {
+      "texels": 52882,
+      "label": "Gastrocnemius, medial head"
+    },
+    "gastrocnemius_lateral": {
+      "texels": 19804,
+      "label": "Gastrocnemius, lateral head"
+    },
+    "soleus": {
+      "texels": 40698,
+      "label": "Soleus"
+    },
+    "tibialis_anterior": {
+      "texels": 61140,
+      "label": "Tibialis anterior"
+    },
+    "brachialis": {
+      "texels": 7673,
+      "label": "Brachialis"
+    },
+    "sartorius": {
+      "texels": 28481,
+      "label": "Sartorius"
+    },
+    "tensor_fasciae_latae": {
+      "texels": 8573,
+      "label": "Tensor fasciae latae"
+    },
+    "teres_major": {
+      "texels": 6663,
+      "label": "Teres major"
+    },
+    "fibularis_longus": {
+      "texels": 17346,
+      "label": "Fibularis (peroneus) longus"
+    },
+    "pectoralis_major": {
+      "texels": 61064,
+      "label": "pectoralis_major",
+      "parts": [
+        "pectoralis_major_clavicular",
+        "pectoralis_major_sternocostal",
+        "pectoralis_major_abdominal"
+      ]
+    },
+    "trapezius": {
+      "texels": 83427,
+      "label": "trapezius",
+      "parts": [
+        "trapezius_upper",
+        "trapezius_middle",
+        "trapezius_lower"
+      ]
+    },
+    "rhomboids": {
+      "texels": 12304,
+      "label": "rhomboids",
+      "parts": [
+        "rhomboid_minor",
+        "rhomboid_major"
+      ]
+    },
+    "rotator_cuff_posterior": {
+      "texels": 12497,
+      "label": "rotator_cuff_posterior",
+      "parts": [
+        "infraspinatus",
+        "teres_minor"
+      ]
+    },
+    "erector_spinae": {
+      "texels": 30309,
+      "label": "erector_spinae",
+      "parts": [
+        "erector_spinalis",
+        "erector_longissimus",
+        "erector_iliocostalis"
+      ]
+    },
+    "biceps_brachii": {
+      "texels": 59825,
+      "label": "biceps_brachii",
+      "parts": [
+        "biceps_long_head",
+        "biceps_short_head"
+      ]
+    },
+    "triceps_brachii": {
+      "texels": 82240,
+      "label": "triceps_brachii",
+      "parts": [
+        "triceps_long_head",
+        "triceps_lateral_head",
+        "triceps_medial_head"
+      ]
+    },
+    "forearm_muscles": {
+      "texels": 94286,
+      "label": "forearm_muscles",
+      "parts": [
+        "brachioradialis",
+        "wrist_extensors",
+        "wrist_flexors"
+      ]
+    },
+    "quadriceps": {
+      "texels": 154354,
+      "label": "quadriceps",
+      "parts": [
+        "rectus_femoris",
+        "vastus_lateralis",
+        "vastus_medialis"
+      ]
+    },
+    "hamstrings": {
+      "texels": 123993,
+      "label": "hamstrings",
+      "parts": [
+        "biceps_femoris",
+        "semitendinosus",
+        "semimembranosus"
+      ]
+    },
+    "adductors": {
+      "texels": 45232,
+      "label": "adductors",
+      "parts": [
+        "adductor_longus",
+        "gracilis",
+        "adductor_magnus"
+      ]
+    },
+    "calves": {
+      "texels": 113384,
+      "label": "calves",
+      "parts": [
+        "gastrocnemius_medial",
+        "gastrocnemius_lateral",
+        "soleus"
+      ]
+    }
+  },
+  "muscle_map_id": "master_character_003.muscles.v2",
+  "neck_fan_applied": {
+    "trapezius_upper": {
+      "axis": [
+        [
+          0.0,
+          -0.0118,
+          1.5341
+        ],
+        [
+          0.0,
+          -0.0476,
+          1.6332
+        ]
+      ],
+      "half_angle_deg": [
+        [
+          1.48,
+          105
+        ],
+        [
+          1.5,
+          100
+        ],
+        [
+          1.52,
+          88
+        ],
+        [
+          1.56,
+          65
+        ],
+        [
+          1.6,
+          48
+        ],
+        [
+          1.62,
+          45
+        ]
+      ],
+      "feather_deg": 8,
+      "max_radius_m": 0.09,
+      "radius_feather_m": 0.03,
+      "note": "17/11: on the neck the upper trapezius covers only the back: medial third of the superior nuchal line (about ±45° around the neck axis from the back midline) fanning out to the lateral third of the clavicle at the base (about ±100°). The old region coloured the whole side of the neck up under the ear (±90° at z 1.58-1.60), over splenius / levator scapulae / sternocleidomastoid. Axis = neck_01 bone of master_character_003; angle 0 = straight back. Only applies above min z of the table and within max_radius_m of the axis (fading out over radius_feather_m), so the slope of the shoulder out to the acromion keeps its colour."
+    }
+  },
+  "refit": {
+    "band_px": 40,
+    "seeds": 1344741,
+    "flooded": 1469807,
+    "unreached_kept": 38943,
+    "texels_changed": 548523,
+    "region_texels": 2853491,
+    "sources": {
+      "occlusion": "body_occlusion_2048.png",
+      "normal": "body_normal_2048.png"
+    }
+  }
+}

@@ -438,7 +438,7 @@
   "grip": {
     "comment": "The standard bar grip of this character: where a bar of this diameter sits in the palm when grip_l / grip_r is 1 (along_palm = metres from the wrist joint towards the knuckles; palm_depth = metres from the plane of the hand bones to the bar's surface; palm_surface = how far the skin of the hollow of the palm lies from that plane). The finger angles are solved once from these numbers when the rig is built: every finger closes onto the bar without its skin entering the bar or the palm. Exercises place their grip sockets with the same numbers, so hand and bar always agree. The pads of the palm are rigid in this rig, so the bar is set a few millimetres into them to stand for soft tissue pressed flat.",
     "bar_diameter": 0.029,
-    "along_palm": 0.068,
+    "along_palm": 0.098,
     "palm_depth": 0.02,
     "diagonal_deg": 6.0,
     "finger_half_thickness": [
@@ -544,6 +544,24 @@
           "radius_m": 0.1
         }
       ]
+    },
+    "extremities": {
+      "enabled": true,
+      "_note": "24/11 Kiệt duyệt 'Ghép tay+chân MakeHuman': the sculpt's hands (sausage fingers, no knuckles to grip with) and feet (flat, no arch) replaced by MakeHuman's at wrist / ankle; graft_body._graft_extremities.",
+      "hand": {"donor_above_joint_m": 0.01, "gap_m": 0.025},
+      "foot": {"donor_above_joint_m": 0.07, "gap_m": 0.05},
+      "fair_reach_m": 0.05,
+      "fair_iterations": 4000
+    },
+    "torso_arm_falloff": {
+      "enabled": true,
+      "_note": "24/11 Kiệt (đẩy tạ vai, tay qua đầu): 'gì giãn ghê vậy', 'cơ liên sườn bị dính vào ngực' — flank skin to the waist followed the arm. Cap arm weight on torso skin below the armpit (cosine to 0 at depth_m), soft torso/arm split, Laplace smooth round the shoulder; see graft_body.torso_arm_falloff. Prototype on the press: p99.9 3.13 -> 2.73.",
+      "depth_m": 0.12,
+      "arm_radius_m": 0.065,
+      "soft_m": 0.04,
+      "armpit_below_shoulder_m": 0.10,
+      "smooth_radius_m": 0.2,
+      "laplace_iters": 15
     },
     "neck_fair": {
       "enabled": true,

@@ -1,0 +1,272 @@
+{
+  "fiber_map_id": "master_character_003.fibers.v2",
+  "atlas_resolution": 2048,
+  "samples": 13485433,
+  "uv_coverage": 0.3748,
+  "groups": {
+    "adductor_longus": {
+      "texels": 1572123,
+      "coherence": 0.9823,
+      "label": "Adductor longus"
+    },
+    "adductor_magnus": {
+      "texels": 1572123,
+      "coherence": 0.9823,
+      "label": "Adductor magnus"
+    },
+    "biceps_femoris": {
+      "texels": 1572123,
+      "coherence": 0.9807,
+      "label": "Biceps femoris"
+    },
+    "biceps_long_head": {
+      "texels": 1572123,
+      "coherence": 0.9896,
+      "label": "Biceps, long head"
+    },
+    "biceps_short_head": {
+      "texels": 1572123,
+      "coherence": 0.9897,
+      "label": "Biceps, short head"
+    },
+    "brachialis": {
+      "texels": 1572123,
+      "coherence": 0.9894,
+      "label": "Brachialis"
+    },
+    "brachioradialis": {
+      "texels": 1572123,
+      "coherence": 0.993,
+      "label": "Brachioradialis"
+    },
+    "deltoid_anterior": {
+      "texels": 1572123,
+      "coherence": 0.9869,
+      "label": "Deltoid, anterior head",
+      "fan_span_deg": 70.7,
+      "fan_centre_distance_m": 0.0428
+    },
+    "deltoid_lateral": {
+      "texels": 1572123,
+      "coherence": 0.9857,
+      "label": "Deltoid, lateral head"
+    },
+    "deltoid_posterior": {
+      "texels": 1572123,
+      "coherence": 0.9911,
+      "label": "Deltoid, posterior head",
+      "fan_span_deg": 67.6,
+      "fan_centre_distance_m": 0.0566
+    },
+    "erector_iliocostalis": {
+      "texels": 1572123,
+      "coherence": 0.9777,
+      "label": "Erector spinae, iliocostalis"
+    },
+    "erector_longissimus": {
+      "texels": 1572123,
+      "coherence": 0.9777,
+      "label": "Erector spinae, longissimus"
+    },
+    "erector_spinalis": {
+      "texels": 1572123,
+      "coherence": 0.9777,
+      "label": "Erector spinae, spinalis"
+    },
+    "fibularis_longus": {
+      "texels": 1572123,
+      "coherence": 0.989,
+      "label": "Fibularis (peroneus) longus"
+    },
+    "gastrocnemius_lateral": {
+      "texels": 1572123,
+      "coherence": 0.9861,
+      "label": "Gastrocnemius, lateral head"
+    },
+    "gastrocnemius_medial": {
+      "texels": 1572123,
+      "coherence": 0.986,
+      "label": "Gastrocnemius, medial head"
+    },
+    "gluteus_maximus": {
+      "texels": 1572123,
+      "coherence": 0.986,
+      "label": "Gluteus maximus",
+      "fan_span_deg": 62.0,
+      "fan_centre_distance_m": 0.1129
+    },
+    "gluteus_medius": {
+      "texels": 1572123,
+      "coherence": 0.9881,
+      "label": "Gluteus medius",
+      "fan_span_deg": 93.6,
+      "fan_centre_distance_m": 0.0556
+    },
+    "gracilis": {
+      "texels": 1572123,
+      "coherence": 0.9824,
+      "label": "Gracilis"
+    },
+    "infraspinatus": {
+      "texels": 1572123,
+      "coherence": 0.9892,
+      "label": "Infraspinatus",
+      "fan_span_deg": 55.4,
+      "fan_centre_distance_m": 0.0364
+    },
+    "latissimus_dorsi": {
+      "texels": 1572123,
+      "coherence": 0.9833,
+      "label": "Latissimus dorsi",
+      "fan_span_deg": 82.0,
+      "fan_centre_distance_m": 0.033
+    },
+    "obliques": {
+      "texels": 1572123,
+      "coherence": 0.9636,
+      "label": "External obliques"
+    },
+    "pectoralis_major_abdominal": {
+      "texels": 1572123,
+      "coherence": 0.9893,
+      "label": "Pectoralis major, abdominal part",
+      "fan_span_deg": 60.6,
+      "fan_centre_distance_m": 0.0139
+    },
+    "pectoralis_major_clavicular": {
+      "texels": 1572123,
+      "coherence": 0.9893,
+      "label": "Pectoralis major, clavicular part",
+      "fan_span_deg": 48.5,
+      "fan_centre_distance_m": 0.0158
+    },
+    "pectoralis_major_sternocostal": {
+      "texels": 1572123,
+      "coherence": 0.9893,
+      "label": "Pectoralis major, sternocostal part",
+      "fan_span_deg": 54.8,
+      "fan_centre_distance_m": 0.0139
+    },
+    "rectus_abdominis": {
+      "texels": 1572123,
+      "coherence": 0.9777,
+      "label": "Rectus abdominis"
+    },
+    "rectus_femoris": {
+      "texels": 1572123,
+      "coherence": 0.9823,
+      "label": "Rectus femoris"
+    },
+    "rhomboid_major": {
+      "texels": 1572123,
+      "coherence": 0.9752,
+      "label": "Rhomboid major"
+    },
+    "rhomboid_minor": {
+      "texels": 1572123,
+      "coherence": 0.9742,
+      "label": "Rhomboid minor"
+    },
+    "sartorius": {
+      "texels": 1572123,
+      "coherence": 0.9805,
+      "label": "Sartorius"
+    },
+    "semimembranosus": {
+      "texels": 1572123,
+      "coherence": 0.9804,
+      "label": "Semimembranosus"
+    },
+    "semitendinosus": {
+      "texels": 1572123,
+      "coherence": 0.9812,
+      "label": "Semitendinosus"
+    },
+    "serratus_anterior": {
+      "texels": 1572123,
+      "coherence": 0.9673,
+      "label": "Serratus anterior"
+    },
+    "soleus": {
+      "texels": 1572123,
+      "coherence": 0.986,
+      "label": "Soleus"
+    },
+    "tensor_fasciae_latae": {
+      "texels": 1572123,
+      "coherence": 0.9824,
+      "label": "Tensor fasciae latae"
+    },
+    "teres_major": {
+      "texels": 1572123,
+      "coherence": 0.9704,
+      "label": "Teres major"
+    },
+    "teres_minor": {
+      "texels": 1572123,
+      "coherence": 0.9706,
+      "label": "Teres minor"
+    },
+    "tibialis_anterior": {
+      "texels": 1572123,
+      "coherence": 0.9887,
+      "label": "Tibialis anterior"
+    },
+    "trapezius_lower": {
+      "texels": 1572123,
+      "coherence": 0.9906,
+      "label": "Trapezius, lower",
+      "fan_span_deg": 36.4,
+      "fan_centre_distance_m": 0.1208
+    },
+    "trapezius_middle": {
+      "texels": 1572123,
+      "coherence": 0.9906,
+      "label": "Trapezius, middle",
+      "fan_span_deg": 43.3,
+      "fan_centre_distance_m": 0.0416
+    },
+    "trapezius_upper": {
+      "texels": 1572123,
+      "coherence": 0.9906,
+      "label": "Trapezius, upper",
+      "fan_span_deg": 86.6,
+      "fan_centre_distance_m": 0.014
+    },
+    "triceps_lateral_head": {
+      "texels": 1572123,
+      "coherence": 0.9895,
+      "label": "Triceps, lateral head"
+    },
+    "triceps_long_head": {
+      "texels": 1572123,
+      "coherence": 0.9896,
+      "label": "Triceps, long head"
+    },
+    "triceps_medial_head": {
+      "texels": 1572123,
+      "coherence": 0.9895,
+      "label": "Triceps, medial head"
+    },
+    "vastus_lateralis": {
+      "texels": 1572123,
+      "coherence": 0.9824,
+      "label": "Vastus lateralis"
+    },
+    "vastus_medialis": {
+      "texels": 1572123,
+      "coherence": 0.9798,
+      "label": "Vastus medialis"
+    },
+    "wrist_extensors": {
+      "texels": 1572123,
+      "coherence": 0.993,
+      "label": "Wrist and finger extensors"
+    },
+    "wrist_flexors": {
+      "texels": 1572123,
+      "coherence": 0.993,
+      "label": "Wrist and finger flexors"
+    }
+  }
+}

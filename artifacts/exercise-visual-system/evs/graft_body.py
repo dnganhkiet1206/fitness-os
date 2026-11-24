@@ -116,7 +116,8 @@ def _align_head(body: bpy.types.Object, rig: bpy.types.Object, tco: np.ndarray, 
     return [round(float(x), 4) for x in d]
 
 
-def _smooth_weights(obj: bpy.types.Object, rig: bpy.types.Object, head_cut: float, passes: int) -> None:
+def _smooth_weights(obj: bpy.types.Object, rig: bpy.types.Object, head_cut: float, passes: int,
+                    fixed: np.ndarray | None = None) -> None:
     deform = [b.name for b in rig.data.bones if b.use_deform]
     names = [n for n in deform if n in obj.vertex_groups]
     if not names or passes <= 0:
@@ -133,7 +134,9 @@ def _smooth_weights(obj: bpy.types.Object, rig: bpy.types.Object, head_cut: floa
     ev = np.array([e.vertices[:] for e in me.edges])
     z = np.array([v.co.z for v in me.vertices])
     free = z < head_cut - 0.01
-    deg = np.bincount(ev.ravel(), minlength=n).astype(float)
+    if fixed is not None:
+        free &= ~fixed
+    deg =np.bincount(ev.ravel(), minlength=n).astype(float)
     for _ in range(passes):
         acc = np.zeros_like(W)
         np.add.at(acc, ev[:, 0], W[ev[:, 1]])
@@ -169,6 +172,36 @@ def fair_neck(co: np.ndarray, edges: np.ndarray, z_lo: float, z_hi: float, fade:
         m = keep[edges[:, 0]] | keep[edges[:, 1]]
         keep[edges[m].ravel()] = True
     ids = np.flatnonzero(keep)
+    loc = -np.ones(n, int)
+    loc[ids] = np.arange(len(ids))
+    e = loc[edges[keep[edges[:, 0]] & keep[edges[:, 1]]]]
+    k = len(ids)
+    a = np.concatenate([e[:, 0], e[:, 1]])
+    b = np.concatenate([e[:, 1], e[:, 0]])
+    deg = np.maximum(np.bincount(a, minlength=k), 1).astype(float)[:, None]
+
+    def lap(x):
+        return np.stack([np.bincount(a, weights=x[b, c], minlength=k) for c in range(3)], 1) / deg - x
+    x = co[ids]
+    wf = w[ids][:, None]
+    for _ in range(iters):
+        x -= alpha * wf * lap(lap(x))
+    co[ids] = x
+    return co
+
+
+def fair_band(co: np.ndarray, edges: np.ndarray, w: np.ndarray, iters: int = 2000, alpha: float = 0.1) -> np.ndarray:
+    """Bi-Laplacian fairing of vertices with free weight ``w`` (0..1), the rest held fixed (see
+    ``fair_neck``); used for the wrist and ankle bridges."""
+    co = co.copy()
+    n = len(co)
+    keep = w > 0
+    for _ in range(3):
+        m = keep[edges[:, 0]] | keep[edges[:, 1]]
+        keep[edges[m].ravel()] = True
+    ids = np.flatnonzero(keep)
+    if not len(ids):
+        return co
     loc = -np.ones(n, int)
     loc[ids] = np.arange(len(ids))
     e = loc[edges[keep[edges[:, 0]] & keep[edges[:, 1]]]]
@@ -247,6 +280,94 @@ def smooth_joint_weights(body: bpy.types.Object, rig: bpy.types.Object, cfg: dic
         for i in np.flatnonzero(out[:, j] > 1e-4):
             g.add([int(i)], float(out[i, j]), "REPLACE")
     return {"joint_weight_smooth": {"vertices": int(len(sel)), "radius_m": rad}}
+
+
+def torso_arm_falloff(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict) -> dict:
+    """24/11 (Kiệt, đẩy tạ vai: "gì giãn ghê vậy", "cơ liên sườn bị dính vào ngực"): skin of
+    the flank down to the waist (z 1.05-1.25, 20-30 cm below the armpit) carried 15-47 %
+    upper-arm / lat_fold weight, so with the arms overhead the whole flank was dragged up the
+    arm: the torso flared into "wings", the upper arm looked half as long again with a seam
+    across it. On a real body only the skin within ~10-15 cm of the armpit follows the arm.
+
+    For vertices that belong to the TORSO (soft-classified: farther than ``arm_radius_m`` from
+    the upper-arm bone, medial to the shoulder, below the armpit), the summed arm weight is
+    capped by a cosine falloff from 1 at the armpit to 0 at ``depth_m`` below it; the removed
+    weight goes to spine_03 / spine_02 by height. The classification is a smoothstep
+    (``soft_m``), never a hard cut, then the weights in a sphere round each shoulder get
+    ``laplace_iters`` of edge averaging: a hard boundary tore the posterior armpit into a
+    jagged flap. Measured on the shoulder press (frame 53): skin stretch p99.9 3.13 -> 2.73,
+    max 6.25 -> 5.03."""
+    fc = (cfg.get("graft") or {}).get("torso_arm_falloff") or {}
+    if not (cfg.get("graft") or {}).get("enabled") or not fc.get("enabled"):
+        return {}
+    me = body.data
+    n = len(me.vertices)
+    co = bl_util.mesh_coords(me).astype(float)
+    mw = np.array(body.matrix_world)
+    co = co @ mw[:3, :3].T + mw[:3, 3]
+    names = [b.name for b in rig.data.bones if b.use_deform and b.name in body.vertex_groups]
+    col = {body.vertex_groups[nm].index: j for j, nm in enumerate(names)}
+    jx = {nm: j for j, nm in enumerate(names)}
+    W = np.zeros((n, len(names)))
+    for v in me.vertices:
+        for g in v.groups:
+            j = col.get(g.group)
+            if j is not None:
+                W[v.index, j] = g.weight
+    depth = float(fc.get("depth_m", 0.12))
+    r_arm = float(fc.get("arm_radius_m", 0.065))
+    soft = float(fc.get("soft_m", 0.04))
+    below_head = float(fc.get("armpit_below_shoulder_m", 0.10))
+
+    def smooth01(x):
+        x = np.clip(x, 0.0, 1.0)
+        return x * x * (3.0 - 2.0 * x)
+
+    changed = 0
+    region = np.zeros(n, bool)
+    for side, sign in (("l", 1.0), ("r", -1.0)):
+        ua = rig.data.bones.get(f"upperarm_{side}")
+        if ua is None:
+            continue
+        a = np.array(rig.matrix_world @ ua.head_local)
+        b = np.array(rig.matrix_world @ ua.tail_local)
+        ab = b - a
+        t = np.clip(((co - a) @ ab) / (ab @ ab), 0.0, 1.0)
+        d = np.linalg.norm(co - (a + t[:, None] * ab), axis=1)
+        region |= np.linalg.norm(co - a, axis=1) < float(fc.get("smooth_radius_m", 0.20))
+        arm_cols = [j for nm, j in jx.items() if nm.startswith(("upperarm", "lat_fold"))
+                    and (nm.endswith(f"_{side}") or any(nm.endswith(f"_{side}_{k}") for k in "123"))]
+        z_ax = a[2] - below_head
+        torso_w = (smooth01((d - (r_arm - soft)) / (2.0 * soft))
+                   * smooth01(((a[0] * sign + 0.02) - co[:, 0] * sign) / soft + 0.5)
+                   * smooth01(((z_ax + 0.02) - co[:, 2]) / soft + 0.5)
+                   * ((co[:, 0] * sign) > 0.02))
+        below = np.clip((z_ax - co[:, 2]) / depth, 0.0, 1.0)
+        allow = 1.0 - torso_w * (1.0 - 0.5 * (1.0 + np.cos(np.pi * below)))
+        armw = W[:, arm_cols].sum(1)
+        cap = allow * armw
+        sel = np.flatnonzero((armw > 1e-4) & (cap < armw - 1e-4))
+        for i in sel:
+            removed = armw[i] - cap[i]
+            W[i, arm_cols] *= cap[i] / armw[i]
+            k3 = float(np.clip((co[i, 2] - 1.13) / 0.12, 0.0, 1.0))
+            W[i, jx["spine_03"]] += removed * k3
+            W[i, jx["spine_02"]] += removed * (1.0 - k3)
+        changed += len(sel)
+    edges = np.array([e.vertices[:] for e in me.edges])
+    deg = np.bincount(edges.ravel(), minlength=n).astype(float)
+    for _ in range(int(fc.get("laplace_iters", 15))):
+        acc = np.zeros_like(W)
+        np.add.at(acc, edges[:, 0], W[edges[:, 1]])
+        np.add.at(acc, edges[:, 1], W[edges[:, 0]])
+        W[region] = 0.5 * W[region] + 0.5 * (acc[region] / np.maximum(deg[region], 1.0)[:, None])
+    W /= np.maximum(W.sum(axis=1, keepdims=True), 1e-9)
+    for j, nm in enumerate(names):
+        g = body.vertex_groups[nm]
+        g.remove(list(range(n)))
+        for i in np.flatnonzero(W[:, j] > 1e-4):
+            g.add([int(i)], float(W[i, j]), "REPLACE")
+    return {"torso_arm_falloff": {"vertices": int(changed), "depth_m": depth, "arm_radius_m": r_arm, "soft_m": soft}}
 
 
 def _uv_array(me) -> np.ndarray:
@@ -419,6 +540,9 @@ def replace_with_graft(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict)
     me.update()
     boundary = sum(1 for e in bmesh_edges_boundary(me))
     bridge_faces = _strip_uv_for_bridge(me, body_cut, head_cut, verts_before)
+    ext = _graft_extremities(graft, donor_mesh, rig, gc)
+    planes = ext.pop("_planes", [])
+    me = graft.data
 
     # 3. vertex groups and UVs from the donor
     for g in donor.vertex_groups:
@@ -436,7 +560,13 @@ def replace_with_graft(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict)
 
     # 3b. smooth the transferred bone weights (23/11: they change abruptly where MakeHuman's elbow sits
     # off the sculpt's, which left a ring on the forearm once unposed); the head keeps its own.
-    _smooth_weights(graft, rig, head_cut, gc.get("weight_smooth_passes", 8))
+    # MakeHuman's hands and feet keep their own finger / toe weights (an edge Laplace would blur
+    # each knuckle's weight along the finger).
+    gco = np.array([tuple(v.co) for v in me.vertices])
+    keep = np.zeros(len(gco), bool)
+    for p in planes:
+        keep |= _side_mask(gco, p) & (((gco - p["donor"]) @ p["n"]) > 0.01)
+    _smooth_weights(graft, rig, head_cut, gc.get("weight_smooth_passes", 8), fixed=keep)
 
     # 4. back to rest, then replace the body mesh
     posed = np.array([tuple(v.co) for v in me.vertices])
@@ -445,6 +575,17 @@ def replace_with_graft(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict)
     if nf.get("enabled", True):
         rest_g = fair_neck(rest_g, np.array([e.vertices[:] for e in me.edges]), body_cut - nf.get("below_m", 0.05),
                            head_cut + nf.get("above_m", 0.05), iters=nf.get("iterations", 3000))
+    # wrist / ankle bridges: fair the band in rest pose (masks from the posed positions; same indices)
+    ec = gc.get("extremities") or {}
+    if planes:
+        ew = np.zeros(len(posed))
+        reach = float(ec.get("fair_reach_m", 0.03))
+        for p in planes:
+            h_s = (posed - p["sculpt"]) @ p["n"]
+            h_d = (posed - p["donor"]) @ p["n"]
+            band = np.clip(np.minimum((h_s + reach) / reach, (reach - h_d) / reach), 0.0, 1.0)
+            ew = np.maximum(ew, band * _side_mask(posed, p))
+        rest_g = fair_band(rest_g, np.array([e.vertices[:] for e in me.edges]), ew, iters=int(ec.get("fair_iterations", 2000)))
     bl_util.set_mesh_coords(me, rest_g.astype(np.float32))
     me.update()
     for pb in rig.pose.bones:
@@ -462,7 +603,164 @@ def replace_with_graft(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict)
     bpy.data.meshes.remove(donor_mesh)
     return {"graft": {"vertices": len(graft_mesh.vertices), "head_shift_m": shift, "sculpt_neck_z": round(s_neck, 4), "head_neck_z": round(d_neck, 4),
                       "body_cut_z": round(body_cut, 4), "head_cut_z": round(head_cut, 4), "boundary_edges": boundary,
-                      "bridge_faces": bridge_faces}}
+                      "bridge_faces": bridge_faces, **ext}}
+
+
+EXTREMITIES = (("hand", "lowerarm", "hand"), ("foot", "calf", "foot"))
+
+
+def _extremity_planes(rig: bpy.types.Object, ec: dict) -> list[dict]:
+    """Cut planes at the wrists and ankles of the POSED rig (sculpt pose). ``n`` points away from
+    the body (forearm / shin direction); the donor keeps what lies beyond ``donor`` along ``n``,
+    the sculpt keeps what lies before ``sculpt`` (a ``gap_m`` band between them is bridged)."""
+    out = []
+    mw = rig.matrix_world
+    for kind, parent, child in EXTREMITIES:
+        c = ec.get(kind) or {}
+        if not c.get("enabled", True):
+            continue
+        for side in ("l", "r"):
+            pp, pc = rig.pose.bones.get(f"{parent}_{side}"), rig.pose.bones.get(f"{child}_{side}")
+            if pp is None or pc is None:
+                continue
+            j = np.array(mw @ pc.head)
+            n = j - np.array(mw @ pp.head)
+            n /= np.linalg.norm(n)
+            donor = j - n * float(c.get("donor_above_joint_m", 0.01))
+            sculpt = donor - n * float(c.get("gap_m", 0.025))
+            out.append({"kind": kind, "side": side, "n": n, "donor": donor, "sculpt": sculpt, "sign": 1.0 if j[0] > 0 else -1.0})
+    return out
+
+
+def _side_mask(co: np.ndarray, p: dict) -> np.ndarray:
+    return co[:, 0] * p["sign"] > 0.0
+
+
+def _bisect_keep(o, p: dict, at: str, keep_beyond: bool) -> None:
+    """Split ``o`` at plane ``p[at]`` and delete one side, but only on the extremity's own side
+    of the body (a horizontal ankle plane would otherwise take both feet)."""
+    bm = bmesh.new()
+    bm.from_mesh(o.data)
+    co, no = Vector(p[at].tolist()), Vector(p["n"].tolist())
+    bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=co, plane_no=no)
+    kill = []
+    for v in bm.verts:
+        d = (v.co - co).dot(no)
+        same = v.co.x * p["sign"] > 0.0
+        beyond = d > 1e-6
+        if keep_beyond:
+            if not (same and d > -1e-6):
+                kill.append(v)
+        elif same and beyond:
+            kill.append(v)
+    bmesh.ops.delete(bm, geom=kill, context="VERTS")
+    bm.to_mesh(o.data)
+    bm.free()
+    o.data.update()
+
+
+def _graft_extremities(graft: bpy.types.Object, donor_mesh, rig: bpy.types.Object, gc: dict) -> dict:
+    """24/11 (Kiệt: "ngón tay bị cái gì vậy", "bàn chân nhìn cũng kì"): the CC-BY sculpt's hands
+    and feet are blocky (sausage fingers, flat feet with no arch, no knuckles), and its fingers
+    have no joints to grip with. Replace them with MakeHuman's from the posed, fitted donor, the
+    way the head is grafted: cut both at the wrist / ankle, keep the donor beyond, bridge the
+    two loops, fair the band, give the bridge its own UV strip."""
+    ec = gc.get("extremities") or {}
+    if not ec.get("enabled"):
+        return {}
+    scene = bpy.context.scene
+    planes = _extremity_planes(rig, ec)
+    report = []
+    for p in planes:
+        part = bpy.data.objects.new(f"Graft_{p['kind']}_{p['side']}", donor_mesh.copy())
+        scene.collection.objects.link(part)
+        _bisect_keep(part, p, "donor", keep_beyond=True)
+        _bisect_keep(graft, p, "sculpt", keep_beyond=False)
+        part.data.materials.clear()
+        _pack_head_uv(graft, part)
+        bpy.ops.object.select_all(action="DESELECT")
+        part.select_set(True)
+        graft.select_set(True)
+        bpy.context.view_layer.objects.active = graft
+        bpy.ops.object.join()
+        me = graft.data
+        co = np.array([tuple(v.co) for v in me.vertices])
+        dist_s = (co - p["sculpt"]) @ p["n"]
+        dist_d = (co - p["donor"]) @ p["n"]
+        side = _side_mask(co, p)
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        sel = set()
+        for e in bm.edges:
+            if e.is_boundary:
+                a, b = (v.index for v in e.verts)
+                if side[a] and side[b] and ((abs(dist_s[a]) < 0.003 and abs(dist_s[b]) < 0.003)
+                                            or (abs(dist_d[a]) < 0.003 and abs(dist_d[b]) < 0.003)):
+                    sel.update((a, b))
+        bm.free()
+        for v in me.vertices:
+            v.select = v.index in sel
+        for e in me.edges:
+            e.select = all(i in sel for i in e.vertices)
+        for f in me.polygons:
+            f.select = False
+        verts_before = len(me.vertices)
+        with bpy.context.temp_override(object=graft, active_object=graft):
+            bpy.ops.object.mode_set(mode="EDIT")
+            bpy.ops.mesh.select_mode(type="EDGE")
+            bpy.ops.mesh.bridge_edge_loops(type="SINGLE", use_merge=False, number_cuts=3, interpolation="SURFACE", smoothness=1.0)
+            bpy.ops.mesh.select_all(action="SELECT")
+            bpy.ops.mesh.normals_make_consistent(inside=False)
+            bpy.ops.object.mode_set(mode="OBJECT")
+        # fair the band (and a little of both sides) so the two cross-sections blend
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        n = Vector(p["n"].tolist())
+        s0, d0 = Vector(p["sculpt"].tolist()), Vector(p["donor"].tolist())
+        inner = [v for v in bm.verts if v.co.x * p["sign"] > 0 and (v.co - s0).dot(n) > -0.002 and (v.co - d0).dot(n) < 0.006]
+        outer = [v for v in bm.verts if v.co.x * p["sign"] > 0 and -0.025 < (v.co - s0).dot(n) <= -0.002]
+        for it in range(40):
+            bmesh.ops.smooth_vert(bm, verts=inner, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+            if it % 3 == 0:
+                bmesh.ops.smooth_vert(bm, verts=outer, factor=0.2, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+        for f in bm.faces:
+            f.smooth = True
+        bm.to_mesh(me)
+        bm.free()
+        me.update()
+        report.append({"part": f"{p['kind']}_{p['side']}", "loop_verts": len(sel),
+                       "bridge_faces": _strip_uv_axis(me, verts_before, p)})
+    return {"extremities": report, "_planes": planes}
+
+
+def _strip_uv_axis(me, verts_before: int, p: dict, res: int = 256, margin: float = 0.01) -> int:
+    """Like ``_strip_uv_for_bridge`` for a bridge across an arbitrary axis (wrist, ankle)."""
+    is_new = [any(v >= verts_before for v in poly.vertices) for poly in me.polygons]
+    new = [poly for poly in me.polygons if is_new[poly.index]]
+    if not new:
+        return 0
+    uv = _uv_array(me)
+    size, r, c = _largest_empty_square(_uv_occupancy(uv, [poly for poly in me.polygons if not is_new[poly.index]], res))
+    side = size / res - 2 * margin
+    origin = np.array([(c - size + 1) / res + margin, (r - size + 1) / res + margin])
+    co = np.array([tuple(v.co) for v in me.vertices])
+    n = p["n"]
+    u = np.cross(n, [0.0, 0.0, 1.0] if abs(n[2]) < 0.9 else [1.0, 0.0, 0.0])
+    u /= np.linalg.norm(u)
+    w = np.cross(n, u)
+    span = float(np.dot(p["donor"] - p["sculpt"], n)) or 1e-6
+    for poly in new:
+        loops = list(poly.loop_indices)
+        vs = [me.loops[li].vertex_index for li in loops]
+        rel = co[vs] - p["sculpt"]
+        a = (np.arctan2(rel @ w, rel @ u) + np.pi) / (2 * np.pi)
+        if np.ptp(a) > 0.5:
+            a = np.where(a < 0.5, a + 1.0, a)
+        h = np.clip((rel @ n) / span, -0.2, 1.2)
+        for li, au, hv in zip(loops, a, h):
+            uv[li] = origin + np.array([au / 1.1, 0.05 + 0.3 * hv]) * side
+    me.uv_layers.active.data.foreach_set("uv", uv.ravel())
+    return len(new)
 
 
 def bmesh_edges_boundary(me):
@@ -540,6 +838,11 @@ def recentre_limb_joints(body: bpy.types.Object, rig: bpy.types.Object, cfg: dic
             # the limb when it is nearly straight: 23/11 it moved the knee up 12 cm)
             N = [_closest_on_line(J[0], l1), 0.5 * (_closest_on_line(J[1], l1) + _closest_on_line(J[1], l2)),
                  _closest_on_line(J[2], l2)]
+            # 24/11: with MakeHuman's hands / feet grafted on, the wrist / ankle and every bone
+            # beyond already sit inside their own mesh; projecting them onto the sculpt's forearm
+            # line moved the hand bones 6.4 cm off the hand (fingers could not close on a bar).
+            if (gc.get("extremities") or {}).get("enabled"):
+                N[2] = J[2].copy()
             targets[(kind, side)] = (names, J, N)
     # 2. mirror-average left and right (24/11: the sculpt is not exactly symmetric and the elbows ended
     # 6 mm apart, which QA's left_right_symmetry caught as 2.2 cm at the top of a press)
