@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.119.0";
 
 import { corsHeaders, dbServiceKey, dbUrl, json, opaque, requireUser } from "../_shared/guard.ts";
+import { MAX_FORM_BYTES, validateArtForm } from "./validate.ts";
 
 /**
  * Thêm một ảnh vào thư viện ảnh Cộng đồng — chỉ admin.
@@ -35,23 +36,6 @@ import { corsHeaders, dbServiceKey, dbUrl, json, opaque, requireUser } from "../
  */
 
 const BUCKET = "community-art";
-const MAX_BYTES = 1024 * 1024;
-const KINDS = new Set(["workout", "progress", "recipe"]);
-const STYLE = /^[a-z][a-z0-9_]{0,23}$/;
-
-/** Kiểu ảnh → đuôi tệp và chữ ký byte đầu. */
-const TYPES: Record<string, { ext: string; magic: (b: Uint8Array) => boolean }> = {
-  "image/png": { ext: "png", magic: (b) => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 },
-  "image/jpeg": { ext: "jpg", magic: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
-  "image/webp": {
-    ext: "webp",
-    magic: (b) =>
-      b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 &&
-      b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50,
-  },
-};
-
-const text = (v: FormDataEntryValue | null) => (typeof v === "string" ? v.trim() : "");
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -65,6 +49,11 @@ serve(async (req) => {
     if (roleErr) return opaque(roleErr, "role_lookup_failed");
     if (role !== "admin") return json({ error: "forbidden" }, 403);
 
+    /* Refused before formData() buffers it: a declared body past the file
+       ceiling plus room for the text fields cannot be a valid upload. */
+    const declared = Number(req.headers.get("content-length"));
+    if (Number.isFinite(declared) && declared > MAX_FORM_BYTES) return json({ error: "file_too_large" }, 413);
+
     let form: FormData;
     try {
       form = await req.formData();
@@ -72,32 +61,17 @@ serve(async (req) => {
       return json({ error: "invalid_form" }, 400);
     }
 
-    const file = form.get("file");
-    if (!(file instanceof File)) return json({ error: "file_required" }, 400);
-    const type = TYPES[file.type];
-    if (!type) return json({ error: "unsupported_type" }, 415);
-    if (file.size === 0 || file.size > MAX_BYTES) return json({ error: "file_too_large" }, 413);
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    if (bytes.length < 12 || !type.magic(bytes)) return json({ error: "type_mismatch" }, 415);
-
-    const kind = text(form.get("kind"));
-    const style = text(form.get("style"));
-    const altEn = text(form.get("alt_en"));
-    const altVi = text(form.get("alt_vi"));
-    const tags = text(form.get("tags")).split(",").map((t) => t.trim().toLowerCase()).filter(Boolean).slice(0, 12);
-    const sort = Number.parseInt(text(form.get("sort")) || "0", 10);
-    if (!KINDS.has(kind)) return json({ error: "invalid_kind" }, 400);
-    if (!STYLE.test(style)) return json({ error: "invalid_style" }, 400);
-    if (!altEn || !altVi || altEn.length > 200 || altVi.length > 200) return json({ error: "alt_required" }, 400);
-    if (!Number.isFinite(sort)) return json({ error: "invalid_sort" }, 400);
+    const checked = await validateArtForm(form);
+    if ("error" in checked) return json({ error: checked.error }, checked.status);
+    const { bytes, contentType, ext, kind, style, altEn, altVi, tags, sort } = checked;
 
     // Tên do server đặt: không ký tự nào của người gọi đi vào đường dẫn ngoài
     // `kind` và `style`, cả hai đã qua danh sách trắng ở trên.
-    const path = `${kind}/${style}-${crypto.randomUUID().slice(0, 8)}.${type.ext}`;
+    const path = `${kind}/${style}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
 
     const service = createClient(dbUrl(), dbServiceKey());
     const { error: upErr } = await service.storage.from(BUCKET).upload(path, bytes, {
-      contentType: file.type,
+      contentType,
       upsert: false,
     });
     if (upErr) return opaque(upErr, "upload_failed");
