@@ -1,6 +1,6 @@
 # ASCND iOS (native)
 
-App SwiftUI native. Quyết định: [ADR-0001](../../docs/adr/0001-native-ios-platform-strategy.md). Quy trình: [WORKFLOW](../../docs/WORKFLOW.md). Trạng thái: [MIGRATION_STATUS](../../docs/MIGRATION_STATUS.md).
+App SwiftUI native. Quyết định: [ADR-0001](../../docs/adr/0001-native-ios-platform-strategy.md). Quy trình: [WORKFLOW](../../docs/WORKFLOW.md). Trạng thái: [CONSTRAINTS_AND_DEFERRED](docs/CONSTRAINTS_AND_DEFERRED.md) và issue #527 ([MIGRATION_STATUS](../../docs/MIGRATION_STATUS.md) là bảng lịch sử, dừng từ tháng 10).
 
 ## Chạy lên iPhone (Mac + Xcode 16 trở lên)
 

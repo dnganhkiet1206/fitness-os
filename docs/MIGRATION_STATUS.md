@@ -1,5 +1,7 @@
 # Migration status: Native iOS
 
+> **⚠️ Lịch sử — không còn cập nhật (ghi 28/11/2026, Master Audit 28/11 D-04).** Bảng dưới dừng ở trạng thái đầu tháng 10: hầu hết hàng còn ⬜ trong khi app native đã dựng đủ các lát (`apps/ios/`) và `supabase/migrations/` đã có hơn 100 migration. **Đừng đọc bảng này như trạng thái hiện tại.** Trạng thái thật: hạn chế / việc hoãn / người dùng thật ở [`apps/ios/docs/CONSTRAINTS_AND_DEFERRED.md`](../apps/ios/docs/CONSTRAINTS_AND_DEFERRED.md), hướng sản phẩm ở [`apps/ios/docs/PRODUCT_DECISION_V1.md`](../apps/ios/docs/PRODUCT_DECISION_V1.md), báo cáo từng đợt trên issue #527. Giữ trang để tra lịch sử, không xoá.
+
 Baseline: `fac9ac2` (RN). Trạng thái được cập nhật trong PR làm thay đổi trạng thái.
 
 Ký hiệu trạng thái:
