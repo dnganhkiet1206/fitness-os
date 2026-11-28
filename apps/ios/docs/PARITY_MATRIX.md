@@ -1,5 +1,7 @@
 # Parity matrix RN → Native iOS (sống)
 
+> **Lịch sử (ghi 28/11/2026, Master Audit D-05):** **Bỏ RN (Kiệt chốt 17/11/2026, xác nhận lại 28/11):** app React Native ở `native/` không còn là tham chiếu hành vi. Trang này ghi đối chiếu RN → native trước 17/11, **không phải yêu cầu hiện hành** — đừng lấy dòng "còn thiếu / chưa port" ở đây làm việc phải làm. Giữ để tra lịch sử, không xoá.
+
 > ~~**⚠ LẠC HẬU từ 17/10/2026** (ghi 26/10, audit vòng 3).~~ **Mục 0 rà lại 29/10/2026 @ `116a8c3a`** theo bốn khu vực GĐ3 (Hôm nay · Tập luyện · Dinh dưỡng · Tiến bộ; Cộng đồng mở từ Tiến bộ / hồ sơ / chuông / link; "Trợ lý" là tab Tiến bộ). Cột "Lối vào Release" dò lại bằng tham chiếu khởi tạo màn trong code; trạng thái chỉ đổi khi có bằng chứng mới. **Mục 1–3 bên dưới vẫn theo base 07/10** — chỗ nào khác mục 0 thì mục 0 đúng.
 
 Chủ: B (#523). Chi tiết từng hành vi (nguồn RN, dòng): [PORTING_INVENTORY.md](PORTING_INVENTORY.md) (A18).

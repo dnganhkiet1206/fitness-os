@@ -1,5 +1,7 @@
 # Kiểm kê port RN → native (A18, #336)
 
+> **Lịch sử (ghi 28/11/2026, Master Audit D-05):** **Bỏ RN (Kiệt chốt 17/11/2026, xác nhận lại 28/11):** app React Native ở `native/` không còn là tham chiếu hành vi. Trang này ghi đối chiếu RN → native trước 17/11, **không phải yêu cầu hiện hành** — đừng lấy dòng "còn thiếu / chưa port" ở đây làm việc phải làm. Giữ để tra lịch sử, không xoá.
+
 > **Đã cũ (17/10/2026):** nhiều dòng "not ported" ở đây đã được port. Trạng thái hiện hành: [PARITY_MATRIX.md](PARITY_MATRIX.md) mục 0. Trang này giữ làm tham chiếu dòng nguồn RN.
 
 Baseline: `fac9ac2` (`native/src/**`). Native: chuỗi nhánh A tới `agent/a/lifecycle` (#397).
