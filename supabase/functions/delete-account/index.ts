@@ -77,6 +77,9 @@ import { corsHeaders, json, requireUser } from "../_shared/guard.ts";
  */
 
 const BUCKET = "progress-photos";
+/** Largest delete-account body that is parsed at all (SEC-13). The one field
+    it may carry, an Apple authorization code, is a few hundred bytes. */
+const MAX_BODY_BYTES = 4096;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -99,13 +102,16 @@ serve(async (req) => {
     /*
       Revoke the Sign in with Apple grant, if this account has one — before
       anything is destroyed, and fenced off so it can never fail the
-      deletion. The body is read best-effort for exactly two fields, the
-      token material revocation needs (`apple_refresh_token`,
-      `apple_authorization_code`); a body that is absent or not JSON simply
-      means no token was supplied. The identity still comes from the
-      Authorization header, never from the body — the body fields name a
-      token to revoke, not a user — and the delete-account gate allows no
-      other field to be read off it. Whether the account is Apple-linked,
+      deletion. The body is read best-effort for exactly one field, the
+      token material revocation needs (`apple_authorization_code`); a body
+      that is absent, not JSON, or larger than `MAX_BODY_BYTES` simply means
+      no token was supplied. The identity still comes from the
+      Authorization header, never from the body — the field names a code to
+      revoke, not a user — and the delete-account gate allows no other field
+      to be read off it. (Master Audit 28/11, SEC-13: the raw
+      `apple_refresh_token` field is gone, the code must belong to this
+      account's Apple ID — checked in `_shared/apple-signin.ts` — and the
+      body is size-checked before it is parsed.) Whether the account is Apple-linked,
       and every failure of the lookup or the revocation, is decided inside
       `revokeAppleGrantIfLinked`, which never throws and never changes the
       response; the `try` below is the second fence, not the first. That is
@@ -114,17 +120,20 @@ serve(async (req) => {
       the missing-secret / missing-token warnings fire.
     */
     let body: Record<string, unknown> = {};
-    try {
-      const parsed: unknown = await req.json();
-      if (parsed && typeof parsed === "object") body = parsed as Record<string, unknown>;
-    } catch {
-      /* No body / not JSON: no Apple token supplied. */
+    /* Parsed only when the declared size is known and small: a code is a few
+       hundred bytes, and an unbounded `req.json()` would buffer whatever a
+       caller chose to send before anything looked at it. */
+    const declared = Number(req.headers.get("content-length"));
+    if (Number.isFinite(declared) && declared > 0 && declared <= MAX_BODY_BYTES) {
+      try {
+        const parsed: unknown = await req.json();
+        if (parsed && typeof parsed === "object") body = parsed as Record<string, unknown>;
+      } catch {
+        /* Not JSON: no Apple token supplied. */
+      }
     }
     try {
       await revokeAppleGrantIfLinked(admin, userId, {
-        refreshToken: typeof body.apple_refresh_token === "string"
-          ? body.apple_refresh_token
-          : undefined,
         authorizationCode: typeof body.apple_authorization_code === "string"
           ? body.apple_authorization_code
           : undefined,

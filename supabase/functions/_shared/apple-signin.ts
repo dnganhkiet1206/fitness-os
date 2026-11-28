@@ -38,14 +38,25 @@
  * Apple revokes a *refresh token* (or, failing that, an access token). The
  * server does not hold one: Supabase keeps the provider tokens from the
  * sign-in, and the admin API does not hand them back. So the client sends
- * one of two things in the delete-account body, and the server uses
- * whichever arrives:
+ * `apple_authorization_code` in the delete-account body — a fresh code from
+ * re-authenticating with Apple at deletion time — and the server exchanges
+ * it for a refresh token and revokes that. Codes are single-use and expire
+ * in minutes, so only a code minted for this deletion works.
  *
- *   · `apple_refresh_token` — revoked directly;
- *   · `apple_authorization_code` — a fresh code from re-authenticating with
- *     Apple at deletion time, exchanged here for a refresh token and then
- *     revoked. Codes are single-use and expire in minutes, so only a code
- *     minted for this deletion works.
+ * ── whose grant it is (Master Audit 28/11, SEC-13) ──
+ *
+ * The first version also accepted a raw `apple_refresh_token`, and checked
+ * only that the account being deleted *has* an Apple identity — never that
+ * the token belonged to it. Somebody holding another person's refresh token
+ * could delete their own account and revoke the other person's grant. Both
+ * halves are closed:
+ *
+ *   · the raw refresh-token field is gone (no client ever sent it);
+ *   · the code exchange returns an `id_token` straight from Apple over TLS,
+ *     and its `sub` must be one of the Apple identities of the account being
+ *     deleted (`iss` and `aud` are checked too). No match, or no Apple
+ *     subject known for the account, means no revocation — logged, and the
+ *     deletion proceeds.
  *
  * Neither is sent by the client today: the client half (re-authenticate
  * with Apple inside the delete flow, send the code) is follow-up work,
@@ -85,6 +96,42 @@ export type AppleRevokeOutcome =
   | { status: "not_configured" }
   | { status: "no_token" }
   | { status: "failed"; detail: string };
+
+/** The JSON payload of a JWT, unverified, or `null` when it is not one. */
+function jwtPayload(token: unknown): Record<string, unknown> | null {
+  if (typeof token !== "string") return null;
+  const part = token.split(".")[1];
+  if (!part) return null;
+  try {
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "=");
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
+    return parsed && typeof parsed === "object" ? parsed as Record<string, unknown> : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The Apple subject an `id_token` names, when it was issued by Apple for
+ * this client; otherwise `null`.
+ *
+ * The signature is not checked, and does not need to be: this token is
+ * read from the body of Apple's own token-endpoint response, fetched by
+ * this function over TLS a moment ago — not from anything the caller sent.
+ * `iss` / `aud` are checked anyway, so a response for some other client
+ * can never pass for this one.
+ */
+function appleSubject(idToken: unknown, clientId: string): string | null {
+  const claims = jwtPayload(idToken);
+  if (!claims) return null;
+  if (claims.iss !== "https://appleid.apple.com") return null;
+  const aud = claims.aud;
+  if (!(aud === clientId || (Array.isArray(aud) && aud.includes(clientId)))) return null;
+  return typeof claims.sub === "string" && claims.sub ? claims.sub : null;
+}
 
 /* `Uint8Array<ArrayBuffer>`, not bare `Uint8Array`: Web Crypto's
    `BufferSource` requires an `ArrayBuffer`-backed view, and the bare
@@ -159,13 +206,16 @@ async function appleError(res: Response): Promise<string> {
   return `http_${res.status}`;
 }
 
-/** Exchange a fresh authorization code for a refresh token, or `null`. */
+/**
+ * Exchange a fresh authorization code for a refresh token plus the Apple
+ * subject it was issued to, or `null`.
+ */
 async function exchangeAuthorizationCode(
   code: string,
   cfg: AppleSignInConfig,
   clientSecret: string,
   doFetch: typeof fetch,
-): Promise<string | null> {
+): Promise<{ refreshToken: string; subject: string | null } | null> {
   const form = new URLSearchParams({
     client_id: cfg.clientId,
     client_secret: clientSecret,
@@ -182,7 +232,8 @@ async function exchangeAuthorizationCode(
     return null;
   }
   const body = await res.json();
-  return typeof body?.refresh_token === "string" ? body.refresh_token : null;
+  if (typeof body?.refresh_token !== "string") return null;
+  return { refreshToken: body.refresh_token, subject: appleSubject(body?.id_token, cfg.clientId) };
 }
 
 /**
@@ -193,11 +244,15 @@ async function exchangeAuthorizationCode(
  * the account regardless. Every outcome is logged, so a skipped revocation
  * is visible in the function logs rather than silent.
  *
+ * `appleSubjects` are the Apple identities of the account being deleted.
+ * The exchanged code's subject must be one of them, or nothing is revoked
+ * (SEC-13, see the header).
+ *
  * `deps` exists for tests: pass a config and a stub `fetch` instead of
  * reading secrets and calling Apple.
  */
 export async function revokeAppleTokens(
-  input: { refreshToken?: string; authorizationCode?: string },
+  input: { authorizationCode?: string; appleSubjects: readonly string[] },
   deps: { config?: AppleSignInConfig | null; fetchImpl?: typeof fetch } = {},
 ): Promise<AppleRevokeOutcome> {  const cfg = deps.config === undefined ? appleSignInConfig() : deps.config;
   const doFetch = deps.fetchImpl ?? fetch;
@@ -210,25 +265,35 @@ export async function revokeAppleTokens(
       return { status: "not_configured" };
     }
 
-    let refreshToken = input.refreshToken;
-    if (!refreshToken && input.authorizationCode) {
-      refreshToken = (await exchangeAuthorizationCode(
-        input.authorizationCode,
-        cfg,
-        await signInClientSecret(cfg),
-        doFetch,
-      )) ?? undefined;
-      if (!refreshToken) {
-        return { status: "failed", detail: "code_exchange_failed" };
-      }
-    }
-    if (!refreshToken) {
+    if (!input.authorizationCode) {
       console.error(
-        "apple-signin-revoke: skipped, no apple_refresh_token or apple_authorization_code " +
-          "supplied — the client must send a fresh authorization code at deletion time",
+        "apple-signin-revoke: skipped, no apple_authorization_code supplied — the client " +
+          "must send a fresh authorization code at deletion time",
       );
       return { status: "no_token" };
     }
+    if (input.appleSubjects.length === 0) {
+      /* An Apple identity with no subject on record cannot be matched, so
+         no code can be proven to belong to it. Refuse rather than guess. */
+      console.error("apple-signin-revoke: skipped, the account's Apple subject is unknown");
+      return { status: "failed", detail: "identity_unknown" };
+    }
+    const exchanged = await exchangeAuthorizationCode(
+      input.authorizationCode,
+      cfg,
+      await signInClientSecret(cfg),
+      doFetch,
+    );
+    if (!exchanged) {
+      return { status: "failed", detail: "code_exchange_failed" };
+    }
+    if (!exchanged.subject || !input.appleSubjects.includes(exchanged.subject)) {
+      /* The code was minted for somebody else's Apple ID (or Apple's answer
+         named nobody). Revoking it would end another person's grant. */
+      console.error("apple-signin-revoke: skipped, the code belongs to a different Apple ID");
+      return { status: "failed", detail: "identity_mismatch" };
+    }
+    const refreshToken = exchanged.refreshToken;
 
     const form = new URLSearchParams({
       client_id: cfg.clientId,
@@ -259,11 +324,34 @@ export async function revokeAppleTokens(
  * one call that lists a user's identities. Kept structural so tests can
  * pass a stub and the handler can pass its real client.
  */
+/**
+ * One row of `user.identities`. GoTrue serialises the provider's own user
+ * id as `id` (the Apple `sub` for an Apple identity); `identity_data.sub`
+ * carries the same value from the provider's claims.
+ */
+export interface AppleIdentityRow {
+  provider?: string;
+  id?: string;
+  identity_data?: Record<string, unknown> | null;
+}
+
+/** Every Apple subject on record for these identities. */
+export function appleSubjectsOf(identities: readonly AppleIdentityRow[]): string[] {
+  const out = new Set<string>();
+  for (const i of identities) {
+    if (i.provider !== "apple") continue;
+    if (typeof i.id === "string" && i.id) out.add(i.id);
+    const sub = i.identity_data?.sub;
+    if (typeof sub === "string" && sub) out.add(sub);
+  }
+  return [...out];
+}
+
 export interface AppleIdentityAdmin {
   auth: {
     admin: {
       getUserById(userId: string): Promise<{
-        data: { user: { identities?: Array<{ provider?: string }> | null } | null };
+        data: { user: { identities?: Array<AppleIdentityRow> | null } | null };
         error: { message: string } | null;
       }>;
     };
@@ -295,10 +383,10 @@ export interface AppleIdentityAdmin {
 export async function revokeAppleGrantIfLinked(
   admin: AppleIdentityAdmin,
   userId: string,
-  input: { refreshToken?: string; authorizationCode?: string },
+  input: { authorizationCode?: string },
   deps: { config?: AppleSignInConfig | null; fetchImpl?: typeof fetch } = {},
 ): Promise<void> {
-  let identities: Array<{ provider?: string }> | null | undefined;
+  let identities: Array<AppleIdentityRow> | null | undefined;
   try {
     const { data, error } = await admin.auth.admin.getUserById(userId);
     if (error) {
@@ -312,5 +400,8 @@ export async function revokeAppleGrantIfLinked(
     return;
   }
   if (!(identities ?? []).some((i) => i.provider === "apple")) return;
-  await revokeAppleTokens(input, deps);
+  await revokeAppleTokens(
+    { authorizationCode: input.authorizationCode, appleSubjects: appleSubjectsOf(identities ?? []) },
+    deps,
+  );
 }
