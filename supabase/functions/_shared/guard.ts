@@ -21,7 +21,7 @@
  * RLS in force. The platform gate would only duplicate this one.
  */
 
-import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.119.0";
 
 /**
  * Database nằm ở đâu — cho một function có thể KHÔNG được deploy cạnh nó.

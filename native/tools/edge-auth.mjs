@@ -119,6 +119,25 @@ for (const fn of fns) {
   }
 }
 
+/* ── thư viện từ esm.sh phải ghim bản chính xác ──
+   Các function chạy bằng khoá service. `supabase-js@2` trôi theo bản @2 mới nhất ở mỗi
+   lần deploy, không lockfile, không hash — một bản @2 hỏng hay bị chiếm chạy với toàn
+   quyền database (Master Audit 28/11, SEC-11 / P2-05). Ghim x.y.z; nâng bản là một commit. */
+{
+  const walk = (d) =>
+    readdirSync(d).flatMap((f) => {
+      const p = path.join(d, f);
+      return statSync(p).isDirectory() ? walk(p) : p.endsWith('.ts') ? [p] : [];
+    });
+  for (const p of walk(DIR)) {
+    for (const m of readFileSync(p, 'utf8').matchAll(/https:\/\/esm\.sh\/((?:@[\w.-]+\/)?[\w.-]+)@([^/"'?\s]+)/g)) {
+      if (!/^\d+\.\d+\.\d+$/.test(m[2])) {
+        problems.push(`${path.relative(DIR, p)}: esm.sh ${m[1]}@${m[2]} chưa ghim bản chính xác (x.y.z)`);
+      }
+    }
+  }
+}
+
 /* ── requireUser kiểm đủ ba thứ ── */
 {
   const guard = strip(read('_shared/guard.ts'));

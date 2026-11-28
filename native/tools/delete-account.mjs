@@ -92,7 +92,7 @@ try {
       p,
       readFileSync(p, 'utf8')
         .replace('https://deno.land/std@0.168.0/http/server.ts', './shim-serve.js')
-        .replace('https://esm.sh/@supabase/supabase-js@2', './shim-sb.js')
+        .replace(/https:\/\/esm\.sh\/@supabase\/supabase-js@[0-9.]+/, './shim-sb.js')
         .replaceAll('"../_shared/guard.ts"', '"./guard.ts"')
         .replaceAll('"../_shared/apple-signin.ts"', '"./apple-signin.ts"'),
     );
