@@ -41,8 +41,11 @@ export function buildProfileContext(profile: CoachProfileRow | null) {
     name: profile.name,
     goal: profile.goal,
     weight_kg: profile.weight_kg,
-    /* Đơn vị cân người dùng chọn — mức tạ trong câu trả lời viết theo nó (28/10). */
-    weight_unit: profile.units_weight === "lb" ? "lb" : "kg",
+    /* Đơn vị cân người dùng chọn — mức tạ trong câu trả lời viết theo nó (28/10).
+       App ghi `"lbs"` (ASCNDCore/Profile/WeightUnit.swift); bản đầu chỉ so `"lb"`
+       nên người chọn lb vẫn nhận câu trả lời bằng kg (Master Audit 28/11, P3-03).
+       Nhận cả hai; prompt vẫn nhận nhãn `"lb"`. */
+    weight_unit: profile.units_weight === "lbs" || profile.units_weight === "lb" ? "lb" : "kg",
     height_cm: profile.height_cm,
     activity_level: profile.activity_level,
     training_level: profile.training_level,

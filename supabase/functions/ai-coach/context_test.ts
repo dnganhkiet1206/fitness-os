@@ -32,6 +32,14 @@ Deno.test("profile block carries the five safety fields (KOA-T02)", () => {
   assertEquals(block?.macro_targets.protein, 150);
 });
 
+Deno.test("weight_unit reads the app's stored \"lbs\" as lb (audit P3-03)", () => {
+  assertEquals(buildProfileContext({ units_weight: "lbs" })?.weight_unit, "lb");
+  assertEquals(buildProfileContext({ units_weight: "lb" })?.weight_unit, "lb");
+  assertEquals(buildProfileContext({ units_weight: "kg" })?.weight_unit, "kg");
+  assertEquals(buildProfileContext({ units_weight: null })?.weight_unit, "kg");
+  assertEquals(buildProfileContext({})?.weight_unit, "kg");
+});
+
 Deno.test("null profile returns null", () => {
   assertEquals(buildProfileContext(null), null);
 });

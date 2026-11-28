@@ -5,8 +5,14 @@ public import Foundation
 /// Gains quyết định 6 hạng vóc dáng Newbie → Mass Monster.
 ///
 /// Tính lại từ đầu mỗi lần, từ lịch sử buổi tập (ngày + cờ PR) và lịch tuần —
-/// không có sổ riêng trên server, nên không thể "mua" hay ghi sai: hai máy cùng
+/// không có sổ riêng trên server, nên không "mua" được Gains và hai máy cùng
 /// lịch sử ra cùng một số.
+///
+/// KHÔNG chống được giả mạo: Gains chỉ tính ở app, từ buổi tập do chính người
+/// dùng ghi. Ai sửa app hay ghi buổi giả vẫn nâng được Gains, và server không
+/// kiểm hạng khi mua đồ (`buy_mascot_item` chỉ kiểm giá + số dư) — hạn chế đã
+/// ghi sổ (KOA-T57, `CONSTRAINTS_AND_DEFERRED.md`), xét lại trước khi phát hành.
+/// Bản cũ của chú thích này ghi "không thể ghi sai" (Master Audit 28/11, P3-03).
 ///
 /// Chống gian lận (02/11, Kiệt): chỉ buổi tạ ĐẦU TIÊN trong ngày có thưởng. Điểm buổi vốn tính một
 /// lần mỗi ngày; kỷ lục và tăng tải của buổi sau cũng không cộng (`firstSessionBonus`). Buổi đi bộ
