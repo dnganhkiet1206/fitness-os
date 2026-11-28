@@ -130,6 +130,64 @@ export async function readJsonBody(req: Request): Promise<Record<string, any> | 
   return json({ error: "invalid_json" }, 400);
 }
 
+/**
+ * The request body parsed as JSON, read with a byte ceiling — or the 413 / 400
+ * to send back.
+ *
+ * For handlers anyone can reach without a token (`store-webhook`): checking a
+ * field's length AFTER `req.json()` checks nothing, because by then the whole
+ * body has been buffered (Master Audit 28/11, AUD-82). Here the declared
+ * `content-length` is refused first, and the stream is read chunk by chunk and
+ * abandoned the moment it passes `maxBytes`, so a chunked body with no length
+ * header cannot get round it either.
+ *
+ * A request without a readable stream (the Node harnesses in `native/tools`
+ * build plain objects with only `json()`) falls back to `req.json()`; the real
+ * runtime always has `req.body` for a POST that carries one.
+ */
+export async function readJsonCapped(req: Request, maxBytes: number): Promise<{ value: unknown } | Response> {
+  const declared = Number(req.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    return json({ error: "Payload too large" }, 413);
+  }
+  const stream = (req as { body?: ReadableStream<Uint8Array> | null }).body;
+  if (!stream || typeof stream.getReader !== "function") {
+    try {
+      return { value: await req.json() };
+    } catch {
+      return json({ error: "Bad request" }, 400);
+    }
+  }
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel().catch(() => {});
+        return json({ error: "Payload too large" }, 413);
+      }
+      chunks.push(value);
+    }
+  } catch {
+    return json({ error: "Bad request" }, 400);
+  }
+  const bytes = new Uint8Array(total);
+  let at = 0;
+  for (const c of chunks) {
+    bytes.set(c, at);
+    at += c.byteLength;
+  }
+  try {
+    return { value: JSON.parse(new TextDecoder().decode(bytes)) };
+  } catch {
+    return json({ error: "Bad request" }, 400);
+  }
+}
+
 export interface Caller {
   userId: string;
   supabase: SupabaseClient;

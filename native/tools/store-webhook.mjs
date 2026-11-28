@@ -349,6 +349,13 @@ try {
        o.legalIdAppleCalls = Apple.calls.length;
        fresh(); healthy();
        o.badJsonStatus = (await post(webhook, Symbol('not json'))).status;
+       /* AUD-82: a body declared larger than the ceiling is refused before it is
+          parsed — json() throws here, so reaching it would surface as a 400. */
+       o.declaredHugeParsed = false;
+       const hugeRes = await webhook({ method: 'POST',
+         headers: { get: (x) => (x.toLowerCase() === 'content-length' ? String(10 * 1024 * 1024) : null) },
+         json: async () => { o.declaredHugeParsed = true; return {}; } });
+       o.declaredHugeStatus = hugeRes.status;
 
        /* G — nothing about this server's insides comes back to a stranger */
        fresh(); healthy();
@@ -464,6 +471,11 @@ try {
   want(
     r.badJsonStatus === 400,
     `body không phải JSON trả ${r.badJsonStatus} — 5xx bắt Apple gửi lại nhiều ngày một thứ không bao giờ parse được`,
+  );
+  want(
+    r.declaredHugeStatus === 413 && r.declaredHugeParsed === false,
+    `body khai báo 10 MB ra ${r.declaredHugeStatus}, parsed=${r.declaredHugeParsed} — store-webhook không xác thực người gọi, ` +
+      'nên quá trần phải bị từ chối TRƯỚC khi đọc body (AUD-82), không phải đo sau khi đã đệm hết',
   );
 
   /* G — no insides */
