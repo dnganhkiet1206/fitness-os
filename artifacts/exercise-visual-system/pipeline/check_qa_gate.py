@@ -33,12 +33,20 @@ import sys
 from pathlib import Path
 
 # Bài template mà cổng kiểm theo mặc định (validate_motion chạy được cho cả hai).
-DEFAULT_EXERCISES = ("back-squat", "dumbbell-curl")
+# 28/11 (Master Audit P1-08): mọi bài template (trước chỉ 2 bài; 5 bài kia và clip lỗi sai chưa
+# từng được CI đo lại). CI đọc danh sách này qua ``--list``.
+DEFAULT_EXERCISES = ("back-squat", "dumbbell-curl", "hammer-curl", "side-lateral-raise",
+                     "stiff-leg-dumbbell-deadlift", "dumbbell-shoulder-press", "bent-over-two-dumbbell-row",
+                     "dumbbell-curl-mistake-elbows-forward")
 
 # (bài, id kiểm tra) -> lý do. Số đo lấy từ lần chạy 14/11/2026, Blender 5.2.0.
 # 17/11: back-squat/skin_stretch (p99.9 3.284 > 2.6 ở khung 56) đã hết FAIL sau
 # khi làm lại squat + nhân vật 3.3.0 (16/11); đo lại 18/18 PASS nên xoá khỏi đây.
-KNOWN_FAILURES: dict[tuple[str, str], str] = {}
+KNOWN_FAILURES: dict[tuple[str, str], str] = {
+    # 28/11 đo trên nhánh gốc (Blender 5.2.0, macOS): p99.9 2.643 > 2.6 ở đỉnh đẩy (nách khi tay
+    # qua đầu). Bản nhân vật 005 (nhánh claude/3d-character-005, 3D tạm dừng theo Kiệt 28/11) còn 3.07.
+    ("dumbbell-shoulder-press", "skin_stretch"): "p99.9 2.643 > 2.6 (nách, tay qua đầu), 28/11",
+}
 
 
 def check_report(report_path: Path, exercise: str) -> tuple[list[str], list[str]]:
@@ -81,8 +89,9 @@ def check_report(report_path: Path, exercise: str) -> tuple[list[str], list[str]
     return violations, warnings
 
 
-def check(root: Path, exercises: tuple[str, ...] = DEFAULT_EXERCISES) -> tuple[list[str], list[str]]:
-    """Chạy cổng cho các bài đã cho. Trả về (vi phạm, cảnh báo)."""
+def check(root: Path, exercises: tuple[str, ...] | None = None) -> tuple[list[str], list[str]]:
+    """Chạy cổng cho các bài đã cho (mặc định ``DEFAULT_EXERCISES``). Trả về (vi phạm, cảnh báo)."""
+    exercises = DEFAULT_EXERCISES if exercises is None else exercises
     violations, warnings = [], []
     for exercise in exercises:
         report_path = root / exercise / "qa_report.json"
@@ -99,7 +108,11 @@ def main(argv: list[str] | None = None) -> int:
                         help="gốc cây kit (mặc định: thư mục chứa pipeline/)")
     parser.add_argument("--exercise", action="append", dest="exercises", default=[],
                         help="bài cần chặn (lặp lại được; mặc định: bài template)")
+    parser.add_argument("--list", action="store_true", help="in danh sách bài mặc định (cho CI) rồi thoát")
     args = parser.parse_args(argv)
+    if args.list:
+        print(" ".join(DEFAULT_EXERCISES))
+        return 0
     exercises = tuple(args.exercises) if args.exercises else DEFAULT_EXERCISES
     violations, warnings = check(args.root, exercises)
     for warning in warnings:
