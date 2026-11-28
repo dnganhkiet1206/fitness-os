@@ -51,6 +51,12 @@ struct ExerciseCompareText {
 
   private func signed(_ text: String, _ positive: Bool) -> String { (positive ? "+" : "−") + text }
 
+  /// `light`: buổi nhẹ có chủ đích (tuần nhẹ / "Tập nhẹ hơn") — giảm thì ghi "Buổi nhẹ · −10 kg"
+  /// (Kiệt 24/11: không để chip hổ phách nói như lùi sức).
+  func chip(_ d: ExerciseCompare.Delta, light: Bool) -> String {
+    light && d.isDown ? String(localized: "xp.chip.light \(chip(d))") : chip(d)
+  }
+
   func chip(_ d: ExerciseCompare.Delta) -> String {
     switch d {
     case .first: String(localized: "xp.chip.first")
@@ -66,7 +72,8 @@ struct ExerciseCompareText {
   }
 
   /// Tăng tạ: nền đặc; thêm reps / giây: nền nhạt; giảm: hổ phách; còn lại: xám.
-  static func chipColors(_ d: ExerciseCompare.Delta) -> (fg: Color, bg: Color) {
+  static func chipColors(_ d: ExerciseCompare.Delta, light: Bool = false) -> (fg: Color, bg: Color) {
+    if light && d.isDown { return (DS.Color.mutedForeground.swiftUI, DS.Color.foreground.swiftUI.opacity(0.08)) }
     let good = DS.Color.statusGood.swiftUI
     switch d {
     case .weight(let kg) where kg > 0: return (DS.Color.background.swiftUI, good)
@@ -90,10 +97,12 @@ struct ExerciseCompareText {
 struct ExerciseDeltaChip: View {
   let delta: ExerciseCompare.Delta
   let text: ExerciseCompareText
+  /// Buổi nhẹ có chủ đích — giảm tạ không tô màu lùi sức.
+  var light = false
 
   var body: some View {
-    let c = ExerciseCompareText.chipColors(delta)
-    Text(verbatim: text.chip(delta))
+    let c = ExerciseCompareText.chipColors(delta, light: light)
+    Text(verbatim: text.chip(delta, light: light))
       .font(DS.TextStyle.caption.weight(.bold))
       .monospacedDigit()
       .foregroundStyle(c.fg)
