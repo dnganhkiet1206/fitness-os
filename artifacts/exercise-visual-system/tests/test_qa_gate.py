@@ -31,6 +31,7 @@ def _report(*checks: tuple[str, str]) -> dict:
 
 
 # Danh sách lỗi đã biết thật đang trống (17/11); các test cơ chế dùng một mục mẫu.
+_REAL_EXERCISES = check_qa_gate.DEFAULT_EXERCISES  # trước khi setUp thay bằng 2 bài
 _SAMPLE_KNOWN = {("back-squat", "skin_stretch"): "mục mẫu cho test"}
 
 
@@ -45,6 +46,12 @@ def _make_kit(tmp: Path, reports: dict[str, dict | None]) -> Path:
 
 
 class QaGateTests(unittest.TestCase):
+    # Các test cơ chế dựng cây giả chỉ có 2 bài; danh sách thật (28/11: 8 bài) do test_real_tree kiểm.
+    def setUp(self):
+        patcher = mock.patch.object(check_qa_gate, "DEFAULT_EXERCISES", ("back-squat", "dumbbell-curl"))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_all_pass_passes(self):
         with tempfile.TemporaryDirectory() as tmp:
             kit = _make_kit(Path(tmp), {
@@ -124,8 +131,9 @@ class QaGateTests(unittest.TestCase):
 
     def test_real_tree_passes(self):
         # The committed reports must pass: the gate is green on the tree.
-        violations, _ = check_qa_gate.check(ROOT)
+        violations, _ = check_qa_gate.check(ROOT, _REAL_EXERCISES)
         self.assertEqual(violations, [])
+        self.assertGreaterEqual(len(_REAL_EXERCISES), 8)  # 28/11: mọi bài template
 
 
 if __name__ == "__main__":

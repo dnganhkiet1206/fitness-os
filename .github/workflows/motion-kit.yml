@@ -151,7 +151,7 @@ jobs:
           "$HOME/blender-5.2.0-linux-x64/blender" -b --factory-startup --python-exit-code 1 \
             --python artifacts/exercise-visual-system/pipeline/check_usdz_uv.py -- \
             $(find artifacts/exercise-visual-system -name '*.usdz' | sort) \
-            $(find apps/ios/ASCND/Resources/ExerciseDemos -name '*_animation.usdz' | sort)
+            $(find apps/ios/ASCND/Resources/ExerciseDemos \( -name '*_animation.usdz' -o -name 'character_*.usdz' -o -name 'apparel_shorts*.usdz' \) | sort)
 
       # Chạy trên file .blend đã commit, không dựng lại: đo đúng dữ liệu
       # trong PR. validate_motion ghi lại qa_report.json trong cây làm việc
@@ -159,10 +159,14 @@ jobs:
       - name: Validate bài template
         working-directory: artifacts/exercise-visual-system
         run: |
-          "$HOME/blender-5.2.0-linux-x64/blender" -b --factory-startup --python-exit-code 1 \
-            --python pipeline/validate_motion.py -- --exercise back-squat
-          "$HOME/blender-5.2.0-linux-x64/blender" -b --factory-startup --python-exit-code 1 \
-            --python pipeline/validate_motion.py -- --exercise dumbbell-curl
+          # 28/11 (Master Audit P1-08): đủ mọi bài template, không chỉ 2 bài. Danh sách lấy từ
+          # check_qa_gate.py để hai nơi không lệch nhau. Bench có validator riêng, không ở đây.
+          for ex in $(python3 pipeline/check_qa_gate.py --list); do
+            echo "::group::validate $ex"
+            "$HOME/blender-5.2.0-linux-x64/blender" -b --factory-startup --python-exit-code 1 \
+              --python pipeline/validate_motion.py -- --exercise "$ex"
+            echo "::endgroup::"
+          done
 
       # validate_motion chỉ đo, không tự chặn khi FAIL — đây mới là chỗ
       # chặn. Lỗi đã biết (squat skin_stretch) nằm trong script kèm số đo;
@@ -170,3 +174,11 @@ jobs:
       - name: Cổng chặn hồi quy
         working-directory: artifacts/exercise-visual-system
         run: python3 pipeline/check_qa_gate.py
+
+      # 28/11 (Master Audit P1-08): bản USDZ trong app phải đúng là bản kit hiện tại đã thu gọn
+      # (slim_app_usdz A1/A4). So nội dung USD, không so byte (bản app luôn khác byte vì đã thu gọn).
+      - name: Kiểm USDZ trong app khớp kit
+        working-directory: artifacts/exercise-visual-system
+        run: |
+          "$HOME/blender-5.2.0-linux-x64/blender" -b --factory-startup --python-exit-code 1 \
+            --python pipeline/check_app_usdz_drift.py
