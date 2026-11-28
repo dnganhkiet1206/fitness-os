@@ -2,7 +2,7 @@ import { callAI, promptLang } from "../_shared/ai.ts";
 import { DATA_SLOT, fillData, forSpanish } from "../_shared/prompt-slots.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { aiGate, aiPayload, corsHeaders, localDate, oneOf, opaque, quotaExceeded, requireUser, toolArgs } from "../_shared/guard.ts";
+import { aiGate, aiPayload, corsHeaders, localDate, oneOf, opaque, quotaExceeded, readJsonBody, requireUser, toolArgs } from "../_shared/guard.ts";
 import { localHour } from "../_shared/sleep.ts";
 
 /** Output ceiling — the reply is a short list of meals. */
@@ -25,7 +25,10 @@ serve(async (req) => {
       not the gateway is reached, so a malformed one used to cost a call for
       nothing — see the same note in `ai-coach`.
     */
-    const { meal_type, lang: asked_lang = "vi", date, tzOffset } = await req.json().catch(() => ({}));
+    /* An unparseable body is a 400 here, not `{}` past the gate (SEC-19, `readJsonBody`). */
+    const body = await readJsonBody(req);
+    if (body instanceof Response) return body;
+    const { meal_type, lang: asked_lang = "vi", date, tzOffset } = body;
     // es → nhánh tiếng Anh, đổi sang tiếng Tây Ban Nha khi gửi (`forSpanish`).
     const lang = promptLang(asked_lang);
 

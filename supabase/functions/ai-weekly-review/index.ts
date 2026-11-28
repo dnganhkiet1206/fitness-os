@@ -2,7 +2,7 @@ import { callAI, promptLang } from "../_shared/ai.ts";
 import { DATA_SLOT, fillData, forSpanish } from "../_shared/prompt-slots.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { aiGate, aiPayload, corsHeaders, json, localDate, opaque, quotaExceeded, requireUser, toolArgs } from "../_shared/guard.ts";
+import { aiGate, aiPayload, corsHeaders, json, localDate, opaque, quotaExceeded, readJsonBody, requireUser, toolArgs } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
 
 /** Output ceiling — the reply is a structured review, not an essay. */
@@ -24,7 +24,10 @@ serve(async (req) => {
       because the quota was claimed before the body was read. Same shape check
       `ai-coach` already applies to its own `date`.
     */
-    const { week_start, lang: asked_lang = "vi", today: asked_today } = await req.json().catch(() => ({}));
+    /* An unparseable body is a 400 here, not `{}` (SEC-19, `readJsonBody`). */
+    const body = await readJsonBody(req);
+    if (body instanceof Response) return body;
+    const { week_start, lang: asked_lang = "vi", today: asked_today } = body;
     // es → nhánh tiếng Anh, đổi sang tiếng Tây Ban Nha khi gửi (`forSpanish`).
     const lang = promptLang(asked_lang);
     /*
