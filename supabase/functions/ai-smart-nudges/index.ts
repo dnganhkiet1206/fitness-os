@@ -2,7 +2,7 @@ import { callAI, promptLang } from "../_shared/ai.ts";
 import { DATA_SLOT, fillData, forSpanish } from "../_shared/prompt-slots.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { aiGate, aiPayload, corsHeaders, localDate, opaque, quotaExceeded, requireUser, toolArgs } from "../_shared/guard.ts";
+import { aiGate, aiPayload, corsHeaders, localDate, opaque, quotaExceeded, readJsonBody, requireUser, toolArgs } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
 import { asleepMinutes, localHour, SLEEP_COLUMNS } from "../_shared/sleep.ts";
 import { readWaterUnit, waterAmount, waterRule } from "../_shared/water.ts";
@@ -24,7 +24,10 @@ serve(async (req) => {
       not the gateway is reached, so a malformed one used to cost a call for
       nothing — see the same note in `ai-coach`.
     */
-    const { lang: asked_lang = "vi", date, tzOffset, waterUnit } = await req.json().catch(() => ({}));
+    /* An unparseable body is a 400 here, not `{}` past the gate (SEC-19, `readJsonBody`). */
+    const body = await readJsonBody(req);
+    if (body instanceof Response) return body;
+    const { lang: asked_lang = "vi", date, tzOffset, waterUnit } = body;
     /* Đơn vị nước của người dùng (27/10): "oz" → số nước gửi model bằng oz; app cũ
        không gửi → "ml", payload như trước. */
     const water_unit = readWaterUnit(waterUnit);
