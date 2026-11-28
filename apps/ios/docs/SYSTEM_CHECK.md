@@ -1,5 +1,7 @@
 # Bot kiểm hệ thống
 
+> **⚠️ Lưu ý (ghi 28/11/2026, Master Audit 28/11 D-06):** phần **Server** dưới đây **chưa từng chạy được** trên CI — workflow thiếu secret `SUPABASE_ACCESS_TOKEN` (ghi ở `CONSTRAINTS_AND_DEFERRED.md`, mục 24/11), nên mọi dòng server trong báo cáo của bot là "bỏ qua", không phải "ổn". Muốn bật: Kiệt thêm secret ấy trong Settings › Secrets and variables › Actions (tên, không bao giờ giá trị, ghi trong repo). Thêm nữa, lịch hằng ngày (`schedule`) chưa chạy lần nào vì tệp workflow chưa nằm trên nhánh mặc định (`main`) — audit P0-05, chờ Kiệt quyết.
+
 Kiệt yêu cầu 28/10: một bot kiểm **nhánh `native/ios-rewrite`, server Supabase, Sentry, PostHog** và báo khi có việc. Bot **chỉ đọc**: không deploy, không ghi database, không sửa issue Sentry, không in giá trị secret.
 
 - Logic: `.github/scripts/system-check.mjs` (Node 22, không phụ thuộc gói nào).
