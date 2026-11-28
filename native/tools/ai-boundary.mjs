@@ -128,6 +128,23 @@ const problems = [];
       problems.push(`${f}/index.ts: không đi qua aiGate — cổng hai trạng thái không phân biệt được "hết hạn mức" với "vượt nhưng có ví"`);
     }
     /*
+      Thân hỏng không được thành `{}` rồi đi qua cổng (Master Audit 28/11, SEC-19).
+      `req.json().catch(() => ({}))` biến một thân không parse được thành "dùng mặc
+      định", aiGate đếm một lượt, và nhà cung cấp trả tiền nhận một yêu cầu rỗng.
+      Dùng `readJsonBody` (thân rỗng → {}, hỏng → 400) TRƯỚC aiGate.
+    */
+    if (/req\.json\(\)\s*\.catch\(\s*\(\)\s*=>\s*\(\s*\{\s*\}\s*\)\s*\)/.test(code)) {
+      problems.push(
+        `${f}/index.ts: đọc thân bằng req.json().catch(() => ({})) — thân hỏng thành {} rồi tiêu một lượt ` +
+          'hạn mức; dùng readJsonBody (hỏng → 400) trước aiGate',
+      );
+    }
+    const iBody = code.indexOf('readJsonBody(req)');
+    const iGate = code.indexOf('aiGate(');
+    if (iBody >= 0 && iGate >= 0 && iBody > iGate) {
+      problems.push(`${f}/index.ts: readJsonBody đứng SAU aiGate — thân hỏng vẫn tiêu một lượt trước khi bị trả 400`);
+    }
+    /*
       Luật này từng khẳng định CÁCH CHỮA, không phải tính chất.
 
       Nó đòi thấy chữ `recordTokens(` trong tệp — và điều đó đúng chừng nào phép
@@ -206,5 +223,6 @@ console.log(
     'thẳng vào getReader() và nhận một tin nhắn RỖNG, không phải một lỗi. Bộ lọc được CHẠY THẬT: 7 ' +
     'câu moi cấu hình đều bị chặn, và 9 câu hỏi sức khoẻ thật đều đi qua — kể cả những câu chứa ' +
     '"model", "ignore" và "forget", vì một bộ lọc chặn nhầm rơi đúng vào người đang hỏi một câu ' +
-    'quan trọng về cơ thể họ',
+    'quan trọng về cơ thể họ. Không function AI nào đọc thân bằng req.json().catch(() => ({})): thân ' +
+    'hỏng là 400 trước aiGate (readJsonBody), không phải một lượt hạn mức cho một yêu cầu rỗng',
 );

@@ -153,9 +153,11 @@ const hits = [];
      — and a first version of this rule only recognised `body?.date`, so it
      reported both of them as guessing when both were already correct. A rule
      whose first run is two false positives out of three teaches people to
-     ignore it. */
+     ignore it. Since SEC-19 (28/11) the body is parsed first by `readJsonBody`
+     and destructured from that variable — `const { …, date } = body;` — which
+     is the same read. */
   const FROM_BODY =
-    /body[?.]*\.date|const\s*\{[^}]*\bdate\b[^}]*\}\s*=\s*(?:await\s*)?req\.json|week_start|body\?\.\w*[Ww]eek/;
+    /body[?.]*\.date|const\s*\{[^}]*\bdate\b[^}]*\}\s*=\s*(?:(?:await\s*)?req\.json|body\b)|week_start|body\?\.\w*[Ww]eek/;
 
   for (const dir of readdirSync(FUNCS)) {
     const file = path.join(FUNCS, dir, 'index.ts');

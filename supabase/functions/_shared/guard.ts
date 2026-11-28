@@ -96,6 +96,40 @@ export function json(body: unknown, status = 200): Response {
   });
 }
 
+/**
+ * The request body as a JSON object, or the 400 to send back.
+ *
+ * For handlers that spend AI quota: the body must be judged BEFORE `aiGate`,
+ * which counts a call whether or not the gateway is reached. The first
+ * version read bodies as `req.json().catch(() => ({}))` — an unparseable body
+ * became `{}`, went through the gate and cost a call (and a paid provider
+ * request with empty input) for nothing (Master Audit 28/11, SEC-19).
+ *
+ * An EMPTY body still means `{}`: every field these handlers read has a
+ * default, and an empty body is a request for the defaults, not a malformed
+ * one. Anything non-empty that is not a JSON object is a 400.
+ */
+// deno-lint-ignore no-explicit-any -- the same type `req.json()` gives, so the handlers keep their field checks unchanged
+export async function readJsonBody(req: Request): Promise<Record<string, any> | Response> {
+  let text: string;
+  try {
+    text = await req.text();
+  } catch {
+    return json({ error: "invalid_json" }, 400);
+  }
+  if (text.trim() === "") return {};
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      // deno-lint-ignore no-explicit-any
+      return parsed as Record<string, any>;
+    }
+  } catch {
+    /* fall through */
+  }
+  return json({ error: "invalid_json" }, 400);
+}
+
 export interface Caller {
   userId: string;
   supabase: SupabaseClient;
