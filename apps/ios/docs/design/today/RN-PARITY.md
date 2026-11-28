@@ -1,5 +1,7 @@
 # Today tab: what came from RN, what changed, and what is new
 
+> **Lịch sử (ghi 28/11/2026, Master Audit D-05):** **Bỏ RN (Kiệt chốt 17/11/2026, xác nhận lại 28/11):** app React Native ở `native/` không còn là tham chiếu hành vi. Trang này ghi đối chiếu RN → native trước 17/11, **không phải yêu cầu hiện hành** — đừng lấy dòng "còn thiếu / chưa port" ở đây làm việc phải làm. Giữ để tra lịch sử, không xoá.
+
 This page is the record for the native Today tab, the approved redesign (`README.md` + `mock/`, PDF `ASCND_Today_tab-selection`).
 
 The rule is:

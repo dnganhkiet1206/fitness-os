@@ -73,6 +73,8 @@ Chỗ nào trong `docs/WORKFLOW.md` khác trang này thì **trang này thắng**
 
 ## 4. Nguyên tắc tính năng
 
+> **Bỏ RN (Kiệt chốt 17/11/2026, xác nhận lại 28/11):** app React Native ở `native/` không còn là tham chiếu hành vi. Mục 1, 2, 4 và vế "golden sinh từ mã RN" của mục 5 dưới đây **hết hiệu lực từ 17/11** (giữ chữ làm lịch sử): tính năng mới theo `PRODUCT_DECISION_V1.md` và quyết định của Kiệt; không viết `RN-PARITY.md` mới, không sinh golden mới từ mã RN. Golden RN đã có vẫn chạy làm test hồi quy và `native/tools/check.mjs` vẫn là cổng — giữ nguyên. Mục 3, 5 (logic thuần ở `ASCNDCore`, có test), 6 vẫn áp dụng.
+
 1. **Tính năng phải dựa trên RN.** RN gốc ở `native/src/**` (tham chiếu @ `fac9ac2`). Port hành vi thật, không làm theo ảnh dựng.
 2. Chỉ khi RN **không có** thì mới phát triển thêm. Làm khác RN có chủ ý thì ghi vào `apps/ios/docs/NATIVE_IMPROVEMENTS.md`.
 3. Đừng bày nút không làm gì, như ô khoá kiểu "sắp có". Chưa có màn thì không hiện lối vào.

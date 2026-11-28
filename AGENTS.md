@@ -2,6 +2,8 @@
 
 Repo `fitness-os` của ASCND. Sản phẩm đang phát triển là **app iOS native** ở `apps/ios` (SwiftUI). `native/` là app React Native cũ — chỉ dùng làm tham chiếu hành vi và chứa bộ kiểm (`native/tools/check.mjs`).
 
+> **Bỏ RN (Kiệt chốt 17/11/2026, xác nhận lại 28/11):** app React Native ở `native/` không còn là tham chiếu hành vi. Thư mục giữ nguyên trong repo (không xoá), và **bộ kiểm `native/tools/check.mjs` cùng các golden cũ vẫn là cổng CI — giữ, đừng gỡ**. Tính năng mới theo `apps/ios/docs/PRODUCT_DECISION_V1.md` và quyết định của Kiệt, không port hay đối chiếu với RN nữa. Câu "chỉ dùng làm tham chiếu hành vi" ở trên đã hết hiệu lực (giữ lại làm lịch sử).
+
 ## Bắt buộc đọc, theo thứ tự
 
 1. `apps/ios/CLAUDE.md` — ba điều không được quên.
