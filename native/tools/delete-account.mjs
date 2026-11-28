@@ -4,14 +4,15 @@
  * ── the primary question this chain started from ──
  *
  * Can a request authenticated as B delete A? **No**. The handler reads the
- * body for exactly two fields — `apple_refresh_token` and
- * `apple_authorization_code`, the token material Apple revocation needs —
- * and Rule F below allows no other field to be read off it, so there is
- * still no body field that can name an account. Driven through the real
- * handler as B with `userId`, `user_id`, `id`, `sub`, `account`, `target`
- * and `email` all naming A, plus the two token fields carrying A's id —
- * twelve bodies — every one deletes **B** and leaves A's account and files
- * untouched.
+ * body for exactly one field — `apple_authorization_code`, the token
+ * material Apple revocation needs (the raw `apple_refresh_token` field was
+ * dropped, Master Audit 28/11 SEC-13) — and Rule F below allows no other
+ * field to be read off it, so there is still no body field that can name an
+ * account. Driven through the real handler as B with `userId`, `user_id`,
+ * `id`, `sub`, `account`, `target` and `email` all naming A, plus the Apple
+ * token fields carrying A's id — twelve bodies — every one deletes **B** and
+ * leaves A's account and files untouched. A body whose declared size is over
+ * 4 KB is never parsed, and the deletion still completes.
  *
  * The auth matrix is the other half: no token, a garbage token and the
  * **publishable anon key** all return 401 having performed **zero** privileged
@@ -143,7 +144,7 @@ try {
                if (!world.users.has(id)) {
                  return { error: Object.assign(new Error('User not found'), { status: 404, code: 'user_not_found' }) };
                }
-               return { data: { user: { identities: [{ provider: 'apple' }] } }, error: null };
+               return { data: { user: { identities: [{ provider: 'apple', id: 'apple-' + id }] } }, error: null };
              },
            },
          },
@@ -210,12 +211,14 @@ try {
                     anonTok: { role: 'anon' } };
        Object.assign(W, over || {});
      }
-     async function call(token, body) {
+     async function call(token, body, contentLength) {
        ss.__reset();
        delete require.cache[require.resolve(path.join(FN, 'delete-account.js'))];
        require(path.join(FN, 'delete-account.js'));
        const h = new Map();
        if (token) h.set('authorization', 'Bearer ' + token);
+       /* As a real client sends it; the handler parses nothing it cannot size (SEC-13). */
+       h.set('content-length', String(contentLength ?? Buffer.byteLength(JSON.stringify(body || {}))));
        const res = await ss.__handler()({ method: 'POST',
          headers: { get: (k) => h.get(k.toLowerCase()) ?? null },
          json: async () => { W.bodyReads++; return body || {}; } });
@@ -301,6 +304,11 @@ try {
        reset();
        const e2 = await call('tokA', { apple_refresh_token: 'rt', apple_authorization_code: 'code' });
        o.apple.lookupOk = { status: e2.status, aAlive: W.users.has(A), bodyReads: W.bodyReads };
+       /* SEC-13: a body declared larger than 4 KB is never parsed — and the
+          deletion still completes. */
+       reset();
+       const e3 = await call('tokA', { apple_authorization_code: 'code' }, 5_000_000);
+       o.apple.oversized = { status: e3.status, aAlive: W.users.has(A), bodyReads: W.bodyReads };
 
        console.log = real;
        console.log(JSON.stringify(o));
@@ -396,6 +404,11 @@ try {
     `không liệt kê được identities mà việc xoá không xong: ${JSON.stringify(r.apple.lookupFails)} — ` +
       'thu hồi Apple là việc làm thêm, hỏng ở đó không được chặn việc xoá tài khoản',
   );
+  want(
+    r.apple.oversized.status === 200 && !r.apple.oversized.aAlive && r.apple.oversized.bodyReads === 0,
+    `thân khai báo 5 MB ra ${JSON.stringify(r.apple.oversized)} — thân quá 4 KB không được parse ` +
+      '(SEC-13: req.json() không giới hạn đọc hết thứ người gọi gửi), và việc xoá vẫn phải xong',
+  );
 } finally {
   rmSync(out, { recursive: true, force: true });
 }
@@ -481,13 +494,13 @@ try {
     "no body" to "no body field but the two token fields". That is the
     prescription this rule has carried since it was written: identity
     still only from the JWT, and Rule A extended to the new fields.
-    Every field read off the parsed body must be `apple_refresh_token`
-    or `apple_authorization_code`, however the parsed value is named or
-    aliased; a new field fails here until Rule A grows a body for it.
+    Every field read off the parsed body must be `apple_authorization_code`
+    (`apple_refresh_token` was dropped, SEC-13), however the parsed value
+    is named or aliased; a new field fails here until Rule A grows a body for it.
   */
   const fn = readFileSync(path.join(REPO, 'supabase/functions/delete-account/index.ts'), 'utf8')
     .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-  const BODY_FIELDS = new Set(['apple_refresh_token', 'apple_authorization_code']);
+  const BODY_FIELDS = new Set(['apple_authorization_code']);
   /* Variables holding the parsed body: whatever `req.json()` is assigned
      to, plus anything assigned from one of those — renaming the variable
      must not rename the rule away. */
@@ -519,8 +532,8 @@ try {
     for (const f of [...readFields].sort()) {
       if (!BODY_FIELDS.has(f)) {
         problems.push(
-          `delete-account đọc trường "${f}" từ thân yêu cầu — thân chỉ được mang hai trường token của Apple ` +
-            '(apple_refresh_token, apple_authorization_code). Danh tính chỉ đến từ JWT (requireUser); ' +
+          `delete-account đọc trường "${f}" từ thân yêu cầu — thân chỉ được mang mã Apple ` +
+            '(apple_authorization_code; apple_refresh_token đã bỏ ở SEC-13). Danh tính chỉ đến từ JWT (requireUser); ' +
             'một trường mới phải được thêm vào luật A trước khi được đọc ở đây',
         );
       }
@@ -545,8 +558,8 @@ if (problems.length) {
 console.log(
   'xoá tài khoản OK — CHẠY THẬT handler delete-account. Mười hai thân yêu cầu khác nhau đặt tên A ' +
     '(userId/user_id/id/sub/account/target/email, cộng hai trường token Apple mang id của A) gọi với tư cách B: ' +
-    'lần nào cũng xoá ĐÚNG B, tài khoản và ảnh của A nguyên vẹn — thân yêu cầu chỉ được đọc hai trường token ' +
-    '(apple_refresh_token, apple_authorization_code), danh tính vẫn chỉ đến từ JWT. Không token / ' +
+    'lần nào cũng xoá ĐÚNG B, tài khoản và ảnh của A nguyên vẹn — thân yêu cầu chỉ được đọc mã Apple ' +
+    '(apple_authorization_code), thân khai báo quá 4 KB không được parse, danh tính vẫn chỉ đến từ JWT. Không token / ' +
     'token rác / KHOÁ ANON đều 401 với KHÔNG một hành động service-role nào. Mọi lối thoát lỗi nói đúng sự ' +
     'thật về việc đã phá gì: hỏng khi liệt kê → partial=false, hỏng khi xoá tệp → partial=true, và hỏng ở ' +
     'deleteUser — dù API TRẢ VỀ lỗi hay NÉM lỗi — đều partial=true sau khi ảnh đã mất (bản đã ship để lối ' +
