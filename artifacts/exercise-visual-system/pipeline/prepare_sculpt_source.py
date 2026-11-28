@@ -46,12 +46,19 @@ def smoothed(mesh, passes: int) -> np.ndarray:
     return out
 
 
-def shrink_limb(co: np.ndarray, mask: np.ndarray, axis: int, k: float) -> None:
+def shrink_limb(co: np.ndarray, mask: np.ndarray, axis: int, k: float, lo: float, hi: float, ramp: float = 0.05) -> None:
+    """Scales a limb about its axis by ``k``; the scale ramps in over ``ramp`` metres from both
+    ends of [lo, hi] along ``axis`` (|coordinate| for the arms), so there is no step where the
+    shrink starts (23/11: an abrupt start left a ring on the upper arm)."""
     idx = np.flatnonzero(mask)
     if not len(idx):
         return
     p = co[idx]
     t = p[:, axis]
+    at = np.abs(t)
+    f = np.clip(np.minimum(at - lo, hi - at) / ramp, 0.0, 1.0)
+    f = f * f * (3 - 2 * f)
+    kk = 1.0 - (1.0 - k) * f
     bins = np.linspace(t.min(), t.max(), 30)
     b = np.clip(np.digitize(t, bins) - 1, 0, 28)
     for i in range(29):
@@ -61,7 +68,7 @@ def shrink_limb(co: np.ndarray, mask: np.ndarray, axis: int, k: float) -> None:
         c = p[m].mean(0)
         d = p[m] - c
         d[:, axis] = 0.0
-        q = c + d * k
+        q = c + d * kk[m, None]
         q[:, axis] = p[m, axis]
         p[m] = q
     co[idx] = p
@@ -97,8 +104,8 @@ def main() -> None:
     co = co - DETAIL_BLEND * (co - smoothed(me, SMOOTH_PASSES))
     z, x = co[:, 2], co[:, 0]
     for side in (1, -1):
-        shrink_limb(co, (z < 0.92) & (z > 0.08) & (x * side > 0.015), 2, LIMB_SCALE)
-        shrink_limb(co, (np.abs(x) > 0.24) & (x * side > 0) & (z > 1.25), 0, LIMB_SCALE)
+        shrink_limb(co, (z < 0.92) & (z > 0.08) & (x * side > 0.015), 2, LIMB_SCALE, 0.08, 0.92)
+        shrink_limb(co, (np.abs(x) > 0.24) & (x * side > 0) & (z > 1.25), 0, LIMB_SCALE, 0.24, 2.0)
     bl_util.set_mesh_coords(me, co.astype(np.float32))
     me.update()
     body.name = me.name = "SculptBody"

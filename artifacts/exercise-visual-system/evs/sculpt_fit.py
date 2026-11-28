@@ -33,6 +33,16 @@ def _load(path, name: str) -> bpy.types.Object:
     return obj
 
 
+def align_offset(rest: np.ndarray, tco: np.ndarray, lo: float = 0.9, hi: float = 1.3) -> Vector:
+    """Translation putting the sculpt on the MakeHuman body: x/y from the centroid of the trunk band
+    (hips to chest, the same whatever the arms do; 23/11: the all-vertex centroid differs between a
+    T-pose and an A-pose and pushed the sculpt 17-20 cm forward of the skeleton), z from the soles."""
+    rb = rest[(rest[:, 2] > lo) & (rest[:, 2] < hi) & (np.abs(rest[:, 0]) < 0.2)]
+    tb = tco[(tco[:, 2] > lo) & (tco[:, 2] < hi) & (np.abs(tco[:, 0]) < 0.2)]
+    return Vector((float(rb[:, 0].mean() - tb[:, 0].mean()), float(rb[:, 1].mean() - tb[:, 1].mean()),
+                   float(rest[:, 2].min() - tco[:, 2].min())))
+
+
 def _neck_z(co: np.ndarray, lo: float, hi: float) -> float:
     best = (1e9, 0.5 * (lo + hi))
     for z in np.arange(lo, hi, 0.003):
@@ -105,8 +115,7 @@ def fit_to_sculpt(body: bpy.types.Object, rig: bpy.types.Object, cfg: dict) -> d
     k = h * sf.get("height_ratio", 1.0) / float(np.ptp(tco[:, 2]))
     target.data.transform(Matrix.Scale(k, 4))
     tco = np.array([tuple(v.co) for v in target.data.vertices])
-    off = Vector((float(rest[:, 0].mean() - tco[:, 0].mean()), float(rest[:, 1].mean() - tco[:, 1].mean()), float(rest[:, 2].min() - tco[:, 2].min())))
-    target.data.transform(Matrix.Translation(off))
+    target.data.transform(Matrix.Translation(align_offset(rest, tco)))
     target.matrix_world = Matrix.Identity(4)
 
     # Posed (T) MakeHuman surface, through the armature modifier.
