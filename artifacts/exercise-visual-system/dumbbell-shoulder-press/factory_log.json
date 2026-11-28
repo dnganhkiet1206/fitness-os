@@ -1222,5 +1222,55 @@
     },
     "total_seconds": 91.4,
     "qa": "{\"PASS\": 18, \"FAIL\": 1, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 45,
+    "when": "2026-11-28T09:46:39",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 4.3
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 4.8
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 29.8
+      }
+    },
+    "total_seconds": 41.9,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1, \"NOT_TESTED\": 1}"
+  },
+  {
+    "version": 46,
+    "when": "2026-11-28T09:53:02",
+    "template": "press_vertical",
+    "steps": {
+      "scene": {
+        "ok": true,
+        "seconds": 3.6
+      },
+      "generate": {
+        "ok": true,
+        "seconds": 4.5
+      },
+      "validate": {
+        "ok": true,
+        "seconds": 1.2
+      },
+      "sheet": {
+        "ok": true,
+        "seconds": 30.0
+      }
+    },
+    "total_seconds": 40.9,
+    "qa": "{\"PASS\": 18, \"FAIL\": 1, \"NOT_TESTED\": 1}"
   }
 ]

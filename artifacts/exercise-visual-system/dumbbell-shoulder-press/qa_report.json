@@ -1,6 +1,6 @@
 {
   "tool": "pipeline/validate_motion.py",
-  "date": "2026-11-24",
+  "date": "2026-11-28",
   "exercise_id": "dumbbell_shoulder_press",
   "frames": 213,
   "fps": 24,
@@ -37,7 +37,7 @@
       "measured": 1.003,
       "limit": 2.5,
       "where": {
-        "joint": "knuckle_l",
+        "joint": "wrist_l",
         "frame": 130
       },
       "detail": "m/s"
@@ -50,7 +50,7 @@
       "measured": 7.528,
       "limit": 12.0,
       "where": {
-        "bone": "lowerarm_l",
+        "bone": "lowerarm_r",
         "frame": 130
       },
       "detail": "deg per frame"
@@ -64,7 +64,7 @@
       "limit": 0.004,
       "where": {
         "implement": "SOCKET_hand_r",
-        "frame": 200
+        "frame": 16
       },
       "detail": "m wrist to grip socket"
     },
@@ -96,7 +96,7 @@
       "limit": 0.003,
       "where": {
         "joint": "elbow",
-        "frame": 46
+        "frame": 62
       },
       "detail": "m"
     },
@@ -105,11 +105,11 @@
       "stage": "C",
       "title": "Implements do not pass through the body",
       "status": "PASS",
-      "measured": 0.0034,
+      "measured": 0.0,
       "limit": 0.004,
       "where": {
-        "implement": "Dumbbell_l",
-        "frame": 0
+        "implement": null,
+        "frame": null
       },
       "detail": "m inside"
     },
@@ -118,11 +118,11 @@
       "stage": "C",
       "title": "Wrists stay near straight (forearm to hand)",
       "status": "PASS",
-      "measured": 11.626,
+      "measured": 9.394,
       "limit": 25.0,
       "where": {
-        "side": "r",
-        "frame": 154
+        "side": "l",
+        "frame": 103
       },
       "detail": "deg"
     },
@@ -178,7 +178,7 @@
         "min_correlation": 0.9
       },
       "where": {
-        "joint": "wrist_r"
+        "joint": "wrist_l"
       },
       "detail": "best alignment of the farthest-travelling joint with the progress rebuilt from tempo.json"
     },
@@ -205,11 +205,11 @@
       "where": {
         "frame": 53
       },
-      "detail": "p99.9 edge stretch per frame: f0 1.636, f53 3.066, f106 1.636",
+      "detail": "p99.9 edge stretch per frame: f0 1.642, f53 3.066, f106 1.642",
       "per_frame": {
-        "0": 1.636,
+        "0": 1.642,
         "53": 3.066,
-        "106": 1.636
+        "106": 1.642
       }
     },
     {

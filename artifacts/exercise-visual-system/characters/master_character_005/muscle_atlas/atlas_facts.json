@@ -1,7 +1,7 @@
 {
   "atlas_resolution": 2048,
-  "samples": 13377354,
-  "uv_coverage": 0.3629,
+  "samples": 13377998,
+  "uv_coverage": 0.3628,
   "groups": {
     "pectoralis_major_clavicular": {
       "texels": 23867,
@@ -76,7 +76,7 @@
       "label": "Latissimus dorsi"
     },
     "trapezius_upper": {
-      "texels": 53405,
+      "texels": 53196,
       "label": "Trapezius, upper"
     },
     "trapezius_middle": {
@@ -140,7 +140,7 @@
       "label": "Adductor longus"
     },
     "gracilis": {
-      "texels": 17422,
+      "texels": 17431,
       "label": "Gracilis"
     },
     "adductor_magnus": {
@@ -156,7 +156,7 @@
       "label": "Semitendinosus"
     },
     "semimembranosus": {
-      "texels": 26956,
+      "texels": 26951,
       "label": "Semimembranosus"
     },
     "gastrocnemius_medial": {
@@ -168,11 +168,11 @@
       "label": "Gastrocnemius, lateral head"
     },
     "soleus": {
-      "texels": 42718,
+      "texels": 42667,
       "label": "Soleus"
     },
     "tibialis_anterior": {
-      "texels": 59434,
+      "texels": 59429,
       "label": "Tibialis anterior"
     },
     "brachialis": {
@@ -192,7 +192,7 @@
       "label": "Teres major"
     },
     "fibularis_longus": {
-      "texels": 19243,
+      "texels": 19244,
       "label": "Fibularis (peroneus) longus"
     },
     "pectoralis_major": {
@@ -205,7 +205,7 @@
       ]
     },
     "trapezius": {
-      "texels": 84177,
+      "texels": 83968,
       "label": "trapezius",
       "parts": [
         "trapezius_upper",
@@ -274,7 +274,7 @@
       ]
     },
     "hamstrings": {
-      "texels": 122972,
+      "texels": 122967,
       "label": "hamstrings",
       "parts": [
         "biceps_femoris",
@@ -283,7 +283,7 @@
       ]
     },
     "adductors": {
-      "texels": 45353,
+      "texels": 45362,
       "label": "adductors",
       "parts": [
         "adductor_longus",
@@ -292,7 +292,7 @@
       ]
     },
     "calves": {
-      "texels": 114601,
+      "texels": 114550,
       "label": "calves",
       "parts": [
         "gastrocnemius_medial",
@@ -350,10 +350,10 @@
   },
   "refit": {
     "band_px": 40,
-    "seeds": 1306126,
-    "flooded": 1516622,
-    "unreached_kept": 30743,
-    "texels_changed": 558017,
+    "seeds": 1306313,
+    "flooded": 1516547,
+    "unreached_kept": 30631,
+    "texels_changed": 557874,
     "region_texels": 2853491,
     "sources": {
       "occlusion": "body_occlusion_2048.png",

@@ -142,8 +142,8 @@
     "thumb_fold_r": 440,
     "wrist_fold_l": 547,
     "wrist_fold_r": 548,
-    "ankle_fold_l": 505,
-    "ankle_fold_r": 515,
+    "ankle_fold_l": 513,
+    "ankle_fold_r": 517,
     "neck_fold": 1689,
     "trap_l": 812,
     "trap_r": 793,
@@ -194,54 +194,54 @@
   "grip_joint_angles_deg": {
     "index": {
       "angles_deg": [
-        44.5,
-        25.25,
-        62.25
+        33.83,
+        59.75,
+        32.5
       ],
       "skin_into_bar_m": 0.0,
       "skin_into_palm_m": 0.0,
-      "gap_score_m": 0.0005
+      "gap_score_m": 0.0003
     },
     "middle": {
       "angles_deg": [
-        35.67,
-        48.75,
-        58.0
+        50.33,
+        55.75,
+        55.75
       ],
       "skin_into_bar_m": 0.0,
       "skin_into_palm_m": 0.0,
-      "gap_score_m": 0.0013
+      "gap_score_m": 0.0004
     },
     "ring": {
       "angles_deg": [
-        22.0,
-        28.5,
-        69.5
+        38.42,
+        58.25,
+        36.75
       ],
       "skin_into_bar_m": 0.0,
       "skin_into_palm_m": 0.0,
-      "gap_score_m": 0.0006
+      "gap_score_m": 0.0024
     },
     "pinky": {
       "angles_deg": [
-        85.0,
         0.0,
-        0.0
+        62.75,
+        19.0
       ],
-      "skin_into_bar_m": 0.0037,
+      "skin_into_bar_m": 0.0006,
       "skin_into_palm_m": 0.0,
-      "gap_score_m": 0.0104
+      "gap_score_m": 0.0008
     },
     "thumb": {
       "angles_deg": [
         0.0,
-        18.0,
-        63.89
+        30.42,
+        6.39
       ],
       "skin_into_bar_m": 0.0,
       "skin_into_palm_m": 0.0,
-      "gap_score_m": 0.0146,
-      "skin_into_bar_measured_m": 0.0048
+      "gap_score_m": 0.0181,
+      "skin_into_bar_measured_m": 0.0116
     }
   },
   "height_m": 1.772,
@@ -253,7 +253,7 @@
   "forearm_length_m": 0.2658,
   "thigh_length_m": 0.4466,
   "shank_length_m": 0.4655,
-  "max_left_right_asymmetry_m": 0.012258,
+  "max_left_right_asymmetry_m": 0.011553,
   "deform_bone_count": 92,
   "bones": {
     "Root": {
@@ -951,10 +951,10 @@
     },
     "calf_l": {
       "parent": "thigh_l",
-      "length_m": 0.46546,
+      "length_m": 0.46547,
       "head_rest_m": [
         0.16499,
-        -0.08033,
+        -0.08032,
         0.5348
       ]
     },
@@ -999,7 +999,7 @@
       "length_m": 0.06,
       "head_rest_m": [
         0.16499,
-        -0.08033,
+        -0.08032,
         0.5348
       ]
     },
@@ -1014,10 +1014,10 @@
     },
     "calf_r": {
       "parent": "thigh_r",
-      "length_m": 0.46546,
+      "length_m": 0.46547,
       "head_rest_m": [
         -0.16499,
-        -0.08033,
+        -0.08032,
         0.5348
       ]
     },
@@ -1062,7 +1062,7 @@
       "length_m": 0.06,
       "head_rest_m": [
         -0.16499,
-        -0.08033,
+        -0.08032,
         0.5348
       ]
     },
@@ -1095,7 +1095,7 @@
   ],
   "muscle_sculpt": {
     "parts": 107,
-    "outline_points": 30925,
+    "outline_points": 30927,
     "vertices_moved": 0,
     "max_displacement_m": 0.0,
     "geometry": {
