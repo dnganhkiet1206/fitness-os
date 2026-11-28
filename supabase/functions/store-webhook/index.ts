@@ -8,7 +8,7 @@ import {
   entitlementFrom,
   resolveEntitlementTransaction,
 } from "../_shared/apple.ts";
-import { corsHeaders, json } from "../_shared/guard.ts";
+import { corsHeaders, json, readJsonCapped } from "../_shared/guard.ts";
 
 /**
  * Apple telling us something changed — a renewal, a cancellation, a refund.
@@ -61,6 +61,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * above anything real and far below anything worth sending.
  */
 const MAX_PAYLOAD = 64 * 1024;
+/** The whole body: `{"signedPayload":"…"}` around a payload of at most
+    MAX_PAYLOAD. Read with this ceiling, so an oversized body is refused before
+    it is buffered (AUD-82), not measured after. */
+const MAX_BODY = MAX_PAYLOAD + 4 * 1024;
 const MAX_TXN_ID = 64;
 
 interface NotificationPayload {
@@ -81,12 +85,9 @@ serve(async (req) => {
     /* A body that is not JSON did not come from Apple, and no number of retries
        will make it parse — so it is refused here rather than reaching the outer
        catch, which answers 500 and buys days of resends for a bad request. */
-    let body: { signedPayload?: unknown };
-    try {
-      body = await req.json();
-    } catch {
-      return json({ error: "Bad request" }, 400);
-    }
+    const read = await readJsonCapped(req, MAX_BODY);
+    if (read instanceof Response) return read;
+    const body = read.value as { signedPayload?: unknown } | null;
 
     const signed = typeof body?.signedPayload === "string" ? body.signedPayload : "";
     if (!signed) return json({ ok: true, ignored: "no signedPayload" });
