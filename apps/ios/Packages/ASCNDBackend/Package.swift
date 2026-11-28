@@ -16,7 +16,9 @@ let package = Package(
   dependencies: [
     .package(path: "../ASCNDKit"),
     // Khoá về bản đã build xanh trên CI (05/10, Xcode 26.3); chỉ nhận bản vá.
-    .package(url: "https://github.com/supabase/supabase-swift.git", .upToNextMinor(from: "2.55.3")),
+    // Sàn 2.55.7 (28/11, audit SEC-25): bản vá ẩn secret trong log HTTP verbose
+    // và xoá phiên khi refresh bị từ chối vì user_banned.
+    .package(url: "https://github.com/supabase/supabase-swift.git", .upToNextMinor(from: "2.55.7")),
   ],
   targets: [
     .target(
